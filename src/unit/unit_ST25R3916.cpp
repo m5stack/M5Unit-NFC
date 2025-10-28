@@ -320,23 +320,17 @@ bool UnitST25R3916::begin()
     readTXDriver(txd);
     M5_LIB_LOGD("TXD:%02X", txd);
 
-
-    writeReceiverConfiguration1(0x08); // z600k
-    writeReceiverConfiguration2(0x2D); // sqm_dyn , agc_en, agc_m, agc6_3, 
+    writeReceiverConfiguration1(0x08);  // z600k
+    writeReceiverConfiguration2(0x2D);  // sqm_dyn , agc_en, agc_m, agc6_3,
     writeReceiverConfiguration3(0x00);
     writeReceiverConfiguration4(0x00);
 
-
-
-
-    
     ////////
     // ISO14443A
     // M5_LIB_LOGE(">>>>>> try ISO14443A REQA");
     writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, 0x01 /* nfc_ar01 */);
     writeBitrate(Bitrate::FC128_106Kbits, Bitrate::FC128_106Kbits);
     writeSettingsISO14443A(0x0);
-
 
     //
     writeOperationControl(en | rx_en | tx_en);

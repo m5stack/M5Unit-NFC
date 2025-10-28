@@ -67,18 +67,6 @@ void setup()
     lcd.setCursor(0, 0);
     lcd.printf("Please put the devices and click G0");
     M5.Log.printf("Please put the devices and click G0\n");
-
-
-    // Anntena settings
-    uint8_t v{};
-    cap.readTXDriver(v);
-    M5_LOGI("TXD:%02X", v);
-    cap.writeTXDriver((v & 0x0F) | (10U << 4)); // am_mod 15%
-
-
-
-
-
 }
 
 void loop()
