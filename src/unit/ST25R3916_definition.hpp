@@ -1,0 +1,250 @@
+/*
+ * SPDX-FileCopyrightText: 2025 M5Stack Technology CO LTD
+ *
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+  @file ST25R3916_definition.hpp
+  @brief Definitions for ST25R3916
+*/
+#ifndef M5_UNIT_RFID_ST25R3916_DEFINITION_HPP
+#define M5_UNIT_RFID_ST25R3916_DEFINITION_HPP
+
+#include <cstdint>
+
+namespace m5 {
+namespace unit {
+
+/*!
+  @namespace st25r3916
+  @brief For ST25R3916
+ */
+namespace st25r3916 {
+
+/*!
+  @enum InitiatorOperationMode
+  @brief Initiator operation modes
+  @details For Mode definition
+ */
+enum class InitiatorOperationMode : uint8_t {
+    NFCIP1           = 0x00 << 3,  //!< NFCIP-1 active communication
+    ISO14443A        = 0x01 << 3,  //!< ISO14443A
+    ISO14443B        = 0x02 << 3,  //!< ISO14443B
+    Felica           = 0x03 << 3,  //!< Felica
+    NFCForumType1    = 0x04 << 3,  //!< NFC Forum Type 1 tag (Topaz)
+    SubCarrierStream = 0x0E << 3,  //!< Sub-carrier stream mode
+    BPSKStream       = 0x0F << 3,  //!< BPSK stream mode
+};
+
+/*!
+  @enum TargetOperationMode
+  @brief Target operation modes
+  @details For Mode definition
+ */
+enum class TargetOperationMode : uint8_t {
+    ISO14443A        = 0x01 << 3,  //!< ISO14443A passive target mode
+    Felica           = 0x04 << 3,  //!< FeliCa™ passive target mode
+    NFCIP1           = 0x07 << 3,  //!< NFCIP-1 active communication mode
+    FelicaBitrate    = 0x0C << 3,  //!< FeliCa bit rate detection mode
+    ISO14443ABitrate = 0x09 << 3,  //!< ISO14443A bit rate detection mode
+    //    BothBitrate = 0x0D << 3, //!< Felica and ISO14443A bit rate detection mode
+};
+
+/*!
+  @enum Bitrate
+  @brief Bit rate for TX/RX
+  @details For Bit rate definition
+ */
+enum class Bitrate : uint8_t {
+    FC128_106Kbits,  //!< -106kbit/s
+    FC64_212Kbits,   //!< -212 kbit/s
+    FC32_424Kbits,   //!< -424 kbit/s
+    FC16_848Kbits,   //!< -848 kbit/s
+};
+
+namespace command {
+///@cond
+// ==== Space-A
+// I/O configuration
+constexpr uint8_t REG_IO_CONFIGURATION_1{0x00};
+constexpr uint8_t REG_IO_CONFIGURATION_2{0x01};
+// Operation control and mode definition
+constexpr uint8_t REG_OPERATION_CONTROL{0x02};
+constexpr uint8_t REG_MODE_DEFINITION{0x03};
+constexpr uint8_t REG_BITRATE_DEFINITION{0x04};
+// Protocol configuration
+constexpr uint8_t REG_ISO14443A_SETTINGS{0x05};
+constexpr uint8_t REG_ISO14443B_SETTINGS{0x06};
+constexpr uint8_t REG_FELICA_SETTINGS{0x07};
+constexpr uint8_t REG_NFCIP_1_DEFINITION{0x08};
+constexpr uint8_t REG_STREAM_MODE_DEFINITION{0x09};
+constexpr uint8_t REG_AUXILIARY_DEFINITION{0x0A};
+// Receiver configuration
+constexpr uint8_t REG_RECEIVER_CONFIGURATION_1{0x0B};
+constexpr uint8_t REG_RECEIVER_CONFIGURATION_2{0x0C};
+constexpr uint8_t REG_RECEIVER_CONFIGURATION_3{0x0D};
+constexpr uint8_t REG_RECEIVER_CONFIGURATION_4{0x0E};
+// Timer definition
+constexpr uint8_t REG_MASK_RECEIVER_TIMER{0x0F};
+constexpr uint8_t REG_NO_RESPONSE_TIMER_1{0x10};
+constexpr uint8_t REG_NO_RESPONSE_TIMER_2{0x11};
+constexpr uint8_t REG_TIMER_AND_EMV_CONTROL{0x12};
+constexpr uint8_t REG_GENERAL_PURPOSE_TIMER_1{0x13};
+constexpr uint8_t REG_GENERAL_PURPOSE_TIMER_2{0x14};
+constexpr uint8_t REG_PPON2_FIELD_WAITING{0x15};
+// Interrupt and associated reporting
+constexpr uint8_t REG_MASK_MAIN_INTERRUPT{0x16};
+constexpr uint8_t REG_MASK_TIMER_AND_NFC_INTERRUPT{0x17};
+constexpr uint8_t REG_MASK_ERROR_AND_WAKEUP_INTERRUPT{0x18};
+constexpr uint8_t REG_MASK_PASSIVE_TARGET_INTERRUPT{0x19};
+constexpr uint8_t REG_MAIN_INTERRUPT{0x1A};
+constexpr uint8_t REG_TIMER_AND_NFC_INTERRUPT{0x1B};
+constexpr uint8_t REG_ERROR_AND_WAKEUP_INTERRUPT{0x1C};
+constexpr uint8_t REG_PASSIVE_TARGET_INTERRUPT{0x1D};
+constexpr uint8_t REG_FIFO_STATUS_1{0x1E};
+constexpr uint8_t REG_FIFO_STATUS_2{0x1F};
+constexpr uint8_t REG_COLLISION_DISPLAY{0x20};
+constexpr uint8_t REG_PASSIVE_TARGET_DISPLAY{0x21};
+// Definition of number of transmitted bytes
+constexpr uint8_t REG_NUMBER_OF_TRANSMITTED_BYTES_1{0x22};
+constexpr uint8_t REG_NUMBER_OF_TRANSMITTED_BYTES_2{0x23};
+constexpr uint8_t REG_BITRATE_DETECTION_DISPLAY{0x24};
+// A/D converter output
+constexpr uint8_t REG_AD_CONVERTER_OUTPUT{0x25};
+// Antenna calibration
+constexpr uint8_t REG_ANTENNA_TUNING_CONTROL_1{0x26};
+constexpr uint8_t REG_ANTENNA_TUNING_CONTROL_2{0x27};
+// Antenna driver and modulation
+constexpr uint8_t REG_TX_DRIVER{0x28};
+constexpr uint8_t REG_PASSIVE_TARGET_MODULATION{0x29};
+// External field detector threshold
+constexpr uint8_t REG_EXTERNAL_FIELD_DETECTOR_ACTIVATION_THRESHOLD{0x2A};
+constexpr uint8_t REG_EXTERNAL_FIELD_DETECTOR_DEACTIVATION_THRESHOLD{0x2B};
+// Regulator
+constexpr uint8_t REG_REGULATOR_VOLTAGE_CONTROL{0x2C};
+// Receiver state display
+constexpr uint8_t REG_RSSI_DISPLAY{0x2D};
+constexpr uint8_t REG_GAIN_REDUCTION_STATE{0x2E};
+// Capacitive sensor
+constexpr uint8_t REG_CAPACITIVE_SENSOR_CONTROL{0x2F};
+constexpr uint8_t REG_CAPACITIVE_SENSOR_DISPLAY{0x30};
+// Auxiliary display
+constexpr uint8_t REG_AUXILIARY_DISPLAY{0x31};
+// Wake-up
+constexpr uint8_t REG_WAKEUP_TIMER_CONTROL{0x32};
+constexpr uint8_t REG_AMPLITUDE_MEASUREMENT_CONFIGURATION{0x33};
+constexpr uint8_t REG_AMPLITUDE_MEASUREMENT_REFERENCE{0x34};
+constexpr uint8_t REG_AMPLITUDE_MEASUREMENT_AUTO_AVERAGING_DISPLAY{0x35};
+constexpr uint8_t REG_AMPLITUDE_MEASUREMENT_DISPLAY{0x36};
+constexpr uint8_t REG_PHASE_MEASUREMENT_CONFIGURATION{0x37};
+constexpr uint8_t REG_PHASE_MEASUREMENT_REFERENCE{0x38};
+constexpr uint8_t REG_PHASE_MEASUREMENT_AUTO_AVERAGING_DISPLAY{0x39};
+constexpr uint8_t REG_PHASE_MEASUREMENT_DISPLAY{0x3A};
+constexpr uint8_t REG_CAPACITANCE_MEASUREMENT_CONFIGURATION{0x3B};
+constexpr uint8_t REG_CAPACITANCE_MEASUREMENT_REFERENCE{0x3C};
+constexpr uint8_t REG_CAPACITANCE_MEASUREMENT_AUTO_AVERAGING_DISPLAY{0x3D};
+constexpr uint8_t REG_CAPACITANCE_MEASUREMENT_DISPLAY{0x3E};
+// IC identity
+constexpr uint8_t REG_IC_IDENTITY{0x3F};
+
+// ==== Space-B
+// Protocol configuration
+constexpr uint16_t REG_EMD_SUPPRESSION_CONFIGURATION{0x0005};
+constexpr uint16_t REG_SUBCARRIER_START_TIMER{0x0006};
+// Receiver configuration
+constexpr uint16_t REG_P2P_RECEIVER_CONFIGURATION{0x000B};
+constexpr uint16_t REG_CORRELATOR_CONFIGURATION_1{0x000C};
+constexpr uint16_t REG_CORRELATOR_CONFIGURATION_2{0x000D};
+// Timer definition
+constexpr uint16_t REG_SQUELCH_TIMER{0x000F};
+constexpr uint16_t REG_NFC_FIELD_ON_GUARD_TIMER{0x0015};
+// Antenna driver and modulation
+constexpr uint16_t REG_AUXILIARY_MODULATION_SETTING{0x0028};
+constexpr uint16_t REG_TX_DRIVER_TIMING{0x0029};
+// External field detector threshold
+constexpr uint16_t REG_RESISTIVE_AM_MODULATION{0x002A};
+constexpr uint16_t REG_TX_DRIVER_TIMING_DISPLAY{0x002B};
+// Regulator
+constexpr uint16_t REG_REGULATOR_DISPLAY{0x002C};
+// Protection
+constexpr uint16_t REG_OVERSHOOT_PROTECTION_CONFIGURATION_1{0x0030};
+constexpr uint16_t REG_OVERSHOOT_PROTECTION_CONFIGURATION_2{0x0031};
+constexpr uint16_t REG_UNDERSHOOT_PROTECTION_CONFIGURATION_1{0x0032};
+constexpr uint16_t REG_UNDERSHOOT_PROTECTION_CONFIGURATION_2{0x0033};
+
+// ==== Direct commands
+constexpr uint8_t CMD_SET_DEFAULT{0xC1};            // Puts the ST25R3916/7 into powerup state
+constexpr uint8_t CMD_STOP_ALL_ACTIVITIES{0xC2};    // Stops all activities
+constexpr uint8_t CMD_TRANSMIT_WITH_CRC{0xC4};      // Starts a transmit sequence with automatic CRC generation
+constexpr uint8_t CMD_TRANSMIT_WITHOUT_CRC{0xC5};   // Starts a transmit sequence without automatic CRC generation
+constexpr uint8_t CMD_TRANSMIT_REQA{0xC6};          // Transmits REQA command (ISO14443A only)
+constexpr uint8_t CMD_TRANSMIT_WUPA{0xC7};          // Transmits WUPA command (ISO14443A only)
+constexpr uint8_t CMD_NFC_INITIAL_FIELD_ON{0xC8};   // Performs Initial RF Collision avoidance and switches on the field
+constexpr uint8_t CMD_NFC_RESPONSE_FIELD_ON{0xC9};  // Performs Response
+                                                    // RF Collision avoidance and switches on the field
+constexpr uint8_t CMD_GO_TO_SENSE{0xCD};            // Puts the passive target logic into Sense (Idle) state
+constexpr uint8_t CMD_GO_TO_SLEEP{0xCE};            // Puts the passive target logic into Sleep (Halt) state
+constexpr uint8_t CMD_MASK_RECEIVE_DATA{0xD0};      // Stops receivers and RX decoders
+constexpr uint8_t CMD_UNMASK_RECEIVE_DATA{0xD1};    // Starts receivers and RX decoders
+constexpr uint8_t CMD_CHANGE_AM_MODULATION_STATE{0xD2};  // Changes AM modulation state
+constexpr uint8_t CMD_MEASURE_AMPLITUDE{0xD3};           // Measures the amplitude of the signal present on RFI inputs
+constexpr uint8_t CMD_RESET_RX_GAIN{0xD5};               // Resets receiver gain
+constexpr uint8_t CMD_ADJUST_REGULATORS{0xD6};           // Adjusts supply regulators according
+                                                         // to the current supply voltage level
+constexpr uint8_t CMD_CALIBRATE_DRIVER_TIMING{0xD8};     // Starts the driver timing calibration
+constexpr uint8_t CMD_MEASURE_PHASE{0xD9};           // Measures the phase difference between the signal on RFO and RFI
+constexpr uint8_t CMD_CLEAR_RSSI{0xDA};              // Clears the RSSI bits and restarts the measurement
+constexpr uint8_t CMD_CLEAR_FIFO{0xDB};              // Clears FIFO
+constexpr uint8_t CMD_ENTER_TRANSPARENT_MODE{0xDC};  // Enters in Transparent mode
+constexpr uint8_t CMD_CALIBRATE_CAPACITIVE_SENSOR{0xDD};  // Calibrates capacitive sensor
+constexpr uint8_t CMD_MEASURE_CAPACITANCE{0xDE};          // Measures capacitance between CSO and CSI pin
+constexpr uint8_t CMD_MEASURE_POWER_SUPPLY{0xDF};         //
+constexpr uint8_t CMD_START_GENERAL_PURPOSE_TIMER{0xE0};  //
+constexpr uint8_t CMD_START_WAKEUP_TIMER{0xE1};           //
+constexpr uint8_t CMD_START_MASK_RECEIVE_TIMER{0xE2};     // Starts the mask-receive timer and squelch operation
+constexpr uint8_t CMD_Start_No_response_timer{0xE3};      //
+constexpr uint8_t CMD_START_PPON2_TIMER{0xE4};            //
+constexpr uint8_t CMD_STOP_NO_RESPONSE_TIMER{0xE5};       //
+constexpr uint8_t CMD_REGISTER_SPACEB_ACCESS{0xFB};       // Enables R/W access to register Space-B
+constexpr uint8_t CMD_TEST_ACCESS{0xFC};                  // Enable R/W access to Test register
+///@endcond
+}  // namespace command
+
+/*!
+  @namespace regval
+  @brief Register setting value
+ */
+namespace regval {
+///@cond
+// IO configuration register 2
+constexpr uint8_t sup3v{0x80};
+constexpr uint8_t io_drv_lvl{0x04};
+constexpr uint8_t miso_pd1{0x08};
+constexpr uint8_t miso_pd2{0x10};
+// Operation control register
+constexpr uint8_t en{0x80};
+constexpr uint8_t rx_en{0x40};
+constexpr uint8_t tx_en{0x08};
+// ISO14443A and NFC 106kb/s settings register
+constexpr uint8_t no_tx_par{0x80};
+constexpr uint8_t no_rx_par{0x40};
+constexpr uint8_t antcl{0x01};
+// Auxiliary definition register
+constexpr uint8_t no_crc_rx{0x80};
+// Main interrupt register
+constexpr uint8_t I_wl{0x40};   // IRQ due to FIFO water level
+constexpr uint8_t I_rxs{0x20};  // IRQ due to start of receive
+constexpr uint8_t I_rxe{0x10};  // IRQ due to end of receive
+constexpr uint8_t I_txe{0x08};  // IRQ due to end of transmission
+constexpr uint8_t I_col{0x04};  // IRQ due to bit collision
+// Timer and NFC interrupt register
+constexpr uint8_t I_nre{0x40};  // IRQ due to No-response timer expire
+constexpr uint8_t I_cac{0x04};  // IRQ due to detection of collision during RF collision avoidance
+///@endcond
+}  // namespace regval
+
+}  // namespace st25r3916
+
+}  // namespace unit
+}  // namespace m5
+#endif

@@ -1,0 +1,33 @@
+/*
+ * SPDX-FileCopyrightText: 2025 M5Stack Technology CO LTD
+ *
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+  @file M5UnitUnifiedNFC.hpp
+  @brief Main header of M5Unit-NFC
+
+  @mainpage M5Unit-NFC
+  Library for Unit-NFC using M5UnitUnified.
+  Include NFC-x related definitions.
+*/
+#ifndef M5_UNIT_UNIFIED_NFC_HPP
+#define M5_UNIT_UNIFIED_NFC_HPP
+
+#include "nfc/nfc.hpp"
+#include "unit/unit_ST25R3916.hpp"
+#include "nfc/layer/nfc_layer_a.hpp"
+
+/*!
+  @namespace m5
+  @brief Top level namespace of M5stack
+ */
+namespace m5 {
+/*!
+  @namespace unit
+  @brief Unit-related namespace
+ */
+namespace unit {
+}  // namespace unit
+}  // namespace m5
+#endif
