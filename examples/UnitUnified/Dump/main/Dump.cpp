@@ -20,7 +20,6 @@ auto& lcd = M5.Display;
 m5::unit::UnitUnified Units;
 m5::unit::CapST25R3916 cap;  // ST25R3916 in the HackerCap
 m5::unit::nfc::NFCLayerA nfc_a{cap};
-
 }  // namespace
 
 void setup()
@@ -47,7 +46,7 @@ void setup()
         SPI.begin(spi_sclk, spi_miso, spi_mosi /* SS is shared SD, CC1101, ST25R3916 */);
     }
 
-    SPISettings settings = {1000000, MSBFIRST, SPI_MODE1};
+    SPISettings settings = {10000000, MSBFIRST, SPI_MODE1};
     if (!Units.add(cap, SPI, settings) || !Units.begin()) {
         M5_LOGE("Failed to begin");
         lcd.fillScreen(TFT_RED);
@@ -55,6 +54,8 @@ void setup()
             m5::utility::delay(10000);
         }
     }
+    heap_caps_check_integrity_all(true);
+
     M5_LOGI("M5UnitUnified has been begun");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
@@ -66,6 +67,8 @@ void setup()
     lcd.setCursor(0, 0);
     lcd.printf("Please put the device and click G0");
     M5.Log.printf("Please put the device and click G0\n");
+
+    heap_caps_check_integrity_all(true);
 }
 
 void loop()
@@ -78,11 +81,15 @@ void loop()
         lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
         std::vector<UID> devices;
         if (nfc_a.detect(devices)) {
-            lcd.setCursor(0, lcd.fontHeight());
             // If multiple occurrences are detected, only the first one detected
-            auto& top = devices.front();
-            M5.Log.printf("==== Dump %s %s ====\n", top.uidAsString().c_str(), top.typeAsString().c_str());
-            nfc_a.dump(top);
+            auto& uid = devices.front();
+            if (nfc_a.activate(uid)) {
+                M5.Log.printf("==== Dump %s %s ====\n", uid.uidAsString().c_str(), uid.typeAsString().c_str());
+                nfc_a.dump(uid);
+                nfc_a.deactivate();
+            } else {
+                M5_LOGE("Failed to activate %s", uid.uidAsString().c_str());
+            }
         } else {
             M5.Log.printf("No devices\n");
         }

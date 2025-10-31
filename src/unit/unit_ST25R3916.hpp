@@ -358,7 +358,8 @@ public:
      */
     inline bool writeAuxiliaryDefinition(const uint8_t value)
     {
-        return write_register8(st25r3916::command::REG_AUXILIARY_DEFINITION, value);
+        //        return write_register8(st25r3916::command::REG_AUXILIARY_DEFINITION, value | 0x03);
+        return write_register8(st25r3916::command::REG_AUXILIARY_DEFINITION, value | 0x03);
     }
 
     /*!
@@ -745,7 +746,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool writeSquelchTimer(uint8_t& value)
+    inline bool writeSquelchTimer(uint8_t value)
     {
         return write_register8(st25r3916::command::REG_SQUELCH_TIMER, value);
     }
@@ -1660,14 +1661,19 @@ public:
 
     bool hltA();
 
-    bool dump(const m5::nfc::a::UID& uid, const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY);
+    inline bool mifareAuthenticateA(const m5::nfc::a::UID& uid, const uint8_t block,
+                                    const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY)
+    {
+        return mifare_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_A, uid, block, key);
+    }
+    inline bool mifareAuthenticateB(const m5::nfc::a::UID& uid, const uint8_t block,
+                                    const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY)
+    {
+        return mifare_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_B, uid, block, key);
+    }
 
-    bool mifareAuthenticateA(const m5::nfc::a::UID& uid, const uint8_t sblock,
-                             const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY);
-    bool mifare_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::UID& uid, const uint8_t block,
-                             const m5::nfc::a::mifare::Key& key);
-
-    bool dump_sector_structure(const m5::nfc::a::UID& uid, const m5::nfc::a::mifare::Key& key);
+    // For debug
+    void dumpRegister();
 
 protected:
     bool read_register8(const uint8_t reg, uint8_t& v);
@@ -1679,18 +1685,19 @@ protected:
     bool clear_bit_register8(const uint8_t reg, const uint8_t clear_bitss);
     bool clear_bit_register8(const uint16_t reg, const uint8_t clear_bitss);
 
-    // BEg
+    // BE
     bool read_register16(const uint8_t reg, uint16_t& v);
     bool read_register16(const uint16_t reg, uint16_t& v);
     bool write_register16(const uint8_t reg, const uint16_t v);
     bool write_register16(const uint16_t reg, const uint16_t v);
-
     bool read_register32(const uint8_t reg, uint32_t& v);
     bool read_register32(const uint16_t reg, uint32_t& v);
     bool write_register32(const uint8_t reg, const uint32_t v);
     bool write_register32(const uint16_t reg, const uint32_t v);
 
-    bool read_FIFO(std::vector<uint8_t>& out);
+    bool write_noresponse_timeout(const uint32_t ms);
+    bool write_mask_receiver_timer(const uint32_t us);
+    bool write_squelch_timer(const uint32_t us);
 
     uint32_t wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms = 100, const bool include_error = true);
     inline uint32_t wait_for_interrupt(const uint8_t main, const uint8_t timer, const uint8_t error,
@@ -1707,31 +1714,34 @@ protected:
     bool transceive_encrypt(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms = 0);
 
+    bool read_FIFO(std::vector<uint8_t>& out);
+
+    // NFC-A
+    bool req_wup_device(uint16_t& atqa, const bool req);
+    bool anti_collision(uint8_t rbuf[5], const uint8_t lv);
+    bool select_with_anticollision(bool& completed, m5::nfc::a::UID& uid, const uint8_t lv);
+    bool select(const m5::nfc::a::UID& uid);
     bool read_block(uint8_t* rx, uint16_t& rx_len, const uint8_t addr);
+    bool read_block_encrypted(uint8_t* rx, uint16_t& rx_len, const uint8_t addr);
+
     bool ntag_fast_read(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
     bool ntag_dump_all(const uint8_t maxPage);
     bool ntag_dump_page(const uint8_t page);
 
-    bool req_wup_device(uint16_t& atqa, const bool req);
-
-    bool anti_collision(uint8_t rbuf[5], const uint8_t lv);
-    bool select_with_anticollision(bool& completed, m5::nfc::a::UID& uid, const uint8_t lv);
-    bool select(const m5::nfc::a::UID& uid);
-
-    m5::nfc::a::Type identify_mifare_type(const m5::nfc::a::UID& uid);
+    m5::nfc::a::Type identify_nfca_type(const m5::nfc::a::UID& uid);
     bool get_version(uint8_t info[10]);
 
-    bool dump_sector(const uint8_t sector);
-
-    bool write_noresponse_timeout(const uint32_t ms);
+    bool mifare_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::UID& uid, const uint8_t block,
+                             const m5::nfc::a::mifare::Key& key, const bool encrypted = false);
 
     static void IRAM_ATTR on_irq(void* arg);
 
 private:
     config_t _cfg{};
-    volatile bool _interrupt_occurred{};
     uint32_t _irq_flags{};
     MifareCrypto1 _crypto1{};
+    bool _encrypted{};
+    volatile bool _interrupt_occurred{};
 };
 
 /*!

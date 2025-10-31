@@ -210,6 +210,22 @@ constexpr uint8_t CMD_TEST_ACCESS{0xFC};                  // Enable R/W access t
 ///@endcond
 }  // namespace command
 
+constexpr uint8_t VALID_IDENTIFY_TYPE{0x05};  // 00000101b (ST25R3916/7)
+constexpr uint16_t MAX_FIFO_DEPTH{512};       // Maximum FIFO depth
+constexpr uint16_t PREFIX_SPACE_B{(uint16_t)command::CMD_REGISTER_SPACEB_ACCESS << 8};
+
+// Operation modes
+constexpr uint8_t OP_TRAILER_MASK{0x3F};             // 00111111b
+constexpr uint8_t OP_WRITE_REGISTER{0x00};           // 00xxxxxxb
+constexpr uint8_t OP_READ_REGISTER{0x40};            // 01xxxxxxb
+constexpr uint8_t OP_LOAD_FIFO{0x80};                // 10000000b
+constexpr uint8_t OP_LOAD_PT_MEMORY_A_CONFIG{0xA0};  // 10100000b
+constexpr uint8_t OP_LOAD_PT_MEMORY_F_CONFIG{0xA8};  // 10101000b
+constexpr uint8_t OP_LOAD_PT_MEMORY_TSN_DATA{0xAC};  // 10101100b
+constexpr uint8_t OP_LOAD_PT_MEMORY{0xBF};           // 10111111b
+constexpr uint8_t OP_READ_FIFO{0x9F};                // 10011111b
+constexpr uint8_t OP_DIRECT_COMMAND{0xC0};           // 11xxxxxxb;
+
 /*!
   @namespace regval
   @brief Register setting value
@@ -240,6 +256,10 @@ constexpr uint8_t I_col{0x04};  // IRQ due to bit collision
 // Timer and NFC interrupt register
 constexpr uint8_t I_nre{0x40};  // IRQ due to No-response timer expire
 constexpr uint8_t I_cac{0x04};  // IRQ due to detection of collision during RF collision avoidance
+// Timer and EMV control register
+constexpr uint8_t mrt_step{0x08};  // Mask receive timer step size
+constexpr uint8_t nrt_step{0x01};  // No-response timer step size
+
 ///@endcond
 }  // namespace regval
 

@@ -45,26 +45,25 @@ constexpr const char* name_table[]  = {
 };
 
 // included system area
-constexpr uint16_t max_block_table[] = {
-    0,                                // Unknown
-    20,  64,  128, 256,               // Classic
-    16,  48,                          // Light
-    128, 256,                         // Plus
-    0,   0,   0,                      // DESFire (Not has blocks, File base system)
-    42,  19,  16,  40,  44, 134, 230  // NTAG
-};
+constexpr uint16_t max_block_table[] = {0,                                 // Unknown
+                                        20,  64,  128, 256,                // Classic
+                                        16,  48,                           // Light
+                                        128, 256,                          // Plus
+                                        0,   0,   0,                       // DESFire (Not has blocks, File base system)
+                                        42,  19,  16,  40,  44, 134, 230,  // NTAG
+                                        0,   0};
 
 // [min/max]
 constexpr uint8_t user_block_table[][2] = {
-    {0, 0},
+    {0, 0},  // Unknown
     // Classic
-    {1, 19},
-    {1, 63},
+    {0, 19},
+    {0, 63},
     {0, 127},
     {0, 255},
     // Light
-    {4, 15},
-    {4, 39},
+    {4, 15},  // Exclusive 0-3 and last 4 pages
+    {4, 39},  // Exclusive 0-3 and last 8 pages
     // Plus
     {0, 0},
     {0, 0},
@@ -73,23 +72,32 @@ constexpr uint8_t user_block_table[][2] = {
     {0, 0},
     {0, 0},
     // NTAG
-    {4, 39},   // 203
-    {4, 15},   // 210u
-    {4, 15},   // 210
-    {4, 35},   // 212
-    {4, 39},   // 213
-    {4, 129},  // 215
-    {4, 225},  // 216
+    {4, 39},   // 203 Exclusive 0-3 and last 4 pages
+    {4, 15},   // 210u Exclusive 0-3 and last 4 pages
+    {4, 15},   // 210 Exclusive 0-3 and last 1 page
+    {4, 35},   // 212 Exclusive 0-3 and last 4 pages
+    {4, 39},   // 213 Exclusive 0-3 and last 4 pages
+    {4, 129},  // 215 Exclusive 0-3 and last 4 pages
+    {4, 225},  // 216 Exclusive 0-3 and last 4 pages
+    //
+    {0, 0},
+    {0, 0},
 };
 
 constexpr uint8_t max_sector_table[] = {
-    0,               //
-    5,  16, 32, 40,  // Classic
-    0,  0,           // Light
-    32, 40,          // Plus
+    0,                        // Unknown
+    5,  16, 32, 40,           // Classic
+    0,  0,                    // Light
+    32, 40,                   // Plus
+    0,  0,  0,                // Desfire
+    0,  0,  0,  0,  0, 0, 0,  // NTAG
+    0,  0,
 };
 
 }  // namespace
+
+using namespace m5::nfc::a::mifare;
+using namespace m5::nfc::a::mifare::classic;
 
 namespace m5 {
 namespace nfc {
@@ -162,6 +170,18 @@ uint8_t get_user_block_size(const Type t)
     auto p      = user_block_table[idx < m5::stl::size(user_block_table) ? idx : 0];
     uint8_t sz  = p[1] - p[0];
     return sz ? (sz + 1) : 0;
+}
+
+bool is_user_block(const Type t, const uint8_t block)
+{
+    if (is_classic(t)) {
+        return (block != 0) &&                     // Not Manufacturer block
+               !is_sector_trailer_block(block) &&  // Not Sector trailer
+               block <= get_last_user_block(t);    // In range
+    } else if (supports_NFC(t)) {
+        return (block >= get_first_user_block(t)) && (block <= get_last_user_block(t));
+    }
+    return false;
 }
 
 std::string UID::uidAsString() const

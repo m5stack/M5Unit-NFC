@@ -56,6 +56,12 @@ inline bool is_classic(const Type t)
     return t >= Type::MIFARE_Classic && t <= Type::MIFARE_Classic_4K;
 }
 
+//! @brief Is type MIFARE?
+inline bool is_mifare(const Type t)
+{
+    return t >= Type::MIFARE_Classic && t <= Type::MIFARE_DESFire_8K;
+}
+
 //! @brief Is type NTAG?
 inline bool is_ntag(const Type t)
 {
@@ -63,7 +69,7 @@ inline bool is_ntag(const Type t)
 }
 
 //! @brief Does the specified type function as NFC?
-inline bool can_NFC(const Type t)
+inline bool supports_NFC(const Type t)
 {
     return t == Type::MIFARE_UltraLight || t == Type::MIFARE_UltraLightC ||  // Light/C
            is_ntag(t);
@@ -109,6 +115,8 @@ uint8_t get_first_user_block(const Type t);
 uint8_t get_last_user_block(const Type t);
 //! @brief Gets the number of the user blocks
 uint8_t get_user_block_size(const Type t);
+//! @brief  Is block user area?
+bool is_user_block(const Type t, const uint8_t block);
 
 //! @brief Calculate bcc8
 uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len);
@@ -132,12 +140,17 @@ struct UID {
     //! @brief Valid?
     inline bool valid() const
     {
-        return size && type != Type::Unknown && blocks;
+        return size && (type != Type::Unknown) && blocks;
     }
     //! @brief Is MIFARE classic?
     inline bool isClassic() const
     {
         return valid() && is_classic(type);
+    }
+    //! @brief Is MIFARE?
+    inline bool isMifare() const
+    {
+        return valid() && is_mifare(type);
     }
     //! @brief Is NTAG?
     inline bool isNTAG() const
@@ -145,10 +158,10 @@ struct UID {
         return valid() && is_ntag(type);
     }
 
-    //! @brief Can change NFC?
-    inline bool canNFC() const
+    //! @brief Supports NFC tag?
+    inline bool supportsNFC() const
     {
-        return valid() && can_NFC(type);
+        return valid() && supports_NFC(type);
     }
     //! @brief Can use FAST_READ command?
     inline bool canFastRead() const
@@ -173,6 +186,10 @@ struct UID {
     std::string uidAsString() const;
     //! @breif Gets the type string for debug
     std::string typeAsString() const;
+
+    
+
+
 };
 
 //! @brief Equal?
@@ -186,6 +203,7 @@ inline bool operator!=(const UID& a, const UID& b)
 {
     return !(a == b);
 }
+
 
 /*!
   @struct ATQA

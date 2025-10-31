@@ -47,7 +47,7 @@ void setup()
         SPI.begin(spi_sclk, spi_miso, spi_mosi /* SS is shared SD, CC1101, ST25R3916 */);
     }
 
-    SPISettings settings = {1000000, MSBFIRST, SPI_MODE1};
+    SPISettings settings = {10000000, MSBFIRST, SPI_MODE1};
     if (!Units.add(cap, SPI, settings) || !Units.begin()) {
         M5_LOGE("Failed to begin");
         lcd.fillScreen(TFT_RED);
@@ -65,8 +65,6 @@ void setup()
     lcd.setFont(&fonts::Font0);
     lcd.fillScreen(0);
     lcd.setCursor(0, 0);
-    lcd.printf("Please put the devices and click G0");
-    M5.Log.printf("Please put the devices and click G0\n");
 }
 
 void loop()
@@ -75,21 +73,19 @@ void loop()
     auto touch = M5.Touch.getDetail();
     Units.update();
 
-    if (M5.BtnA.wasClicked() || touch.wasClicked()) {
-        lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
-        std::vector<UID> devices;
-        if (nfc_a.detect(devices)) {
-            lcd.setCursor(0, lcd.fontHeight());
-            M5.Log.printf("Devices: %zu\n", devices.size());
-            lcd.printf("Devices: %zu\n", devices.size());
-            uint32_t idx{};
-            for (auto&& u : devices) {
-                M5.Log.printf("[%2u]:UID:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
-                lcd.printf("[%2u]:UID:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
-                ++idx;
-            }
-        } else {
-            M5.Log.printf("No devices\n");
+    std::vector<UID> devices;
+    if (nfc_a.detect(devices)) {
+        M5.Speaker.tone(3000, 10);
+        lcd.fillRect(0, 0, lcd.width(), lcd.height());
+        lcd.setCursor(0, 0);
+        M5.Log.printf("Devices: %zu\n", devices.size());
+        lcd.printf("Devices: %zu\n", devices.size());
+        uint32_t idx{};
+        for (auto&& u : devices) {
+            M5.Log.printf("[%2u]:UID:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
+            lcd.printf("[%2u]:UID:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
+            ++idx;
         }
+        nfc_a.deactivate();
     }
 }
