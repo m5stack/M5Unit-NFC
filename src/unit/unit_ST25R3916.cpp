@@ -152,38 +152,13 @@ inline bool is_irq32_collision(const uint32_t irq32)
     return irq32 & I_col32;
 }
 
-uint32_t suc_k(const uint32_t Nt, const uint32_t k)
-{
-    m5::utility::FibonacciLFSR_Right<16, 16, 14, 13, 11> tmp(Nt);
-    for (uint32_t i = 0; i < k; ++i) {
-        tmp.next32();
-    }
-    return tmp.next32();
-}
-
 void suc_23(const uint32_t Nt, uint32_t& suc2, uint32_t& suc3)
 {
-    m5::utility::FibonacciLFSR_Right<16, 16, 14, 13, 11> tmp(Nt);
+    m5::utility::FibonacciLFSR_Right<32, 16, 14, 13, 11> tmp(Nt);
     tmp.next32();
     tmp.next32();
     suc2 = tmp.next32();
     suc3 = tmp.next32();
-}
-
-uint32_t swap_endian_32(const uint32_t value)
-{
-    return ((value >> 24) & 0x000000FF) | ((value >> 8) & 0x0000FF00) | ((value << 8) & 0x00FF0000) |
-           ((value << 24) & 0xFF000000);
-}
-
-uint16_t swap_endian_16(const uint16_t value)
-{
-    return (value >> 8) | (value << 8);
-}
-
-uint8_t swap_bit_order(const uint8_t byte)
-{
-    return (byte * 0x0202020202ULL & 0x010884422010ULL) % 0x3ff;
 }
 
 uint64_t key_to64(const uint8_t k[6])
@@ -680,42 +655,17 @@ bool UnitST25R3916::read_block_encrypted(uint8_t* rx, uint16_t& rx_len, const ui
 {
     uint8_t cmd[4] = {m5::stl::to_underlying(Command::READ), addr};
     m5::utility::CRC16 crc16(0xC6C6, 0x1021, true, true, 0);
+    //    m5::utility::CRC16 crc16(0x6363, 0x1021, false, false, 0);
     auto crc = crc16.range(cmd, 2);
     cmd[2]   = crc & 0xFF;
     cmd[3]   = crc >> 8;
 
-#if 0
-    auto oddparity8 = [](const uint8_t x) -> uint8_t { return !__builtin_parity(x); };
-    uint8_t enc_tx[4]{};
-    uint8_t parity{};
-    for (uint8_t i = 0; i < 4; ++i) {
-        uint8_t ks = _crypto1.step8(0);
-        enc_tx[i]  = cmd[i] ^ ks;
-        parity |= ((_crypto1.filter() ^ oddparity8(cmd[i])) & 1) << i;
-    }
-#else
     uint8_t enc_tx[4]{};
     uint32_t parity = _crypto1.encrypt(enc_tx, cmd, sizeof(cmd));
-#endif
 
     uint8_t bitstream[5]{};
-#if 0
-    uint32_t bitpos      = 0;
-    auto put_bit         = [&](uint8_t b) {
-        uint32_t byte = bitpos >> 3;
-        uint8_t off   = bitpos & 7;
-        if (b) bitstream[byte] |= (1u << off);
-        bitpos++;
-    };
-
-    for (int i = 0; i < 4; ++i) {
-        uint8_t v = enc_tx[i];
-        for (int k = 0; k < 8; ++k) put_bit((v >> k) & 1u);  // LSB→MSB
-        put_bit((parity >> i) & 1u);
-    }
-#else
     append_parity(bitstream, sizeof(bitstream), enc_tx, sizeof(enc_tx), parity);
-#endif
+
     // Send
     // M5_LIB_LOGE("Send: parity:%04X cnt:%u", parity, _crypto1._count);
     //    m5::utility::log::dump(cmd, 4, false);
@@ -1032,7 +982,6 @@ bool UnitST25R3916::write_register32(const uint16_t reg, const uint32_t v)
 
 uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms, bool include_error)
 {
-#if 1
     auto timeout_at           = m5::utility::millis() + timeout_ms;
     const uint32_t error_bits = include_error ? 0x0000FF00 : 0;
     do {
@@ -1043,41 +992,14 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t ti
                 _irq_flags |= v;
             }
         }
-#if 0
-        if (_irq_flags & (irq | error_bits)) {
-            uint32_t ret = _irq_flags & (irq | error_bits);
-            _irq_flags   = 0;
-            return ret;
-        }
-#else
         if (_irq_flags & irq) {
             uint32_t ret = _irq_flags & irq;
             _irq_flags   = 0;
             return ret;
         }
-#endif
         std::this_thread::yield();
     } while (m5::utility::millis() <= timeout_at);
     return I_nre32;  // Timeout
-#else
-    auto timeout_at           = m5::utility::millis() + timeout_ms;
-    const uint32_t error_bits = include_error ? 0x0000FF00 : 0;
-    do {
-        if (_interrupt_occurred) {
-            uint32_t v{};
-            if (readInterrupts(v)) {
-                _irq_flags |= v;
-            }
-            _interrupt_occurred = false;
-        }
-        if (_irq_flags & (irq | error_bits)) {
-            auto ret   = _irq_flags & (irq | error_bits);
-            _irq_flags = 0;
-            return ret;
-        }
-    } while (m5::utility::millis() <= timeout_at);
-    return I_nre32;  // Timeout
-#endif
 }
 
 bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size)
@@ -1264,12 +1186,8 @@ bool UnitST25R3916::mifare_authenticate(const Command cmd, const UID& uid, const
         return false;
     }
 
-    /////////////////////
-    // 4K のデータで prox crypto1 で出力してみる
-
     // 3-pass mutual authentication
 
-    // Encrypted?
     const uint64_t key48 = key_to64(mkey.data());
 
     // Send AUTH command (Plane) and receive token RB (Nt)
@@ -1283,8 +1201,8 @@ bool UnitST25R3916::mifare_authenticate(const Command cmd, const UID& uid, const
     }
     m5::utility::delayMicroseconds(100);  // Wait for AUTH <-> Sebd AB (At least 86.4 us)
 
-    // M5_LIB_LOGE("RECV RB:");
-    // m5::utility::log::dump(RB, rlen, false);
+    //M5_LIB_LOGE("RECV RB:");
+    //m5::utility::log::dump(RB, rlen, false);
 
     // Send encrypt token AB (Nr, Ar)
     uint8_t tail4[4]{};
@@ -1295,35 +1213,22 @@ bool UnitST25R3916::mifare_authenticate(const Command cmd, const UID& uid, const
     // const uint32_t Ar   = suc_k(swap_endian_32(Nt), 2);  // suc2
     // const uint32_t suc3 = suc_k(swap_endian_32(Nt), 3);  // suc3
     uint32_t Ar{}, suc3{};
-    suc_23(swap_endian_32(Nt), Ar, suc3);
+    //    suc_23(swap_endian_32(Nt), Ar, suc3);
+    suc_23(m5::stl::byteswap(Nt), Ar, suc3);
 
     uint8_t AB[8 + 1 /*parity*/]{};
     M5_LIB_LOGD("Auth:%u  mkey:%llX uid:%X Nt:%X Nr:%X Ar:%X", block, key48, u32, Nt, Nr, Ar);
 
     _crypto1.init(key48);
     _crypto1.inject(u32, Nt);
+    //    uint8_t parity = _crypto1.encrypt(AB, Nr, Ar, Nt);
     uint8_t parity = _crypto1.encrypt(AB, Nr, Ar);
     AB[8]          = parity;
 
     // M5_LIB_LOGE("SEND AB:");
 
     uint8_t bitstream[9 /* AB 8bytes + encrypt parity 1(8bits)] */]{0};
-#if 0
-    uint32_t bitpos = 0;
-    auto put_bit    = [&](uint8_t b) {
-        uint32_t byte = bitpos >> 3;
-        uint8_t off   = bitpos & 7;
-        if (b) bitstream[byte] |= (1u << off);
-        bitpos++;
-    };
-    for (int i = 0; i < 8; ++i) {
-        uint8_t v = AB[i];
-        for (int k = 0; k < 8; ++k) put_bit((v >> k) & 1u);  // LSB→MSB
-        put_bit((parity >> i) & 1u);
-    }
-#else
     append_parity(bitstream, sizeof(bitstream), AB, 8, parity);
-#endif
 
     // m5::utility::log::dump(AB, sizeof(AB), false);
     // m5::utility::log::dump(bitstream, sizeof(bitstream), false);
@@ -1433,79 +1338,11 @@ bool UnitST25R3916::mifare_authenticate(const Command cmd, const UID& uid, const
         default:
             break;
     }
-        //    if (++func > 2) func = 0;
+    //    if (++func > 2) func = 0;
 
-#if 0
-        //    auto irq = wait_for_interrupt(I_rxs32 | I_rxe32 | I_nre32, TIMEOUT_AUTH2);
-
-#if 0
-    auto irq = wait_for_interrupt(I_txe32, TIMEOUT_AUTH2);
-    M5_LIB_LOGE(">>>> IRQ:%08X", irq);
-    if (!is_irq32_txe(irq)) {
-        M5_LIB_LOGE("Failed to send %08X", irq);
-        return false;
-    }
-    irq = wait_for_interrupt(I_rxs32 | I_rxe32, TIMEOUT_AUTH2);
-    uint32_t v{};
-    readInterrupts(v);
-    M5_LIB_LOGE(">>>> IRQ:%08X/%08X", irq, v);
-
-#else
-    //    uint32_t mask{};
-    //    readMaskInterrupts(mask);
-    //    M5_LIB_LOGE(">>>> mask:%08X", mask);
-
-    uint32_t irq{};
-    for (;;) {
-        if (_interrupt_occurred) {
-            _interrupt_occurred = false;
-            uint32_t v{};
-            readInterrupts(v);
-            irq |= v;
-            if (irq) {
-                break;
-            }
-        }
-    }
-//    M5_LIB_LOGE("==>> IRQ:%08X", irq);
-#endif
-
-    if (!is_irq32_rxe(irq) && is_irq32_rxs(irq)) {  // The I_rxe bit may not be set
-        auto timeout_at = m5::utility::millis() + TIMEOUT_AUTH2 * 10;
-        uint16_t bytes{};
-        uint8_t bits{};
-        //      M5_LIB_LOGE(">=== %lu, %lu", m5::utility::millis(), timeout_at);
-        irq = 0;
-        do {
-            if (_interrupt_occurred) {
-                _interrupt_occurred = false;
-                uint32_t v{};
-                readInterrupts(v);
-                irq |= v;
-                //      M5_LIB_LOGE("    --> IRQ:%08X", v);
-                irq = 0;
-            }
-            if (v & I_rxe32) {
-                break;
-            }
-            readFIFOSize(bytes, bits);
-            //M5_LIB_LOGE("  >%u", bytes);
-            if (bytes >= 4) {
-                break;
-            }
-            std::this_thread::yield();
-        } while (m5::utility::millis() <= timeout_at);
-    }
-//    M5_LIB_LOGE("<=== %lu", m5::utility::millis());
-
-/////////////////
-#else
     if (!wait_for_FIFO(TIMEOUT_AUTH2, 4)) {
         M5_LIB_LOGE("Timeout");
     }
-#endif
-
-    //    writeSettingsISO14443A(0);
 
     // Receive token BA (At)
     uint8_t BA[4 + 2]{};

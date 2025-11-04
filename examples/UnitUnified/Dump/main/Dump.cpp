@@ -67,8 +67,6 @@ void setup()
     lcd.setCursor(0, 0);
     lcd.printf("Please put the device and click G0");
     M5.Log.printf("Please put the device and click G0\n");
-
-    heap_caps_check_integrity_all(true);
 }
 
 void loop()

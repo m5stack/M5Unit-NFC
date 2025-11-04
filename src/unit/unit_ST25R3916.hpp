@@ -1739,7 +1739,7 @@ protected:
 private:
     config_t _cfg{};
     uint32_t _irq_flags{};
-    MifareCrypto1 _crypto1{};
+    m5::nfc::a::mifare::MifareCrypto1 _crypto1{};
     bool _encrypted{};
     volatile bool _interrupt_occurred{};
 };
