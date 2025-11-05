@@ -86,10 +86,9 @@ bool NFCLayerA::deactivate()
     return _impl->deactivate();
 }
 
-bool NFCLayerA::mifare_authenticate(const m5::nfc::a::Command cmd, const UID& uid, const uint8_t block, const Key& key,
-                                    const bool encrypted)
+bool NFCLayerA::mifare_authenticate(const m5::nfc::a::Command cmd, const UID& uid, const uint8_t block, const Key& key)
 {
-    return _impl->mifare_authenticate(cmd, uid, block, key, encrypted);
+    return _impl->mifare_authenticate(cmd, uid, block, key);
 }
 
 bool NFCLayerA::readBlock(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)
@@ -142,7 +141,7 @@ bool NFCLayerA::dump_sector_structure(const UID& uid, const Key& key)
     bool res{};
     for (int_fast8_t sector = 0; sector < sectors; ++sector) {
         auto sblock = get_sector_trailer_block_from_sector(sector);
-        if (mifareAuthenticateA(uid, sblock, key, true)) {
+        if (mifareAuthenticateA(uid, sblock, key)) {
             if (!dump_sector(sector)) {
                 M5_LIB_LOGE(">>>> Failed to dump:%u", sector);
                 return false;
@@ -151,14 +150,6 @@ bool NFCLayerA::dump_sector_structure(const UID& uid, const Key& key)
             M5_LIB_LOGE(">>>>Failed to AUTH %u", sblock);
             return false;
         }
-        // > Workaround for ST25R3916
-        // TODO : remove it
-        //        M5_LIB_LOGE("---------------- deactive");
-        deactivate();
-        //        M5_LIB_LOGE("---------------- Reactive");
-        activate(uid);
-        //        M5_LIB_LOGE("---------------- ");
-        // <
     }
     return res;
 }

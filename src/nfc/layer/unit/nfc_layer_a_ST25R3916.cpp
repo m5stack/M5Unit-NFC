@@ -30,8 +30,8 @@ struct AdapterST25R3916 final : NFCLayerA::Adapter {
     virtual bool detect(std::vector<UID>& devs, const uint32_t timeout_ms) override;
     virtual bool activate(const UID& uid) override;
     virtual bool deactivate() override;
-    virtual bool mifare_authenticate(const m5::nfc::a::Command cmd, const UID& uid, const uint8_t block, const Key& key,
-                                     const bool encrypted) override;
+    virtual bool mifare_authenticate(const m5::nfc::a::Command cmd, const UID& uid, const uint8_t block,
+                                     const Key& key) override;
     virtual bool readBlock(uint8_t* rx, uint16_t& rx_len, const uint16_t addr) override;
     virtual bool writeBlock(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) override;
 
@@ -105,9 +105,8 @@ bool AdapterST25R3916::deactivate()
 }
 
 bool AdapterST25R3916::mifare_authenticate(const m5::nfc::a::Command cmd, const UID& uid, const uint8_t block,
-                                           const Key& key, const bool encrypted)
+                                           const Key& key)
 {
-    //    return _u.mifare_authenticate(cmd, uid, block, key, encrypted);
     return _u.mifare_authenticate(cmd, uid, block, key);
 }
 

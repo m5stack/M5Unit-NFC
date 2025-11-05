@@ -81,10 +81,9 @@ public:
       @param encrypted Is it already in an encrypted state?
     */
     inline bool mifareAuthenticateA(const m5::nfc::a::UID& uid, const uint8_t block,
-                                    const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY,
-                                    const bool encrypted               = false)
+                                    const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY)
     {
-        return mifare_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_A, uid, block, key, encrypted);
+        return mifare_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_A, uid, block, key);
     }
     /*!
       @brief Authentication by KeyB
@@ -94,10 +93,9 @@ public:
       @param encrypted Is it already in an encrypted state?
     */
     inline bool mifareAuthenticateB(const m5::nfc::a::UID& uid, const uint8_t block,
-                                    const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY,
-                                    const bool encrypted               = false)
+                                    const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY)
     {
-        return mifare_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_B, uid, block, key, encrypted);
+        return mifare_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_B, uid, block, key);
     }
     /*!
       @brief Read the 1 block
@@ -139,7 +137,7 @@ public:
 
 protected:
     bool mifare_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::UID& uid, const uint8_t block,
-                             const m5::nfc::a::mifare::Key& key, const bool encrypted);
+                             const m5::nfc::a::mifare::Key& key);
     bool dump_sector_structure(const m5::nfc::a::UID& uid, const m5::nfc::a::mifare::Key& key);
     bool dump_sector(const uint8_t sector);
     bool dump_page_structure(const uint8_t maxPage);
@@ -161,7 +159,7 @@ struct NFCLayerA::Adapter {
     virtual bool deactivate()                                          = 0;
 
     virtual bool mifare_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::UID& uid, const uint8_t block,
-                                     const m5::nfc::a::mifare::Key& key, const bool encrypted) = 0;
+                                     const m5::nfc::a::mifare::Key& key) = 0;
 
     virtual bool readBlock(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)             = 0;
     virtual bool writeBlock(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) = 0;

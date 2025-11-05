@@ -72,12 +72,6 @@ public:
 
     ///@name Interrupt
     ///@{
-    //  "interrupts" is defined as a macro in Arduino.h...
-    //! @brief Get interrupts flag
-    inline uint32_t irq_flags() const
-    {
-        return _irq_flags;
-    }
     /*!
       @brief Clear interrupts flag
       @return True if successful
@@ -1708,11 +1702,10 @@ protected:
     }
     bool wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size = 0);
 
-    bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                    const uint32_t timeout_ms = 0);
-
+    bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
+    bool send_encrypt(const uint8_t* tx, const uint16_t tx_len);
     bool transceive_encrypt(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                            const uint32_t timeout_ms = 0);
+                            const uint32_t timeout_ms, const bool include_crc, const bool decrypt);
 
     bool read_FIFO(std::vector<uint8_t>& out);
 
@@ -1738,7 +1731,6 @@ protected:
 
 private:
     config_t _cfg{};
-    uint32_t _irq_flags{};
     m5::nfc::a::mifare::MifareCrypto1 _crypto1{};
     bool _encrypted{};
     volatile bool _interrupt_occurred{};

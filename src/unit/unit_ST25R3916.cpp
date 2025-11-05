@@ -40,8 +40,8 @@ constexpr uint32_t TIMEOUT_ANTICOLL{8};
 constexpr uint32_t TIMEOUT_HALT{2};
 constexpr uint32_t TIMEOUT_GET_VERSION{5};
 constexpr uint32_t TIMEOUT_3DES{10};
-constexpr uint32_t TIMEOUT_AUTH1{1};
-constexpr uint32_t TIMEOUT_AUTH2{10};
+constexpr uint32_t TIMEOUT_AUTH1{2};
+constexpr uint32_t TIMEOUT_AUTH2{100};
 constexpr uint32_t TIMEOUT_READ{4};
 constexpr uint32_t TIMEOUT_WRITE1{5};
 constexpr uint32_t TIMEOUT_WRITE2{10};
@@ -95,6 +95,7 @@ float regulated_voltages(const uint8_t regulator_display_reg_value, const bool v
     return (rv < 5) ? std::numeric_limits<float>::quiet_NaN() : 2.4f + (0.1f * (rv - 5));
 }
 
+// For noresoponse timer
 uint16_t calculate_nrt(const uint32_t ms, const bool nrt_step)
 {
     auto step_sec      = (nrt_step ? 4096 : 64) / 13560000.f;
@@ -107,7 +108,7 @@ uint16_t calculate_nrt(const uint32_t ms, const bool nrt_step)
     return nrt;
 }
 
-//
+// For mask receiver timer and squelch timer (MRT, SRT)
 uint8_t calculate_mrt(const uint32_t us, const bool mrt_step)
 {
     constexpr float fc  = 13.56e6f;  // 13.56 MHz
@@ -320,6 +321,18 @@ bool UnitST25R3916::begin()
     writeDirectCommand(CMD_NFC_INITIAL_FIELD_ON);
     m5::utility::delay(5);
 
+#if 0
+    // MRT/SQT
+    if (!write_mask_receiver_timer(0) || !write_squelch_timer(0)) {
+        M5_LIB_LOGE("Failed to MRT/SQT");
+        return false;
+    }
+    uint8_t mrt{}, sqt{};
+    readMaskReceiveTimer(mrt);
+    readSquelchTimer(sqt);
+    M5_LIB_LOGE("====== MRT:%02X SQT:%02X", mrt, sqt);
+#endif
+
 //
 #if 0
     uint8_t a_table[] = {
@@ -388,6 +401,7 @@ bool UnitST25R3916::begin()
 
 void UnitST25R3916::update(const bool /*force*/)
 {
+    /*
     if (_interrupt_occurred) {
         _interrupt_occurred = false;
         uint32_t v{};
@@ -395,14 +409,13 @@ void UnitST25R3916::update(const bool /*force*/)
             _irq_flags |= v;
         }
     }
+    */
 }
 
 bool UnitST25R3916::req_wup_device(uint16_t& atqa, const bool req)
 {
     _encrypted = false;
     atqa       = 0;
-    //    constexpr uint8_t mask = ~(I_rxe | I_col);
-    constexpr uint32_t wait{I_rxs32 | I_rxe32 | I_col32};
 
     // REQA or WUPA
     if (!write_noresponse_timeout(TIMEOUT_REQ_WUP) ||  //
@@ -413,11 +426,11 @@ bool UnitST25R3916::req_wup_device(uint16_t& atqa, const bool req)
         M5_LIB_LOGE("Failed to %s", req ? "REQA" : "WUPA");
         return false;
     }
-    auto irq = wait_for_interrupt(wait, TIMEOUT_REQ_WUP);
-    if (!(irq & wait)) {
-        return false;
-    }
-    if (wait_for_FIFO(TIMEOUT_REQ_WUP, 2)) {
+
+    auto irq = wait_for_interrupt(I_rxe32 | I_col32, TIMEOUT_REQ_WUP);
+    // M5_LIB_LOGE("IRQ:%08X", irq);
+
+    if (is_irq32_rxe(irq)) {
         // ATQA
         uint8_t rbuf[2]{};
         uint16_t actual{};
@@ -508,6 +521,7 @@ bool UnitST25R3916::anti_collision(uint8_t rbuf[5], const uint8_t lv)
 
 bool UnitST25R3916::select(const UID& uid)
 {
+    _encrypted = false;
     if (!(uid.size == 4 || uid.size == 7 || uid.size == 10)) {
         return false;
     }
@@ -551,7 +565,8 @@ bool UnitST25R3916::select(const UID& uid)
 
 bool UnitST25R3916::select_with_anticollision(bool& completed, UID& uid, const uint8_t lv)
 {
-    completed = false;
+    completed  = false;
+    _encrypted = false;
 
     // Resolve collision
     // M5_LIB_LOGE(">>> ANTICOLL");
@@ -569,7 +584,7 @@ bool UnitST25R3916::select_with_anticollision(bool& completed, UID& uid, const u
 
     // Select
     uint16_t rx_len{3};
-    if (!writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||
+    if (  //! writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||
         !transceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
         M5_LIB_LOGE("Failed to select");
         return false;
@@ -590,7 +605,10 @@ bool UnitST25R3916::select_with_anticollision(bool& completed, UID& uid, const u
 
 bool UnitST25R3916::hltA()
 {
-    const uint8_t hlta[2] = {m5::stl::to_underlying(Command::HLTA), 0x00};
+    const uint8_t hlt_frame[2] = {m5::stl::to_underlying(Command::HLTA), 0x00};
+
+#if 0
+
     if (!write_noresponse_timeout(TIMEOUT_HALT) || !writeSettingsISO14443A(0x00 /*standard*/) ||
         !writeAuxiliaryDefinition(0) ||
         //! writeMaskMainInterrupt(~I_txe) ||
@@ -598,6 +616,21 @@ bool UnitST25R3916::hltA()
         !writeNumberOfTransmittedBytes(sizeof(hlta), 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
         return false;
     }
+#else
+    if (_encrypted) {
+        if (!write_noresponse_timeout(TIMEOUT_HALT) || !send_encrypt(hlt_frame, sizeof(hlt_frame))) {
+            return false;
+        }
+    } else {
+        if (!write_noresponse_timeout(TIMEOUT_HALT) ||                                                           //
+            !writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||                        //
+            !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
+            !writeFIFO(hlt_frame, sizeof(hlt_frame)) || !writeNumberOfTransmittedBytes(sizeof(hlt_frame), 0) ||  //
+            !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
+            return false;
+        }
+    }
+#endif
     _encrypted = false;
     // No response is coming back, so need to confirm if it was sent
     auto irq = wait_for_interrupt(I_txe32, TIMEOUT_HALT);
@@ -610,11 +643,11 @@ bool UnitST25R3916::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx,
     const auto rx_len_org = rx_len;
     rx_len                = 0;
     if (!rx || !rx_len_org || !tx || !tx_len) {
-        M5_LIB_LOGE("Argument error %p/%u %p:%u", rx, rx_len_org, tx, tx_len);
         return false;
     }
 
-    if ((timeout_ms ? !write_noresponse_timeout(timeout_ms) : false) ||
+    if ((timeout_ms ? !write_noresponse_timeout(timeout_ms) : false) ||                //
+        !writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||  //
         //        !writeMaskMainInterrupt(~I_rxe) || !writeMaskTimerAndNFCInterrupt(~I_nre) ||//
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||
         !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
@@ -639,23 +672,145 @@ bool UnitST25R3916::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx,
     return false;
 }
 
-bool UnitST25R3916::transceive_encrypt(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                       const uint32_t timeout_ms)
+bool UnitST25R3916::send_encrypt(const uint8_t* tx, const uint16_t tx_len)
 {
-    if (!rx || !rx_len || !tx || !tx_len) {
+    if (!tx || !tx_len || tx_len > 32) {
         return false;
     }
 
-    uint8_t buf[tx_len + ((tx_len + 7) >> 3)]{};
+    // Send
+    uint8_t tmp_tx[tx_len + 2 /*CRC*/]{};
+    memcpy(tmp_tx, tx, tx_len);
 
-    return false;
+    m5::utility::CRC16 crc16(0xC6C6, 0x1021, true, true, 0);
+    auto crc           = crc16.range(tx, tx_len);
+    tmp_tx[tx_len]     = crc & 0xFF;
+    tmp_tx[tx_len + 1] = crc >> 8;
+
+    uint8_t enc_tx[tx_len + 2]{};
+    uint32_t parity = _crypto1.encrypt(enc_tx, tmp_tx, sizeof(tmp_tx));
+
+    uint8_t bitstream[tx_len + 2 + ((tx_len + 7) >> 3)]{};
+    append_parity(bitstream, sizeof(bitstream), enc_tx, sizeof(enc_tx), parity);
+
+    uint8_t sbytes = tx_len + 2;
+    uint8_t sbits  = ((tx_len + 2) << 3) >> 3;
+
+    /*
+    M5_LIB_LOGE(">>>>> send:%u/%u", sbytes, sbits);
+    m5::utility::log::dump(tx, tx_len, false);
+    m5::utility::log::dump(tmp_tx, sizeof(tmp_tx), false);
+    m5::utility::log::dump(enc_tx, sizeof(enc_tx), false);
+    m5::utility::log::dump(bitstream, sizeof(bitstream), false);
+    */
+
+    if (!writeSettingsISO14443A(no_tx_par) ||  //! writeAuxiliaryDefinition(no_crc_rx) ||                 //
+        !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                  //
+        !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sbytes, sbits) ||  //
+        !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
+        M5_LIB_LOGE("Failed to send");
+        return false;
+    }
+    return true;
+}
+
+bool UnitST25R3916::transceive_encrypt(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                                       const uint32_t timeout_ms, const bool include_crc, const bool decrypt)
+{
+    if (!rx || !rx_len || !tx || !tx_len || tx_len > 32) {
+        return false;
+    }
+
+    // Send
+#if 0
+    uint8_t tmp_tx[tx_len + 2 /*CRC*/]{};
+    memcpy(tmp_tx, tx, tx_len);
+
+    m5::utility::CRC16 crc16(0xC6C6, 0x1021, true, true, 0);
+    auto crc           = crc16.range(tx, tx_len);
+    tmp_tx[tx_len]     = crc & 0xFF;
+    tmp_tx[tx_len + 1] = crc >> 8;
+
+    uint8_t enc_tx[tx_len + 2]{};
+    uint32_t parity = _crypto1.encrypt(enc_tx, tmp_tx, sizeof(tmp_tx));
+
+    uint8_t bitstream[tx_len + 2 + ((tx_len + 7) >> 3)]{};
+    append_parity(bitstream, sizeof(bitstream), enc_tx, sizeof(enc_tx), parity);
+
+    uint8_t sbytes = tx_len + 2;
+    uint8_t sbits  = ((tx_len + 2) << 3) >> 3;
+
+    /*
+    M5_LIB_LOGE(">>>>> send:%u/%u", sbytes, sbits);
+    m5::utility::log::dump(tx, tx_len, false);
+    m5::utility::log::dump(tmp_tx, sizeof(tmp_tx), false);
+    m5::utility::log::dump(enc_tx, sizeof(enc_tx), false);
+    m5::utility::log::dump(bitstream, sizeof(bitstream), false);
+    */
+
+    if (!write_noresponse_timeout(timeout_ms) ||                                                         //
+        !writeSettingsISO14443A(no_tx_par) || !writeAuxiliaryDefinition(include_crc ? no_crc_rx : 0) ||  //
+        !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                     //
+        !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sbytes, sbits) ||     //
+        !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
+        M5_LIB_LOGE("Failed to send");
+        return false;
+    }
+#else
+    if (!writeAuxiliaryDefinition(include_crc ? no_crc_rx : 0) || !send_encrypt(tx, tx_len)) {
+        M5_LIB_LOGE("SNED ERROR");
+        return false;
+    }
+
+#endif
+
+    // Read
+    const uint32_t rlen = rx_len + (include_crc ? 2 : 0 /* CRC */);
+
+    if (!wait_for_FIFO(timeout_ms, rlen)) {
+        M5_LIB_LOGE("Timeout");
+        return false;
+    }
+
+    uint8_t rbuf[rlen]{};
+    uint16_t actual{};
+    if (!readFIFO(actual, rbuf, sizeof(rbuf)) || actual != rlen) {
+        M5_LIB_LOGE("Failed to readFIFO %u", actual);
+        return false;
+    }
+
+    // M5_LIB_LOGE("read: %u/%u", actual, rlen);
+
+    // Decryption
+    if (decrypt) {
+        for (uint_fast8_t i = 0; i < rlen; ++i) {
+            rbuf[i] ^= _crypto1.step8(0);
+        }
+    }
+
+    // m5::utility::log::dump(dec_rx, actual, false);
+
+    if (include_crc) {
+        m5::utility::CRC16 crc16(0xC6C6, 0x1021, true, true, 0);
+        uint16_t crc = crc16.range(rbuf, rx_len);
+        if ((crc & 0xFF) != rbuf[rlen - 2] || ((crc >> 8) != rbuf[rlen - 1])) {
+            M5_LIB_LOGE("CRC ERROR: C:%04x R:%02x%02x", crc, rbuf[rlen - 2], rbuf[rlen - 1]);
+            return false;
+        }
+    }
+    actual = std::min<uint16_t>(actual - (include_crc ? 2 : 0), rx_len);
+    memcpy(rx, rbuf, actual);
+
+    // M5_LIB_LOGE("copy: %u/%u", actual, rx_len);
+
+    return true;
 }
 
 bool UnitST25R3916::read_block_encrypted(uint8_t* rx, uint16_t& rx_len, const uint8_t addr)
 {
+#if 0
     uint8_t cmd[4] = {m5::stl::to_underlying(Command::READ), addr};
     m5::utility::CRC16 crc16(0xC6C6, 0x1021, true, true, 0);
-    //    m5::utility::CRC16 crc16(0x6363, 0x1021, false, false, 0);
     auto crc = crc16.range(cmd, 2);
     cmd[2]   = crc & 0xFF;
     cmd[3]   = crc >> 8;
@@ -667,15 +822,10 @@ bool UnitST25R3916::read_block_encrypted(uint8_t* rx, uint16_t& rx_len, const ui
     append_parity(bitstream, sizeof(bitstream), enc_tx, sizeof(enc_tx), parity);
 
     // Send
-    // M5_LIB_LOGE("Send: parity:%04X cnt:%u", parity, _crypto1._count);
-    //    m5::utility::log::dump(cmd, 4, false);
-    //    m5::utility::log::dump(enc_tx, 4, false);
-    //    m5::utility::log::dump(bitstream, 5, false);
-
-    if (!write_noresponse_timeout(TIMEOUT_READ) ||  //
-        !writeSettingsISO14443A(no_tx_par /*| no_rx_par*/) || !writeAuxiliaryDefinition(no_crc_rx /*| 0x04*/) ||
-        !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||  //
-        !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(4, 4) ||
+    if (!write_noresponse_timeout(TIMEOUT_READ) ||                                           //
+        !writeSettingsISO14443A(no_tx_par) || !writeAuxiliaryDefinition(no_crc_rx) ||        //
+        !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                         //
+        !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(4, 4) ||  //
         !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
         M5_LIB_LOGE("Failed to send");
         return false;
@@ -696,29 +846,32 @@ bool UnitST25R3916::read_block_encrypted(uint8_t* rx, uint16_t& rx_len, const ui
     //    m5::utility::log::dump(rbuf, actual, false);
 
     // Decryption
-    uint8_t rx_dec[18]{};
+    uint8_t rbuf[18]{};
     for (uint_fast8_t i = 0; i < 18; ++i) {
         uint8_t ks = _crypto1.step8(0);
-        rx_dec[i]  = rbuf[i] ^ ks;
+        rbuf[i]  = rbuf[i] ^ ks;
     }
 
-    //    m5::utility::log::dump(rx_dec, actual, false);
+    //    m5::utility::log::dump(rbuf, actual, false);
     crc16.clear();
-    crc = crc16.range(rx_dec, 16);
-    if ((crc & 0xFF) != rx_dec[16] || ((crc >> 8) != rx_dec[17])) {
-        M5_LIB_LOGE("CRC ERROR: C:%04x R:%02x%02x", crc, rx_dec[17], rx_dec[16]);
+    crc = crc16.range(rbuf, 16);
+    if ((crc & 0xFF) != rbuf[16] || ((crc >> 8) != rbuf[17])) {
+        M5_LIB_LOGE("CRC ERROR: C:%04x R:%02x%02x", crc, rbuf[17], rbuf[16]);
         return false;
     }
     actual = std::min<uint16_t>(16u, rx_len);
-    memcpy(rx, rx_dec, actual);
-
+    memcpy(rx, rbuf, actual);
     return true;
+#else
+    uint8_t cmd[2] = {m5::stl::to_underlying(Command::READ), addr};
+    return transceive_encrypt(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ, true, true);
+#endif
 }
 
 bool UnitST25R3916::read_block(uint8_t* rx, uint16_t& rx_len, const uint8_t addr)
 {
     uint8_t cmd[2] = {m5::stl::to_underlying(Command::READ), addr};
-    if (!writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
+    if (  //! writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
         !transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
         M5_LIB_LOGE("Failed to transcive");
         return false;
@@ -729,8 +882,8 @@ bool UnitST25R3916::read_block(uint8_t* rx, uint16_t& rx_len, const uint8_t addr
 bool UnitST25R3916::ntag_fast_read(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
 {
     uint8_t cmd[3] = {m5::stl::to_underlying(Command::FAST_READ), spage, epage};
-    if (!writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
-        !transceive(rx, rx_len, cmd, sizeof(cmd))) {
+    if (  //! writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
+        !transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
         M5_LIB_LOGE("Failed to transcive");
         return false;
     }
@@ -760,7 +913,6 @@ bool UnitST25R3916::readInterrupts(uint32_t& value)
 
 bool UnitST25R3916::clearInterrupts()
 {
-    _irq_flags = 0;
     uint32_t discard{};
     return read_register32(st25r3916::command::REG_MAIN_INTERRUPT, discard);
 }
@@ -982,29 +1134,27 @@ bool UnitST25R3916::write_register32(const uint16_t reg, const uint32_t v)
 
 uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms, bool include_error)
 {
-    auto timeout_at           = m5::utility::millis() + timeout_ms;
-    const uint32_t error_bits = include_error ? 0x0000FF00 : 0;
+    auto timeout_at = m5::utility::millis() + timeout_ms;
+    uint32_t flags{};
     do {
         if (_interrupt_occurred) {
             _interrupt_occurred = false;
             uint32_t v{};
             if (readInterrupts(v)) {
-                _irq_flags |= v;
+                flags |= v;
             }
         }
-        if (_irq_flags & irq) {
-            uint32_t ret = _irq_flags & irq;
-            _irq_flags   = 0;
-            return ret;
+        if (flags & irq) {
+            return flags;
         }
         std::this_thread::yield();
     } while (m5::utility::millis() <= timeout_at);
-    return I_nre32;  // Timeout
+    return flags | I_nre32;  // Timeout
 }
 
 bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size)
 {
-    auto irq               = wait_for_interrupt(I_rxe32 | I_rxs32, timeout_ms);
+    auto irq               = wait_for_interrupt(I_rxe32, timeout_ms);
     const uint16_t reqSize = required_size ? required_size : 1;
 
     if (is_irq32_rxe(irq)) {
@@ -1178,190 +1328,101 @@ bool UnitST25R3916::write_squelch_timer(const uint32_t us)
     return false;
 }
 
+uint32_t prng_successor(uint32_t x, uint32_t n)
+{
+    x = m5::stl::byteswap(x);
+    while (n--) {
+        x = x >> 1 | (x >> 16 ^ x >> 18 ^ x >> 19 ^ x >> 21) << 31;
+    }
+    return m5::stl::byteswap(x);
+}
+
+// Mifare Classic authenticattion
 bool UnitST25R3916::mifare_authenticate(const Command cmd, const UID& uid, const uint8_t block, const Key& mkey,
                                         const bool encrypted)
 {
-    if ((cmd != Command::AUTH_WITH_KEY_A && cmd != Command::AUTH_WITH_KEY_B) || uid.size == 0 ||
-        uid.type == Type::Unknown) {
+    if ((cmd != Command::AUTH_WITH_KEY_A && cmd != Command::AUTH_WITH_KEY_B) || !uid.isClassic()) {
         return false;
     }
 
     // 3-pass mutual authentication
-
     const uint64_t key48 = key_to64(mkey.data());
 
-    // Send AUTH command (Plane) and receive token RB (Nt)
+    // 1) Send AUTH command and receive token RB (Nt)
     uint8_t auth_frame[2] = {m5::stl::to_underlying(cmd), block};
     uint8_t RB[4]{};
     uint16_t rlen{4};
-    if (!writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
-        !transceive(RB, rlen, auth_frame, sizeof(auth_frame), TIMEOUT_AUTH1)) {
-        M5_LIB_LOGE("Failed to send AUTH(plain) %u", rlen);
-        return false;
+
+    if (_encrypted) {
+        if (!transceive_encrypt(RB, rlen, auth_frame, sizeof(auth_frame), TIMEOUT_AUTH1, false, false)) {
+            M5_LIB_LOGE("Failed to send AUTH1(encrypt) %u", rlen);
+            return false;
+        }
+    } else {
+        if (  //! writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
+            !transceive(RB, rlen, auth_frame, sizeof(auth_frame), TIMEOUT_AUTH1)) {
+            M5_LIB_LOGE("Failed to send AUTH1(plain) %u", rlen);
+            return false;
+        }
     }
-    m5::utility::delayMicroseconds(100);  // Wait for AUTH <-> Sebd AB (At least 86.4 us)
+    m5::utility::delayMicroseconds(87);  // Wait for AUTH <-> Sebd AB (At least 86.4 us)
 
-    //M5_LIB_LOGE("RECV RB:");
-    //m5::utility::log::dump(RB, rlen, false);
-
-    // Send encrypt token AB (Nr, Ar)
+    // 2) Send encrypt token AB (Nr, Ar)
     uint8_t tail4[4]{};
     uid.tail4(tail4);
     const uint32_t u32 = array_to32(tail4);
-    const uint32_t Nt  = array_to32(RB);
-    const uint32_t Nr  = esp_random();
-    // const uint32_t Ar   = suc_k(swap_endian_32(Nt), 2);  // suc2
-    // const uint32_t suc3 = suc_k(swap_endian_32(Nt), 3);  // suc3
+    uint32_t Nt        = array_to32(RB);
+    const uint32_t Nr  = esp_random();  // Change another RNG engine if you want
     uint32_t Ar{}, suc3{};
-    //    suc_23(swap_endian_32(Nt), Ar, suc3);
-    suc_23(m5::stl::byteswap(Nt), Ar, suc3);
+    uint8_t AB[8]{};
+    uint8_t parity{};
+    uint8_t bitstream[9 /* AB 8bytes + encrypt parity 1(8bits)] */]{};
 
-    uint8_t AB[8 + 1 /*parity*/]{};
-    M5_LIB_LOGD("Auth:%u  mkey:%llX uid:%X Nt:%X Nr:%X Ar:%X", block, key48, u32, Nt, Nr, Ar);
+    // M5_LIB_LOGE("Nt:%08X", Nt);
 
     _crypto1.init(key48);
-    _crypto1.inject(u32, Nt);
-    //    uint8_t parity = _crypto1.encrypt(AB, Nr, Ar, Nt);
-    uint8_t parity = _crypto1.encrypt(AB, Nr, Ar);
-    AB[8]          = parity;
+    if (!_encrypted) {
+        (void)_crypto1.inject(u32, Nt, false);
+    } else {
+        Nt = _crypto1.inject(u32, Nt, true) ^ Nt;
+    }
+    suc_23(m5::stl::byteswap(Nt), Ar /* == suc2 */, suc3);
 
-    // M5_LIB_LOGE("SEND AB:");
+    M5_LIB_LOGD("Auth:%u  mkey:%llX uid:%X Nt:%X Nr:%X Ar:%X suc3:%X", block, key48, u32, Nt, Nr, Ar, suc3);
 
-    uint8_t bitstream[9 /* AB 8bytes + encrypt parity 1(8bits)] */]{0};
-    append_parity(bitstream, sizeof(bitstream), AB, 8, parity);
+    parity = _crypto1.encrypt(AB, Nr, Ar);
+    append_parity(bitstream, sizeof(bitstream), AB, sizeof(AB), parity);
 
-    // m5::utility::log::dump(AB, sizeof(AB), false);
-    // m5::utility::log::dump(bitstream, sizeof(bitstream), false);
+    writeDirectCommand(CMD_RESET_RX_GAIN);
 
-    write_noresponse_timeout(TIMEOUT_AUTH2);
-
-#if 0
-    // MRT/SQT
-    if (!write_mask_receiver_timer(0) || !write_squelch_timer(0)) {
-        M5_LIB_LOGE("Failed to MRT/SQT");
+    if (!write_noresponse_timeout(TIMEOUT_AUTH2) ||                                                          //
+        !writeSettingsISO14443A(no_tx_par) || !writeAuxiliaryDefinition(no_crc_rx) ||                        //
+        !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
+        !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sizeof(bitstream), 0) ||  //
+        !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
+        M5_LIB_LOGE("Failed to AUTH2(encrypt)");
         return false;
     }
-    uint8_t mrt{}, sqt{};
-    readMaskReceiveTimer(mrt);
-    readSquelchTimer(sqt);
-    M5_LIB_LOGE("====== MRT:%02X SQT:%02X", mrt, sqt);
-#endif
-
-    auto write_8 = [&]() {
-        if (!writeSettingsISO14443A(no_tx_par | no_rx_par) || !writeAuxiliaryDefinition(no_crc_rx) ||
-            !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||  //
-            !writeFIFO(AB, 8) || !writeNumberOfTransmittedBytes(8, 0) ||  //
-            !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {              //
-            return false;
-        }
-        return true;
-    };
-    auto write_9AB = [&]() {
-        if (!writeSettingsISO14443A(no_tx_par | no_rx_par) || !writeAuxiliaryDefinition(no_crc_rx /*| 0x04*/) ||
-            !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                    //
-            !writeFIFO(AB, sizeof(AB)) || !writeNumberOfTransmittedBytes(sizeof(AB), 0) ||  //
-            !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
-            return false;
-        }
-        return true;
-    };
-    auto write_9bs = [&]() {
-        if (!writeSettingsISO14443A(no_tx_par) || !writeAuxiliaryDefinition(no_crc_rx) ||                        //
-            !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
-            !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sizeof(bitstream), 0) ||  //
-            !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
-            M5_LIB_LOGE("Failed to AUTH(encrypt)");
-            return false;
-        }
-        return true;
-    };
-
-    auto write_9bs_2 = [&]() {
-        if (!writeSettingsISO14443A(no_tx_par) || !writeAuxiliaryDefinition(0) ||                                //
-            !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
-            !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sizeof(bitstream), 0) ||  //
-            !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
-            M5_LIB_LOGE("Failed to AUTH(encrypt)");
-            return false;
-        }
-        return true;
-    };
-
-    auto write_stream_19bs = [&]() {
-        uint8_t buf[2]{};
-        if (!writeSettingsISO14443A(no_tx_par | no_rx_par) || !writeAuxiliaryDefinition(no_crc_rx /*| 0x04*/)) {
-            return false;
-        }
-
-        for (uint8_t i = 0; i < 8; ++i) {
-            buf[0] = AB[i];
-            buf[1] = (parity >> (8 - i)) & 1;
-            if (!clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||             //
-                !writeFIFO(buf, sizeof(buf)) || !writeNumberOfTransmittedBytes(1, 1) ||  //
-                !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
-                return false;
-            }
-        }
-        return true;
-    };
-
-    static int func = 2;
-    switch (func) {
-        case 0:
-            M5_LIB_LOGE(">>>> write_8");
-            if (!write_8()) {
-                M5_LIB_LOGE(">>>> Failed to send");
-                return false;
-            }
-            break;
-        case 1:
-            M5_LIB_LOGE(">>>> write_9AB");
-            if (!write_9AB()) {
-                M5_LIB_LOGE(">>>> Failed to send");
-                return false;
-            }
-            break;
-        case 2:
-            //            M5_LIB_LOGE(">>>> write_9bs");
-            if (!write_9bs()) {
-                M5_LIB_LOGE(">>>> Failed to send");
-                return false;
-            }
-            break;
-        case 3:
-            M5_LIB_LOGE(">>>> write_9bs_2");
-            if (!write_9bs_2()) {
-                M5_LIB_LOGE(">>>> Failed to send");
-                return false;
-            }
-            break;
-        default:
-            break;
-    }
-    //    if (++func > 2) func = 0;
-
     if (!wait_for_FIFO(TIMEOUT_AUTH2, 4)) {
-        M5_LIB_LOGE("Timeout");
+        M5_LIB_LOGE("Timeout AUTH2");
+        return false;
     }
 
-    // Receive token BA (At)
-    uint8_t BA[4 + 2]{};
+    // 3) Receive token BA (At)
+    uint8_t BA[4]{};
     uint16_t actual{};
     if (!readFIFO(actual, BA, sizeof(BA)) || actual != 4) {
-        M5_LIB_LOGE("Failed to readFIFO %u", actual);
+        M5_LIB_LOGE("Failed to readFIFO AUTH2 %u", actual);
         return false;
     }
 
-    //    M5_LIB_LOGE("RECV BA:%u", actual);
-    // m5::utility::log::dump(BA, actual, false);
-
     uint8_t At2[4]{};
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {  // Decrypt
         At2[i] = BA[i] ^ _crypto1.step8(0);
     }
     uint32_t At32 = (uint32_t)At2[0] | ((uint32_t)At2[1] << 8) | ((uint32_t)At2[2] << 16) | ((uint32_t)At2[3] << 24);
-    //    M5_LIB_LOGE(">>>>>>> At32:%x suc3:%x count:%u", At32, suc3, _crypto1._count);
-    _encrypted = (At32 == suc3);
+    _encrypted    = (At32 == suc3);
+
     return _encrypted;
 }
 

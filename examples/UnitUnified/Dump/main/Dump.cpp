@@ -54,8 +54,6 @@ void setup()
             m5::utility::delay(10000);
         }
     }
-    heap_caps_check_integrity_all(true);
-
     M5_LOGI("M5UnitUnified has been begun");
     M5_LOGI("%s", Units.debugInfo().c_str());
 

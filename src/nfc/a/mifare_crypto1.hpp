@@ -38,19 +38,6 @@ public:
         init(key48);
     }
 
-    #if 0
-    uint64_t valueLSBFirst() const noexcept
-    {
-        uint64_t v = 0;
-        for (int i = 23; i >= 0; --i) {
-            const int j = (i ^ 3);
-            v           = (v << 1) | static_cast<uint64_t>(_state[2 * j]);      // odd
-            v           = (v << 1) | static_cast<uint64_t>(_state[2 * j + 1]);  // even
-        }
-        return v;
-    }
-    #endif
-
     void init(const uint64_t key48) noexcept
     {
         _state = state_type_t{};
@@ -62,13 +49,12 @@ public:
             bool bit       = (key48 >> reversed) & 1ULL;
             _state[i]      = bit;
         }
-        _uid   = key48;
         _count = 0;
     }
 
-    inline void inject(uint32_t uid, uint32_t Nt) noexcept
+    inline uint32_t inject(uint32_t uid, uint32_t Nt, const bool encrypted = false) noexcept
     {
-        (void)step32(uid ^ Nt);
+        return step32(uid ^ Nt, encrypted);
     }
 
     bool step_with(const bool in, const bool enc = false) noexcept
@@ -108,23 +94,24 @@ public:
 
     uint8_t encrypt(uint8_t buf[8], const uint32_t Nr, const uint32_t Ar) noexcept
     {
-        uint8_t par{};
+        uint8_t parity{};
         for (uint_fast8_t i = 0; i < 4; ++i) {
-            uint8_t v       = ((Nr >> ((i ^ 0x03) << 3)) & 0xFF);
+            const uint8_t v = ((Nr >> ((i ^ 0x03) << 3)) & 0xFF);
             buf[i]          = step8(v) ^ v;
             const uint8_t z = filter();
-            par |= static_cast<uint8_t>((z ^ oddparity8(v)) & 0x01) << i;
+            parity |= static_cast<uint8_t>((z ^ oddparity8(v)) & 0x01) << i;
         }
 
         for (uint_fast8_t pos = 4; pos < 8; ++pos) {
-            const uint8_t i       = pos - 4;
-            const uint8_t nt_byte = static_cast<uint8_t>(Ar >> (i << 3));
-            const uint8_t ks      = step8(0x00);
-            buf[pos]              = ks ^ nt_byte;
-            const uint8_t z       = filter();
-            par |= static_cast<uint8_t>((z ^ oddparity8(nt_byte)) & 0x01) << pos;
+            const uint8_t i = pos - 4;
+            // const uint8_t v = static_cast<uint8_t>(Ar >> (i << 3));
+            const uint8_t v  = (Ar >> (i << 3)) & 0xFF;
+            const uint8_t ks = step8(0x00);
+            buf[pos]         = ks ^ v;
+            const uint8_t z  = filter();
+            parity |= static_cast<uint8_t>((z ^ oddparity8(v)) & 0x01) << pos;
         }
-        return par;
+        return parity;
     }
 
     uint8_t encrypt(uint8_t buf[8], const uint32_t Nr, const uint32_t Ar, const uint32_t Nt) noexcept
@@ -216,7 +203,6 @@ public:
         return (a || ((b || e) && (d ^ e))) ^ ((a ^ (b && d)) && ((c ^ d) || (b && e)));
     }
 
-    uint64_t _uid{};
     uint32_t _count{};  // for debug
 };
 
