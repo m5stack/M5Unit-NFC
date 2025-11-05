@@ -186,10 +186,6 @@ struct UID {
     std::string uidAsString() const;
     //! @breif Gets the type string for debug
     std::string typeAsString() const;
-
-    
-
-
 };
 
 //! @brief Equal?
@@ -203,7 +199,6 @@ inline bool operator!=(const UID& a, const UID& b)
 {
     return !(a == b);
 }
-
 
 /*!
   @struct ATQA

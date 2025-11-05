@@ -226,6 +226,20 @@ constexpr uint8_t OP_LOAD_PT_MEMORY{0xBF};           // 10111111b
 constexpr uint8_t OP_READ_FIFO{0x9F};                // 10011111b
 constexpr uint8_t OP_DIRECT_COMMAND{0xC0};           // 11xxxxxxb;
 
+// Timeout ms
+constexpr uint32_t TIMEOUT_REQ_WUP{4};
+constexpr uint32_t TIMEOUT_SELECT{4};
+constexpr uint32_t TIMEOUT_ANTICOLL{8};
+constexpr uint32_t TIMEOUT_HALT{2};
+constexpr uint32_t TIMEOUT_GET_VERSION{5};
+constexpr uint32_t TIMEOUT_3DES{10};
+constexpr uint32_t TIMEOUT_AUTH1{2};
+constexpr uint32_t TIMEOUT_AUTH2{10};
+constexpr uint32_t TIMEOUT_READ{4};
+constexpr uint32_t TIMEOUT_WRITE1{5};
+constexpr uint32_t TIMEOUT_WRITE2{10};
+constexpr uint32_t TIMEOUT_OP{5};  // Inc/Dec/Restore...
+
 /*!
   @namespace regval
   @brief Register setting value
@@ -259,9 +273,46 @@ constexpr uint8_t I_cac{0x04};  // IRQ due to detection of collision during RF c
 // Timer and EMV control register
 constexpr uint8_t mrt_step{0x08};  // Mask receive timer step size
 constexpr uint8_t nrt_step{0x01};  // No-response timer step size
+//
+constexpr uint32_t I_wl32  = ((uint32_t)I_wl << 24);
+constexpr uint32_t I_rxs32 = ((uint32_t)I_rxs << 24);
+constexpr uint32_t I_rxe32 = ((uint32_t)I_rxe << 24);
+constexpr uint32_t I_txe32 = ((uint32_t)I_txe << 24);
+constexpr uint32_t I_col32 = ((uint32_t)I_col << 24) | ((uint32_t)I_cac << 16);
+constexpr uint32_t I_nre32 = ((uint32_t)I_nre << 16);
 
 ///@endcond
 }  // namespace regval
+
+inline bool has_irq32_error(const uint32_t irq32)
+{
+    return irq32 & 0x0000FF00;
+}
+
+inline bool is_irq32_timeout(const uint32_t irq32)
+{
+    return irq32 & regval::I_nre32;
+}
+
+inline bool is_irq32_rxe(const uint32_t irq32)
+{
+    return irq32 & regval::I_rxe32;
+}
+
+inline bool is_irq32_rxs(const uint32_t irq32)
+{
+    return irq32 & regval::I_rxs32;
+}
+
+inline bool is_irq32_txe(const uint32_t irq32)
+{
+    return irq32 & regval::I_txe32;
+}
+
+inline bool is_irq32_collision(const uint32_t irq32)
+{
+    return irq32 & regval::I_col32;
+}
 
 }  // namespace st25r3916
 

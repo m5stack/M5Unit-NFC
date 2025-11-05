@@ -17,15 +17,6 @@ namespace nfc {
 namespace a {
 namespace mifare {
 
-inline uint32_t prng_successor(uint32_t x, uint32_t n)
-{
-    x = m5::stl::byteswap(x);
-    while (n--) {
-        x = x >> 1 | (x >> 16 ^ x >> 18 ^ x >> 19 ^ x >> 21) << 31;
-    }
-    return m5::stl::byteswap(x);
-}
-
 using MLFSR48 = m5::utility::FibonacciLFSR_Left<48, 5, 6, 7, 9, 13, 19, 21, 23, 24, 29, 31, 33, 34, 36, 38, 39, 43, 48>;
 class MifareCrypto1 : public MLFSR48 {
 public:
@@ -112,58 +103,6 @@ public:
             parity |= static_cast<uint8_t>((z ^ oddparity8(v)) & 0x01) << pos;
         }
         return parity;
-    }
-
-    uint8_t encrypt(uint8_t buf[8], const uint32_t Nr, const uint32_t Ar, const uint32_t Nt) noexcept
-    {
-        uint8_t par{};
-
-#if 1
-        for (uint_fast8_t i = 0; i < 4; ++i) {
-            uint8_t v = ((Nr >> ((i ^ 0x03) << 3)) & 0xFF);
-            buf[i]    = step8(v) ^ v;
-
-            const uint8_t z = filter();
-            par |= static_cast<uint8_t>((z ^ oddparity8(v)) & 0x01) << i;
-        }
-
-        for (uint_fast8_t pos = 4; pos < 8; ++pos) {
-            const uint8_t i       = pos - 4;
-            const uint8_t nt_byte = static_cast<uint8_t>(Ar >> (i << 3));
-            M5_LIB_LOGE("pos[%u]:%02X", pos, nt_byte);
-
-            const uint8_t ks = step8(0x00);
-            buf[pos]         = ks ^ nt_byte;
-
-            const uint8_t z = filter();
-            // uint8_t aaa     = (z ^ oddparity8(nt_byte)) & 0x01;
-            //             M5_LIB_LOGE("pos[%u]: f:%d P:%u", pos, z, aaa);
-            //            par |= static_cast<uint8_t>((z ^ oddparity8(nt_byte)) & 0x01) << (7 - pos);
-            par |= static_cast<uint8_t>((z ^ oddparity8(nt_byte)) & 0x01) << pos;
-        }
-#else
-        uint32_t nt = prng_successor(Nt, 32);
-        for (uint_fast8_t i = 0; i < 4; ++i) {
-            uint8_t v = ((Nr >> ((i ^ 0x03) << 3)) & 0xFF);
-            buf[i]    = step8(v) ^ v;
-
-            const uint8_t z = filter();
-            par |= static_cast<uint8_t>((z ^ oddparity8(v)) & 0x01) << i;
-        }
-
-        nt = prng_successor(Nt, 32);
-
-        for (uint_fast8_t pos = 4; pos < 8; ++pos) {
-            nt              = prng_successor(nt, 8);
-            buf[pos]        = step8(0x00) ^ (nt & 0xff);
-            const uint8_t z = filter();
-            // uint8_t aaa     = (z ^ oddparity8(nt_byte)) & 0x01;
-            //             M5_LIB_LOGE("pos[%u]: f:%d P:%u", pos, z, aaa);
-            //            par |= static_cast<uint8_t>((z ^ oddparity8(nt_byte)) & 0x01) << (7 - pos);
-            par |= ((z ^ oddparity8(nt & 0xff)) & 0x01) << pos;
-        }
-#endif
-        return par;
     }
 
     uint32_t encrypt(uint8_t* out, const uint8_t* in, const uint8_t in_len /* max 32 */)

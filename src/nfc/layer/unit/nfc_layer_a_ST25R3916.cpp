@@ -48,7 +48,7 @@ bool AdapterST25R3916::detect(std::vector<UID>& devs, const uint32_t timeout_ms)
     uint16_t atqa{};
     do {
         // Exists devices?
-        if (!_u.req_wup_device(atqa, true /* REQA */)) {
+        if (!_u.nfcaRequest(atqa)) {
             break;
         }
 
@@ -57,7 +57,7 @@ bool AdapterST25R3916::detect(std::vector<UID>& devs, const uint32_t timeout_ms)
         bool completed{};
         uid.clear();
         do {
-            if (!_u.select_with_anticollision(completed, uid, lv)) {
+            if (!_u.nfcaSelectWithAnticollision(completed, uid, lv)) {
                 return false;
             }
         } while (!completed && lv++ < 4);
@@ -67,7 +67,7 @@ bool AdapterST25R3916::detect(std::vector<UID>& devs, const uint32_t timeout_ms)
         M5_LIB_LOGD("Detect:%s", uid.uidAsString().c_str());
 
         // Type identification
-        uid.type   = _u.identify_nfca_type(uid);
+        uid.type   = _u.nfca_identify_type(uid);
         uid.blocks = get_number_of_blocks(uid.type);
         _activeUID = uid;
 
@@ -88,8 +88,7 @@ bool AdapterST25R3916::activate(const UID& uid)
 {
     uint16_t atqa{};
     _activeUID.clear();
-    _u.req_wup_device(atqa, false /* WUPA*/);
-    if (_u.select(uid)) {
+    if (_u.nfcaWakeup(atqa) && _u.nfcaSelect(uid)) {
         M5_LIB_LOGD("Activate:%s", uid.uidAsString().c_str());
         _activeUID = uid;
         return true;
@@ -101,18 +100,18 @@ bool AdapterST25R3916::deactivate()
 {
     M5_LIB_LOGD("Deactivate:%s", _activeUID.uidAsString().c_str());
     _activeUID.clear();
-    return _u.hltA();
+    return _u.nfcaHlt();
 }
 
 bool AdapterST25R3916::mifare_authenticate(const m5::nfc::a::Command cmd, const UID& uid, const uint8_t block,
                                            const Key& key)
 {
-    return _u.mifare_authenticate(cmd, uid, block, key);
+    return _u.mifare_classic_authenticate(cmd, uid, block, key);
 }
 
 bool AdapterST25R3916::readBlock(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)
 {
-    return _activeUID.isClassic() ? _u.read_block_encrypted(rx, rx_len, addr) : _u.read_block(rx, rx_len, addr);
+    return _activeUID.isClassic() ? _u.mifareClassicReadBlock(rx, rx_len, addr) : _u.nfcaReadBlock(rx, rx_len, addr);
 }
 
 bool AdapterST25R3916::writeBlock(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len)
