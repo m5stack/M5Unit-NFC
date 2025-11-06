@@ -166,6 +166,7 @@ Type NFCLayerA::identify_type(const UID& uid)
             return Type::MIFARE_Classic_1K;  // 0x28 SmartMX with
         }
         // RATS?
+        // TODO:!!!
         if (true) {
             return Type::MIFARE_Classic_1K;  // 0x08
         }
@@ -227,17 +228,22 @@ Type NFCLayerA::identify_type(const UID& uid)
     return Type::Unknown;
 }
 
-bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)
+bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint16_t block)
 {
+    // In the case of page structure, correction
+    uint16_t addr = _activeUID.supportsNFC() ? (block & ~0x03) : block;
+
     return _activeUID.valid() && (_activeUID.isMifareClassic() ? _impl->mifare_classic_read_block(rx, rx_len, addr)
                                                                : _impl->nfca_read_block(rx, rx_len, addr));
 }
 
-bool NFCLayerA::write(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len, const bool safety)
+bool NFCLayerA::write(const uint16_t block, const uint8_t* tx, const uint16_t tx_len, const bool safety)
 {
+    uint16_t addr = _activeUID.supportsNFC() ? (block & ~0x03) : block;
+
     bool can = safety ? is_user_block(activatedDevice().type, addr) : true;
     if (safety && !can) {
-        M5_LIB_LOGW("%s %u This is NOT user area", activatedDevice().typeAsString().c_str(), addr);
+        M5_LIB_LOGW("Write has been rejected due to safety %s %u", activatedDevice().typeAsString().c_str(), addr);
     }
     return (can && _activeUID.valid())
                ? (_activeUID.isMifareClassic() ? _impl->mifare_classic_write_block(addr, tx, tx_len)
@@ -245,7 +251,7 @@ bool NFCLayerA::write(const uint16_t addr, const uint8_t* tx, const uint16_t tx_
                : false;
 }
 
-bool NFCLayerA::dump(const m5::nfc::a::mifare::Key& mkey)
+bool NFCLayerA::dump(const Key& mkey)
 {
     if (_activeUID.valid()) {
         if (_activeUID.isMifareClassic()) {
@@ -398,13 +404,13 @@ bool NFCLayerA::nfca_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx
 }
 
 bool NFCLayerA::mifareClassicAuthenticateA(const m5::nfc::a::UID& uid, const uint8_t block,
-                                           const m5::nfc::a::mifare::Key& key)
+                                           const m5::nfc::a::mifare::classic::Key& key)
 {
     return _impl->mifare_classic_authenticate(true, uid, block, key);
 }
 
 bool NFCLayerA::mifareClassicAuthenticateB(const m5::nfc::a::UID& uid, const uint8_t block,
-                                           const m5::nfc::a::mifare::Key& key)
+                                           const m5::nfc::a::mifare::classic::Key& key)
 {
     return _impl->mifare_classic_authenticate(false, uid, block, key);
 }

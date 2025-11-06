@@ -7,7 +7,7 @@
   @file unit_ST25R3916.cpp
   @brief ST25R3916 Unit for M5UnitUnified
 */
-#include <Arduino.h>
+//#include <Arduino.h>
 #include "unit_ST25R3916.hpp"
 #include <M5Utility.hpp>
 #include <thread>
@@ -32,7 +32,6 @@ constexpr int PIN_CS_CC1101{5};      // G5  -> CC1101 CS
 constexpr int PIN_POWER_EN{3};       // G3  -> POWER_EN
 
 #define TRANSACTION_GUARD() transaction_guard _tg_(adapter())
-
 
 /*
   To prevent the internal overheat protection to trigger below the junction temperature,
@@ -101,7 +100,6 @@ uint8_t calculate_mrt(const uint32_t us, const bool mrt_step)
     // M5_LIB_LOGE("MRT: %u us -> reg=%02X (%0.2f us)", us, mrt, actual);
     return static_cast<uint8_t>(mrt);
 }
-
 
 // Octal coded binary for bit representation
 inline uint32_t OCB(const uint8_t c)
@@ -193,7 +191,7 @@ bool UnitST25R3916::begin()
     writeReceiverConfiguration3(0x00);
     writeReceiverConfiguration4(0x00);
 
-    ////////
+    //
     // ISO14443A
     // M5_LIB_LOGE(">>>>>> try ISO14443A REQA");
     writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, 0x01 /* nfc_ar01 */);
@@ -296,7 +294,6 @@ void UnitST25R3916::update(const bool /*force*/)
     }
     */
 }
-
 
 bool UnitST25R3916::writeDirectCommand(const uint8_t cmd, const uint8_t* data, uint32_t dlen)
 {
@@ -588,7 +585,6 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     return false;
 }
 
-
 bool UnitST25R3916::write_noresponse_timeout(const uint32_t ms)
 {
     uint8_t timer_ctrl{};
@@ -620,8 +616,6 @@ bool UnitST25R3916::write_squelch_timer(const uint32_t us)
     }
     return false;
 }
-
-
 
 void UnitST25R3916::dumpRegister()
 {

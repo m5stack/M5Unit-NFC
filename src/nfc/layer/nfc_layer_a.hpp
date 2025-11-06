@@ -88,7 +88,7 @@ public:
     bool activate(const m5::nfc::a::UID& uid);
     ///@}
 
-    ///@pre UID activated
+    ///@pre PICC activated
     ///@name For activated device
     ///@{
     /*!
@@ -101,20 +101,22 @@ public:
       @brief Authentication by KeyA
       @param uid UID
       @param block Authentication block
-      @param key Mifare classic key
+      @param key MIFARE classic key
       @param encrypted Is it already in an encrypted state?
     */
-    bool mifareClassicAuthenticateA(const m5::nfc::a::UID& uid, const uint8_t block,
-                                    const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY);
+    bool mifareClassicAuthenticateA(
+        const m5::nfc::a::UID& uid, const uint8_t block,
+        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_CLASSIC_KEY);
     /*!
       @brief Authentication by KeyB
       @param uid UID
       @param block Authentication block
-      @param key Mifare classic key
+      @param key MIFARE classic key
       @param encrypted Is it already in an encrypted state?
     */
-    bool mifareClassicAuthenticateB(const m5::nfc::a::UID& uid, const uint8_t block,
-                                    const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY);
+    bool mifareClassicAuthenticateB(
+        const m5::nfc::a::UID& uid, const uint8_t block,
+        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_CLASSIC_KEY);
     /*!
       @brief Read the 1 block
       @param rx Buffer
@@ -137,15 +139,15 @@ public:
 
     /*!
       @brief Dump all blocks for debug
-      @param key Mifare classic key
-      @pre All blocks must be authenticatable using the specified key if Mifare classic
+      @param key MIFARE classic key
+      @pre All blocks must be authenticatable using the specified key if MIFARE classic
      */
-    bool dump(const m5::nfc::a::mifare::Key& mkey = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY);
+    bool dump(const m5::nfc::a::mifare::classic::Key& mkey = m5::nfc::a::mifare::classic::DEFAULT_CLASSIC_KEY);
     /*!
       @brief Dump 1 block
       @param addr Block address
       @note The sector to which the block belongs is dumped
-      @pre The block must be authenticated if Mifare classic
+      @pre The block must be authenticated if MIFARE classic
     */
     bool dump(const uint8_t block);
     ///@}
@@ -158,7 +160,7 @@ protected:
 
     bool ntag_get_version(uint8_t info[10]);
 
-    bool dump_sector_structure(const m5::nfc::a::UID& uid, const m5::nfc::a::mifare::Key& key);
+    bool dump_sector_structure(const m5::nfc::a::UID& uid, const m5::nfc::a::mifare::classic::Key& key);
     bool dump_sector(const uint8_t sector);
     bool dump_page_structure(const uint8_t maxPage);
     bool dump_page(const uint8_t page);
@@ -189,7 +191,7 @@ struct NFCLayerA::Adapter {
     virtual bool nfca_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) = 0;
 
     virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::UID& uid, const uint8_t block,
-                                             const m5::nfc::a::mifare::Key& key)                           = 0;
+                                             const m5::nfc::a::mifare::classic::Key& key)                  = 0;
     virtual bool mifare_classic_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)             = 0;
     virtual bool mifare_classic_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) = 0;
 

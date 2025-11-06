@@ -5,7 +5,7 @@
  */
 /*!
   @file mifare.hpp
-  @brief Mifare definitions
+  @brief MIFARE definitions
 */
 #ifndef M5_UNIT_UNIFIED_NFC_NFC_NFCA_MIFARE_HPP
 #define M5_UNIT_UNIFIED_NFC_NFC_NFCA_MIFARE_HPP
@@ -20,21 +20,21 @@ namespace a {
   @brief For MIFARE
  */
 namespace mifare {
-
-/*!
-  @typedef Key
-  @brief MIFARE Key
-*/
-using Key = std::array<uint8_t, 6>;
-
-//! @brief Default key for Mifare classic
-extern const Key DEFAULT_CLASSIC_KEY;
-
 /*!
   @namespace classic
   @brief For MIFARE classic
  */
 namespace classic {
+
+/*!
+  @typedef Key
+  @brief MIFARE classic Key
+*/
+using Key = std::array<uint8_t, 6>;
+
+//! @brief Default key for MIFARE classic
+extern const Key DEFAULT_CLASSIC_KEY;
+
 /*!
   @brief Is this permission treated as a value block?
   @return True if Value block

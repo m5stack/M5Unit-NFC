@@ -13,7 +13,7 @@
 #include <M5UnitComponent.hpp>
 #include "ST25R3916_definition.hpp"
 #include "nfc/nfc.hpp"
-#include "nfc/a/mifare_crypto1.hpp"
+#include "nfc/a/mifare_classic_crypto1.hpp"
 
 namespace m5 {
 namespace unit {
@@ -27,7 +27,6 @@ struct AdapterST25R3916;
  */
 class UnitST25R3916 : public Component {
     M5_UNIT_COMPONENT_HPP_BUILDER(UnitST25R3916, 0x50 /* I2C address */);
-    //    friend struct m5::unit::nfc::AdapterST25R3916;
 
 public:
     explicit UnitST25R3916(const uint8_t arg = DEFAULT_ADDRESS) : Component(arg)
@@ -1656,47 +1655,134 @@ public:
     // ----------------------------------------------------------------
     ///@name NFC-A
     ///@{
+    /*!
+      @brief Transceive
+      @param rx Receive buffer
+      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param tx Send buffer
+      @param tx_len Size of send buffer
+      @param timeout_ms Timeout(ms)
+      @return True if successful
+     */
     bool nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                         const uint32_t timeout_ms);
+    /*!
+      @brief Request for idle devices
+      @param[out atqa ATQA
+      @return True if successful
+     */
     inline bool nfcaRequest(uint16_t& atqa)
     {
         return nfca_request_wakeup(atqa, true);
     }
+    /*!
+      @brief Wakeup for idle/halt devices
+      @param[out atqa ATQA
+      @return True if successful
+     */
     inline bool nfcaWakeup(uint16_t& atqa)
     {
         return nfca_request_wakeup(atqa, false);
     }
+    /*!
+      @brief Select device with anti-collision
+      @param[out] completed Completed select device?
+      @param[out]  uid Selected UID
+      @param lv Cascade level (1-3)
+      @return True if successful
+     */
     bool nfcaSelectWithAnticollision(bool& completed, m5::nfc::a::UID& uid, const uint8_t lv);
+    /*!
+      @brief Select specific UID
+      @param  uid  UID
+      @return True if successful
+     */
     bool nfcaSelect(const m5::nfc::a::UID& uid);
+    /*!
+      @brief Read the 1 block
+      @param rx Receiver buffer
+      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param block Block address
+      @return True if successful
+     */
     bool nfcaReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t block);
+    /*!
+      @brief Write the 1 block
+      @param tx Send buffer
+      @param tx_len Size of send buffer
+      @return True if successful
+     */
     bool nfcaWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len);
+    /*!
+      @brief Hlt for devices
+      @return True if successful
+     */
     bool nfcaHlt();
+    ///@}
 
-    ///@name Mifare
+    ///@name MIFARE classic
     ///@{
-    ///@name Classic
-    ///@{
-    inline bool mifareClassicAuthenticateA(const m5::nfc::a::UID& uid, const uint8_t block,
-                                           const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY)
+    /*!
+      @brief Authentication using keyA of the specified block
+      @param uid UID
+      @param block Block address
+      @param key MIFARE classic key
+      @return True if successful
+     */
+    inline bool mifareClassicAuthenticateA(
+        const m5::nfc::a::UID& uid, const uint8_t block,
+        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_CLASSIC_KEY)
     {
         return mifare_classic_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_A, uid, block, key);
     }
-    inline bool mifareClassicAuthenticateB(const m5::nfc::a::UID& uid, const uint8_t block,
-                                           const m5::nfc::a::mifare::Key& key = m5::nfc::a::mifare::DEFAULT_CLASSIC_KEY)
+    /*!
+      @brief Authentication using keyB of the specified block
+      @param uid UID
+      @param block Block address
+      @param key MIFARE classic key
+      @return True if successful
+     */
+    inline bool mifareClassicAuthenticateB(
+        const m5::nfc::a::UID& uid, const uint8_t block,
+        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_CLASSIC_KEY)
     {
         return mifare_classic_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_B, uid, block, key);
     }
+    /*!
+      @brief Read the 1 block
+      @param rx Receiver buffer
+      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param block Block address
+      @return True if successful
+     */
     bool mifareClassicReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t addr);
+    /*!
+      @brief Write the 1 block
+      @param tx Send buffer
+      @param tx_len Size of send buffer
+      @return True if successful
+     */
     bool mifareClassicWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len);
-    ///@}
     ///@}
 
     ///@name NTAG
     ///@{
+    /*!
+      @brief NTAG GET_VERSION
+      @param[out] Receive buffer
+      @return True if successful
+      @warning t Some devices are not supported
+     */
     bool ntagGetVersion(uint8_t info[10]);
+    /*!
+      @brief Read between specified pages
+      @param rx Receiver buffer
+      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param spage Start reading page
+      @param epage End reading page
+      @return True if successful
+     */
     bool ntagFastRead(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
-    ///@}
-
     ///@}
 
     // For debug
@@ -1731,7 +1817,6 @@ protected:
     bool wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size = 0);
     bool read_FIFO(std::vector<uint8_t>& out);
 
-    // NFC-A
     bool nfca_request_wakeup(uint16_t& atqa, const bool req);
     bool nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv);
 
@@ -1739,11 +1824,11 @@ protected:
     bool mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                            const uint32_t timeout_ms, const bool include_crc, const bool decrypt);
     bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::UID& uid, const uint8_t block,
-                                     const m5::nfc::a::mifare::Key& key);
+                                     const m5::nfc::a::mifare::classic::Key& key);
 
 private:
     config_t _cfg{};
-    m5::nfc::a::mifare::MifareCrypto1 _crypto1{};
+    m5::nfc::a::mifare::classic::Crypto1 _crypto1{};
     bool _encrypted{};
     volatile bool _interrupt_occurred{};
 };

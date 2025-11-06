@@ -5,7 +5,7 @@
  */
 /*!
   @file mifare.cpp
-  @brief Mifare definitions
+  @brief MIFARE definitions
 */
 #include "mifare.hpp"
 #include <M5Utility.hpp>
@@ -14,10 +14,10 @@ namespace m5 {
 namespace nfc {
 namespace a {
 namespace mifare {
+namespace classic {
 
 const Key DEFAULT_CLASSIC_KEY = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
-namespace classic {
 bool decode_value_block(int32_t& value, uint8_t& addr, const uint8_t* buf)
 {
     if (*((uint32_t*)&buf[0]) == *((uint32_t*)&buf[8]) && *((uint32_t*)&buf[0]) == ~*((uint32_t*)&buf[4]) &&

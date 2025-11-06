@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 /*!
-  @file nfca.hpp
-  @brief NFC definitions
+  @file nfca.cpp
+  @brief NFC-A definitions
 */
 #include "nfca.hpp"
 #include <M5Utility.hpp>
@@ -102,43 +102,6 @@ using namespace m5::nfc::a::mifare::classic;
 namespace m5 {
 namespace nfc {
 namespace a {
-
-Type get_type(const uint8_t sak)
-{
-    if (sak & 0x02) {
-        return Type::Unknown;
-    }
-    if (sak & 0x04) {
-        return Type::NotCompleted;
-    }
-    if (sak & 0x20) {
-        return Type::ISO_14443_4;
-    }
-    if (sak & 0x40) {
-        return Type::ISO_18092;
-    }
-    switch (sak) {
-        case 0x00:
-            return Type::MIFARE_UltraLight;  // or C or NTAG
-        case 0x01:
-            return Type::MIFARE_DESFire_2K;  // or 4K or 8K
-        case 0x08:
-            return Type::MIFARE_Classic_1K;
-        case 0x09:
-            return Type::MIFARE_Classic;
-        case 0x10:
-            return Type::MIFARE_Plus_2K;
-        case 0x11:
-            return Type::MIFARE_Plus_4K;
-        case 0x18:
-            return Type::MIFARE_Classic_4K;
-        case 0x19:
-            return Type::MIFARE_Classic_2K;
-        default:
-            break;
-    }
-    return Type::Unknown;
-}
 
 uint16_t get_number_of_blocks(const Type t)
 {

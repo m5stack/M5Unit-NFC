@@ -81,14 +81,6 @@ inline bool has_fast_read(const Type t)
     return t >= Type::NTAG_210 && t <= Type::NTAG_216;
 }
 
-/*!
-  @brief Get type from SAK
-  @param sak SAK
-  @return Type
-  @warning Some types cannot be determined by SAK alone
- */
-Type get_type(const uint8_t sak);
-
 //! @brief SAK uncompleted?
 inline bool has_sak_dependent_bit(const uint8_t sak)
 {

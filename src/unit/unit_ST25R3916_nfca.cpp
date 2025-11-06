@@ -10,6 +10,15 @@
 #include "unit_ST25R3916.hpp"
 #include <M5Utility.hpp>
 
+using namespace m5::utility::mmh3;
+using namespace m5::unit::types;
+using namespace m5::unit::st25r3916;
+using namespace m5::unit::st25r3916::regval;
+using namespace m5::unit::st25r3916::command;
+using namespace m5::nfc::a;
+using namespace m5::nfc::a::mifare;
+using namespace m5::nfc::a::mifare::classic;
+
 using namespace m5::unit::st25r3916;
 using namespace m5::unit::st25r3916::regval;
 using namespace m5::unit::st25r3916::command;
@@ -166,9 +175,7 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
 
     // ANTICOLL/SEL
     if (!write_noresponse_timeout(TIMEOUT_ANTICOLL) ||  //
-        !writeSettingsISO14443A(antcl) || !writeAuxiliaryDefinition(0)
-        //        !writeMaskMainInterrupt(~(I_rxe | I_col)) || !writeMaskTimerAndNFCInterrupt(~(I_nre | I_cac))) {
-    ) {
+        !writeSettingsISO14443A(antcl) || !writeAuxiliaryDefinition(0)) {
         return false;
     }
 
@@ -300,8 +307,7 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, UID& uid, const
 
     // Select
     uint16_t rx_len{3};
-    if (  //! writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||
-        !nfcaTransceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
+    if (!nfcaTransceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
         M5_LIB_LOGE("Failed to select");
         return false;
     }
@@ -327,7 +333,7 @@ bool UnitST25R3916::nfcaHlt()
 
     if (!write_noresponse_timeout(TIMEOUT_HALT) || !writeSettingsISO14443A(0x00 /*standard*/) ||
         !writeAuxiliaryDefinition(0) ||
-        //! writeMaskMainInterrupt(~I_txe) ||
+        
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(hlta, sizeof(hlta)) ||
         !writeNumberOfTransmittedBytes(sizeof(hlta), 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
         return false;
@@ -356,8 +362,7 @@ bool UnitST25R3916::nfcaHlt()
 bool UnitST25R3916::nfcaReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t addr)
 {
     uint8_t cmd[2] = {m5::stl::to_underlying(Command::READ), addr};
-    if (  //! writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
-        !nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
+    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
         M5_LIB_LOGE("Failed to transcive");
         return false;
     }
@@ -369,7 +374,7 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t block, const uint8_t* tx, const
     return false;
 }
 
-// -------------------------------- For Mifare classic
+// -------------------------------- For MIFARE classic
 bool UnitST25R3916::mifare_classic_send_encrypt(const uint8_t* tx, const uint16_t tx_len)
 {
     if (!tx || !tx_len || tx_len > 32) {
@@ -402,7 +407,7 @@ bool UnitST25R3916::mifare_classic_send_encrypt(const uint8_t* tx, const uint16_
     m5::utility::log::dump(bitstream, sizeof(bitstream), false);
     */
 
-    if (!writeSettingsISO14443A(no_tx_par) ||  //! writeAuxiliaryDefinition(no_crc_rx) ||                 //
+    if (!writeSettingsISO14443A(no_tx_par) ||                                                         //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                  //
         !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sbytes, sbits) ||  //
         !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
@@ -499,8 +504,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& ui
             return false;
         }
     } else {
-        if (  //! writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
-            !nfcaTransceive(RB, rlen, auth_frame, sizeof(auth_frame), TIMEOUT_AUTH1)) {
+        if (!nfcaTransceive(RB, rlen, auth_frame, sizeof(auth_frame), TIMEOUT_AUTH1)) {
             M5_LIB_LOGE("Failed to send AUTH1(plain) %u", rlen);
             return false;
         }
@@ -570,8 +574,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& ui
 bool UnitST25R3916::ntagFastRead(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
 {
     uint8_t cmd[3] = {m5::stl::to_underlying(Command::FAST_READ), spage, epage};
-    if (  //! writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
-        !nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
+    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
         M5_LIB_LOGE("Failed to transcive");
         return false;
     }

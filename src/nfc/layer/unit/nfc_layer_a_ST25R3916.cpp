@@ -40,7 +40,7 @@ struct AdapterST25R3916 final : NFCLayerA::Adapter {
     virtual bool nfca_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) override;
 
     virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::UID& uid, const uint8_t block,
-                                             const m5::nfc::a::mifare::Key& key) override;
+                                             const m5::nfc::a::mifare::classic::Key& key) override;
     virtual bool mifare_classic_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr) override;
     virtual bool mifare_classic_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) override;
 
@@ -48,54 +48,6 @@ struct AdapterST25R3916 final : NFCLayerA::Adapter {
 
     UnitST25R3916& _u;
 };
-
-#if 0
-bool AdapterST25R3916::detect(std::vector<UID>& devs, const uint32_t timeout_ms)
-{
-    devs.clear();
-
-    auto timeout_at = m5::utility::millis() + timeout_ms;
-    UID uid{};
-
-    uint16_t atqa{};
-    do {
-        // Exists devices?
-        if (!_u.nfcaRequest(atqa)) {
-            break;
-        }
-
-        // Select
-        uint8_t lv{1};  // Cascade level 1-3
-        bool completed{};
-        uid.clear();
-        do {
-            if (!_u.nfcaSelectWithAnticollision(completed, uid, lv)) {
-                return false;
-            }
-        } while (!completed && lv++ < 4);
-        if (!completed) {
-            return false;
-        }
-        M5_LIB_LOGD("Detect:%s", uid.uidAsString().c_str());
-
-        // Type identification
-        uid.type   = _u.nfca_identify_type(uid);
-        uid.blocks = get_number_of_blocks(uid.type);
-        _activeUID = uid;
-
-        // Deactive(HltA)
-        if (!deactivate()) {
-            M5_LIB_LOGD("Failed to deactivate");
-            return false;
-        }
-
-        push_back_uid(devs, uid);
-
-    } while (m5::utility::millis() <= timeout_at);
-
-    return !devs.empty();
-}
-#endif
 
 bool AdapterST25R3916::request(uint16_t& atqa)
 {
@@ -117,19 +69,13 @@ bool AdapterST25R3916::select(m5::nfc::a::UID& uid)
             return false;
         }
     } while (!completed && lv++ < 4);
-    if (!completed) {
-        return false;
-    }
-    return true;
+    return completed;
 }
 
 bool AdapterST25R3916::activate(const UID& uid)
 {
     uint16_t atqa{};
-    if (_u.nfcaWakeup(atqa) && _u.nfcaSelect(uid)) {
-        return true;
-    }
-    return false;
+    return _u.nfcaWakeup(atqa) && _u.nfcaSelect(uid);
 }
 
 bool AdapterST25R3916::deactivate()

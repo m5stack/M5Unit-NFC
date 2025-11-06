@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 /*!
-  @file mifare.hpp
-  @brief Mifare definitions
+  @file mifare_classic_crypto1.hpp
+  @brief Crypto1 for MIFARE Classic
 */
-#ifndef M5_UNIT_UNIFIED_NFC_NFC_A_MIFARE_CRYPTO1_HPP
-#define M5_UNIT_UNIFIED_NFC_NFC_A_MIFARE_CRYPTO1_HPP
+#ifndef M5_UNIT_UNIFIED_NFC_NFC_A_MIFARE_CLASSIC_CRYPTO1_HPP
+#define M5_UNIT_UNIFIED_NFC_NFC_A_MIFARE_CLASSIC_CRYPTO1_HPP
 
 #include <M5Utility.hpp>
 
@@ -16,15 +16,16 @@ namespace m5 {
 namespace nfc {
 namespace a {
 namespace mifare {
+namespace classic {
 
 using MLFSR48 = m5::utility::FibonacciLFSR_Left<48, 5, 6, 7, 9, 13, 19, 21, 23, 24, 29, 31, 33, 34, 36, 38, 39, 43, 48>;
-class MifareCrypto1 : public MLFSR48 {
+class Crypto1 : public MLFSR48 {
 public:
-    MifareCrypto1() noexcept : MLFSR48(0)
+    Crypto1() noexcept : MLFSR48(0)
     {
     }
 
-    explicit MifareCrypto1(const uint64_t key48) noexcept : MLFSR48(0)
+    explicit Crypto1(const uint64_t key48) noexcept : MLFSR48(0)
     {
         init(key48);
     }
@@ -145,6 +146,7 @@ public:
     uint32_t _count{};  // for debug
 };
 
+}  // namespace classic
 }  // namespace mifare
 }  // namespace a
 }  // namespace nfc
