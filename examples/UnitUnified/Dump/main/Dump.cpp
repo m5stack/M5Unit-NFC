@@ -81,7 +81,7 @@ void loop()
             auto& uid = devices.front();
             if (nfc_a.activate(uid)) {
                 M5.Log.printf("==== Dump %s %s ====\n", uid.uidAsString().c_str(), uid.typeAsString().c_str());
-                nfc_a.dump(uid);
+                nfc_a.dump();
                 nfc_a.deactivate();
             } else {
                 M5_LOGE("Failed to activate %s", uid.uidAsString().c_str());

@@ -226,20 +226,6 @@ constexpr uint8_t OP_LOAD_PT_MEMORY{0xBF};           // 10111111b
 constexpr uint8_t OP_READ_FIFO{0x9F};                // 10011111b
 constexpr uint8_t OP_DIRECT_COMMAND{0xC0};           // 11xxxxxxb;
 
-// Timeout ms
-constexpr uint32_t TIMEOUT_REQ_WUP{4};
-constexpr uint32_t TIMEOUT_SELECT{4};
-constexpr uint32_t TIMEOUT_ANTICOLL{8};
-constexpr uint32_t TIMEOUT_HALT{2};
-constexpr uint32_t TIMEOUT_GET_VERSION{5};
-constexpr uint32_t TIMEOUT_3DES{10};
-constexpr uint32_t TIMEOUT_AUTH1{2};
-constexpr uint32_t TIMEOUT_AUTH2{10};
-constexpr uint32_t TIMEOUT_READ{4};
-constexpr uint32_t TIMEOUT_WRITE1{5};
-constexpr uint32_t TIMEOUT_WRITE2{10};
-constexpr uint32_t TIMEOUT_OP{5};  // Inc/Dec/Restore...
-
 /*!
   @namespace regval
   @brief Register setting value

@@ -88,8 +88,8 @@ namespace m5 {
 namespace unit {
 
 // -------------------------------- For NFC-A
-bool UnitST25R3916::nfca_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                    const uint32_t timeout_ms)
+bool UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                                   const uint32_t timeout_ms)
 {
     const auto rx_len_org = rx_len;
     rx_len                = 0;
@@ -107,10 +107,11 @@ bool UnitST25R3916::nfca_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t
 
     if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
         M5_LIB_LOGE("Timeout");
-        // >>>>>>>>>
+        /*
         if (tx) {
             m5::utility::log::dump(tx, tx_len, false);
         }
+        */
         return false;
     }
 
@@ -121,115 +122,6 @@ bool UnitST25R3916::nfca_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t
     }
     M5_LIB_LOGE("Failed to readFIFO");
     return false;
-}
-
-Type UnitST25R3916::nfca_identify_type(const UID& uid)
-{
-    const uint8_t sak = uid.sak;
-
-    if (sak & 0x02 /*b2*/) {  // RFU?
-        return Type::Unknown;
-    }
-    if (sak & 0x04 /*b3*/) {  // UID uncompleted
-        return Type::Unknown;
-    }
-
-    if (sak & 0x08 /*b4*/) {
-        // Bit 4 Yes
-        if (sak & 0x10 /*b5*/) {
-            // Bit 5 Yes
-            if (sak & 0x01 /*b1*/) {
-                return Type::MIFARE_Classic_2K;  // 0x19
-            }
-            if (sak & 0x20 /*b6*/) {
-                return Type::MIFARE_Classic_4K;  // 0x38 SmartMX with
-            }
-            // RATS?
-            if (true) {
-                return Type::MIFARE_Classic_4K;  // 0x18
-            }
-            // PlusEV1, PlusS, PlusX (SL1)
-            return Type::Unknown;
-        }
-        // Bit 5 No
-        if (sak & 0x01 /*b1*/) {
-            // MIFARE Mini
-            return Type::Unknown;  // 0x09
-        }
-        if (sak & 0x20 /*b6*/) {
-            return Type::MIFARE_Classic_1K;  // 0x28 SmartMX with
-        }
-        // RATS?
-        if (true) {
-            return Type::MIFARE_Classic_1K;  // 0x08
-        }
-        // PlusEV1, PlusS, PlusX, PlusSE 1K (SL1)
-        return Type::Unknown;
-    }
-
-    // Bit 4 No
-    if (sak & 0x10 /*b5*/) {
-        // Bit 5 Yes
-        return (sak & 0x01) ? Type::MIFARE_Plus_4K /* 0x11*/ : Type::MIFARE_Plus_2K /* 0x10*/;
-    }
-    // Bit 5 No
-    if (sak & 0x01 /*b1*/) {
-        // TagNPlay
-        return Type::Unknown;
-    }
-    // Bit 1 No
-    if (sak & 0x20 /*b6*/) {
-        return Type::ISO_14443_4;
-    }
-    // Bit 6 No
-    uint8_t ver[16]{};
-    if (!ntag_get_version(ver)) {
-        // UltraLight or UltraLightC or NTAG203
-        uint16_t discard{};
-#if 0
-        // Re-activate if get_version has been failed (PICC goes into IDLE mode)
-        req_wup_device(discard, true /* REQA*/);
-        if (!nfcaSelect(uid)) {
-            M5_LIB_LOGE("Faild to re-select %s", uid.uidAsString().c_str());
-            return Type::Unknown;
-        }
-#endif
-        uint8_t des[] = {m5::stl::to_underlying(Command::AUTHENTICATE_1), 0x00};
-        uint8_t rbuf[16]{};
-        uint16_t rx_len = sizeof(rbuf);
-        if (nfca_transceive(rbuf, rx_len, des, sizeof(des), TIMEOUT_3DES)) {
-            if (rbuf[0] == 0xAF) {
-                return Type::MIFARE_UltraLightC;
-            }
-        }
-#if 1
-        // Re-activate if transceive has been failed (PICC goes into IDLE mode)
-        nfcaRequest(discard);
-        return nfcaSelect(uid) ? Type::MIFARE_UltraLight : Type::Unknown;
-#else
-        // TODO : NTAG203
-        return Type::MIFARE_UltraLight;
-#endif
-    }
-
-    if (ver[0] != 0x00 || ver[1] != 0x04 /*NXP*/ || ver[7] != 0x03 /* ISO14443-A*/) {
-        return Type::Unknown;
-    }
-    if (ver[2] == 0x04 /* NXP */) {
-        // ver[6] Storage size code
-        return (ver[6] == 0x0E)   ? Type::NTAG_212
-               : (ver[6] == 0x0F) ? Type::NTAG_213
-               : (ver[6] == 0x11) ? Type::NTAG_215
-               : (ver[6] == 0x13) ? Type::NTAG_216
-               : (ver[6] == 0x0B) ? ((ver[4] == 0x02) ? Type::NTAG_210u : Type::NTAG_210)
-                                  : Type::Unknown;
-    }
-    if (ver[2] == 0x03 /*UltraLight */) {
-        // UltraLight EV1, Nano
-        return Type::Unknown;
-    }
-
-    return Type::Unknown;
 }
 
 bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
@@ -372,7 +264,7 @@ bool UnitST25R3916::nfcaSelect(const UID& uid)
 
         // Select
         uint16_t rx_len{3};
-        if (!nfca_transceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
+        if (!nfcaTransceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
             M5_LIB_LOGE("Failed to select");
             return false;
         }
@@ -387,6 +279,10 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, UID& uid, const
 {
     completed  = false;
     _encrypted = false;
+
+    if (lv < 1 || lv > 3) {
+        return false;
+    }
 
     // Resolve collision
     // M5_LIB_LOGE(">>> ANTICOLL");
@@ -405,7 +301,7 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, UID& uid, const
     // Select
     uint16_t rx_len{3};
     if (  //! writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||
-        !nfca_transceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
+        !nfcaTransceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
         M5_LIB_LOGE("Failed to select");
         return false;
     }
@@ -461,11 +357,16 @@ bool UnitST25R3916::nfcaReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t a
 {
     uint8_t cmd[2] = {m5::stl::to_underlying(Command::READ), addr};
     if (  //! writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
-        !nfca_transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
+        !nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
         M5_LIB_LOGE("Failed to transcive");
         return false;
     }
     return true;
+}
+
+bool UnitST25R3916::nfcaWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len)
+{
+    return false;
 }
 
 // -------------------------------- For Mifare classic
@@ -573,9 +474,14 @@ bool UnitST25R3916::mifareClassicReadBlock(uint8_t* rx, uint16_t& rx_len, const 
     return mifare_classic_transceive_encrypt(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ, true, true);
 }
 
+bool UnitST25R3916::mifareClassicWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len)
+{
+    return false;
+}
+
 bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& uid, const uint8_t block, const Key& mkey)
 {
-    if ((cmd != Command::AUTH_WITH_KEY_A && cmd != Command::AUTH_WITH_KEY_B) || !uid.isClassic()) {
+    if ((cmd != Command::AUTH_WITH_KEY_A && cmd != Command::AUTH_WITH_KEY_B) || !uid.isMifareClassic()) {
         return false;
     }
 
@@ -594,7 +500,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& ui
         }
     } else {
         if (  //! writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
-            !nfca_transceive(RB, rlen, auth_frame, sizeof(auth_frame), TIMEOUT_AUTH1)) {
+            !nfcaTransceive(RB, rlen, auth_frame, sizeof(auth_frame), TIMEOUT_AUTH1)) {
             M5_LIB_LOGE("Failed to send AUTH1(plain) %u", rlen);
             return false;
         }
@@ -661,22 +567,22 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& ui
 }
 
 // -------------------------------- For NTAG
-bool UnitST25R3916::ntag_fast_read(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
+bool UnitST25R3916::ntagFastRead(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
 {
     uint8_t cmd[3] = {m5::stl::to_underlying(Command::FAST_READ), spage, epage};
     if (  //! writeSettingsISO14443A(0x00 /* standard*/) || !writeAuxiliaryDefinition(0) ||
-        !nfca_transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
+        !nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
         M5_LIB_LOGE("Failed to transcive");
         return false;
     }
     return true;
 }
 
-bool UnitST25R3916::ntag_get_version(uint8_t info[10])
+bool UnitST25R3916::ntagGetVersion(uint8_t info[10])
 {
     uint8_t gv[1]   = {m5::stl::to_underlying(Command::GET_VERSION)};
     uint16_t rx_len = 10;
-    return nfca_transceive(info, rx_len, gv, sizeof(gv), TIMEOUT_GET_VERSION);
+    return nfcaTransceive(info, rx_len, gv, sizeof(gv), TIMEOUT_GET_VERSION);
 }
 
 }  // namespace unit

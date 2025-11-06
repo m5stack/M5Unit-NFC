@@ -142,15 +142,15 @@ struct UID {
     {
         return size && (type != Type::Unknown) && blocks;
     }
-    //! @brief Is MIFARE classic?
-    inline bool isClassic() const
-    {
-        return valid() && is_classic(type);
-    }
     //! @brief Is MIFARE?
     inline bool isMifare() const
     {
         return valid() && is_mifare(type);
+    }
+    //! @brief Is MIFARE classic?
+    inline bool isMifareClassic() const
+    {
+        return valid() && is_classic(type);
     }
     //! @brief Is NTAG?
     inline bool isNTAG() const
@@ -264,6 +264,22 @@ enum class Command : uint8_t {
     WRITE_SIG   = 0xA9,  //!< NTAG 210u Write custom signature
     LOCK_SIG    = 0xAC,  //!< NTAG 210u Lock/Unlock signature
 };
+
+///@name Timeout
+///@{
+constexpr uint32_t TIMEOUT_REQ_WUP{4};
+constexpr uint32_t TIMEOUT_SELECT{4};
+constexpr uint32_t TIMEOUT_ANTICOLL{8};
+constexpr uint32_t TIMEOUT_HALT{2};
+constexpr uint32_t TIMEOUT_GET_VERSION{5};
+constexpr uint32_t TIMEOUT_3DES{10};
+constexpr uint32_t TIMEOUT_AUTH1{2};
+constexpr uint32_t TIMEOUT_AUTH2{10};
+constexpr uint32_t TIMEOUT_READ{4};
+constexpr uint32_t TIMEOUT_WRITE1{5};
+constexpr uint32_t TIMEOUT_WRITE2{10};
+constexpr uint32_t TIMEOUT_OP{5};  // Inc/Dec/Restore...
+///@}
 
 }  // namespace a
 }  // namespace nfc

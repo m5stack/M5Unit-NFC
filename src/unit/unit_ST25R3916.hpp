@@ -27,7 +27,7 @@ struct AdapterST25R3916;
  */
 class UnitST25R3916 : public Component {
     M5_UNIT_COMPONENT_HPP_BUILDER(UnitST25R3916, 0x50 /* I2C address */);
-    friend struct m5::unit::nfc::AdapterST25R3916;
+    //    friend struct m5::unit::nfc::AdapterST25R3916;
 
 public:
     explicit UnitST25R3916(const uint8_t arg = DEFAULT_ADDRESS) : Component(arg)
@@ -1653,8 +1653,11 @@ public:
     bool readICIdentity(uint8_t& type, uint8_t& rev);
     ///@}
 
+    // ----------------------------------------------------------------
     ///@name NFC-A
     ///@{
+    bool nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                        const uint32_t timeout_ms);
     inline bool nfcaRequest(uint16_t& atqa)
     {
         return nfca_request_wakeup(atqa, true);
@@ -1666,6 +1669,7 @@ public:
     bool nfcaSelectWithAnticollision(bool& completed, m5::nfc::a::UID& uid, const uint8_t lv);
     bool nfcaSelect(const m5::nfc::a::UID& uid);
     bool nfcaReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t block);
+    bool nfcaWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len);
     bool nfcaHlt();
 
     ///@name Mifare
@@ -1683,8 +1687,16 @@ public:
         return mifare_classic_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_B, uid, block, key);
     }
     bool mifareClassicReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t addr);
+    bool mifareClassicWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len);
     ///@}
     ///@}
+
+    ///@name NTAG
+    ///@{
+    bool ntagGetVersion(uint8_t info[10]);
+    bool ntagFastRead(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
+    ///@}
+
     ///@}
 
     // For debug
@@ -1719,22 +1731,15 @@ protected:
     bool wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size = 0);
     bool read_FIFO(std::vector<uint8_t>& out);
 
-    bool nfca_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                         const uint32_t timeout_ms);
-
     // NFC-A
     bool nfca_request_wakeup(uint16_t& atqa, const bool req);
     bool nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv);
-    m5::nfc::a::Type nfca_identify_type(const m5::nfc::a::UID& uid);
 
     bool mifare_classic_send_encrypt(const uint8_t* tx, const uint16_t tx_len);
     bool mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                            const uint32_t timeout_ms, const bool include_crc, const bool decrypt);
     bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::UID& uid, const uint8_t block,
                                      const m5::nfc::a::mifare::Key& key);
-
-    bool ntag_get_version(uint8_t info[10]);
-    bool ntag_fast_read(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
 
 private:
     config_t _cfg{};
