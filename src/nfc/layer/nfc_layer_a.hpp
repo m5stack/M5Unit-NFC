@@ -97,8 +97,75 @@ public:
       @note PICCC to HALT
      */
     bool deactivate();
+
     /*!
-      @brief Authentication by KeyA
+      @brief Read the 1 block / 4 page (16 bytes)
+      @param rx Buffer (at least 16 bytes)
+      @param addr Block/Page address
+      @return True if successful
+      @pre The block must be authenticated if MIFARE classic
+     */
+    bool read16(uint8_t rx[16], const uint8_t addr);
+    /*!
+      @brief Write the 1 block / 4 page (16 bytes)
+      @param addr Block/Page address
+      @param tx Buffef
+      @param tx_len Buffer size
+      @param safety Fail to write to out of the user memory area if true (safety measure)
+      @return True if successful
+      @warning If the tx_len is less than 16 bytes, the remaining space is filled with 0x00
+      @warning If the tx_len is larger than 16 bytes, only the first 16 bytes will be written
+      @pre The block must be authenticated if MIFARE classic
+    */
+    bool write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len = 16, const bool safety = true);
+    /*!
+      @brief Read the 1 page
+      @param rx Buffer (at least 4 bytes)
+      @param addr Block/Page address
+      @return True if successful
+      @warning Only PICC supporting the FAST_READ command is possible
+     */
+    bool read4(uint8_t rx[4], const uint8_t addr);
+    /*!
+      @brief Write the 1 page (4 bytes)
+      @param addr Block/Page address
+      @param tx Buffer
+      @param tx_len Buffer size
+      @param safety Fail to write to out of the user memory area if true (safety measure)
+      @return True if successful
+      @warning Supports NTAG and UltraLight only
+      @warning If the tx_len is less than 4 bytes, the remaining space is filled with 0x00
+      @warning If the tx_len is larger than 4 bytes, only the first 4 bytes will be written
+     */
+    bool write4(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len = 4, const bool safety = true);
+    /*!
+      @brief Read any bytes from user area
+      @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
+      @param rx Buffer
+      @param[in/out] rx_len in:buffer size, out:actual read size
+      @param saddr Reading start block/page address
+      @return True if successful
+      @warning For FAST_READ-compatible devices, the rx is in 4-byte units. for others, it is in 16-byte units
+      @pre Target blocks must be authenticatable using the specified key if MIFARE classic
+    */
+    bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
+              const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+    /*!
+      @brief Write any bytes to user area
+      @details Continue writing only the user area from the first block of the user area until tx_len is satisfied
+      @param saddr Writing start block/page address
+      @param tx Buffer
+      @param tx_len buffer size
+      @return True if successful
+      @warning For NTAG and UltraLight, the tx is in 4-byte units; for others, it is in 16-byte units
+      @warning If the value is less than the unit, it is padded with 0x00
+      @pre Target blocks must be authenticatable using the specified key if MIFARE classic
+    */
+    bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len,
+               const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+
+    /*!
+      @brief Authentication by KeyA for MIFARE classsic
       @param uid UID
       @param block Authentication block
       @param key MIFARE classic key
@@ -106,9 +173,9 @@ public:
     */
     bool mifareClassicAuthenticateA(
         const m5::nfc::a::UID& uid, const uint8_t block,
-        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_CLASSIC_KEY);
+        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
     /*!
-      @brief Authentication by KeyB
+      @brief Authentication by KeyB for MIFARE classic
       @param uid UID
       @param block Authentication block
       @param key MIFARE classic key
@@ -116,33 +183,14 @@ public:
     */
     bool mifareClassicAuthenticateB(
         const m5::nfc::a::UID& uid, const uint8_t block,
-        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_CLASSIC_KEY);
-    /*!
-      @brief Read the 1 block
-      @param rx Buffer
-      @param[in/out] in:Buffer length out:Actual read length
-      @param addr Block address
-      @warning The size per block varies by device
-     */
-    bool read(uint8_t* rx, uint16_t& rx_len, const uint16_t addr);
-    /*!
-      @brief Write the 1 block
-      @param addr Block address
-      @param tx Buffer
-      @param tx_len :Buffer length out:Actual read length
-      @param safety Fail to write to out of the user memory area if true (safety measure)
-      @warning The size per block varies by device
-      @note If the size exceeds the block size, truncate
-      @note If it does not exceed the block size, pad with 0x00
-     */
-    bool write(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len, const bool safety = true);
+        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
 
     /*!
       @brief Dump all blocks for debug
       @param key MIFARE classic key
       @pre All blocks must be authenticatable using the specified key if MIFARE classic
      */
-    bool dump(const m5::nfc::a::mifare::classic::Key& mkey = m5::nfc::a::mifare::classic::DEFAULT_CLASSIC_KEY);
+    bool dump(const m5::nfc::a::mifare::classic::Key& mkey = m5::nfc::a::mifare::classic::DEFAULT_KEY);
     /*!
       @brief Dump 1 block
       @param addr Block address
@@ -153,22 +201,22 @@ public:
     ///@}
 
 protected:
-    m5::nfc::a::Type identify_type(const m5::nfc::a::UID& uid);
-
-    bool nfca_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                         const uint32_t timeout_ms);
-
-    bool ntag_get_version(uint8_t info[10]);
+    bool read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr);
+    bool read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
+                           const m5::nfc::a::mifare::classic::Key& key);
+    bool write_using_write4(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len);
+    bool write_using_write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len,
+                             const m5::nfc::a::mifare::classic::Key& key);
 
     bool dump_sector_structure(const m5::nfc::a::UID& uid, const m5::nfc::a::mifare::classic::Key& key);
     bool dump_sector(const uint8_t sector);
-    bool dump_page_structure(const uint8_t maxPage);
-    bool dump_page(const uint8_t page);
+    bool dump_page_structure(const uint16_t maxPage);
+    bool dump_page(const uint8_t page, const uint16_t maxPage);
+
+    static bool push_back_uid(std::vector<m5::nfc::a::UID>& v, const m5::nfc::a::UID& uid);
 
 protected:
     m5::nfc::a::UID _activeUID{};
-
-    static bool push_back_uid(std::vector<m5::nfc::a::UID>& v, const m5::nfc::a::UID& uid);
 
 private:
     std::unique_ptr<Adapter> _impl;
@@ -178,6 +226,8 @@ private:
 struct NFCLayerA::Adapter {
     virtual ~Adapter() = default;
 
+    virtual uint16_t max_fifo_depth() = 0;
+
     virtual bool request(uint16_t& atqa) = 0;
     virtual bool wakeup(uint16_t& atqa)  = 0;
 
@@ -185,17 +235,18 @@ struct NFCLayerA::Adapter {
     virtual bool activate(const m5::nfc::a::UID& uid) = 0;
     virtual bool deactivate()                         = 0;
 
-    virtual bool nfca_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                 const uint32_t timeout_ms)                                      = 0;
-    virtual bool nfca_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)             = 0;
-    virtual bool nfca_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) = 0;
+    virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr)        = 0;  // READ
+    virtual bool nfca_write_block(const uint8_t addr, const uint8_t tx[16]) = 0;  // WRITE_BLOCK
+    virtual bool nfca_write_page(const uint8_t addr, const uint8_t tx[4])   = 0;  // WRITE_PAGE
 
     virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::UID& uid, const uint8_t block,
-                                             const m5::nfc::a::mifare::classic::Key& key)                  = 0;
-    virtual bool mifare_classic_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)             = 0;
-    virtual bool mifare_classic_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) = 0;
+                                             const m5::nfc::a::mifare::classic::Key& key) = 0;
 
-    virtual bool ntag_get_version(uint8_t info[10]) = 0;
+    virtual bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage,
+                                const uint8_t epage) = 0;  // FAST_READ
+
+    //    virtual bool mifare_classic_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)             = 0;
+    //    virtual bool mifare_classic_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) = 0;
 
 protected:
 };

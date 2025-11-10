@@ -17,6 +17,7 @@ using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
 namespace {
+
 void dump_block(const uint8_t* buf, const int16_t block = -1, const int16_t sector = -1, const uint8_t ab = 0xFF,
                 const bool aberror = false, const bool valueblock = false)
 {
@@ -93,12 +94,9 @@ bool NFCLayerA::detect(std::vector<UID>& devs, const uint32_t timeout_ms)
         if (!select(uid)) {
             return false;
         }
-        // Type identification
-        uid.type   = identify_type(uid);
-        uid.blocks = get_number_of_blocks(uid.type);
         _activeUID = uid;
 
-        M5_LIB_LOGD("Detect:%s", uid.uidAsString().c_str());
+        M5_LIB_LOGE("Detect:%s", uid.uidAsString().c_str());
 
         // Hlt
         if (!deactivate()) {
@@ -129,126 +127,295 @@ bool NFCLayerA::deactivate()
     return _impl->deactivate();
 }
 
-Type NFCLayerA::identify_type(const UID& uid)
+bool NFCLayerA::read4(uint8_t rx[4], const uint8_t addr)
 {
-    const uint8_t sak = uid.sak;
+    uint16_t rx_len{4};
+    return rx && _activeUID.valid() &&
+           (_activeUID.canFastRead() ? (_impl->ntag_read_page(rx, rx_len, addr, addr) && rx_len == 4)
+                                     : _impl->nfca_read_block(rx, addr));
+}
 
-    if (sak & 0x02 /*b2*/) {  // RFU?
-        return Type::Unknown;
-    }
-    if (sak & 0x04 /*b3*/) {  // UID uncompleted
-        return Type::Unknown;
-    }
-
-    if (sak & 0x08 /*b4*/) {
-        // Bit 4 Yes
-        if (sak & 0x10 /*b5*/) {
-            // Bit 5 Yes
-            if (sak & 0x01 /*b1*/) {
-                return Type::MIFARE_Classic_2K;  // 0x19
-            }
-            if (sak & 0x20 /*b6*/) {
-                return Type::MIFARE_Classic_4K;  // 0x38 SmartMX with
-            }
-            // RATS?
-            if (true) {
-                return Type::MIFARE_Classic_4K;  // 0x18
-            }
-            // PlusEV1, PlusS, PlusX (SL1)
-            return Type::Unknown;
-        }
-        // Bit 5 No
-        if (sak & 0x01 /*b1*/) {
-            // MIFARE Mini
-            return Type::Unknown;  // 0x09
-        }
-        if (sak & 0x20 /*b6*/) {
-            return Type::MIFARE_Classic_1K;  // 0x28 SmartMX with
-        }
-        // RATS?
-        // TODO:!!!
-        if (true) {
-            return Type::MIFARE_Classic_1K;  // 0x08
-        }
-        // PlusEV1, PlusS, PlusX, PlusSE 1K (SL1)
-        return Type::Unknown;
-    }
-
-    // Bit 4 No
-    if (sak & 0x10 /*b5*/) {
-        // Bit 5 Yes
-        return (sak & 0x01) ? Type::MIFARE_Plus_4K /* 0x11*/ : Type::MIFARE_Plus_2K /* 0x10*/;
-    }
-    // Bit 5 No
-    if (sak & 0x01 /*b1*/) {
-        // TagNPlay
-        return Type::Unknown;
-    }
-    // Bit 1 No
-    if (sak & 0x20 /*b6*/) {
-        return Type::ISO_14443_4;
-    }
-    // Bit 6 No
-    uint8_t ver[16]{};
-    if (!ntag_get_version(ver)) {
-        // UltraLight or UltraLightC or NTAG203
-        uint8_t des[] = {m5::stl::to_underlying(Command::AUTHENTICATE_1), 0x00};
-        uint8_t rbuf[16]{};
-        uint16_t rx_len = sizeof(rbuf);
-        if (nfca_transceive(rbuf, rx_len, des, sizeof(des), TIMEOUT_3DES)) {
-            if (rbuf[0] == 0xAF) {
-                return Type::MIFARE_UltraLightC;
-            }
-        }
+bool NFCLayerA::read16(uint8_t rx[16], const uint8_t addr)
+{
 #if 1
-        // Re-activate if transceive has been failed (PICC goes into IDLE mode)
-        return activate(uid) ? Type::MIFARE_UltraLight : Type::Unknown;
+    uint16_t rx_len{16};
+    return rx && _activeUID.valid() &&
+           (_activeUID.canFastRead() ? (_impl->ntag_read_page(rx, rx_len, addr, addr + 3) && rx_len == 16)
+                                     : _impl->nfca_read_block(rx, addr));
 #else
-        // TODO : NTAG203
-        return Type::MIFARE_UltraLight;
+    // AN13089 3.1.2 Only in case of 4 pages reading the READ command is faster than the FAST_READ.
+    return rx && _activeUID.valid() && _impl->nfca_read_block(rx, addr);
 #endif
-    }
-
-    if (ver[0] != 0x00 || ver[1] != 0x04 /*NXP*/ || ver[7] != 0x03 /* ISO14443-A*/) {
-        return Type::Unknown;
-    }
-    if (ver[2] == 0x04 /* NXP */) {
-        // ver[6] Storage size code
-        return (ver[6] == 0x0E)   ? Type::NTAG_212
-               : (ver[6] == 0x0F) ? Type::NTAG_213
-               : (ver[6] == 0x11) ? Type::NTAG_215
-               : (ver[6] == 0x13) ? Type::NTAG_216
-               : (ver[6] == 0x0B) ? ((ver[4] == 0x02) ? Type::NTAG_210u : Type::NTAG_210)
-                                  : Type::Unknown;
-    }
-    if (ver[2] == 0x03 /*UltraLight */) {
-        // UltraLight EV1, Nano
-        return Type::Unknown;
-    }
-    return Type::Unknown;
 }
 
-bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint16_t block)
+bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t addr, const m5::nfc::a::mifare::classic::Key& key)
 {
-    // In the case of page structure, correction
-    uint16_t addr = _activeUID.supportsNFC() ? (block & ~0x03) : block;
-
-    return _activeUID.valid() && (_activeUID.isMifareClassic() ? _impl->mifare_classic_read_block(rx, rx_len, addr)
-                                                               : _impl->nfca_read_block(rx, rx_len, addr));
+    if (!rx || !rx_len || !_activeUID.valid()) {
+        return false;
+    }
+    return _activeUID.canFastRead() ? read_using_fast(rx, rx_len, addr) : read_using_read16(rx, rx_len, addr, key);
 }
 
-bool NFCLayerA::write(const uint16_t block, const uint8_t* tx, const uint16_t tx_len, const bool safety)
+bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t addr)
 {
-    uint16_t addr = _activeUID.supportsNFC() ? (block & ~0x03) : block;
+    const Type t = _activeUID.type;
+    //    const uint16_t fifo_depth = _impl->max_fifo_depth(); // ST25R3916 512 but cannot return long length...
+    const uint16_t fifo_depth = 64 + 2 /* CRC */;
+    const uint16_t last       = get_last_user_block(t);
+    uint16_t need_page        = ((rx_len + 3) >> 2);
+    uint16_t from             = std::min<uint16_t>(last, std::max<uint16_t>(addr, get_first_user_block(t)));
+    uint16_t to               = std::min<uint16_t>(from + need_page - 1, last);
+    uint16_t pages            = to - from + 1;
 
-    bool can = safety ? is_user_block(activatedDevice().type, addr) : true;
-    if (safety && !can) {
-        M5_LIB_LOGW("Write has been rejected due to safety %s %u", activatedDevice().typeAsString().c_str(), addr);
+    uint16_t read_size = pages << 2;  // 4 byte unit
+    if (read_size > rx_len) {
+        M5_LIB_LOGE("Not enough rx size %u-%u %u/%u", from, to, rx_len, read_size);
+        rx_len = 0;
+        return false;
     }
-    return (can && _activeUID.valid())
-               ? (_activeUID.isMifareClassic() ? _impl->mifare_classic_write_block(addr, tx, tx_len)
-                                               : _impl->nfca_write_block(addr, tx, tx_len))
-               : false;
+
+    M5_LIB_LOGD("READ:%u-%u %u %u", from, to, pages, pages << 2);
+
+    uint16_t actual{};
+    uint16_t batch_pages = std::min<uint16_t>((fifo_depth - 2) >> 2, pages);
+    uint16_t spage       = from;
+    uint16_t epage       = from + batch_pages - 1;
+    rx_len               = 0;
+
+    while (actual < pages && spage <= to) {
+        if (epage > to) {
+            epage = to;
+        }
+        uint16_t ps  = epage - spage + 1;
+        uint16_t len = ps << 2;
+
+        M5_LIB_LOGD("  READ:%u-%u %u %u/%u", spage, epage, len, actual, pages);
+
+        if (!_impl->ntag_read_page(rx + rx_len, len, spage, epage) || len != (ps << 2)) {
+            M5_LIB_LOGE("Failed to read %u-%u", spage, epage);
+            return false;
+        }
+        rx_len += len;
+        actual += ps;
+        spage += ps;
+        epage += ps;
+    }
+    return true;
+}
+
+bool NFCLayerA::read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t addr,
+                                  const m5::nfc::a::mifare::classic::Key& key)
+{
+    const Type t        = _activeUID.type;
+    uint16_t need_block = ((rx_len + 15) >> 4);
+    uint16_t last       = get_last_user_block(_activeUID.type);
+    uint16_t from       = std::min<uint16_t>(last, std::max<uint16_t>(addr, get_first_user_block(t)));
+    uint16_t to         = std::min<uint16_t>(from + need_block - 1, last);
+    uint16_t blocks     = to - from + 1;
+
+    uint16_t read_size = blocks << 4;  // 16 byte unit
+    if (read_size > rx_len) {
+        M5_LIB_LOGE("Not enough rx size %u-%u %u/%u", from, to, rx_len, read_size);
+        rx_len = 0;
+        return false;
+    }
+
+    rx_len         = 0;
+    uint8_t sector = get_sector(from);
+    if (_activeUID.isMifareClassic()) {
+        M5_LIB_LOGD("AUTH:%u", sector);
+        if (!mifareClassicAuthenticateA(_activeUID, get_sector_trailer_block_from_sector(sector), key)) {
+            M5_LIB_LOGE("Failed AUTH sec:%u", sector);
+            return false;
+        }
+    }
+
+    uint16_t actual{};
+    uint16_t cur = from;
+    uint16_t add = _activeUID.isMifareClassic() ? 1 : 4 /* 4 pages */;
+
+    M5_LIB_LOGD("READ:blocks:%u-%u %u %u (%u)", from, to, blocks, _activeUID.blocks, add);
+
+    while (actual < blocks && cur <= last) {
+        uint8_t sec = get_sector(cur);
+        if (sec != sector) {
+            sector = sec;
+            if (_activeUID.isMifareClassic()) {
+                M5_LIB_LOGD("   AUTH:%u/%u", cur, sec);
+                if (!mifareClassicAuthenticateA(_activeUID, get_sector_trailer_block_from_sector(sector), key)) {
+                    M5_LIB_LOGE("Failed to AUTH sec:%u", sector);
+                    return false;
+                }
+            }
+        }
+        if (!is_user_block(_activeUID.type, cur)) {
+            ++cur;
+            continue;
+        }
+        M5_LIB_LOGD("   READ:%u %u/%u", cur, actual, blocks);
+        if (!read16(rx + 16 * actual, cur)) {
+            M5_LIB_LOGE("Failed to read block:%u", cur);
+            return false;
+        }
+        rx_len += 16;
+        cur += add;
+        ++actual;
+    }
+    return true;
+}
+
+bool NFCLayerA::write4(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len, const bool safety)
+{
+    if (!tx || !tx_len || !_activeUID.valid()) {
+        return false;
+    }
+
+    if (safety && !is_user_block(_activeUID.type, addr)) {
+        M5_LIB_LOGW("Write has been rejected due to safety %u", addr);
+        return false;
+    }
+
+    uint8_t buf[4]{};
+    memcpy(buf, tx, std::min<uint16_t>(4, tx_len));
+    return _impl->nfca_write_page(addr, buf);
+}
+
+bool NFCLayerA::write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len, const bool safety)
+{
+    if (!tx || !tx_len || !_activeUID.valid()) {
+        return false;
+    }
+
+    uint8_t buf[16]{};
+    memcpy(buf, tx, std::min<uint16_t>(16, tx_len));
+
+    //
+    if (_activeUID.supportsNFC()) {
+        uint8_t epage = addr + 4 - 1;
+        if (safety && (!is_user_block(_activeUID.type, addr) || !is_user_block(_activeUID.type, epage))) {
+            M5_LIB_LOGW("Write has been rejected due to safety %u-%u", addr, epage);
+            return false;
+        }
+        for (uint_fast8_t i = 0; i < 4; ++i) {
+            if (!_impl->nfca_write_page(addr + i, buf + i * 4)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    //
+    if (safety && !is_user_block(_activeUID.type, addr)) {
+        M5_LIB_LOGW("Write has been rejected due to safety %u", addr);
+        return false;
+    }
+    return _impl->nfca_write_block(addr, buf);
+}
+
+bool NFCLayerA::write(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len,
+                      const m5::nfc::a::mifare::classic::Key& key)
+{
+    if (!tx || !tx_len || !_activeUID.valid()) {
+        return false;
+    }
+    return _activeUID.supportsNFC() ? write_using_write4(addr, tx, tx_len) : write_using_write16(addr, tx, tx_len, key);
+}
+
+bool NFCLayerA::write_using_write4(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len)
+{
+    const Type t         = _activeUID.type;
+    const uint16_t last  = get_last_user_block(t);
+    uint16_t need_page   = ((tx_len + 3) >> 2);
+    uint16_t from        = std::min<uint16_t>(_activeUID.blocks - 1, std::max<uint16_t>(addr, get_first_user_block(t)));
+    uint16_t to          = std::min<uint16_t>(from + need_page - 1, last);
+    uint16_t pages       = to - from + 1;
+    const uint16_t total = pages << 2;  // 4 byte unit
+    uint16_t written{0};
+
+    if (!is_user_block(t, from)) {
+        M5_LIB_LOGE("The write start position is not in the user area %u/%u", addr, from);
+        return false;
+    }
+
+    if (tx_len > total) {
+        M5_LIB_LOGE("Not enough user area from %u-%u %u/%u", from, to, tx_len, total);
+        return false;
+    }
+
+    M5_LIB_LOGD("WRITE:%u,%u %u-%u %u %u", addr, tx_len, from, to, pages, total);
+
+    uint8_t cur         = from;
+    const uint8_t* data = tx;
+    while (written < total) {
+        uint16_t sz = std::min<uint16_t>(4, total - written);
+        M5_LIB_LOGD("  WRITE:%u %u %u/%u", cur, sz, written, total);
+        if (!write4(cur, data, sz)) {
+            break;
+        }
+        written += sz;
+        data += sz;
+        ++cur;
+    }
+    return written == total;
+}
+
+bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len,
+                                    const m5::nfc::a::mifare::classic::Key& key)
+{
+    const Type t    = _activeUID.type;
+    auto last       = get_last_user_block(t);
+    uint16_t blocks = (tx_len + 15) >> 4;
+    uint16_t b{};
+    while (b < blocks) {
+        if (addr + b > last) {
+            M5_LIB_LOGW("Write has been rejected out of user block range %u-%u", addr, addr + blocks - 1);
+            return false;
+        }
+        b += (1 + !is_user_block(t, addr + b));  //  Skip sector trailer
+    }
+
+    uint16_t written{0};
+    uint8_t cur         = addr;
+    const uint8_t* data = tx;
+
+    M5_LIB_LOGD("WRITE:%u,%u %u- %u", addr, tx_len, cur, blocks);
+
+    uint8_t sector = get_sector(cur);
+    if (_activeUID.isMifareClassic()) {
+        M5_LIB_LOGD("AUTH:%u", sector);
+        if (!mifareClassicAuthenticateA(_activeUID, get_sector_trailer_block_from_sector(sector), key)) {
+            M5_LIB_LOGE("Failed AUTH sec:%u", sector);
+            return false;
+        }
+    }
+
+    while (written < tx_len) {
+        uint8_t sec = get_sector(cur);
+        if (sec != sector) {
+            sector = sec;
+            if (_activeUID.isMifareClassic()) {
+                M5_LIB_LOGD("  AUTH:%u", sector);
+                if (!mifareClassicAuthenticateA(_activeUID, get_sector_trailer_block_from_sector(sector), key)) {
+                    M5_LIB_LOGE("Failed to AUTH sec:%u", sector);
+                    break;
+                }
+            }
+        }
+        if (!is_user_block(t, cur)) {
+            ++cur;
+            continue;
+        }
+
+        uint16_t sz = std::min<uint16_t>(16, tx_len - written);
+        M5_LIB_LOGD("  WRITE:%u %u %u/%u", cur, sz, written, tx_len);
+        if (!write16(cur, data, sz)) {
+            break;
+        }
+        written += sz;
+        data += sz;
+        ++cur;
+    }
+    return written == tx_len;
 }
 
 bool NFCLayerA::dump(const Key& mkey)
@@ -270,7 +437,7 @@ bool NFCLayerA::dump(const uint8_t block)
         if (_activeUID.isMifareClassic()) {
             return dump_sector(get_sector(block));
         } else if (_activeUID.supportsNFC()) {
-            return dump_page(block);
+            return dump_page(block, _activeUID.blocks);
         }
         M5_LIB_LOGW("Not supported %s", _activeUID.typeAsString().c_str());
     }
@@ -310,12 +477,11 @@ bool NFCLayerA::dump_sector(const uint8_t sector)
     const uint8_t base   = (sector < 32) ? sector * blocks : 128U + (sector - 32) * blocks;
 
     uint8_t sbuf[16]{};
-    uint16_t slen{16};
     uint8_t permissions[4]{};                 // [3] is sector trailer
     const uint8_t saddr = base + blocks - 1;  //  sector traler
 
     // Read sector trailer
-    if (!read(sbuf, slen, saddr) || slen != 16) {
+    if (!read16(sbuf, saddr)) {
         return false;
     }
 
@@ -326,9 +492,8 @@ bool NFCLayerA::dump_sector(const uint8_t sector)
     // Data
     for (int_fast8_t i = 0; i < blocks - 1; ++i) {
         uint8_t dbuf[16]{};
-        uint16_t dlen{16};
         uint8_t daddr = base + i;
-        if (!read(dbuf, dlen, daddr) || dlen != 16) {
+        if (!read16(dbuf, daddr)) {
             return false;
         }
         const uint8_t poffset      = (blocks == 4) ? i : i / 5;
@@ -343,37 +508,48 @@ bool NFCLayerA::dump_sector(const uint8_t sector)
     return true;
 }
 
-bool NFCLayerA::dump_page_structure(const uint8_t maxPage)
+bool NFCLayerA::dump_page_structure(const uint16_t maxPage)
 {
     puts(
         "Page    :00 01 02 03\n"
         "--------------------");
 
     for (uint_fast8_t page = 0; page < maxPage; page += 4) {
-        if (!dump_page(page)) {
+        if (!dump_page(page, maxPage)) {
             return false;
         }
     }
     return true;
 }
 
-bool NFCLayerA::dump_page(const uint8_t page)
+bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)
 {
     uint8_t buf[16]{};
-    uint16_t blen{16};
-    uint8_t baddr = page & ~0x03;
+    uint16_t from  = page;
+    uint16_t pages = std::min<uint16_t>(4, maxPage - from);
+    // uint16_t to     = page + pages - 1;
+    // uint16_t rx_len = pages * 4;
 
-    if (read(buf, blen, baddr)) {
-        for (int_fast8_t off = 0; off < 4; ++off) {
+    bool ok{true};
+    if (pages == 4) {  // Ultralight, NTAG
+        ok = read16(buf, from);
+    } else {
+        // The number of pages in an NTAG is not necessarily a multiple of 4
+        for (uint_fast8_t i = 0; i < pages; ++i) {
+            ok &= read4(buf + (i << 2), from + i);
+        }
+    }
+    if (ok) {
+        for (uint_fast8_t off = 0; off < pages; ++off) {
             auto idx = off << 2;
-            printf("[%03d/%02X]:%02X %02X %02X %02X\n", baddr + off, baddr + off, buf[idx + 0], buf[idx + 1],
+            printf("[%03d/%02X]:%02X %02X %02X %02X\n", from + off, from + off, buf[idx + 0], buf[idx + 1],
                    buf[idx + 2], buf[idx + 3]);
         }
-
         return true;
     }
-    for (int_fast8_t off = 0; off < 4; ++off) {
-        printf("[%3d/%02X] ERROR\n", baddr + off, baddr + off);
+
+    for (uint_fast8_t off = 0; off < pages; ++off) {
+        printf("[%3d/%02X] ERROR\n", from + off, from + off);
     }
     return false;
 }
@@ -397,12 +573,6 @@ bool NFCLayerA::push_back_uid(std::vector<m5::nfc::a::UID>& v, const m5::nfc::a:
     return false;
 }
 
-bool NFCLayerA::nfca_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                const uint32_t timeout_ms)
-{
-    return _impl->nfca_transceive(rx, rx_len, tx, tx_len, timeout_ms);
-}
-
 bool NFCLayerA::mifareClassicAuthenticateA(const m5::nfc::a::UID& uid, const uint8_t block,
                                            const m5::nfc::a::mifare::classic::Key& key)
 {
@@ -413,11 +583,6 @@ bool NFCLayerA::mifareClassicAuthenticateB(const m5::nfc::a::UID& uid, const uin
                                            const m5::nfc::a::mifare::classic::Key& key)
 {
     return _impl->mifare_classic_authenticate(false, uid, block, key);
-}
-
-bool NFCLayerA::ntag_get_version(uint8_t info[10])
-{
-    return _impl->ntag_get_version(info);
 }
 
 }  // namespace nfc

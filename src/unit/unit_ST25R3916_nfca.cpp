@@ -238,10 +238,66 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
     return !collision;
 }
 
+bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, UID& uid, const uint8_t lv)
+{
+    completed  = false;
+    _encrypted = false;
+
+    if (lv < 1 || lv > 3) {
+        return false;
+    }
+
+    // Resolve collision
+    // M5_LIB_LOGE(">>> ANTICOLL");
+    uint8_t rbuf[5]{};
+    if (!nfca_anti_collision(rbuf, lv)) {
+        return false;
+    }
+    // M5_LIB_LOGE("<<< ANTICOLL");
+
+    // Copy UID
+    memcpy(uid.uid + (lv - 1) * 3, rbuf + (rbuf[0] == 0x88), 4 - (rbuf[0] == 0x88));
+
+    uint8_t select_frame[7] = {(uint8_t)(0x91 + lv * 2), 0x70};
+    memcpy(select_frame + 2, rbuf, sizeof(rbuf));
+
+    // Select
+    uint16_t rx_len{3};
+    if (!nfcaTransceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
+        M5_LIB_LOGE("Failed to select");
+        return false;
+    }
+
+    uint8_t sak = rbuf[0];
+    // M5_LIB_LOGE(">>>> SAK:%02X (%u)", sak, is_sak_completed(sak));
+    //   Completed?
+    if (is_sak_completed(sak)) {
+        completed = true;
+        uid.size  = 1 + lv * 3;
+        uid.sak   = sak;
+        uid.type = sak_to_type(sak);  // WARNING: This is a preliminary diagnosis; a more accurate diagnosis is required
+        uid.blocks = get_number_of_blocks(uid.type);
+        // More check for type
+        if (uid.type == Type::MIFARE_Ultralight) {
+            uint8_t ver[10]{};
+            if (ntag_get_version(ver)) {
+                uid.type   = version_to_type(ver);
+                uid.blocks = get_number_of_blocks(uid.type);
+            } else {
+                // PICC to IDLE... so need reactivate
+                uint16_t discard{};
+                completed = nfcaRequest(discard) && nfcaSelect(uid);
+            }
+        }
+    }
+    return completed || has_sak_dependent_bit(sak);  // completed or continue
+}
+
 bool UnitST25R3916::nfcaSelect(const UID& uid)
 {
     _encrypted = false;
-    if (!(uid.size == 4 || uid.size == 7 || uid.size == 10)) {
+
+    if (!uid.valid()) {
         return false;
     }
 
@@ -282,49 +338,6 @@ bool UnitST25R3916::nfcaSelect(const UID& uid)
     return completed;
 }
 
-bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, UID& uid, const uint8_t lv)
-{
-    completed  = false;
-    _encrypted = false;
-
-    if (lv < 1 || lv > 3) {
-        return false;
-    }
-
-    // Resolve collision
-    // M5_LIB_LOGE(">>> ANTICOLL");
-    uint8_t rbuf[5]{};
-    if (!nfca_anti_collision(rbuf, lv)) {
-        return false;
-    }
-    // M5_LIB_LOGE("<<< ANTICOLL");
-
-    // Copy UID
-    memcpy(uid.uid + (lv - 1) * 3, rbuf + (rbuf[0] == 0x88), 4 - (rbuf[0] == 0x88));
-
-    uint8_t select_frame[7] = {(uint8_t)(0x91 + lv * 2), 0x70};
-    memcpy(select_frame + 2, rbuf, sizeof(rbuf));
-
-    // Select
-    uint16_t rx_len{3};
-    if (!nfcaTransceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
-        M5_LIB_LOGE("Failed to select");
-        return false;
-    }
-
-    uint8_t sak = rbuf[0];
-    // M5_LIB_LOGE(">>>> SAK:%02X (%u)", sak, is_sak_completed(sak));
-    //   Completed?
-    if (is_sak_completed(sak)) {
-        uid.size = 4 + (lv - 1) * 3;
-        uid.sak  = sak;
-        // uid.type   = get_type(uid.sak);
-        // uid.blocks = get_number_of_blocks(uid.type);
-        completed = true;
-    }
-    return is_sak_completed(sak) || has_sak_dependent_bit(sak);  // completed or continue
-}
-
 bool UnitST25R3916::nfcaHlt()
 {
     const uint8_t hlt_frame[2] = {m5::stl::to_underlying(Command::HLTA), 0x00};
@@ -359,18 +372,81 @@ bool UnitST25R3916::nfcaHlt()
     return is_irq32_txe(irq);
 }
 
-bool UnitST25R3916::nfcaReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t addr)
+bool UnitST25R3916::nfcaReadBlock(uint8_t rx[16], const uint8_t addr)
 {
-    uint8_t cmd[2] = {m5::stl::to_underlying(Command::READ), addr};
-    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
-        M5_LIB_LOGE("Failed to transcive");
+    if (!rx) {
         return false;
     }
-    return true;
+    uint16_t rx_len{16};
+    uint8_t cmd[2] = {m5::stl::to_underlying(Command::READ), addr};
+    if (_encrypted) {
+        return mifare_classic_transceive_encrypt(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ, true, true);
+    }
+    return nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ);
 }
 
-bool UnitST25R3916::nfcaWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len)
+bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
 {
+    if (!tx) {
+        return false;
+    }
+
+    uint8_t buf[16 + 2 /*CRC*/]{};
+    memcpy(buf, tx, 16);
+    m5::utility::CRC16 crc16(0xC6C6, 0x1021, true, true, 0);
+    auto crc = crc16.range(buf, 16);
+    buf[16]  = crc & 0xFF;
+    buf[17]  = crc >> 8;
+
+    uint8_t cmd[2] = {m5::stl::to_underlying(Command::WRITE_BLOCK), addr};
+    uint8_t rx[1]{};  // 4bit ACK
+    uint16_t rx_len{1};
+
+    if (_encrypted) {
+        if (mifare_classic_transceive_encrypt(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_WRITE1, false, true) &&
+            rx[0] == ACK_NIBBLE) {
+            rx_len = 1;
+            if (mifare_classic_transceive_encrypt(rx, rx_len, tx, 16, TIMEOUT_WRITE2, false, true) &&
+                rx[0] == ACK_NIBBLE) {
+                return true;
+            }
+            M5_LIB_LOGE("Faile to WRITE2");
+            return false;
+        } else {
+            M5_LIB_LOGE("Faile to WRITE1");
+            return false;
+        }
+    }
+
+    //
+    if (nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_WRITE1) && rx[0] == ACK_NIBBLE) {
+        rx_len = 1;
+        if (nfcaTransceive(rx, rx_len, buf, sizeof(buf), TIMEOUT_WRITE2) && rx[0] == ACK_NIBBLE) {
+            return true;
+        }
+    }
+    M5_LIB_LOGE("Faile to WRITE");
+    return false;
+}
+
+bool UnitST25R3916::nfcaWritePage(const uint8_t page, const uint8_t tx[4])
+{
+    if (!tx) {
+        return false;
+    }
+
+    // M5_LIB_LOGE("WRITE_PAGE:%u", page);
+    // m5::utility::log::dump(tx, 4, false);
+
+    uint8_t cmd[6]{m5::stl::to_underlying(m5::nfc::a::Command::WRITE_PAGE), page};
+    std::memcpy(cmd + 2, tx, 4);
+
+    uint8_t rx[2]{};
+    uint16_t rx_len{2};
+    if (nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_WRITE2)) {
+        return true;
+    }
+    M5_LIB_LOGE("FAiled to write page");
     return false;
 }
 
@@ -393,11 +469,13 @@ bool UnitST25R3916::mifare_classic_send_encrypt(const uint8_t* tx, const uint16_
     uint8_t enc_tx[tx_len + 2]{};
     uint32_t parity = _crypto1.encrypt(enc_tx, tmp_tx, sizeof(tmp_tx));
 
-    uint8_t bitstream[tx_len + 2 + ((tx_len + 7) >> 3)]{};
+    uint16_t total_bits = 9 * (tx_len + 2);
+
+    uint8_t bitstream[(total_bits + 7) >> 3]{};
     append_parity(bitstream, sizeof(bitstream), enc_tx, sizeof(enc_tx), parity);
 
-    uint8_t sbytes = tx_len + 2;
-    uint8_t sbits  = ((tx_len + 2) << 3) >> 3;
+    uint8_t sbytes = total_bits >> 3;
+    uint8_t sbits  = total_bits & 0x07;
 
     /*
     M5_LIB_LOGE(">>>>> send:%u/%u", sbytes, sbits);
@@ -450,12 +528,24 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
 
     // Decryption
     if (decrypt) {
-        for (uint_fast8_t i = 0; i < rlen; ++i) {
-            rbuf[i] ^= _crypto1.step8(0);
+        if (actual == 1) {  // 4bit ACK
+            uint8_t ret = rbuf[0] & 0x0F;
+            uint8_t res{};
+            res |= (_crypto1.step_with(0) ^ ((ret >> 0) & 1)) << 0;
+            res |= (_crypto1.step_with(0) ^ ((ret >> 1) & 1)) << 1;
+            res |= (_crypto1.step_with(0) ^ ((ret >> 2) & 1)) << 2;
+            res |= (_crypto1.step_with(0) ^ ((ret >> 3) & 1)) << 3;
+            rbuf[0] = res;
+            if (res != ACK_NIBBLE) {
+                M5_LIB_LOGE("NACK:%02X", res);
+                return false;
+            }
+        } else {
+            for (uint_fast8_t i = 0; i < actual; ++i) {
+                rbuf[i] ^= _crypto1.step8(0);
+            }
         }
     }
-
-    // m5::utility::log::dump(dec_rx, actual, false);
 
     if (include_crc) {
         m5::utility::CRC16 crc16(0xC6C6, 0x1021, true, true, 0);
@@ -473,6 +563,7 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
     return true;
 }
 
+#if 0
 bool UnitST25R3916::mifareClassicReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t addr)
 {
     uint8_t cmd[2] = {m5::stl::to_underlying(Command::READ), addr};
@@ -483,6 +574,7 @@ bool UnitST25R3916::mifareClassicWriteBlock(const uint8_t block, const uint8_t* 
 {
     return false;
 }
+#endif
 
 bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& uid, const uint8_t block, const Key& mkey)
 {
@@ -571,17 +663,29 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& ui
 }
 
 // -------------------------------- For NTAG
-bool UnitST25R3916::ntagFastRead(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
+bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
 {
+    if (spage > epage) {
+        return false;
+    }
+
     uint8_t cmd[3] = {m5::stl::to_underlying(Command::FAST_READ), spage, epage};
-    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ)) {
+
+    const uint8_t pages = epage - spage + 1;
+    uint16_t timeout    = (pages == 1)   ? TIMEOUT_FAST_READ
+                          : (pages < 4)  ? TIMEOUT_FAST_READ_4PAGE
+                          : (pages < 12) ? TIMEOUT_FAST_READ_12PAGE
+                          : (pages < 32) ? TIMEOUT_FAST_READ_32PAGE
+                                         : TIMEOUT_FAST_READ_32PAGE * 2;
+
+    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), timeout)) {
         M5_LIB_LOGE("Failed to transcive");
         return false;
     }
     return true;
 }
 
-bool UnitST25R3916::ntagGetVersion(uint8_t info[10])
+bool UnitST25R3916::ntag_get_version(uint8_t info[10])
 {
     uint8_t gv[1]   = {m5::stl::to_underlying(Command::GET_VERSION)};
     uint16_t rx_len = 10;

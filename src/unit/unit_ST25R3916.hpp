@@ -1699,20 +1699,28 @@ public:
      */
     bool nfcaSelect(const m5::nfc::a::UID& uid);
     /*!
-      @brief Read the 1 block
-      @param rx Receiver buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
-      @param block Block address
+      @brief Read the 1 block / 4 pages (16 bytes)
+      @param rx Receiver buffer (at least 16 bytes)
+      @param block Block/Page address
       @return True if successful
+      @pre The block must be authenticated if MIFARE classic
      */
-    bool nfcaReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t block);
+    bool nfcaReadBlock(uint8_t rx[16], const uint8_t block);
     /*!
-      @brief Write the 1 block
-      @param tx Send buffer
-      @param tx_len Size of send buffer
+      @brief Write the 1 block / 4 pages (16 bytes)
+      @param tx Send buffer (at least 16 bytes)
       @return True if successful
+      @pre The block must be authenticated if MIFARE classic
      */
-    bool nfcaWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len);
+    bool nfcaWriteBlock(const uint8_t block, const uint8_t tx[16]);
+    /*!
+      @brief Write the 1 page (4 bytes)
+      @param tx Send buffer (at least 4 bytes)
+      @return True if successful
+      @pre The block must be authenticated if MIFARE classic
+     */
+    bool nfcaWritePage(const uint8_t page, const uint8_t tx[4]);
+
     /*!
       @brief Hlt for devices
       @return True if successful
@@ -1731,7 +1739,7 @@ public:
      */
     inline bool mifareClassicAuthenticateA(
         const m5::nfc::a::UID& uid, const uint8_t block,
-        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_CLASSIC_KEY)
+        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY)
     {
         return mifare_classic_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_A, uid, block, key);
     }
@@ -1744,12 +1752,13 @@ public:
      */
     inline bool mifareClassicAuthenticateB(
         const m5::nfc::a::UID& uid, const uint8_t block,
-        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_CLASSIC_KEY)
+        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY)
     {
         return mifare_classic_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_B, uid, block, key);
     }
+#if 0
     /*!
-      @brief Read the 1 block
+      @brief Read the 1 block / 4 page (16 byte)
       @param rx Receiver buffer
       @param[in/out] rx_len in:Size of receive buffer out:actual read size
       @param block Block address
@@ -1757,23 +1766,17 @@ public:
      */
     bool mifareClassicReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t addr);
     /*!
-      @brief Write the 1 block
+      @brief Write the 1 block / 4 page (16 byte)
       @param tx Send buffer
       @param tx_len Size of send buffer
       @return True if successful
      */
     bool mifareClassicWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len);
+#endif
     ///@}
 
     ///@name NTAG
     ///@{
-    /*!
-      @brief NTAG GET_VERSION
-      @param[out] Receive buffer
-      @return True if successful
-      @warning t Some devices are not supported
-     */
-    bool ntagGetVersion(uint8_t info[10]);
     /*!
       @brief Read between specified pages
       @param rx Receiver buffer
@@ -1781,8 +1784,9 @@ public:
       @param spage Start reading page
       @param epage End reading page
       @return True if successful
+      @warning Only PICC supporting the FAST_READ command
      */
-    bool ntagFastRead(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
+    bool ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
     ///@}
 
     // For debug
@@ -1825,6 +1829,8 @@ protected:
                                            const uint32_t timeout_ms, const bool include_crc, const bool decrypt);
     bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::UID& uid, const uint8_t block,
                                      const m5::nfc::a::mifare::classic::Key& key);
+
+    bool ntag_get_version(uint8_t info[10]);
 
 private:
     config_t _cfg{};

@@ -27,12 +27,12 @@ namespace a {
  */
 enum class Type : uint8_t {
     Unknown,              //!< Unknown type
-    MIFARE_Classic,       //!< Also known as MIFARE Standard mini
+    MIFARE_Classic_Mini,  //!< Also known as MIFARE Standard mini
     MIFARE_Classic_1K,    //!< Also known as MIFARE Standard 1K
     MIFARE_Classic_2K,    //!< Also known as MIFARE Standard 2K
     MIFARE_Classic_4K,    //!< Also known as MIFARE Standard 4K
-    MIFARE_UltraLight,    //!< MIFARE Ultralight
-    MIFARE_UltraLightC,   //!< MIFARE UltralightC
+    MIFARE_Ultralight,    //!< MIFARE Ultralight
+    MIFARE_UltralightC,   //!< MIFARE UltralightC
     MIFARE_Plus_2K,       //!< MIFARE Plus 2K
     MIFARE_Plus_4K,       //!< MIFARE Plus 4K
     MIFARE_DESFire_2K,    //!< MIFARE DESFire 2K
@@ -51,15 +51,15 @@ enum class Type : uint8_t {
 };
 
 //! @brief Is type MIFARE Classic?
-inline bool is_classic(const Type t)
+inline bool is_mifare_classic(const Type t)
 {
-    return t >= Type::MIFARE_Classic && t <= Type::MIFARE_Classic_4K;
+    return t >= Type::MIFARE_Classic_Mini && t <= Type::MIFARE_Classic_4K;
 }
 
 //! @brief Is type MIFARE?
 inline bool is_mifare(const Type t)
 {
-    return t >= Type::MIFARE_Classic && t <= Type::MIFARE_DESFire_8K;
+    return t >= Type::MIFARE_Classic_Mini && t <= Type::MIFARE_DESFire_8K;
 }
 
 //! @brief Is type NTAG?
@@ -71,7 +71,7 @@ inline bool is_ntag(const Type t)
 //! @brief Does the specified type function as NFC?
 inline bool supports_NFC(const Type t)
 {
-    return t == Type::MIFARE_UltraLight || t == Type::MIFARE_UltraLightC ||  // Light/C
+    return t == Type::MIFARE_Ultralight || t == Type::MIFARE_UltralightC ||  // Light/C
            is_ntag(t);
 }
 
@@ -86,6 +86,7 @@ inline bool has_sak_dependent_bit(const uint8_t sak)
 {
     return (sak & 0x04);
 }
+
 //! @brief SAK completed? (Complies with ISO/IEC 14443-4)
 inline bool is_sak_completed_14443_4(const uint8_t sak)
 {
@@ -97,19 +98,38 @@ inline bool is_sak_completed(const uint8_t sak)
     return ((sak & 0x24) == 0x00);
 }
 
-//! @brief Get the number of the blocks
-uint16_t get_number_of_blocks(const Type t);
-//! @brief Get the number of the sectors
-uint8_t get_number_of_sectors(const Type t);
-//! @brief Get the first user area block
-uint8_t get_first_user_block(const Type t);
-//! @brief Get the last user area block
-uint8_t get_last_user_block(const Type t);
-//! @brief Gets the number of the user blocks
-uint8_t get_user_block_size(const Type t);
-//! @brief  Is block user area?
-bool is_user_block(const Type t, const uint8_t block);
+/*!
+  @brief Inferring the type from SAK
+  @return Type
+  @warning This is a preliminary diagnosis, a more accurate diagnosis is required
+ */
+Type sak_to_type(const uint8_t sak);
 
+/*!
+  @brief Inferring the type from GterVersionL3
+ */
+Type version_to_type(const uint8_t info[10]);
+
+//! @brief Gets the number of blocks
+uint16_t get_number_of_blocks(const Type t);
+//! @brief Gets the number of user blocks
+uint16_t get_number_of_user_blocks(const Type t);
+//!@brief Gets the user area bytes
+uint16_t get_user_area_size(const Type t);
+/*!
+  @brief Get the unit size of 1 block / 1 page
+  @retval != 0 Unit size
+  @retval == 0 Does not have a unit size
+*/
+uint16_t get_unit_size(const Type t);
+//! @brief Gets the number of sectors
+uint16_t get_number_of_sectors(const Type t);
+//! @brief Gets the first user area block
+uint16_t get_first_user_block(const Type t);
+//! @brief Gets the last user area block
+uint16_t get_last_user_block(const Type t);
+//! @brief Is block user area?
+bool is_user_block(const Type t, const uint16_t block);
 //! @brief Calculate bcc8
 uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len);
 
@@ -132,8 +152,9 @@ struct UID {
     //! @brief Valid?
     inline bool valid() const
     {
-        return size && (type != Type::Unknown) && blocks;
+        return (size == 4 || size == 7 || size == 10) && (type != Type::Unknown) && blocks;
     }
+
     //! @brief Is MIFARE?
     inline bool isMifare() const
     {
@@ -142,14 +163,13 @@ struct UID {
     //! @brief Is MIFARE classic?
     inline bool isMifareClassic() const
     {
-        return valid() && is_classic(type);
+        return valid() && is_mifare_classic(type);
     }
     //! @brief Is NTAG?
     inline bool isNTAG() const
     {
         return valid() && is_ntag(type);
     }
-
     //! @brief Supports NFC tag?
     inline bool supportsNFC() const
     {
@@ -160,12 +180,15 @@ struct UID {
     {
         return valid() && has_fast_read(type);
     }
-    //! @brief clear
-    void clear()
+    //! @brief Total size
+    uint16_t totalSize() const
     {
-        size = sak = blocks = 0;
-        type                = Type::Unknown;
-        std::memset(uid, 0x00, sizeof(uid));
+        return valid() ? get_number_of_blocks(type) * get_unit_size(type) : 0;
+    }
+    //! @brief Total user area size
+    uint16_t userAreaSize() const
+    {
+        return valid() ? get_user_area_size(type) : 0;
     }
     //! @brief Retrieve the last 4 bytes
     void tail4(uint8_t buf[4]) const
@@ -178,6 +201,13 @@ struct UID {
     std::string uidAsString() const;
     //! @breif Gets the type string for debug
     std::string typeAsString() const;
+    //! @brief clear
+    void clear()
+    {
+        size = sak = blocks = 0;
+        type                = Type::Unknown;
+        std::memset(uid, 0x00, sizeof(uid));
+    }
 };
 
 //! @brief Equal?
@@ -193,30 +223,6 @@ inline bool operator!=(const UID& a, const UID& b)
 }
 
 /*!
-  @struct ATQA
-  @brief Answer To Request, Type A
- */
-struct ATQA {
-    // single:4 double:7 triple:10 error:0
-    inline uint8_t uidLength() const
-    {
-        uint8_t ulen = ((value[0] >> 6) & 0x03);
-        return (ulen != 0x03) ? 3 + ulen * 3 + 1 : 0;
-    };
-    // Anti-collision bit frame
-    inline uint8_t bitFrame() const
-    {
-        return value[0] & 0x1F;
-    }
-    inline void clear()
-    {
-        value[0] = value[1] = 0;
-    }
-
-    uint8_t value[2]{};  // Litte endian 16bit
-};
-
-/*!
   @enum Command
   @brief ISO-14443-3/4,MIFARE,NTAG commands
  */
@@ -228,28 +234,28 @@ enum class Command : uint8_t {
     SELECT_CL1    = 0x93,  //!< Anticollison/Select CL1
     SELECT_CL2    = 0x95,  //!< Anticollison/Select CL2
     SELECT_CL3    = 0x97,  //!< Anticollison/Select CL3
-    SELCT_CL1_OPT = 0x92,  //!< Select cascade level 1 and swich bit rate to fc/64 after receive SAK
-    SELCT_CL2_OPT = 0x94,  //!< Select cascade level 2 and swich bit rate to fc/64 after receive SAK
-    SELCT_CL3_OPT = 0x96,  //!< Select cascade level 2 and swich bit rate to fc/64 after receive SAK
+    SELCT_CL1_OPT = 0x92,  //!< Select CL1 and swich bit rate to fc/64 after receive SAK
+    SELCT_CL2_OPT = 0x94,  //!< Select CL2 and swich bit rate to fc/64 after receive SAK
+    SELCT_CL3_OPT = 0x96,  //!< Select CL3 and swich bit rate to fc/64 after receive SAK
+    READ          = 0x30,  //!< Read
     // ISO/IEC 14443-4
     RATS = 0x0E,  //!< Request for Answer to Select
     // MIFARE
     AUTH_WITH_KEY_A = 0x60,  //!< MIFARE Classic. Authentication with Key A
     AUTH_WITH_KEY_B = 0x61,  //!< MIFARE Classic. Authentication with Key B
-    AUTHENTICATE_1  = 0x1A,  //!< MIFARE UltraLight/C. Authentication 1st
-    AUTHENTICATE_2  = 0xAF,  //!< MIFARE UltraLight/C. Authentication 2nd
-    READ            = 0x30,  //!< MIFARE. read
-    WRITE           = 0xA0,  //!< MIFARE. write
+    AUTHENTICATE_1  = 0x1A,  //!< MIFARE Ultralight/C. Authentication 1st
+    AUTHENTICATE_2  = 0xAF,  //!< MIFARE Ultralight/C. Authentication 2nd
+    WRITE_BLOCK     = 0xA0,  //!< MIFARE Classic. write
+    WRITE_PAGE      = 0xA2,  //!< MIFARE Ultralight/C and NTAG write
     DECREMENT       = 0xC0,  //!< MIFARE Classic. decrement value block
     INCREMENT       = 0xC1,  //!< MIFARE Classic. increment value block
     RESTORE         = 0xC2,  //!< MIFARE Classic. reads the contents of a value block into the internal Transfer Buffer
     TRANSFER        = 0xB0,  //!< MIFARE Classic. writes the contents of the internal Transfer Buffer to a block
     PERSONALIZE_UID_USAGE = 0x40,  //!< MIFARE Classic Personalize UID Usage
     SET_MOD_TYPE          = 0x43,  //!< MIFARE Classic SET_MOD_TYPE
-    WRITE_UL              = 0xA2,  //!< MIFARE UltraLight/C and NTAG write
     // NTAG
     GET_VERSION = 0x60,  //!< NTAG 21x. Gets the version information
-    FAST_READ   = 0x3A,  //!< NTAG 21x excluding 210u. Read multiple pages
+    FAST_READ   = 0x3A,  //!< NTAG 21x. excluding 210u. Read multiple pages
     READ_CNT    = 0x39,  //!< NTAG 213/5/6. Read counter value
     PWD_AUTH    = 0x1B,  //!< NTAG 21x excluding 210u. Authentication for protected area
     READ_SIG    = 0x3C,  //!< NTAG 21x Read NXP ECC signature
@@ -268,9 +274,18 @@ constexpr uint32_t TIMEOUT_3DES{10};
 constexpr uint32_t TIMEOUT_AUTH1{2};
 constexpr uint32_t TIMEOUT_AUTH2{10};
 constexpr uint32_t TIMEOUT_READ{4};
+constexpr uint32_t TIMEOUT_FAST_READ{2};
+constexpr uint32_t TIMEOUT_FAST_READ_4PAGE{4};    // 3.7
+constexpr uint32_t TIMEOUT_FAST_READ_12PAGE{4};   // 3.7
+constexpr uint32_t TIMEOUT_FAST_READ_32PAGE{12};  // 11.8
 constexpr uint32_t TIMEOUT_WRITE1{5};
 constexpr uint32_t TIMEOUT_WRITE2{10};
 constexpr uint32_t TIMEOUT_OP{5};  // Inc/Dec/Restore...
+///@}
+
+///@name 4bit ACK
+///@{
+constexpr uint8_t ACK_NIBBLE{0x0A};
 ///@}
 
 }  // namespace a

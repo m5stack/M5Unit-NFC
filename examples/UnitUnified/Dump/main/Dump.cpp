@@ -14,12 +14,17 @@
 #include <vector>
 
 using namespace m5::nfc::a;
+using namespace m5::nfc::a::mifare;
+using namespace m5::nfc::a::mifare::classic;
 
 namespace {
 auto& lcd = M5.Display;
 m5::unit::UnitUnified Units;
 m5::unit::CapST25R3916 cap;  // ST25R3916 in the HackerCap
 m5::unit::nfc::NFCLayerA nfc_a{cap};
+// KeyA that can authenticate all blocks
+// If it's a different key value, change it
+constexpr Key keyA = DEFAULT_KEY;  // Default as 0xFFFFFFFFFFFF
 }  // namespace
 
 void setup()
@@ -81,7 +86,7 @@ void loop()
             auto& uid = devices.front();
             if (nfc_a.activate(uid)) {
                 M5.Log.printf("==== Dump %s %s ====\n", uid.uidAsString().c_str(), uid.typeAsString().c_str());
-                nfc_a.dump();
+                nfc_a.dump(keyA);  // Need key if MIFARE classic, Ignore key if not MIFARE classic
                 nfc_a.deactivate();
             } else {
                 M5_LOGE("Failed to activate %s", uid.uidAsString().c_str());

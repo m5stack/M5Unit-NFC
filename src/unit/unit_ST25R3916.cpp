@@ -7,7 +7,6 @@
   @file unit_ST25R3916.cpp
   @brief ST25R3916 Unit for M5UnitUnified
 */
-//#include <Arduino.h>
 #include "unit_ST25R3916.hpp"
 #include <M5Utility.hpp>
 #include <thread>
@@ -362,7 +361,7 @@ bool UnitST25R3916::readFIFO(uint16_t& actual, uint8_t* buf, const uint16_t buf_
     uint16_t bytes{};
     uint8_t bits{};
     if (readFIFOSize(bytes, bits)) {
-        auto readSz = std::min<uint16_t>(bytes + (bits != 0), buf_size);
+        auto readSz = std::min<uint16_t>(bytes, buf_size);
         if (!readSz) {
             return false;
         }
@@ -565,7 +564,7 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     if (is_irq32_rxe(irq)) {
         return true;
     }
-    // M5_LIB_LOGE("IRQ:%08X %u", irq, timeout_ms);
+    //    M5_LIB_LOGE("IRQ:%08X %u", irq, timeout_ms);
 
     if (is_irq32_rxs(irq)) {
         // Check the FIFO size in case I_rxe doesn't arrive
@@ -580,6 +579,9 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
             m5::utility::delay(1);
         } while (m5::utility::millis() <= timeout_at);
         readFIFOSize(bytes, bits);
+
+        //        M5_LIB_LOGE("    FIFO:%u,%u/%u", bytes, bits, required_size);
+
         return bytes >= reqSize;
     }
     return false;

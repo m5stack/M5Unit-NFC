@@ -16,7 +16,7 @@ namespace a {
 namespace mifare {
 namespace classic {
 
-const Key DEFAULT_CLASSIC_KEY = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+//const Key DEFAULT_KEY = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 bool decode_value_block(int32_t& value, uint8_t& addr, const uint8_t* buf)
 {

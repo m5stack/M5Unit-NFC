@@ -27,6 +27,11 @@ struct AdapterST25R3916 final : NFCLayerA::Adapter {
     {
     }
 
+    inline virtual uint16_t max_fifo_depth() override
+    {
+        return m5::unit::st25r3916::MAX_FIFO_DEPTH;
+    }
+
     virtual bool request(uint16_t& atqa) override;
     virtual bool wakeup(uint16_t& atqa) override;
 
@@ -34,17 +39,15 @@ struct AdapterST25R3916 final : NFCLayerA::Adapter {
     virtual bool activate(const m5::nfc::a::UID& uid) override;
     virtual bool deactivate() override;
 
-    virtual bool nfca_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                 const uint32_t timeout_ms) override;
-    virtual bool nfca_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr) override;
-    virtual bool nfca_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) override;
+    virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr) override;         // READ
+    virtual bool nfca_write_block(const uint8_t addr, const uint8_t tx[16]) override;  // WRITE_BLOCK
+    virtual bool nfca_write_page(const uint8_t addr, const uint8_t tx[4]) override;    // WRITE_PAGE
 
     virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::UID& uid, const uint8_t block,
                                              const m5::nfc::a::mifare::classic::Key& key) override;
-    virtual bool mifare_classic_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr) override;
-    virtual bool mifare_classic_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) override;
 
-    virtual bool ntag_get_version(uint8_t info[10]) override;
+    virtual bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage,
+                                const uint8_t epage) override;  // FAST_READ
 
     UnitST25R3916& _u;
 };
@@ -83,20 +86,24 @@ bool AdapterST25R3916::deactivate()
     return _u.nfcaHlt();
 }
 
-bool AdapterST25R3916::nfca_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)
+bool AdapterST25R3916::nfca_read_block(uint8_t rx[16], const uint8_t addr)
 {
-    return _u.nfcaReadBlock(rx, rx_len, addr);
+    return _u.nfcaReadBlock(rx, addr);
 }
 
-bool AdapterST25R3916::nfca_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len)
+bool AdapterST25R3916::nfca_write_block(const uint8_t addr, const uint8_t tx[16])
 {
-    return _u.nfcaWriteBlock(addr, tx, tx_len);
+    return _u.nfcaWriteBlock(addr, tx);
 }
 
-bool AdapterST25R3916::nfca_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                       const uint32_t timeout_ms)
+bool AdapterST25R3916::ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
 {
-    return _u.nfcaTransceive(rx, rx_len, tx, tx_len, timeout_ms);
+    return _u.ntagReadPage(rx, rx_len, spage, epage);
+}
+
+bool AdapterST25R3916::nfca_write_page(const uint8_t addr, const uint8_t tx[4])
+{
+    return _u.nfcaWritePage(addr, tx);
 }
 
 bool AdapterST25R3916::mifare_classic_authenticate(const bool auth_a, const UID& uid, const uint8_t block,
@@ -105,6 +112,7 @@ bool AdapterST25R3916::mifare_classic_authenticate(const bool auth_a, const UID&
     return auth_a ? _u.mifareClassicAuthenticateA(uid, block, key) : _u.mifareClassicAuthenticateB(uid, block, key);
 }
 
+#if 0
 bool AdapterST25R3916::mifare_classic_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)
 {
     return _u.mifareClassicReadBlock(rx, rx_len, addr);
@@ -114,11 +122,7 @@ bool AdapterST25R3916::mifare_classic_write_block(const uint16_t addr, const uin
 {
     return _u.mifareClassicWriteBlock(addr, tx, tx_len);
 }
-
-bool AdapterST25R3916::ntag_get_version(uint8_t info[10])
-{
-    return _u.ntagGetVersion(info);
-}
+#endif
 
 //
 namespace {

@@ -76,10 +76,10 @@ void loop()
     std::vector<UID> devices;
     if (nfc_a.detect(devices)) {
         M5.Speaker.tone(3000, 10);
-        lcd.fillRect(0, 0, lcd.width(), lcd.height());
+        lcd.fillScreen(0);
         lcd.setCursor(0, 0);
-        M5.Log.printf("Devices: %zu\n", devices.size());
         lcd.printf("Devices: %zu\n", devices.size());
+        M5.Log.printf("Devices: %zu\n", devices.size());
         uint32_t idx{};
         for (auto&& u : devices) {
             M5.Log.printf("[%2u]:UID:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
