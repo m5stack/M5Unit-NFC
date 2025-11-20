@@ -18,8 +18,8 @@ using namespace m5::nfc::a::mifare::classic;
 
 namespace {
 
-void dump_block(const uint8_t* buf, const int16_t block = -1, const int16_t sector = -1, const uint8_t ab = 0xFF,
-                const bool aberror = false, const bool valueblock = false)
+void dump_block(const uint8_t buf[16], const int16_t block = -1, const int16_t sector = -1, const uint8_t ab = 0xFF,
+                const bool aberror = false, const bool value_block = false)
 {
     char tmp[128 + 1] = "   ";
     uint32_t left{};
@@ -49,14 +49,12 @@ void dump_block(const uint8_t* buf, const int16_t block = -1, const int16_t sect
             left += 7;
         }
     }
-    if (valueblock) {
-        int32_t value{};
-        uint8_t addr{};
-        if (decode_value_block(value, addr, buf)) {
-            snprintf(tmp + left, 26, " Addr:%03u Val:%" PRId32 "", addr, value);  // PRId32 for compile on NanoC6
-        } else {
-            strcat(tmp + left, "[Illgal value blcok]");
-        }
+
+    // Value block
+    int32_t value{};
+    uint8_t addr{};
+    if (value_block && decode_value_block(value, addr, buf)) {
+        snprintf(tmp + left, 26, " V:%" PRId32 " A:%3u", value, addr);  // PRId32 for compile on NanoC6
     }
     ::puts(tmp);
 }
@@ -94,9 +92,7 @@ bool NFCLayerA::detect(std::vector<UID>& devs, const uint32_t timeout_ms)
         if (!select(uid)) {
             return false;
         }
-        _activeUID = uid;
-
-        M5_LIB_LOGE("Detect:%s", uid.uidAsString().c_str());
+        M5_LIB_LOGD("Detect:%s %s", uid.uidAsString().c_str(), uid.typeAsString().c_str());
 
         // Hlt
         if (!deactivate()) {
@@ -114,16 +110,35 @@ bool NFCLayerA::detect(std::vector<UID>& devs, const uint32_t timeout_ms)
 
 bool NFCLayerA::select(m5::nfc::a::UID& uid)
 {
-    return _impl->select(uid);
+    _activeUID.clear();
+    if (_impl->select(uid)) {
+        _activeUID = uid;
+        return true;
+    }
+    return false;
 }
 
 bool NFCLayerA::activate(const UID& uid)
 {
-    return _impl->activate(uid);
+    _activeUID.clear();  // (*1)
+    if (_impl->activate(uid)) {
+        _activeUID = uid;
+        return true;
+    }
+    return false;
+}
+
+bool NFCLayerA::reactivate(const UID& uid)
+{
+    // If arg referrence is the same as _activeUID, it will cause an error, so it must be a separate instance (*1)
+    UID tmp = uid;
+    uint16_t discard{};
+    return tmp.valid() && deactivate() && wakeup(discard) && activate(tmp);
 }
 
 bool NFCLayerA::deactivate()
 {
+    _activeUID.clear();
     return _impl->deactivate();
 }
 
@@ -159,13 +174,14 @@ bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t addr, const m5
 bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t addr)
 {
     const Type t = _activeUID.type;
-    //    const uint16_t fifo_depth = _impl->max_fifo_depth(); // ST25R3916 512 but cannot return long length...
-    const uint16_t fifo_depth = 64 + 2 /* CRC */;
-    const uint16_t last       = get_last_user_block(t);
-    uint16_t need_page        = ((rx_len + 3) >> 2);
-    uint16_t from             = std::min<uint16_t>(last, std::max<uint16_t>(addr, get_first_user_block(t)));
-    uint16_t to               = std::min<uint16_t>(from + need_page - 1, last);
-    uint16_t pages            = to - from + 1;
+    // ST25R3916 512 but cannot use long length...why?
+    uint16_t fifo_depth = std::min<uint16_t>(_impl->max_fifo_depth(), 64);
+
+    const uint16_t last = get_last_user_block(t);
+    uint16_t need_page  = ((rx_len + 3) >> 2);
+    uint16_t from       = std::min<uint16_t>(last, std::max<uint16_t>(addr, get_first_user_block(t)));
+    uint16_t to         = std::min<uint16_t>(from + need_page - 1, last);
+    uint16_t pages      = to - from + 1;
 
     uint16_t read_size = pages << 2;  // 4 byte unit
     if (read_size > rx_len) {
@@ -174,13 +190,13 @@ bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t add
         return false;
     }
 
-    M5_LIB_LOGD("READ:%u-%u %u %u", from, to, pages, pages << 2);
-
     uint16_t actual{};
-    uint16_t batch_pages = std::min<uint16_t>((fifo_depth - 2) >> 2, pages);
+    uint16_t batch_pages = std::min<uint16_t>((fifo_depth - 2 /*CRC*/) >> 2, pages);
     uint16_t spage       = from;
     uint16_t epage       = from + batch_pages - 1;
     rx_len               = 0;
+
+    M5_LIB_LOGD("READ:%u-%u %u %u %u", from, to, pages, pages << 2, batch_pages);
 
     while (actual < pages && spage <= to) {
         if (epage > to) {
@@ -220,16 +236,8 @@ bool NFCLayerA::read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t a
         return false;
     }
 
-    rx_len         = 0;
-    uint8_t sector = get_sector(from);
-    if (_activeUID.isMifareClassic()) {
-        M5_LIB_LOGD("AUTH:%u", sector);
-        if (!mifareClassicAuthenticateA(_activeUID, get_sector_trailer_block_from_sector(sector), key)) {
-            M5_LIB_LOGE("Failed AUTH sec:%u", sector);
-            return false;
-        }
-    }
-
+    rx_len = 0;
+    uint16_t st_block{};
     uint16_t actual{};
     uint16_t cur = from;
     uint16_t add = _activeUID.isMifareClassic() ? 1 : 4 /* 4 pages */;
@@ -237,13 +245,13 @@ bool NFCLayerA::read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t a
     M5_LIB_LOGD("READ:blocks:%u-%u %u %u (%u)", from, to, blocks, _activeUID.blocks, add);
 
     while (actual < blocks && cur <= last) {
-        uint8_t sec = get_sector(cur);
-        if (sec != sector) {
-            sector = sec;
+        uint16_t stb = get_sector_trailer_block(cur);
+        if (stb != st_block) {
+            st_block = stb;
             if (_activeUID.isMifareClassic()) {
-                M5_LIB_LOGD("   AUTH:%u/%u", cur, sec);
-                if (!mifareClassicAuthenticateA(_activeUID, get_sector_trailer_block_from_sector(sector), key)) {
-                    M5_LIB_LOGE("Failed to AUTH sec:%u", sector);
+                M5_LIB_LOGD("   AUTH:%u/%u", cur, st_block);
+                if (!mifareClassicAuthenticateA(st_block, key)) {
+                    M5_LIB_LOGE("Failed to AUTH %u", st_block);
                     return false;
                 }
             }
@@ -380,23 +388,15 @@ bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const
 
     M5_LIB_LOGD("WRITE:%u,%u %u- %u", addr, tx_len, cur, blocks);
 
-    uint8_t sector = get_sector(cur);
-    if (_activeUID.isMifareClassic()) {
-        M5_LIB_LOGD("AUTH:%u", sector);
-        if (!mifareClassicAuthenticateA(_activeUID, get_sector_trailer_block_from_sector(sector), key)) {
-            M5_LIB_LOGE("Failed AUTH sec:%u", sector);
-            return false;
-        }
-    }
-
+    uint16_t st_block{};
     while (written < tx_len) {
-        uint8_t sec = get_sector(cur);
-        if (sec != sector) {
-            sector = sec;
+        uint8_t stb = get_sector_trailer_block(cur);
+        if (stb != st_block) {
+            st_block = stb;
             if (_activeUID.isMifareClassic()) {
-                M5_LIB_LOGD("  AUTH:%u", sector);
-                if (!mifareClassicAuthenticateA(_activeUID, get_sector_trailer_block_from_sector(sector), key)) {
-                    M5_LIB_LOGE("Failed to AUTH sec:%u", sector);
+                M5_LIB_LOGD("  AUTH:%u", st_block);
+                if (!mifareClassicAuthenticateA(st_block, key)) {
+                    M5_LIB_LOGE("Failed to AUTH %u", st_block);
                     break;
                 }
             }
@@ -444,6 +444,178 @@ bool NFCLayerA::dump(const uint8_t block)
     return false;
 }
 
+bool NFCLayerA::mifareClassicAuthenticateA(const uint8_t block, const m5::nfc::a::mifare::classic::Key& key)
+{
+    return _activeUID.valid() ? _impl->mifare_classic_authenticate(true, _activeUID, block, key) : false;
+}
+
+bool NFCLayerA::mifareClassicAuthenticateB(const uint8_t block, const m5::nfc::a::mifare::classic::Key& key)
+{
+    return _activeUID.valid() ? _impl->mifare_classic_authenticate(false, _activeUID, block, key) : false;
+}
+
+bool NFCLayerA::mifareClassicReadAccessCondition(uint8_t& c123, const uint8_t block)
+{
+    c123 = 0;
+
+    uint8_t permissions[4]{};
+    uint8_t st_block = get_sector_trailer_block(block);
+
+    if (!_activeUID.isMifareClassic()) {
+        return false;
+    }
+
+    uint8_t rbuf[16]{};
+    if (!read16(rbuf, st_block)) {
+        return false;
+    }
+
+    if (!decode_access_bits(permissions, rbuf + 6)) {
+        M5_LIB_LOGE("Failed to decode access bits %u %02X:%02X:%02X:%02X",  //
+                    st_block, rbuf[6], rbuf[7], rbuf[8], rbuf[9]);
+        return false;
+    }
+    auto offset = get_permission_offset(block);
+    c123        = permissions[offset];
+    return true;
+}
+
+bool NFCLayerA::mifareClassicWriteAccessCondition(const uint8_t block, const uint8_t c123, const Key& akey,
+                                                  const Key& bkey)
+{
+    uint8_t permissions[4]{};
+    uint8_t st_block = get_sector_trailer_block(block);
+
+    if (!_activeUID.isMifareClassic()) {
+        return false;
+    }
+
+    uint8_t buf[16]{};
+    if (!read16(buf, st_block)) {
+        return false;
+    }
+
+    if (!decode_access_bits(permissions, buf + 6)) {
+        M5_LIB_LOGE("Failed to decode access bits %u %02X:%02X:%02X:%02X",  //
+                    st_block, buf[6], buf[7], buf[8], buf[9]);
+        return false;
+    }
+
+    auto offset         = get_permission_offset(block);
+    permissions[offset] = c123;
+
+    if (!encode_access_bits(buf + 6, permissions)) {
+        M5_LIB_LOGE("Failed to encode access bits %02X:%02X:%02X:%02X",  //
+                    permissions[0], permissions[1], permissions[2], permissions[3]);
+        return false;
+    }
+    // Since writes are performed in 16-byte units, key information must also be entered correctly
+    memcpy(buf, akey.data(), 6);
+    memcpy(buf + 10, bkey.data(), 6);
+
+    return write16(st_block, buf, sizeof(buf), false /* Disable safety */);
+}
+
+bool NFCLayerA::mifareClassicIsValueBlock(bool& is_value_block, const uint8_t block)
+{
+    is_value_block = false;
+    if (!_activeUID.isMifareClassic()) {
+        return false;
+    }
+    if (!is_user_block(_activeUID.type, block)) {
+        return true;
+    }
+
+    uint8_t st_block = get_sector_trailer_block(block);
+    uint8_t buf[16]{}, stbuf[16]{};
+
+    if (!read16(buf, block)) {
+        M5_LIB_LOGE("Failed to read %u", block);
+        return false;
+    }
+    if (!read16(stbuf, st_block)) {
+        M5_LIB_LOGE("Failed to read %u", st_block);
+        return false;
+    }
+
+    uint8_t permissions[4]{};
+    auto offset = get_permission_offset(block);
+    if (!decode_access_bits(permissions, stbuf + 6)) {
+        M5_LIB_LOGE("Failed to decode access bits %u/%u %02X:%02X:%02X:%02X",  //
+                    block, st_block, stbuf[6], stbuf[7], stbuf[8], stbuf[9]);
+        return false;
+    }
+    int32_t value{};
+    uint8_t addr{};
+    is_value_block = can_value_block_permission(permissions[offset]) && decode_value_block(value, addr, buf);
+    return true;
+}
+
+bool NFCLayerA::mifareClassicReadValueBlock(int32_t& value, const uint8_t block)
+{
+    value = 0;
+    if (!_activeUID.isMifareClassic() || !is_user_block(_activeUID.type, block)) {
+        return false;
+    }
+
+    uint8_t buf[16]{};
+    if (!read16(buf, block)) {
+        return false;
+    }
+
+    uint8_t addr{};
+    int32_t v{};
+    if (!decode_value_block(v, addr, buf)) {
+        M5_LIB_LOGE("Failed to value block %u", block);
+        M5_DUMPE(buf, sizeof(buf));
+        return false;
+    }
+
+    if (addr == block) {
+        value = v;
+        return true;
+    }
+    return false;
+}
+
+bool NFCLayerA::mifareClassicWriteValueBlock(const uint8_t block, const int32_t value)
+{
+    if (!_activeUID.isMifareClassic() || !is_user_block(_activeUID.type, block)) {
+        return false;
+    }
+
+    uint8_t buf[16]{};
+    encode_value_block(buf, value, block);
+    return write16(block, buf, sizeof(buf));
+}
+
+bool NFCLayerA::mifareClassicDecrementValueBlock(const uint8_t block, const uint32_t delta, const bool transfer)
+{
+    if (!_activeUID.isMifareClassic() || !mifare_classic_value_block(Command::DECREMENT, block, delta)) {
+        return false;
+    }
+    return transfer ? mifareClassicTransferValueBlock(block) : true;
+}
+
+bool NFCLayerA::mifareClassicIncrementValueBlock(const uint8_t block, const uint32_t delta, const bool transfer)
+{
+    if (!_activeUID.isMifareClassic() || !mifare_classic_value_block(Command::INCREMENT, block, delta)) {
+        return false;
+    }
+    return transfer ? mifareClassicTransferValueBlock(block) : true;
+}
+
+bool NFCLayerA::mifareClassicTransferValueBlock(const uint8_t block)
+{
+    return _activeUID.isMifareClassic() && mifare_classic_value_block(Command::TRANSFER, block);
+}
+
+bool NFCLayerA::mifareClassicRestoreValueBlock(const uint8_t block)
+{
+    return _activeUID.isMifareClassic() && mifare_classic_value_block(Command::RESTORE, block);
+}
+
+//
 bool NFCLayerA::dump_sector_structure(const UID& uid, const Key& key)
 {
     uint8_t sectors = get_number_of_sectors(uid.type);
@@ -457,7 +629,7 @@ bool NFCLayerA::dump_sector_structure(const UID& uid, const Key& key)
 
     for (int_fast8_t sector = 0; sector < sectors; ++sector) {
         auto sblock = get_sector_trailer_block_from_sector(sector);
-        if (mifareClassicAuthenticateA(uid, sblock, key)) {
+        if (mifareClassicAuthenticateA(sblock, key)) {
             if (!dump_sector(sector)) {
                 M5_LIB_LOGE("Failed to dump:%u", sector);
                 return false;
@@ -500,7 +672,7 @@ bool NFCLayerA::dump_sector(const uint8_t sector)
         const uint8_t permission   = permissions[poffset];
         const bool show_permission = (blocks == 4) ? true : (i % 5) == 0;
         dump_block(dbuf, base + i, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, error,
-                   is_value_block_permission(permission));
+                   can_value_block_permission(permission));
     }
     // Sector trailer
     dump_block(sbuf, saddr, -1, permissions[3], error);
@@ -573,16 +745,9 @@ bool NFCLayerA::push_back_uid(std::vector<m5::nfc::a::UID>& v, const m5::nfc::a:
     return false;
 }
 
-bool NFCLayerA::mifareClassicAuthenticateA(const m5::nfc::a::UID& uid, const uint8_t block,
-                                           const m5::nfc::a::mifare::classic::Key& key)
+bool NFCLayerA::mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg)
 {
-    return _impl->mifare_classic_authenticate(true, uid, block, key);
-}
-
-bool NFCLayerA::mifareClassicAuthenticateB(const m5::nfc::a::UID& uid, const uint8_t block,
-                                           const m5::nfc::a::mifare::classic::Key& key)
-{
-    return _impl->mifare_classic_authenticate(false, uid, block, key);
+    return _impl->mifare_classic_value_block(cmd, block, arg);
 }
 
 }  // namespace nfc

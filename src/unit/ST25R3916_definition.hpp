@@ -7,8 +7,8 @@
   @file ST25R3916_definition.hpp
   @brief Definitions for ST25R3916
 */
-#ifndef M5_UNIT_RFID_ST25R3916_DEFINITION_HPP
-#define M5_UNIT_RFID_ST25R3916_DEFINITION_HPP
+#ifndef M5_UNIT_NFC_ST25R3916_DEFINITION_HPP
+#define M5_UNIT_NFC_ST25R3916_DEFINITION_HPP
 
 #include <cstdint>
 
@@ -211,7 +211,7 @@ constexpr uint8_t CMD_TEST_ACCESS{0xFC};                  // Enable R/W access t
 }  // namespace command
 
 constexpr uint8_t VALID_IDENTIFY_TYPE{0x05};  // 00000101b (ST25R3916/7)
-constexpr uint16_t MAX_FIFO_DEPTH{512};       // Maximum FIFO depth
+constexpr uint16_t MAX_FIFO_DEPTH{512};       //!< Maximum FIFO depth
 constexpr uint16_t PREFIX_SPACE_B{(uint16_t)command::CMD_REGISTER_SPACEB_ACCESS << 8};
 
 // Operation modes

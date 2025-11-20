@@ -84,8 +84,9 @@ void loop()
         if (nfc_a.detect(devices)) {
             // If multiple occurrences are detected, only the first one detected
             auto& uid = devices.front();
-            if (nfc_a.activate(uid)) {
-                M5.Log.printf("==== Dump %s %s ====\n", uid.uidAsString().c_str(), uid.typeAsString().c_str());
+            if (nfc_a.reactivate(uid)) {
+                M5.Log.printf("==== Dump %s %s %u/%u====\n", uid.uidAsString().c_str(), uid.typeAsString().c_str(),
+                              uid.userAreaSize(), uid.totalSize());
                 nfc_a.dump(keyA);  // Need key if MIFARE classic, Ignore key if not MIFARE classic
                 nfc_a.deactivate();
             } else {

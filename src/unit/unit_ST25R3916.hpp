@@ -7,8 +7,8 @@
   @file unit_ST25R3916.hpp
   @brief ST25R3916 Unit for M5UnitUnified
 */
-#ifndef M5_UNIT_RFID_UNIT_ST25R3916_HPP
-#define M5_UNIT_RFID_UNIT_ST25R3916_HPP
+#ifndef M5_UNIT_NFC_UNIT_ST25R3916_HPP
+#define M5_UNIT_NFC_UNIT_ST25R3916_HPP
 
 #include <M5UnitComponent.hpp>
 #include "ST25R3916_definition.hpp"
@@ -1756,23 +1756,14 @@ public:
     {
         return mifare_classic_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_B, uid, block, key);
     }
-#if 0
     /*!
-      @brief Read the 1 block / 4 page (16 byte)
-      @param rx Receiver buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @brief Operation for the value block
+      @param cmd Command
       @param block Block address
-      @return True if successful
+      @param arg Arrgument for command if needs
      */
-    bool mifareClassicReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t addr);
-    /*!
-      @brief Write the 1 block / 4 page (16 byte)
-      @param tx Send buffer
-      @param tx_len Size of send buffer
-      @return True if successful
-     */
-    bool mifareClassicWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len);
-#endif
+    bool mifareClassicValueBlock(const m5::nfc::a::Command cmd,const uint8_t block,
+                                 const uint32_t arg = 0);
     ///@}
 
     ///@name NTAG

@@ -181,12 +181,12 @@ struct UID {
         return valid() && has_fast_read(type);
     }
     //! @brief Total size
-    uint16_t totalSize() const
+    inline uint16_t totalSize() const
     {
         return valid() ? get_number_of_blocks(type) * get_unit_size(type) : 0;
     }
     //! @brief Total user area size
-    uint16_t userAreaSize() const
+    inline uint16_t userAreaSize() const
     {
         return valid() ? get_user_area_size(type) : 0;
     }
@@ -197,6 +197,11 @@ struct UID {
             memcpy(buf, uid + size - 4, 4);
         }
     }
+    inline bool isUserBlock(const uint8_t block) const
+    {
+        return valid() ? is_user_block(type, block) : false;
+    }
+
     //! @breif Gets the uid string for debug
     std::string uidAsString() const;
     //! @breif Gets the type string for debug
@@ -280,7 +285,7 @@ constexpr uint32_t TIMEOUT_FAST_READ_12PAGE{4};   // 3.7
 constexpr uint32_t TIMEOUT_FAST_READ_32PAGE{12};  // 11.8
 constexpr uint32_t TIMEOUT_WRITE1{5};
 constexpr uint32_t TIMEOUT_WRITE2{10};
-constexpr uint32_t TIMEOUT_OP{5};  // Inc/Dec/Restore...
+constexpr uint32_t TIMEOUT_VALUE_BLOCK{5};  // Value block operation
 ///@}
 
 ///@name 4bit ACK

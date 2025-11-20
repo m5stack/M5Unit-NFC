@@ -33,18 +33,25 @@ namespace classic {
 using Key = std::array<uint8_t, 6>;
 
 //! @brief Default key for MIFARE classic
-//extern const Key DEFAULT_KEY;
-constexpr Key DEFAULT_KEY{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+// extern const Key DEFAULT_KEY;
+constexpr Key DEFAULT_KEY{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
+///@name Access bit
+///@{
+constexpr uint8_t READ_WRITE_BLOCK{0x00};              //!<  Read and write block
+constexpr uint8_t VALUE_BLOCK_NON_RECHARGEABLE{0x01};  //!<  Value block (debit only)
+constexpr uint8_t VALUE_BLOCK_RECHARGEABLE{0x06};      //!< Value block (rechargeable)
+///@}
 
 /*!
-  @brief Is this permission treated as a value block?
-  @return True if Value block
+  @brief Can this permission be used as a value block?
+  @return True if can
  */
-inline constexpr bool is_value_block_permission(const uint8_t permission)
+inline constexpr bool can_value_block_permission(const uint8_t permission)
 {
-    return (permission == 0x01) ||  // value block (Only read and decrement)
-           (permission == 0x06);    // value block
+    return (permission == 0x00) ||  // transport configuration
+           (permission == 0x01) ||  // value block (Only read and decrement)
+           (permission == 0x06);    // value block (Full operation)
 }
 
 /*!

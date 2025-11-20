@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2024 M5Stack Technology CO LTD
+ * SPDX-FileCopyrightText: 2025 M5Stack Technology CO LTD
  *
  * SPDX-License-Identifier: MIT
  */
@@ -7,8 +7,8 @@
   @file ndef_message.hpp
   @brief NDEF message
 */
-#ifndef M5_UNIT_RFID_RFID_NFC_NDEF_MESSAGE_HPP
-#define M5_UNIT_RFID_RFID_NFC_NDEF_MESSAGE_HPP
+#ifndef M5_UNIT_NFC_NDEF_NFC_NDEF_MESSAGE_HPP
+#define M5_UNIT_NFC_NDEF_NFC_NDEF_MESSAGE_HPP
 
 #include "ndef.hpp"
 #include "ndef_record.hpp"

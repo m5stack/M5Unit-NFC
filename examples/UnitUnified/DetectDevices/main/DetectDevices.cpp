@@ -82,7 +82,8 @@ void loop()
         M5.Log.printf("Devices: %zu\n", devices.size());
         uint32_t idx{};
         for (auto&& u : devices) {
-            M5.Log.printf("[%2u]:UID:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
+            M5.Log.printf("UID:%s %s %u/%u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.userAreaSize(),
+                          u.totalSize());
             lcd.printf("[%2u]:UID:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
             ++idx;
         }

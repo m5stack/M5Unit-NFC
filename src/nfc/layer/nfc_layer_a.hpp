@@ -6,6 +6,13 @@
 /*!
   @file nfc_layer_a.hpp
   @brief Common layer for NFC-A Related Units
+
+  @note Glossary
+  - PCD: Proximity Coupling Device (reader)
+  - PICC: Proximity Integrated Circuit Card (card/tag, target device)
+  - IDLE/READY/ACTIVE/HALT: ISO14443-3 state names
+
+  @note In NFC Forum (NDEF) context, a PICC is often called a "Tag"
 */
 #ifndef M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_A_HPP
 #define M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_A_HPP
@@ -24,6 +31,10 @@ class CapST25R3916;
 
 namespace nfc {
 
+/*!
+  @class NFCLayerA
+  @brief Common interface layer for each chip of the NFC-A reader
+ */
 class NFCLayerA {
 public:
     struct Adapter;
@@ -33,18 +44,20 @@ public:
     explicit NFCLayerA(CapST25R3916& u);
 
     /*!
-      @brief Is the specified UID active?
-     */
+      @brief Is the specified PICC (UID) currently active?
+      @param uid UID to check
+      @return True if this PICC is the one currently selected (ACTIVE state)
+    */
     inline bool isActive(const m5::nfc::a::UID& uid) const
     {
         return _activeUID.valid() && _activeUID == uid;
     }
     /*!
-      @brief Retrieve the activated UID
-      @return UID
-      @note Return empty UID if not exists
+      @brief Retrieve the currently activated PICC UID
+      @return Active PICC UID
+      @note Returns an empty UID if no PICC is selected (no ACTIVE state)
     */
-    const m5::nfc::a::UID& activatedDevice() const
+    const m5::nfc::a::UID& activatedPICC() const
     {
         return _activeUID;
     }
@@ -52,72 +65,78 @@ public:
     ///@name Detection and activation
     ///@{
     /*!
-      @brief Request for IDLE PICC
-      @param[out] atqa ATQA
+      @brief Send REQA to discover a PICC in IDLE
+      @param[out] atqa ATQA received from PICC
       @return True if successful
-      @note PICC to READY state
+      @post PICC transitions: IDLE -> READY on successful response
      */
     bool request(uint16_t& atqa);
     /*!
-      @brief Wakeup for IDLE/HALT PICC
-      @param[out] atqa ATQA
+      @brief Send WUPA to wake a PICC from IDLE or HALT
+      @param[out] atqa ATQA received from PICC
       @return True if successful
-      @note PICC to READY state
+      @post PICC transitions: IDLE/HALT -> READY on successful response
      */
     bool wakeup(uint16_t& atqa);
     /*!
       @brief Detect idle devices
-      @param[out] devices Detected devices
-      @param timeout_ms Timeout (ms)
+      @param[out] devices Detected PICC UIDs (one per activated PICC candidate)
+      @param timeout_ms  Polling time budget in milliseconds
       @return True if successful
+      @note The selected PICC is typically put into HALT during enumeration to allow discovering others
      */
-    bool detect(std::vector<m5::nfc::a::UID>& devices, const uint32_t timeout_at = 10 * 1000U);
+    bool detect(std::vector<m5::nfc::a::UID>& devices, const uint32_t timeout_ms = 10 * 1000U);
     /*!
-      @brief Select for READY PICC
-      @param[out] uid activated UID
+      @brief Select a PICC (anti-collision + SELECT cascade to ACTIVE)
+      @param[out] uid The fully activated UID (single- or multi-cascade)
       @return True if successful
-      @note PICC to ACTIVE state
+      @pre A PICC is in the READY state (after REQA/WUPA)
+      @post PICC transitions: READY -> ACTIVE on successful response
      */
     bool select(m5::nfc::a::UID& uid);
     /*!
-      @brief Activate specific device
+      @brief Activate a specific PICC by UID (anti-collision against the given UID)
       @param uid UID
       @return True if successful
-      @note PICC to ACTIVE
+      @pre PICC is READY state
+      @post PICC transitions: READY -> ACTIVE on successful response
      */
     bool activate(const m5::nfc::a::UID& uid);
+    /*!
+      @brief Wake and activate a specific PICC by UID
+      @param uid Target UID
+      @return True if successful
+      @post PICC transitions: IDLE/HALT -> READY -> ACTIVE on a successful sequence
+     */
+    bool reactivate(const m5::nfc::a::UID& uid);
+    /*!
+      @brief Reactivate the previously selected PICC
+      @details This function attempts to recover communication with the currently stored
+      _activeUID when the PICC has entered the HALT state, for example
+      due to a protocol error, timeout, or loss of RF field synchronization.
+      Internally performs a WUPA (Wake-Up) followed by anti-collision and SELECT
+      sequence using the last known UID
+      @return True if successful
+      @pre A valid`_activeUID is stored (i.e., at least one PICC was previously activated)
+      @note Use this to recover from transient communication errors without performing a full REQA/detect cycle
+     */
+    inline bool reactivate()
+    {
+        return reactivate(_activeUID);
+    }
+
     ///@}
 
-    ///@pre PICC activated
-    ///@name For activated device
+    ///@name For activated PICC
     ///@{
     /*!
-      @brief Deactivate activated device
+      @brief Send HLTA to the currently selected PICC (deactivate)
       @return True if successful
-      @note PICCC to HALT
+      @pre A PICC is in the ACTIVE state
+      @post PICC transitions: ACTIVE -> HALT on a successful response
      */
     bool deactivate();
 
-    /*!
-      @brief Read the 1 block / 4 page (16 bytes)
-      @param rx Buffer (at least 16 bytes)
-      @param addr Block/Page address
-      @return True if successful
-      @pre The block must be authenticated if MIFARE classic
-     */
-    bool read16(uint8_t rx[16], const uint8_t addr);
-    /*!
-      @brief Write the 1 block / 4 page (16 bytes)
-      @param addr Block/Page address
-      @param tx Buffef
-      @param tx_len Buffer size
-      @param safety Fail to write to out of the user memory area if true (safety measure)
-      @return True if successful
-      @warning If the tx_len is less than 16 bytes, the remaining space is filled with 0x00
-      @warning If the tx_len is larger than 16 bytes, only the first 16 bytes will be written
-      @pre The block must be authenticated if MIFARE classic
-    */
-    bool write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len = 16, const bool safety = true);
     /*!
       @brief Read the 1 page
       @param rx Buffer (at least 4 bytes)
@@ -127,17 +146,13 @@ public:
      */
     bool read4(uint8_t rx[4], const uint8_t addr);
     /*!
-      @brief Write the 1 page (4 bytes)
+      @brief Read the 1 block / 4 page (16 bytes)
+      @param rx Buffer (at least 16 bytes)
       @param addr Block/Page address
-      @param tx Buffer
-      @param tx_len Buffer size
-      @param safety Fail to write to out of the user memory area if true (safety measure)
       @return True if successful
-      @warning Supports NTAG and UltraLight only
-      @warning If the tx_len is less than 4 bytes, the remaining space is filled with 0x00
-      @warning If the tx_len is larger than 4 bytes, only the first 4 bytes will be written
+      @pre The block must be authenticated if MIFARE classic
      */
-    bool write4(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len = 4, const bool safety = true);
+    bool read16(uint8_t rx[16], const uint8_t addr);
     /*!
       @brief Read any bytes from user area
       @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
@@ -150,6 +165,31 @@ public:
     */
     bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
               const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+
+    /*!
+      @brief Write the 1 page (4 bytes)
+      @param addr Block/Page address
+      @param tx Buffer
+      @param tx_len Buffer size
+      @param safety Fail to write to out of the user memory area if true (safety measure)
+      @return True if successful
+      @warning Supports NTAG and UltraLight only
+      @warning If the tx_len is less than 4 bytes, the remaining space is filled with 0x00
+      @warning If the tx_len is larger than 4 bytes, only the first 4 bytes will be written
+     */
+    bool write4(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len, const bool safety = true);
+    /*!
+      @brief Write the 1 block / 4 page (16 bytes)
+      @param addr Block/Page address
+      @param tx Buffef
+      @param tx_len Buffer size
+      @param safety Fail to write to out of the user memory area if true (safety measure)
+      @return True if successful
+      @warning If the tx_len is less than 16 bytes, the remaining space is filled with 0x00
+      @warning If the tx_len is larger than 16 bytes, only the first 16 bytes will be written
+      @pre The block must be authenticated if MIFARE classic
+    */
+    bool write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len, const bool safety = true);
     /*!
       @brief Write any bytes to user area
       @details Continue writing only the user area from the first block of the user area until tx_len is satisfied
@@ -163,27 +203,151 @@ public:
     */
     bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len,
                const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+    ///@}
 
+    ///@name For MIFARE classic
+    ///@{
     /*!
       @brief Authentication by KeyA for MIFARE classsic
-      @param uid UID
       @param block Authentication block
       @param key MIFARE classic key
       @param encrypted Is it already in an encrypted state?
+      @return True if successful
     */
     bool mifareClassicAuthenticateA(
-        const m5::nfc::a::UID& uid, const uint8_t block,
-        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+        const uint8_t block, const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
     /*!
       @brief Authentication by KeyB for MIFARE classic
-      @param uid UID
       @param block Authentication block
       @param key MIFARE classic key
       @param encrypted Is it already in an encrypted state?
+      @return True if successful
     */
     bool mifareClassicAuthenticateB(
-        const m5::nfc::a::UID& uid, const uint8_t block,
-        const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+        const uint8_t block, const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+
+    /*!
+      @brief Read the specific block access conditons
+      @param[out] c123 Access bits Bit2:C1 Bit1:C2 Bit0:C3
+      @param block Block
+      @return True if successful
+      @details Access conditions for the sector trailer
+      |C1|C2|C3|KeyA read|KeyA write|Access bits read|Access bits write|KeyB raed|KeyB write|
+      |---|---|---|---|---|---|---|---|---|
+      |0|0|0|never|keyA |keyA  |never|keyA |keyA |
+      |0|1|0|never|never|keyA  |never|keyA |never|
+      |1|0|0|never|keyB |keyA/B|never|never|keyB |
+      |1|1|0|never|never|keyA/B|never|never|never|
+      |0|0|1|never|keyA |keyA  |keyA |keyA |keyA |
+      |0|1|1|never|keyB |keyA/B|keyB |never|keyB |
+      |1|0|1|never|never|keyA/B|keyB |never|never|
+      |1|1|1|never|never|keyA/B|never|never|never|
+      Access conditions for data blocks
+      |C1|C2|C3|read|write|increment|decrement,transfer, restore|Application|
+      |---|---|---|---|---|---|---|---|
+      |0|0|0|keyA/B|keyA/B|keyA/B|keyA/B|transport configuration|
+      |0|1|0|keyA/B|never |neve  |never |read/write block|
+      |1|0|0|keyA/B|keyB  |never |never |read/write block|
+      |1|1|0|keyA/B|keyB  |keyB  |keyA/B|value block|
+      |0|0|1|keyA/B|never |never |keyA/B|value block|
+      |0|1|1|keyB  |keyB  |never |never |read/write block|
+      |1|0|1|keyB  |never |never |never |read/write block|
+      |1|1|1|never |never |never |never |read/write block|
+      @pre The authentication of the sector trailer to which the block belongs is in place
+     */
+    bool mifareClassicReadAccessCondition(uint8_t& c123, const uint8_t block);
+    /*!
+      @brief Write the specific block access conditons
+      @param block Block
+      @param c123 Access bits Bit2:C1 Bit1:C2 Bit0:C3
+      @param akey KeyA
+      @param bkey KeyB
+      @return True if successful
+      @sa About access condition mifareClassicReadAccessCondition
+      @warning Since writes are performed in 16-byte units, key information must also be entered correctly
+      @pre The authentication of the sector trailer to which the block belongs is in place
+     */
+    bool mifareClassicWriteAccessCondition(const uint8_t block, const uint8_t c123,
+                                           const m5::nfc::a::mifare::classic::Key& akey,
+                                           const m5::nfc::a::mifare::classic::Key& bkey);
+
+    /*!
+      @brief Is specific block the value block?
+      @param[out] is_value_block true if block is the value block
+      @param block Block
+      @param key MIFARE classic key
+      @return True if successful
+      @pre The specified block is authenticated
+     */
+    bool mifareClassicIsValueBlock(bool& is_value_block, const uint8_t block);
+    /*!
+      @brief Read the specific block as the value block
+      @param[out] value Value
+      @param block Block
+      @return True if successful
+      @pre The specified block is authenticated
+     */
+    bool mifareClassicReadValueBlock(int32_t& value, const uint8_t block);
+    /*!
+      @brief Write the specific block as the value block
+      @param block Block
+      @param value Value
+      @return True if successful
+      @pre The specified block is authenticated
+     */
+    bool mifareClassicWriteValueBlock(const uint8_t block, const int32_t value);
+    /*!
+      @brief Decrement value of the value block
+      @param block Block
+      @param delta Delta
+      @param transfer Transfer immediately if true
+      @return True if successful
+      @warning When transfer == false, the result is stored only in the internal buffer and is not written to the PICC
+      @warning Use mifareClassicTransferValueBlock for writing from the internal buffer to PICC
+      @pre The specified block is authenticated
+      @pre The specified block must be a value block
+     */
+    bool mifareClassicDecrementValueBlock(const uint8_t block, const uint32_t delta, const bool transfer = true);
+    /*!
+      @brief Increment value of the value block
+      @param block Block
+      @param delta Delta
+      @param transfer Transfer immediately if true
+      @return True if successful
+      @warning When transfer == false, the result is stored only in the internal buffer and is not written to the PICC
+      @warning Use mifareClassicTransferValueBlock for writing from the internal buffer to PICC
+      @pre The specified block is authenticated
+      @pre The specified block must be a rechargeable value block
+     */
+    bool mifareClassicIncrementValueBlock(const uint8_t block, const uint32_t delta, const bool transfer = true);
+    /*!
+      @brief Transfer inner buffer value to block
+      @param block Block
+      @return True if successful
+      @pre The specified block is authenticated
+      @pre The specified block must be a value block
+     */
+    bool mifareClassicTransferValueBlock(const uint8_t block);
+    /*!
+      @brief Restore block value to inner buffer
+      @param block Block
+      @return True if successful
+      @pre The specified block is authenticated
+      @pre The specified block must be a value block
+     */
+    bool mifareClassicRestoreValueBlock(const uint8_t block);
+
+    /*!
+      @brief Write change to NFC Type-2 (NDEF) format
+      @return True if successful
+      @warning Only MIFARE Ultralight,UltralightC
+      @warning Changes are irreversible and cannot be undone
+    */
+    bool mifareUltralightChangeFormatToNTAG();
+
+    ///@}
+
+    bool ntagIsValidFormat();
 
     /*!
       @brief Dump all blocks for debug
@@ -207,6 +371,8 @@ protected:
     bool write_using_write4(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len);
     bool write_using_write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len,
                              const m5::nfc::a::mifare::classic::Key& key);
+
+    bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
 
     bool dump_sector_structure(const m5::nfc::a::UID& uid, const m5::nfc::a::mifare::classic::Key& key);
     bool dump_sector(const uint8_t sector);
@@ -241,6 +407,8 @@ struct NFCLayerA::Adapter {
 
     virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::UID& uid, const uint8_t block,
                                              const m5::nfc::a::mifare::classic::Key& key) = 0;
+    virtual bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
+                                            const uint32_t arg = 0)                       = 0;
 
     virtual bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage,
                                 const uint8_t epage) = 0;  // FAST_READ

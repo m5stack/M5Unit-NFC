@@ -45,6 +45,8 @@ struct AdapterST25R3916 final : NFCLayerA::Adapter {
 
     virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::UID& uid, const uint8_t block,
                                              const m5::nfc::a::mifare::classic::Key& key) override;
+    virtual bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
+                                            const uint32_t arg = 0) override;
 
     virtual bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage,
                                 const uint8_t epage) override;  // FAST_READ
@@ -77,8 +79,7 @@ bool AdapterST25R3916::select(m5::nfc::a::UID& uid)
 
 bool AdapterST25R3916::activate(const UID& uid)
 {
-    uint16_t atqa{};
-    return _u.nfcaWakeup(atqa) && _u.nfcaSelect(uid);
+    return _u.nfcaSelect(uid);
 }
 
 bool AdapterST25R3916::deactivate()
@@ -112,17 +113,11 @@ bool AdapterST25R3916::mifare_classic_authenticate(const bool auth_a, const UID&
     return auth_a ? _u.mifareClassicAuthenticateA(uid, block, key) : _u.mifareClassicAuthenticateB(uid, block, key);
 }
 
-#if 0
-bool AdapterST25R3916::mifare_classic_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)
+bool AdapterST25R3916::mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
+                                                  const uint32_t arg)
 {
-    return _u.mifareClassicReadBlock(rx, rx_len, addr);
+    return _u.mifareClassicValueBlock(cmd, block, arg);
 }
-
-bool AdapterST25R3916::mifare_classic_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len)
-{
-    return _u.mifareClassicWriteBlock(addr, tx, tx_len);
-}
-#endif
 
 //
 namespace {

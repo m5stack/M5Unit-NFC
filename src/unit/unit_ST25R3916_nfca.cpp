@@ -129,7 +129,7 @@ bool UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t*
         rx_len = actual;
         return true;
     }
-    M5_LIB_LOGE("Failed to readFIFO");
+    M5_LIB_LOGE("Failed to readFIFO %u/%u", actual, rx_len_org);
     return false;
 }
 
@@ -520,7 +520,8 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
     uint8_t rbuf[rlen]{};
     uint16_t actual{};
     if (!readFIFO(actual, rbuf, sizeof(rbuf)) || actual != rlen) {
-        M5_LIB_LOGE("Failed to readFIFO %u", actual);
+        M5_LIB_LOGE("Failed to readFIFO %u/%u", actual, rlen);
+        M5_DUMPE(rbuf, actual);
         return false;
     }
 
@@ -563,24 +564,14 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
     return true;
 }
 
-#if 0
-bool UnitST25R3916::mifareClassicReadBlock(uint8_t* rx, uint16_t& rx_len, const uint8_t addr)
-{
-    uint8_t cmd[2] = {m5::stl::to_underlying(Command::READ), addr};
-    return mifare_classic_transceive_encrypt(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_READ, true, true);
-}
-
-bool UnitST25R3916::mifareClassicWriteBlock(const uint8_t block, const uint8_t* tx, const uint16_t tx_len)
-{
-    return false;
-}
-#endif
-
 bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& uid, const uint8_t block, const Key& mkey)
 {
     if ((cmd != Command::AUTH_WITH_KEY_A && cmd != Command::AUTH_WITH_KEY_B) || !uid.isMifareClassic()) {
         return false;
     }
+
+    M5_LIB_LOGD("AUTH:%02X %u %02X:%02X:%02X:%02X:%02X:%02X", cmd, block,  //
+                mkey[0], mkey[1], mkey[2], mkey[3], mkey[4], mkey[5]);
 
     // 3-pass mutual authentication
     const uint64_t key48 = key_to64(mkey.data());
@@ -601,7 +592,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& ui
             return false;
         }
     }
-    m5::utility::delayMicroseconds(87);  // Wait for AUTH <-> Sebd AB (At least 86.4 us)
+    m5::utility::delayMicroseconds(87);  // Wait for AUTH <-> Send AB (At least 86.4 us)
 
     // 2) Send encrypt token AB (Nr, Ar)
     uint8_t tail4[4]{};
@@ -660,6 +651,42 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& ui
     _encrypted    = (At32 == suc3);
 
     return _encrypted;
+}
+
+bool UnitST25R3916::mifareClassicValueBlock(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg)
+{
+    if (cmd != Command::DECREMENT && cmd != Command::INCREMENT && cmd != Command::RESTORE && cmd != Command::TRANSFER) {
+        return false;
+    }
+
+    uint8_t cmd_frame[2] = {m5::stl::to_underlying(cmd), block};
+    uint8_t rx[1]{};
+    uint16_t rx_len{1};
+
+    M5_LIB_LOGD("ValuBlock:%02X %u %u", cmd, block, arg);
+
+    if (!mifare_classic_transceive_encrypt(                                                 //
+            rx, rx_len, cmd_frame, sizeof(cmd_frame), TIMEOUT_VALUE_BLOCK, false, true) ||  //
+        rx[0] != ACK_NIBBLE) {
+        M5_LIB_LOGE("Failed to command %02X %u %u %02X", cmd, block, arg, rx[0]);
+        return false;
+    }
+    if (cmd == Command::TRANSFER) {
+        return true;
+    }
+
+    m5::utility::delayMicroseconds(82);  // Wait for command <-> Send (At least 82 us)
+
+    uint8_t arg8[4]{};
+    arg8[0] = arg & 0xFF;
+    arg8[1] = arg >> 8;
+    arg8[2] = arg >> 16;
+    arg8[3] = arg >> 24;
+    if (!writeAuxiliaryDefinition(0) || !mifare_classic_send_encrypt(arg8, sizeof(arg8))) {
+        M5_LIB_LOGE("Failed to send");
+        return false;
+    }
+    return !wait_for_FIFO(TIMEOUT_VALUE_BLOCK);  // Consider the timeout a success
 }
 
 // -------------------------------- For NTAG

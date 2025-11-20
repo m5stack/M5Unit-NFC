@@ -16,9 +16,7 @@ namespace a {
 namespace mifare {
 namespace classic {
 
-//const Key DEFAULT_KEY = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-
-bool decode_value_block(int32_t& value, uint8_t& addr, const uint8_t* buf)
+bool decode_value_block(int32_t& value, uint8_t& addr, const uint8_t buf[16])
 {
     if (*((uint32_t*)&buf[0]) == *((uint32_t*)&buf[8]) && *((uint32_t*)&buf[0]) == ~*((uint32_t*)&buf[4]) &&
         *((uint16_t*)&buf[12]) == *((uint16_t*)&buf[14]) && buf[12] == (uint8_t)~buf[13]) {
@@ -29,7 +27,7 @@ bool decode_value_block(int32_t& value, uint8_t& addr, const uint8_t* buf)
     return false;
 }
 
-const uint8_t* encode_value_block(uint8_t* buf, const int32_t value, const uint8_t addr)
+const uint8_t* encode_value_block(uint8_t buf[16], const int32_t value, const uint8_t addr)
 {
     buf[0] = buf[8] = (value >> 0) & 0xFF;
     buf[1] = buf[9] = (value >> 8) & 0xFF;
@@ -74,7 +72,7 @@ bool decode_access_bits(uint8_t permissions[4], const uint8_t ab0, const uint8_t
     uint8_t n3 = (~(ab1 & 0x0F)) & 0x0F;
 
     bool valid = (c1 == n1) && (c2 == n2) && (c3 == n3);
-    if (valid || true) {
+    if (valid) {
         permissions[0] = ((c1 & 1) << 2) | ((c2 & 1) << 1) | ((c3 & 1) << 0);
         permissions[1] = ((c1 & 2) << 1) | ((c2 & 2) << 0) | ((c3 & 2) >> 1);
         permissions[2] = ((c1 & 4) << 0) | ((c2 & 4) >> 1) | ((c3 & 4) >> 2);
