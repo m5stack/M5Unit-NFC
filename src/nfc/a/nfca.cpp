@@ -57,10 +57,10 @@ constexpr uint16_t max_block_table[] = {0,                                 // Un
 constexpr uint8_t user_block_table[][2] = {
     {0, 0},  // Unknown
     // Classic
-    {1, 18},   // Exclusive 0 (Manufacturer Block)  and last 1 block (Sector Trailer)
-    {1, 62},   // Exclusive 0 (Manufacturer Block)  and last 1 block (Sector Trailer)
-    {1, 126},  // Exclusive 0 (Manufacturer Block)  and last 1 block (Sector Trailer)
-    {1, 254},  // Exclusive 0 (Manufacturer Block)  and last 1 block (Sector Trailer)
+    {1, 18},   // Exclusive 0 (Manufacturer Block) and last 1 block (Sector Trailer)
+    {1, 62},   // Exclusive 0 (Manufacturer Block) and last 1 block (Sector Trailer)
+    {1, 126},  // Exclusive 0 (Manufacturer Block) and last 1 block (Sector Trailer)
+    {1, 254},  // Exclusive 0 (Manufacturer Block) and last 1 block (Sector Trailer)
     // Light
     {4, 15},  // Exclusive 0-3 and last 4 pages
     {4, 39},  // Exclusive 0-3 and last 8 pages

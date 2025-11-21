@@ -5,7 +5,7 @@
  */
 /*!
   @file nfc_layer_a.hpp
-  @brief Common layer for NFC-A Related Units
+  @brief Common layer for NFC-A related units
 
   @note Glossary
   - PCD: Proximity Coupling Device (reader)
@@ -18,6 +18,7 @@
 #define M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_A_HPP
 
 #include "nfc/a/nfca.hpp"
+#include "ndef_layer.hpp"
 #include <memory>
 #include <vector>
 
@@ -35,7 +36,7 @@ namespace nfc {
   @class NFCLayerA
   @brief Common interface layer for each chip of the NFC-A reader
  */
-class NFCLayerA {
+class NFCLayerA : public m5::nfc::NFCLayerInterface {
 public:
     struct Adapter;
     explicit NFCLayerA(UnitMFRC522& u);  //  The implementation of this function is located in M5Unit-RFID
@@ -340,14 +341,50 @@ public:
     /*!
       @brief Write change to NFC Type-2 (NDEF) format
       @return True if successful
+      @note Returns true if the data is already in NDEF format or if the PICC is an NTAG
       @warning Only MIFARE Ultralight,UltralightC
       @warning Changes are irreversible and cannot be undone
     */
     bool mifareUltralightChangeFormatToNTAG();
-
     ///@}
 
-    bool ntagIsValidFormat();
+    ///@name For NDEF
+    ///@{
+    /*!
+      @brief Is the PICC data in NDEF format?
+      @paran[out] valid True if NDEF format
+      @return True if successful
+     */
+    bool ndefIsValidFormat(bool& valid);
+    /*!
+      @brief Get the size of the NDEF message If the data is NDEF
+      @param[out] size Size of th NDEF message, 0 means Empty or NOT NDEF
+      @return True if successful
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefReadMessageSize(uint32_t& size);
+    /*!
+      @brief Read NDEF Messages
+      @param[out] msgs Messgae vector
+      @return True if successful
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefRead(std::vector<m5::nfc::ndef::Message>& msgs);
+    /*!
+      @brief Writed NDEF Messages
+      @param msgs Messgae vector
+      @return True if successful
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefWrite(const std::vector<m5::nfc::ndef::Message>& msgs);
+    /*!
+      @brief Writed NDEF Message
+      @param msg Messgae
+      @return True if successful
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefWrite(const m5::nfc::ndef::Message& msg);
+    ///@}
 
     /*!
       @brief Dump all blocks for debug
@@ -365,6 +402,11 @@ public:
     ///@}
 
 protected:
+    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
+    virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override;
+    virtual uint16_t firstUserBlock() override;
+    virtual uint16_t lastUserBlock() override;
+
     bool read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr);
     bool read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
                            const m5::nfc::a::mifare::classic::Key& key);
@@ -373,6 +415,8 @@ protected:
                              const m5::nfc::a::mifare::classic::Key& key);
 
     bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
+
+    bool ntag_check_format();
 
     bool dump_sector_structure(const m5::nfc::a::UID& uid, const m5::nfc::a::mifare::classic::Key& key);
     bool dump_sector(const uint8_t sector);
@@ -386,6 +430,7 @@ protected:
 
 private:
     std::unique_ptr<Adapter> _impl;
+    m5::nfc::ndef::NDEFLayer _ndef;
 };
 
 // Impl for units

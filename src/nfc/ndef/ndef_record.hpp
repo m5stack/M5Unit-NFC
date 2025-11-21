@@ -27,7 +27,11 @@ class Message;
  */
 class Record {
 public:
-    explicit Record(const TNF tnf = TNF::Wellknown)
+    Record() noexcept : Record(TNF::Wellknown)
+    {
+    }
+
+    explicit Record(const TNF tnf) noexcept
     {
         _attr.tnf(tnf);
     }
@@ -162,6 +166,7 @@ public:
       @param str String as UTF-8
       @param lang ISO/IANA language code. e.g. "en"
       @warning type is changed to "T"
+      @warning UTF-8 only
      */
     bool setTextPayload(const char* str, const char* lang);
     /*!

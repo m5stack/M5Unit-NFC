@@ -44,10 +44,12 @@ uint32_t Record::required() const
     return 1 +                                // Attribute
            1 +                                // Type length
            (_payload.size() < 256 ? 1 : 4) +  // Payload length
-           (_id.empty() ? 0 : 1) +            // ID length
+           (_attr.idLength() ? 1 : 0) +       // ID length
            _type.size() +                     // Type
            _id.size() +                       // ID
            _payload.size();                   // Payload
+
+    // (_id.empty() ? 0 : 1) +            // ID length
 }
 
 bool Record::setTextPayload(const char* str, const char* lang)
@@ -89,6 +91,10 @@ uint32_t Record::encode(uint8_t* buf, const uint32_t mlen) const
 
     // Payload length
     if (_attr.shortRecord()) {  // 1 byte
+        if (_payload.size() >= 256) {
+            M5_LIB_LOGE("Illegal payload size %zu", _payload.size());
+            return 0;
+        }
         buf[count++] = _payload.size();
     } else {  // 4 bytes
         if (mlen < 6) {
@@ -110,7 +116,7 @@ uint32_t Record::encode(uint8_t* buf, const uint32_t mlen) const
     }
 
     // Type
-    if (count + tlen >= mlen) {
+    if (count + tlen > mlen) {
         return 0;
     }
     auto tp = _type.data();
@@ -121,14 +127,14 @@ uint32_t Record::encode(uint8_t* buf, const uint32_t mlen) const
 
     // ID ((Not exists if id length is 0)
     if (_attr.idLength()) {
-        if (count + _id.size() >= mlen) {
+        if (count + _id.size() > mlen) {
             return 0;
         }
         std::memcpy(&buf[count], _id.data(), _id.size());
         count += _id.size();
     }
     // Payload
-    if (count + _payload.size() >= mlen) {
+    if (count + _payload.size() > mlen) {
         return 0;
     }
     std::memcpy(&buf[count], _payload.data(), _payload.size());
@@ -146,6 +152,9 @@ uint32_t Record::decode(const uint8_t* buf, const uint32_t len)
 
     clear();
 
+    if (!buf || !len) {
+        return 0;
+    }
     if (len < 3) {
         return 0;
     }
@@ -155,7 +164,7 @@ uint32_t Record::decode(const uint8_t* buf, const uint32_t len)
     if (_attr.shortRecord()) {
         payload_len = *buf++;
     } else {
-        if (len < 5) {
+        if (len < 6) {
             return 0;
         }
         payload_len |= ((uint32_t)*buf) << 24;
@@ -210,20 +219,27 @@ std::string Record::payloadAsString() const
     const uint8_t* uptr = _payload.data();
     uint32_t len        = _payload.size();
 
-    if (tnf() == TNF::Wellknown) {
-        if (_type == "T") {  // Text
-            auto offset = (*uptr & 0x3F) + 1;
-            cptr += offset;
-            len -= offset;
-        } else if (_type == "U") {  // URI
-            char tmp[256]{};
-            URIProtocol up = static_cast<URIProtocol>(*uptr);
+    if (!uptr || !len) {
+        return std::string();
+    }
 
-            std::string s(cptr + 1, cptr + _payload.size());
-            len      = snprintf(tmp, sizeof(tmp), "%s%s", get_uri_idc_string(up), s.c_str());
-            tmp[len] = '\0';
-            cptr     = tmp;
-        }
+    switch (tnf()) {
+        case TNF::Wellknown:
+            if (_type == "T") {  // Text
+                auto offset = (*uptr & 0x3F) + 1;
+                cptr += offset;
+                len -= offset;
+            } else if (_type == "U") {  // URI
+                char tmp[512]{};
+                URIProtocol up = static_cast<URIProtocol>(*uptr);
+                std::string s(cptr + 1, cptr + _payload.size());
+                len      = snprintf(tmp, sizeof(tmp), "%s%s", get_uri_idc_string(up), s.c_str());
+                tmp[len] = '\0';
+                cptr     = tmp;
+            }
+            break;
+        default:
+            return std::string(type());
     }
     return std::string(cptr, cptr + len);
 }

@@ -21,6 +21,21 @@ namespace nfc {
  */
 namespace ndef {
 
+///@name  CC(Capability Container)
+///@{
+constexpr uint8_t MAGIC_NO{0xE1};  //!< Magic No. in CC
+//! @brief Gets the major version
+inline constexpr uint8_t get_major_version(const uint8_t v)
+{
+    return (v >> 4) & 0x0F;
+}
+//! @brief Gets the minor version
+inline constexpr uint8_t get_minor_version(const uint8_t v)
+{
+    return v & 0x0F;
+}
+///@}
+
 /*!
   @enum Tag
   @brief TLV(Tag,Length,Value) tag for NDEF Message
@@ -33,6 +48,69 @@ enum class Tag : uint8_t {
     Proprietary = 0xFD,  //!< Proprietary
     Terminator           //!< Terminator
 };
+
+/*!
+  @typedef TagBits
+  @brief TLV(Tag,Length,Value) tag bit group
+*/
+using TagBits = uint8_t;
+
+//! @brief Tag to TagBit
+constexpr TagBits tag_to_tagbit(const Tag t)
+{
+    return (t == Tag::Null)            ? (1u << 0)
+           : (t == Tag::LockControl)   ? (1u << 1)
+           : (t == Tag::MemoryControl) ? (1u << 2)
+           : (t == Tag::NDEFMessage)   ? (1u << 3)
+           : (t == Tag::Proprietary)   ? (1u << 4)
+           : (t == Tag::Terminator)    ? (1u << 5)
+                                       : 0u;
+}
+
+///@cond
+template <typename... Ts>
+struct are_all_tag : std::true_type {};
+template <typename T, typename... Ts>
+struct are_all_tag<T, Ts...> : std::integral_constant<bool, std::is_same<Tag, T>::value && are_all_tag<Ts...>::value> {
+};
+
+constexpr TagBits make_tag_bits_impl(TagBits acc)
+{
+    return acc;
+}
+
+template <typename... Rest>
+constexpr TagBits make_tag_bits_impl(TagBits acc, Tag head, Rest... rest)
+{
+    return make_tag_bits_impl(acc | tag_to_tagbit(head), rest...);
+}
+///@endcond
+
+/*!
+  @brief Make TagBit from
+  @param tags Tag(s)
+  @return TagBit
+ */
+template <typename... T>
+constexpr TagBits make_tag_bits(T... tags)
+{
+    static_assert(sizeof...(tags) > 0, "At least one Tag is required");
+    static_assert(are_all_tag<T...>::value, "Arguments must be Tag");
+    return make_tag_bits_impl(0u, tags...);
+}
+
+//! @brief Check whether TagBits contains given Tag
+inline constexpr bool contains_tag(const TagBits tb, const Tag t)
+{
+    return (tb & tag_to_tagbit(t)) != 0;
+}
+
+//! @brief All tags
+constexpr TagBits tagBitsAll =
+    make_tag_bits(m5::nfc::ndef::Tag::LockControl, m5::nfc::ndef::Tag::MemoryControl, m5::nfc::ndef::Tag::NDEFMessage,
+                  m5::nfc::ndef::Tag::Proprietary, m5::nfc::ndef::Tag::Terminator);
+//! @brief NDEFMessage only
+constexpr TagBits tagBitsNDEFMessage = make_tag_bits(m5::nfc::ndef::Tag::NDEFMessage);
 
 //! @brief Is valid tag?
 inline bool is_valid_tag(const uint8_t t)

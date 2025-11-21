@@ -7,7 +7,8 @@
   @file nfc_layer_a_ST25R3916.cpp
   @brief ST25R3916 adapter for common layer
 */
-#include <nfc/layer/nfc_layer_a.hpp>
+#include "nfc/layer/nfc_layer_a.hpp"
+#include "nfc/layer/ndef_layer.hpp"
 #include "unit/unit_ST25R3916.hpp"
 #include <M5Utility.hpp>
 
@@ -127,11 +128,11 @@ std::unique_ptr<NFCLayerA::Adapter> make_st25r3916_adapter(UnitST25R3916& u)
 }
 }  // namespace
 
-NFCLayerA::NFCLayerA(UnitST25R3916& u) : _impl(make_st25r3916_adapter(u))
+NFCLayerA::NFCLayerA(UnitST25R3916& u) : _impl(make_st25r3916_adapter(u)), _ndef{*this}
 {
 }
 
-NFCLayerA::NFCLayerA(CapST25R3916& u) : _impl(make_st25r3916_adapter(static_cast<UnitST25R3916&>(u)))
+NFCLayerA::NFCLayerA(CapST25R3916& u) : _impl(make_st25r3916_adapter(static_cast<UnitST25R3916&>(u))), _ndef{*this}
 {
 }
 

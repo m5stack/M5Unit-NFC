@@ -27,14 +27,18 @@ namespace ndef {
 
 const Message Message::Terminator(Tag::Terminator);
 
-uint32_t Message::required(const bool include_terminator) const
+uint32_t Message::required() const
 {
     uint32_t payload_len = (_tag == Tag::NDEFMessage) ? calculate_record_size(_records) : _payload.size();
-    return 1 /* tag */ + (payload_len >= 0xFF ? 3 : 1) + payload_len + (include_terminator ? 1 : 0);
+    return 1 /* tag */ + ((_tag == Tag::Terminator) ? 0 : ((payload_len >= 0xFF ? 3 : 1) + payload_len));
 }
 
 bool Message::push_back(const Record& r)
 {
+    if (_tag != Tag::NDEFMessage) {
+        return false;
+    }
+
     if (required() + r.required() > 0xFFFE) {
         return false;
     }
@@ -57,65 +61,95 @@ bool Message::push_back(const Record& r)
     return true;
 }
 
-uint32_t Message::encode(uint8_t* buf, const uint32_t blen, const bool include_terminator) const
+void Message::pop_back()
 {
-    uint32_t count{};
+    if (_tag != Tag::NDEFMessage || _records.empty()) {
+        return;
+    }
 
+    _records.pop_back();
+
+    const auto n = _records.size();
+    if (n == 0) {
+        /* Nop */
+    } else if (n == 1) {
+        // single record → MB=1, ME=1
+        auto& attr = _records[0].attribute();
+        attr.messageBegin(true);
+        attr.messageEnd(true);
+    } else {
+        // 2 or more records → last ME=1
+        auto& attr = _records.back().attribute();
+        attr.messageEnd(true);
+    }
+}
+
+uint32_t Message::encode(uint8_t* buf, const uint32_t blen) const
+{
+    if (!buf || !blen) {
+        return 0;
+    }
+
+    uint32_t count{};
     uint32_t payload_len = (_tag == Tag::NDEFMessage) ? calculate_record_size(_records) : _payload.size();
     if (payload_len > 0xFFFE) {
         return 0;
     }
 
     // Tag and payload length
+    if (count + 1 > blen) {
+        return 0;
+    }
     buf[count++] = m5::stl::to_underlying(_tag);  // Tag
     if (isTerminator()) {
-        return 1;  // 0xFE only
+        return count;  // 0xFE only
     }
     // Length (1 byte or 3 bytes)
     if (payload_len >= 0XFF) {
+        if (count + 3 > blen) {
+            return 0;
+        }
         buf[count++] = 0xFF;  // tag for 3 bytes format
         buf[count++] = (payload_len >> 8) & 0xFF;
         buf[count++] = payload_len & 0xFF;
     } else {
+        if (count + 1 > blen) {
+            return 0;
+        }
         buf[count++] = payload_len;  // 0x00 - 0xFE
     }
 
     if (_tag == Tag::NDEFMessage) {  // NDEFMessage
         for (auto&& r : _records) {
-            auto rec = r.encode(&buf[count], blen - count);
-            if (!rec) {
+            if (count >= blen) {
+                return 0;
+            }
+            const uint32_t remain = blen - count;
+            const uint32_t rec    = r.encode(&buf[count], remain);
+            if (!rec || count + rec > blen) {
                 return 0;
             }
             count += rec;
         }
     } else {  // Others
-
-        if (blen - count < payload_len) {
+        if (count + payload_len > blen) {
             return 0;
         }
-        std::memcpy(&buf[count], _payload.data(), blen - count);
-        count += blen - count;
-    }
-
-    if (include_terminator) {
-        buf[count++] = 0xFE;
+        std::memcpy(&buf[count], _payload.data(), payload_len);
+        count += payload_len;
     }
     return count;
 }
 
 uint32_t Message::decode(const uint8_t* buf, const uint32_t len)
 {
-    if (len < 3) {
-        return 0;
-    }
-
     clear();
 
     uint32_t decoded{};
     uint16_t payload_len{};
     const auto top = buf;
 
-    if (len < 3) {
+    if (!buf || !len) {
         return 0;
     }
 
@@ -127,8 +161,12 @@ uint32_t Message::decode(const uint8_t* buf, const uint32_t len)
         return 1;
     }
 
+    if (len < 3) {
+        return 0;
+    }
+
     if (!is_valid_tag(t)) {
-        M5_LIB_LOGE("Invalid tag");
+        M5_LIB_LOGE("Invalid tag %02X", t);
         return 0;
     }
 
@@ -153,7 +191,8 @@ uint32_t Message::decode(const uint8_t* buf, const uint32_t len)
 
     // NDEFMessage
     if (_tag == Tag::NDEFMessage) {
-        while (buf - top < len) {
+        const uint8_t* payload_end = top + decoded + payload_len;
+        while (buf < payload_end) {
             Record r{};
             uint32_t rlen = len - (buf - top);
             auto rec      = r.decode(buf, rlen);
@@ -176,7 +215,9 @@ uint32_t Message::decode(const uint8_t* buf, const uint32_t len)
             }
 
             _records.push_back(r);
+
             buf += rec;
+
             // ME detected, subsequent data will be ignored
             if (r.attribute().messageEnd()) {
                 break;
@@ -187,7 +228,7 @@ uint32_t Message::decode(const uint8_t* buf, const uint32_t len)
             return false;
         }
         // Verify
-        return required(false) == decoded ? decoded : 0;
+        return required() == decoded ? decoded : 0;
     }
 
     // Other

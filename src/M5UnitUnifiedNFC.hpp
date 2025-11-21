@@ -15,7 +15,12 @@
 #define M5_UNIT_UNIFIED_NFC_HPP
 
 #include "nfc/nfc.hpp"
+#include "nfc/ndef/ndef.hpp"
+#include "nfc/ndef/ndef_message.hpp"
+#include "nfc/ndef/ndef_record.hpp"
+
 #include "unit/unit_ST25R3916.hpp"
+
 #include "nfc/layer/nfc_layer_a.hpp"
 
 /*!

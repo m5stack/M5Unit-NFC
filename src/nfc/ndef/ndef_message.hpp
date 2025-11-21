@@ -12,10 +12,13 @@
 
 #include "ndef.hpp"
 #include "ndef_record.hpp"
+#include <vector>
 
 namespace m5 {
 namespace nfc {
 namespace ndef {
+
+class Record;
 
 /*!
   @class Message
@@ -43,12 +46,18 @@ public:
     //! @brief Is termibator
     inline bool isTerminator() const
     {
-        return is_terminator_tag(m5::stl::to_underlying(_tag));
+        return _tag == Tag::Terminator;
     }
     //! @brief Is NDEF Messgae?
     inline bool isNDEFMessage() const
     {
         return _tag == Tag::NDEFMessage;
+    }
+    //! @brief Is Null Message?
+    inline bool isNullMessage() const
+    {
+        return _tag == Tag::Null;
+        ;
     }
     /*!
       @brief Get the records
@@ -58,7 +67,6 @@ public:
     {
         return _records;
     }
-
     /*!
       @brief Get the payload
       @pre Tag must NOT be NDEFMessage
@@ -67,7 +75,6 @@ public:
     {
         return _payload;
     }
-
     /*!
       @brief Get the payload
       @pre Tag must NOT be NDEFMessage
@@ -76,12 +83,8 @@ public:
     {
         return _payload;
     }
-
-    /*!
-      @brief Size required for encoding
-      @param include_terminator Include terminator in required size?
-    */
-    uint32_t required(const bool include_terminator = true) const;
+    //!  @brief Size required for encoding
+    uint32_t required() const;
 
     /*!
       @brief Push back the record
@@ -90,16 +93,17 @@ public:
       @note A copy of the Record is inserted at the end
      */
     bool push_back(const Record& r);
+    //! @brief Removes the last recordw
+    void pop_back();
 
     /*!
       @brief Encode
       @param[out] buf Buffer
       @param blen Buffer size
-      @param include_terminator Include terminator in encode?
       @retval > 0 Encoded length
       @retval == 0 Error
      */
-    uint32_t encode(uint8_t* buf, const uint32_t blen, const bool include_terminator = true) const;
+    uint32_t encode(uint8_t* buf, const uint32_t blen) const;
     /*!
       @brief Decode
       @param buf Pointer of the NDEF mesage

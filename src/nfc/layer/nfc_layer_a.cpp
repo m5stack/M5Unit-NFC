@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 /*!
-  @file nfc_layer_a.hpp
-  @brief Common layer for NFC-A Related Units
+  @file nfc_layer_a.cpp
+  @brief Common layer for NFC-A related units
 */
 #include "nfc_layer_a.hpp"
+#include "nfc/ndef/ndef.hpp"
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
@@ -15,6 +16,7 @@
 using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
+using namespace m5::nfc::ndef;
 
 namespace {
 
@@ -615,6 +617,57 @@ bool NFCLayerA::mifareClassicRestoreValueBlock(const uint8_t block)
     return _activeUID.isMifareClassic() && mifare_classic_value_block(Command::RESTORE, block);
 }
 
+bool NFCLayerA::mifareUltralightChangeFormatToNTAG()
+{
+    if (!_activeUID.valid() || !_activeUID.supportsNFC()) {
+        return false;
+    }
+
+    if (_activeUID.type == Type::MIFARE_Ultralight || _activeUID.type == Type::MIFARE_UltralightC) {
+        if (!ntag_check_format()) {
+            uint8_t buf[4] = {MAGIC_NO, 0x10 /* version 1.0 */, (uint8_t)(_activeUID.userAreaSize() / 8), 0x00};
+            if (!write4(3 /* CC */, buf, sizeof(buf))) {
+                M5_LIB_LOGE("Failed to write4");
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool NFCLayerA::ndefIsValidFormat(bool& valid)
+{
+    valid = false;
+    if (_activeUID.type == Type::MIFARE_Ultralight || _activeUID.type == Type::MIFARE_UltralightC) {
+        if (!ntag_check_format()) {
+            M5_LIB_LOGW("NOT NTAG CC %s", _activeUID.typeAsString().c_str());
+            return false;
+        }
+    }
+    return _activeUID.supportsNFC() && _ndef.isValidFormat(valid);
+}
+
+bool NFCLayerA::ndefReadMessageSize(uint32_t& size)
+{
+    size = 0;
+    bool valid{};
+    if (!ndefIsValidFormat(valid) || !valid) {
+        M5_LIB_LOGW("Error or NOT supported %s", _activeUID.typeAsString().c_str());
+        return false;
+    }
+    return _ndef.readMessageSize(size);
+}
+
+bool NFCLayerA::ndefRead(std::vector<m5::nfc::ndef::Message>& msgs)
+{
+    return _activeUID.supportsNFC() && ntag_check_format() && _ndef.read(msgs);
+}
+
+bool NFCLayerA::ndefWrite(const std::vector<m5::nfc::ndef::Message>& msgs)
+{
+    return _activeUID.supportsNFC() && ntag_check_format() && _ndef.write(msgs);
+}
+
 //
 bool NFCLayerA::dump_sector_structure(const UID& uid, const Key& key)
 {
@@ -748,6 +801,54 @@ bool NFCLayerA::push_back_uid(std::vector<m5::nfc::a::UID>& v, const m5::nfc::a:
 bool NFCLayerA::mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg)
 {
     return _impl->mifare_classic_value_block(cmd, block, arg);
+}
+
+bool NFCLayerA::ntag_check_format()
+{
+    if (_activeUID.supportsNFC()) {
+        // Need check CC(Capability Container)
+        if (_activeUID.type == Type::MIFARE_Ultralight || _activeUID.type == Type::MIFARE_UltralightC) {
+            uint8_t rbuf[16]{};
+            if (!read16(rbuf, 0)) {
+                M5_LIB_LOGE("Failed to read 0-3");
+                return false;
+            }
+            if (rbuf[12] != MAGIC_NO || rbuf[13] < 0x10) {
+                M5_LIB_LOGE("Illegal CC %02X:%02X:%02X:%02X", rbuf[12], rbuf[13], rbuf[14], rbuf[15]);
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
+{
+    if (!rx || !rx_len || !_activeUID.valid()) {
+        return false;
+    }
+    return _activeUID.canFastRead() ? read_using_fast(rx, rx_len, saddr)
+                                    : read_using_read16(rx, rx_len, saddr, DEFAULT_KEY);
+}
+
+bool NFCLayerA::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
+{
+    if (!tx || !tx_len || !_activeUID.valid()) {
+        return false;
+    }
+    return _activeUID.supportsNFC() ? write_using_write4(saddr, tx, tx_len)
+                                    : write_using_write16(saddr, tx, tx_len, DEFAULT_KEY);
+}
+
+uint16_t NFCLayerA::firstUserBlock()
+{
+    return _activeUID.firstUserBlock();
+}
+
+uint16_t NFCLayerA::lastUserBlock()
+{
+    return _activeUID.lastUserBlock();
 }
 
 }  // namespace nfc

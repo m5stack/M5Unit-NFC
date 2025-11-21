@@ -7,8 +7,8 @@
   @file nfca.hpp
   @brief NFC-A definitions
 */
-#ifndef M5_UNIT_UNIFIED_NFC_NFC_NFCA_NFCA_HPP
-#define M5_UNIT_UNIFIED_NFC_NFC_NFCA_NFCA_HPP
+#ifndef M5_UNIT_UNIFIED_NFC_NFC_A_NFCA_HPP
+#define M5_UNIT_UNIFIED_NFC_NFC_A_NFCA_HPP
 
 #include "mifare.hpp"
 #include <cstring>
@@ -23,7 +23,7 @@ namespace a {
 
 /*!
   @enum Type
-  @brief Type of the PICC device
+  @brief Type of the PICC
  */
 enum class Type : uint8_t {
     Unknown,              //!< Unknown type
@@ -189,6 +189,13 @@ struct UID {
     inline uint16_t userAreaSize() const
     {
         return valid() ? get_user_area_size(type) : 0;
+    }
+    //! @brief Gets the first user block/page address
+    inline uint16_t firstUserBlock() const {
+        return valid() ? get_first_user_block(type) : 0xFFFF;
+    }
+    inline uint16_t lastUserBlock() const {
+        return valid() ? get_last_user_block(type) : 0xFFFF;
     }
     //! @brief Retrieve the last 4 bytes
     void tail4(uint8_t buf[4]) const
