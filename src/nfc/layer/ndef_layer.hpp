@@ -35,7 +35,7 @@ public:
     bool readMessageSize(uint32_t& size, const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsAll);
     bool read(std::vector<m5::nfc::ndef::Message>& msgs,
               const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsNDEFMessage);
-    bool write(const std::vector<m5::nfc::ndef::Message>& msgs);
+    bool write(const std::vector<m5::nfc::ndef::Message>& msgs, const bool keep = true);
 
 protected:
     bool calculate_ndef_size(uint32_t& size, const uint8_t* p, const uint8_t* end, const uint8_t targetTagBit);

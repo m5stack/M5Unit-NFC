@@ -69,40 +69,39 @@ constexpr uint32_t poji_64_png_len = 738;
 
 void read_ndef()
 {
-    std::vector<Message> msgs;
-    if (!nfc_a.ndefRead(msgs)) {
+    Message msg;
+    // Read NDEF message TLV
+    if (!nfc_a.ndefRead(msg)) {
         M5_LOGE("Failed to read");
         return;
     }
 
-    lcd.setCursor(0, lcd.fontHeight());
-    for (auto&& msg : msgs) {
-        // msg.dump();
-        if (msg.isNDEFMessage()) {
-            for (auto&& r : msg.records()) {
-                switch (r.tnf()) {
-                    case TNF::Wellknown: {
-                        auto s = r.payloadAsString().c_str();
-                        M5.Log.printf("SZ:%3u TNF:%u T:%s [%s]\n", r.payloadSize(), r.tnf(), r.type(), s);
-                        lcd.printf("T:%s [%s]\n", r.type(), s);
-                    } break;
-                    default:
-                        M5.Log.printf("SZ:%3u TNF:%u T:%s\n", r.payloadSize(), r.tnf(), r.type());
-                        lcd.printf("T:%s\n", r.type());
-                        if (strcmp(r.type(), "image/png") == 0) {
-                            lcd.drawPng(r.payload(), r.payloadSize(), lcd.width() >> 1, lcd.height() >> 1);
-                        }
-                        break;
-                }
+    // If it does not exist, a Null TLV is returned
+    if (msg.isNDEFMessage()) {
+        lcd.setCursor(0, lcd.fontHeight());
+        for (auto&& r : msg.records()) {
+            switch (r.tnf()) {
+                case TNF::Wellknown: {
+                    auto s = r.payloadAsString().c_str();
+                    M5.Log.printf("SZ:%3u TNF:%u T:%s [%s]\n", r.payloadSize(), r.tnf(), r.type(), s);
+                    lcd.printf("T:%s [%s]\n", r.type(), s);
+                } break;
+                default:
+                    M5.Log.printf("SZ:%3u TNF:%u T:%s\n", r.payloadSize(), r.tnf(), r.type());
+                    lcd.printf("T:%s\n", r.type());
+                    if (strcmp(r.type(), "image/png") == 0) {
+                        lcd.drawPng(r.payload(), r.payloadSize(), lcd.width() >> 1, lcd.height() >> 1);
+                    }
+                    break;
             }
         }
+    } else {
+        M5.Log.printf("NDEF Message TLV is NOT exists");
     }
 }
 
 void write_ndef()
 {
-    std::vector<Message> msgs{};
-
     Message msg{};
     Record r[5] = {};  // Wellknown as default
 
@@ -118,7 +117,7 @@ void write_ndef()
     r[3].setTextPayload(zh_data, "zh");
 
     // MIME record
-    Record png{TNF::Media};  // using MIME
+    Record png{TNF::MIMEMedia};
     png.setType("image/png");
     png.setPayload(poji_64_png, poji_64_png_len);
     r[4] = png;
@@ -132,9 +131,7 @@ void write_ndef()
         }
     }
 
-    msgs.push_back(msg);
-
-    if (!nfc_a.ndefWrite(msgs)) {
+    if (!nfc_a.ndefWrite(msg)) {
         M5_LOGE("Failed to write");
         return;
     }

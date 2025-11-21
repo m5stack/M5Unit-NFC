@@ -83,7 +83,7 @@ bool NDEFLayer::read(std::vector<m5::nfc::ndef::Message>& msgs, const m5::nfc::n
             ++idx;
             M5_LIB_LOGD("Decoded:%u %02X", decoded, msg.tag());
 
-            if (contains_tag(tagBits, msg.tag()) && !msg.isNullMessage()) {
+            if (contains_tag(tagBits, msg.tag())) {
                 msgs.push_back(msg);
             }
 
@@ -96,7 +96,7 @@ skip:
     return ret;
 }
 
-bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs)
+bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs, const bool keep)
 {
     bool ret{};
     const uint32_t user_bytes = (_interface.lastUserBlock() - _interface.firstUserBlock() + 1) * 4;
@@ -105,27 +105,33 @@ bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs)
         return false;
     }
 
+    std::vector<Message> tmp{};
+
     /*
       Since there is an NTAG containing information such as LockControl starting
       from the beginning of the user area, skip it and write
      */
-    std::vector<Message> tmp{};
-    if (!read(tmp)) {
-        return false;
-    }
-    // Remove Null,NDEF,and Terminator (Keep Lock,Memory,Proprietary)
-    auto it = std::remove_if(tmp.begin(), tmp.end(), [](const Message& m) {  //
-        return m.tag() == Tag::Null || m.tag() == Tag::NDEFMessage || m.tag() == Tag::Terminator;
-    });
-    tmp.erase(it, tmp.end());
+    if (keep) {
+        if (!read(tmp)) {
+            M5_LIB_LOGE("Failed to read");
+            return false;
+        }
+        // Remove Null,NDEF,and Terminator (Keep Lock,Memory,Proprietary)
+        auto it = std::remove_if(tmp.begin(), tmp.end(), [](const Message& m) {  //
+            return m.tag() == Tag::Null || m.tag() == Tag::NDEFMessage || m.tag() == Tag::Terminator;
+        });
+        tmp.erase(it, tmp.end());
 
-    // Append argument
-    it = std::find_if(tmp.begin(), tmp.end(), [](const Message& m) { return m.tag() == Tag::Proprietary; });
-    tmp.insert(it, msgs.begin(), msgs.end());
+        // Append argument
+        it = std::find_if(tmp.begin(), tmp.end(), [](const Message& m) { return m.tag() == Tag::Proprietary; });
+        tmp.insert(it, msgs.begin(), msgs.end());
 
-    // Append terminator if not exists
-    if (tmp.empty() || tmp.back().tag() != Tag::Terminator) {
-        tmp.push_back(Message(Tag::Terminator));
+        // Append terminator
+        if (tmp.empty() || tmp.back().tag() != Tag::Terminator) {
+            tmp.push_back(Message(Tag::Terminator));
+        }
+    } else {
+        tmp = msgs;
     }
 
     // Calculate encoded size
@@ -134,6 +140,7 @@ bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs)
 
     M5_LIB_LOGD("Encoded size:%u", encoded_size);
 
+    // Encode
     uint8_t* buf = static_cast<uint8_t*>(malloc(encoded_size));
     if (!buf) {
         M5_LIB_LOGE("Failed to allocate memory %u", encoded_size);
@@ -161,6 +168,7 @@ bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs)
         goto skip;
     }
 
+    // Write
     ret = _interface.write(_interface.firstUserBlock(), buf, encoded_size);
 
 skip:

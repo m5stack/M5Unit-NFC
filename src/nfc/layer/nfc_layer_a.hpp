@@ -357,33 +357,41 @@ public:
      */
     bool ndefIsValidFormat(bool& valid);
     /*!
-      @brief Get the size of the NDEF message If the data is NDEF
-      @param[out] size Size of th NDEF message, 0 means Empty or NOT NDEF
+      @brief Read NDEF Message TLV
+      @param[out] msg Messgae If it does not exist, a Null TLV is returned
       @return True if successful
+      @note If multiple messages of the same type exist, return the first one
       @warning Only PICC cards supporting NDEF are valid
      */
-    bool ndefReadMessageSize(uint32_t& size);
+    bool ndefRead(m5::nfc::ndef::Message& msg);
     /*!
-      @brief Read NDEF Messages
+      @brief Read any NDEF Message
       @param[out] msgs Messgae vector
+      @param tagBits Bit indicating the group of NDEF tags to be read
       @return True if successful
       @warning Only PICC cards supporting NDEF are valid
      */
-    bool ndefRead(std::vector<m5::nfc::ndef::Message>& msgs);
+    bool ndefRead(std::vector<m5::nfc::ndef::Message>& msgs,
+                  const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsAll);
     /*!
-      @brief Writed NDEF Messages
-      @param msgs Messgae vector
-      @return True if successful
-      @warning Only PICC cards supporting NDEF are valid
-     */
-    bool ndefWrite(const std::vector<m5::nfc::ndef::Message>& msgs);
-    /*!
-      @brief Writed NDEF Message
+      @brief Write NDEF message TLV
       @param msg Messgae
       @return True if successful
+      @note Other existing tags will be preserved
+      @warning Existing NDEF message TLVs will be overwritten
       @warning Only PICC cards supporting NDEF are valid
      */
     bool ndefWrite(const m5::nfc::ndef::Message& msg);
+    /*!
+      @brief Write any NDEF Messages
+      @param msgs Messgae vector
+      @return True if successful
+      @note Write starting from the beginning of the user area
+      @warning Existing NDEF Message TLVs will be overwritten,
+      @warning so exercise caution if Lock/Memory control is present
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefWrite(const std::vector<m5::nfc::ndef::Message>& msgs);
     ///@}
 
     /*!
@@ -416,6 +424,7 @@ protected:
 
     bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
 
+    bool ntag_check_cc_valid();
     bool ntag_check_format();
 
     bool dump_sector_structure(const m5::nfc::a::UID& uid, const m5::nfc::a::mifare::classic::Key& key);

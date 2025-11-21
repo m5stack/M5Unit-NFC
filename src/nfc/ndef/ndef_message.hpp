@@ -31,7 +31,10 @@ public:
     //!@brief Terminator instance
     static const Message Terminator;
 
-    explicit Message(const Tag t = Tag::NDEFMessage) : _tag{t}
+    Message() : Message(Tag::NDEFMessage)
+    {
+    }
+    explicit Message(const Tag t) : _tag{t}
     {
     }
     ~Message()
@@ -113,6 +116,10 @@ public:
      */
     uint32_t decode(const uint8_t* buf, const uint32_t len);
 
+    /*!
+      @brief Clear internal buffers
+      @warning Keep the tag
+    */
     void clear();
 
     void dump();

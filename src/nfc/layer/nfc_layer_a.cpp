@@ -9,6 +9,7 @@
 */
 #include "nfc_layer_a.hpp"
 #include "nfc/ndef/ndef.hpp"
+#include "nfc/ndef/ndef_message.hpp"
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
@@ -638,34 +639,35 @@ bool NFCLayerA::mifareUltralightChangeFormatToNTAG()
 bool NFCLayerA::ndefIsValidFormat(bool& valid)
 {
     valid = false;
-    if (_activeUID.type == Type::MIFARE_Ultralight || _activeUID.type == Type::MIFARE_UltralightC) {
-        if (!ntag_check_format()) {
-            M5_LIB_LOGW("NOT NTAG CC %s", _activeUID.typeAsString().c_str());
-            return false;
-        }
-    }
-    return _activeUID.supportsNFC() && _ndef.isValidFormat(valid);
+    return ntag_check_cc_valid() && _ndef.isValidFormat(valid);
 }
 
-bool NFCLayerA::ndefReadMessageSize(uint32_t& size)
+bool NFCLayerA::ndefRead(m5::nfc::ndef::Message& msg)
 {
-    size = 0;
-    bool valid{};
-    if (!ndefIsValidFormat(valid) || !valid) {
-        M5_LIB_LOGW("Error or NOT supported %s", _activeUID.typeAsString().c_str());
-        return false;
+    msg = Message(Tag::Null);
+
+    std::vector<Message> msgs{};
+    if (ndefRead(msgs, tagBitsNDEFMessage) && !msgs.empty()) {
+        msg = msgs.front();
+        return true;
     }
-    return _ndef.readMessageSize(size);
+    return false;
 }
 
-bool NFCLayerA::ndefRead(std::vector<m5::nfc::ndef::Message>& msgs)
+bool NFCLayerA::ndefRead(std::vector<m5::nfc::ndef::Message>& msgs, const m5::nfc::ndef::TagBits tagBits)
 {
-    return _activeUID.supportsNFC() && ntag_check_format() && _ndef.read(msgs);
+    return _activeUID.supportsNFC() && _ndef.read(msgs, tagBits);
+}
+
+bool NFCLayerA::ndefWrite(const m5::nfc::ndef::Message& msg)
+{
+    std::vector<Message> msgs = {msg};
+    return _activeUID.supportsNFC() && _ndef.write(msgs);
 }
 
 bool NFCLayerA::ndefWrite(const std::vector<m5::nfc::ndef::Message>& msgs)
 {
-    return _activeUID.supportsNFC() && ntag_check_format() && _ndef.write(msgs);
+    return _activeUID.supportsNFC() && _ndef.write(msgs, false);
 }
 
 //
@@ -803,17 +805,28 @@ bool NFCLayerA::mifare_classic_value_block(const m5::nfc::a::Command cmd, const 
     return _impl->mifare_classic_value_block(cmd, block, arg);
 }
 
+bool NFCLayerA::ntag_check_cc_valid()
+{
+    if (_activeUID.type == Type::MIFARE_Ultralight || _activeUID.type == Type::MIFARE_UltralightC) {
+        if (!ntag_check_format()) {
+            M5_LIB_LOGW("NOT NTAG CC %s", _activeUID.typeAsString().c_str());
+            return false;
+        }
+    }
+    return _activeUID.supportsNFC();
+}
+
 bool NFCLayerA::ntag_check_format()
 {
     if (_activeUID.supportsNFC()) {
         // Need check CC(Capability Container)
         if (_activeUID.type == Type::MIFARE_Ultralight || _activeUID.type == Type::MIFARE_UltralightC) {
             uint8_t rbuf[16]{};
-            if (!read16(rbuf, 0)) {
+            if (!read16(rbuf, 0 /* page 0-3 */)) {
                 M5_LIB_LOGE("Failed to read 0-3");
                 return false;
             }
-            if (rbuf[12] != MAGIC_NO || rbuf[13] < 0x10) {
+            if (rbuf[12] != MAGIC_NO || rbuf[13] < 0x10 /* version */) {
                 M5_LIB_LOGE("Illegal CC %02X:%02X:%02X:%02X", rbuf[12], rbuf[13], rbuf[14], rbuf[15]);
                 return false;
             }

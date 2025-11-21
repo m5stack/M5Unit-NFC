@@ -132,7 +132,7 @@ inline bool is_terminator_tag(const uint8_t t)
 enum class TNF : uint8_t {
     Empty,      //!< Empry
     Wellknown,  //!< NFC Forum well-known-type
-    Media,      //!< Media-type as define in RFC2046
+    MIMEMedia,  //!< Media-type as define in RFC2046
     URI,        //!< Absolute URI as define in RFC3986
     External,   //!< NFC Forum external type
     Unknown,    //!< Unknown
