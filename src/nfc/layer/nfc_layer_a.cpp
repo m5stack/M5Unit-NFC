@@ -77,16 +77,16 @@ bool NFCLayerA::wakeup(uint16_t& atqa)
     return _impl->wakeup(atqa);
 }
 
-bool NFCLayerA::detect(std::vector<UID>& devs, const uint32_t timeout_ms)
+bool NFCLayerA::detect(std::vector<UID>& uids, const uint32_t timeout_ms)
 {
-    devs.clear();
+    uids.clear();
 
     auto timeout_at = m5::utility::millis() + timeout_ms;
     UID uid{};
 
     uint16_t atqa{};
     do {
-        // Exists devices?
+        // Exists PICC?
         if (!request(atqa)) {
             break;
         }
@@ -104,11 +104,11 @@ bool NFCLayerA::detect(std::vector<UID>& devs, const uint32_t timeout_ms)
         }
 
         // Append valid UID
-        push_back_uid(devs, uid);
+        push_back_uid(uids, uid);
 
     } while (m5::utility::millis() <= timeout_at);
 
-    return !devs.empty();
+    return !uids.empty();
 }
 
 bool NFCLayerA::select(m5::nfc::a::UID& uid)
@@ -620,7 +620,7 @@ bool NFCLayerA::mifareClassicRestoreValueBlock(const uint8_t block)
 
 bool NFCLayerA::mifareUltralightChangeFormatToNTAG()
 {
-    if (!_activeUID.valid() || !_activeUID.supportsNFC()) {
+    if (!_activeUID.supportsNFC()) {
         return false;
     }
 
@@ -647,8 +647,8 @@ bool NFCLayerA::ndefRead(m5::nfc::ndef::Message& msg)
     msg = Message(Tag::Null);
 
     std::vector<Message> msgs{};
-    if (ndefRead(msgs, tagBitsNDEFMessage) && !msgs.empty()) {
-        msg = msgs.front();
+    if (ndefRead(msgs, tagBitsNDEFMessage)) {
+        msg = !msgs.empty() ? msgs.front() : Message(Tag::Null);
         return true;
     }
     return false;
@@ -854,12 +854,12 @@ bool NFCLayerA::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_
                                     : write_using_write16(saddr, tx, tx_len, DEFAULT_KEY);
 }
 
-uint16_t NFCLayerA::firstUserBlock()
+uint16_t NFCLayerA::firstUserBlock() const
 {
     return _activeUID.firstUserBlock();
 }
 
-uint16_t NFCLayerA::lastUserBlock()
+uint16_t NFCLayerA::lastUserBlock() const
 {
     return _activeUID.lastUserBlock();
 }

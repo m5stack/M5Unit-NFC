@@ -55,7 +55,6 @@ bool NDEFLayer::read(std::vector<m5::nfc::ndef::Message>& msgs, const m5::nfc::n
         return false;
     }
 
-    bool ret{false};
     uint16_t buf_size = (last_page - page + 1) * 4;
     buf               = static_cast<uint8_t*>(malloc(buf_size));
     if (!buf) {
@@ -71,12 +70,11 @@ bool NDEFLayer::read(std::vector<m5::nfc::ndef::Message>& msgs, const m5::nfc::n
     {
         uint32_t offset{}, idx{};
         Message msg{};
-        bool ok{true};
         do {
             auto decoded = msg.decode(buf + offset, actual > offset ? actual - offset : 0);
+            // Even if decoding fails, return the results up to that point and treat it as a success
             if (!decoded) {
                 M5_LIB_LOGE("Failed to decode [%3u]:%02X", idx, msg.tag());
-                ok = false;
                 break;
             }
             offset += decoded;
@@ -88,12 +86,11 @@ bool NDEFLayer::read(std::vector<m5::nfc::ndef::Message>& msgs, const m5::nfc::n
             }
 
         } while (!msg.isTerminator() && !msg.isNullMessage());
-        ret = ok;
     }
 
 skip:
     free(buf);
-    return ret;
+    return true;
 }
 
 bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs, const bool keep)
@@ -111,18 +108,14 @@ bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs, const boo
       Since there is an NTAG containing information such as LockControl starting
       from the beginning of the user area, skip it and write
      */
-    if (keep) {
-        if (!read(tmp)) {
-            M5_LIB_LOGE("Failed to read");
-            return false;
-        }
+    if (keep && read(tmp)) {
         // Remove Null,NDEF,and Terminator (Keep Lock,Memory,Proprietary)
         auto it = std::remove_if(tmp.begin(), tmp.end(), [](const Message& m) {  //
             return m.tag() == Tag::Null || m.tag() == Tag::NDEFMessage || m.tag() == Tag::Terminator;
         });
         tmp.erase(it, tmp.end());
 
-        // Append argument
+        // Insert argument before Proprietary TLV
         it = std::find_if(tmp.begin(), tmp.end(), [](const Message& m) { return m.tag() == Tag::Proprietary; });
         tmp.insert(it, msgs.begin(), msgs.end());
 
@@ -131,6 +124,7 @@ bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs, const boo
             tmp.push_back(Message(Tag::Terminator));
         }
     } else {
+        // Overwirte if the TLV is not maintained, or if there is a corrupted NDEF
         tmp = msgs;
     }
 
@@ -164,7 +158,7 @@ bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs, const boo
         goto skip;
     }
     if (encoded_size > user_bytes) {
-        M5_LIB_LOGE("encoded_size(%u) > user_bytes(%u)", encoded_size, user_bytes);
+        M5_LIB_LOGE("Not enough user area %u/%u", encoded_size, user_bytes);
         goto skip;
     }
 

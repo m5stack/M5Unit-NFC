@@ -69,7 +69,8 @@ constexpr TagBits tag_to_tagbit(const Tag t)
 
 ///@cond
 template <typename... Ts>
-struct are_all_tag : std::true_type {};
+struct are_all_tag : std::true_type { /**/
+};
 template <typename T, typename... Ts>
 struct are_all_tag<T, Ts...> : std::integral_constant<bool, std::is_same<Tag, T>::value && are_all_tag<Ts...>::value> {
 };

@@ -17,10 +17,13 @@ namespace nfc {
 
 class NFCLayerInterface {
 public:
-    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)             = 0;
+    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) = 0;
+
     virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) = 0;
-    virtual uint16_t firstUserBlock() = 0;
-    virtual uint16_t lastUserBlock() = 0;
+
+    virtual uint16_t firstUserBlock() const = 0;
+
+    virtual uint16_t lastUserBlock() const = 0;
 
 private:
 };

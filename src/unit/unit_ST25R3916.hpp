@@ -1667,7 +1667,7 @@ public:
     bool nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                         const uint32_t timeout_ms);
     /*!
-      @brief Request for idle devices
+      @brief Request for idle PICC
       @param[out atqa ATQA
       @return True if successful
      */
@@ -1676,7 +1676,7 @@ public:
         return nfca_request_wakeup(atqa, true);
     }
     /*!
-      @brief Wakeup for idle/halt devices
+      @brief Wakeup for idle/halt PICC
       @param[out atqa ATQA
       @return True if successful
      */
@@ -1685,8 +1685,8 @@ public:
         return nfca_request_wakeup(atqa, false);
     }
     /*!
-      @brief Select device with anti-collision
-      @param[out] completed Completed select device?
+      @brief Select PICC with anti-collision
+      @param[out] completed Completed select?
       @param[out]  uid Selected UID
       @param lv Cascade level (1-3)
       @return True if successful
@@ -1722,7 +1722,7 @@ public:
     bool nfcaWritePage(const uint8_t page, const uint8_t tx[4]);
 
     /*!
-      @brief Hlt for devices
+      @brief Hlt for PICC
       @return True if successful
      */
     bool nfcaHlt();
@@ -1762,8 +1762,7 @@ public:
       @param block Block address
       @param arg Arrgument for command if needs
      */
-    bool mifareClassicValueBlock(const m5::nfc::a::Command cmd,const uint8_t block,
-                                 const uint32_t arg = 0);
+    bool mifareClassicValueBlock(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
     ///@}
 
     ///@name NTAG

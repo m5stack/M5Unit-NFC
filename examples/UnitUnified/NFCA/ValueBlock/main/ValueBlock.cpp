@@ -315,8 +315,8 @@ void setup()
     M5_LOGI("%s", Units.debugInfo().c_str());
 
     lcd.setCursor(0, 0);
-    lcd.printf("Please put the device and click/hold G0");
-    M5.Log.printf("Please put the device and click/hold G0\n");
+    lcd.printf("Please put the PICC and click/hold G0");
+    M5.Log.printf("Please put the PICC and click/hold G0\n");
 }
 
 void loop()
@@ -327,10 +327,10 @@ void loop()
     bool held    = M5.BtnA.wasHold();     // For increment
 
     if (clicked || held) {
-        std::vector<UID> devices;
-        if (nfc_a.detect(devices)) {
+        std::vector<UID> uids;
+        if (nfc_a.detect(uids)) {
             //  If multiple occurrences are detected, only the first one detected
-            auto& uid = devices.front();
+            auto& uid = uids.front();
             if (nfc_a.reactivate(uid)) {
                 M5.Log.printf("UID:%s %s %u/%u\n", uid.uidAsString().c_str(), uid.typeAsString().c_str(),
                               uid.userAreaSize(), uid.totalSize());
@@ -351,10 +351,12 @@ void loop()
                     M5.Log.printf("Not support the value block\n");
                 }
                 nfc_a.deactivate();
-                lcd.setCursor(0, 0);
-                lcd.printf("Please put the device and click/hold G0");
-                M5.Log.printf("Please put the device and click/hold G0\n");
             }
+        } else {
+            M5.Log.printf("PICC NOT exists\n");
         }
+        lcd.setCursor(0, 0);
+        lcd.printf("Please put the PICC and click/hold G0");
+        M5.Log.printf("Please put the PICC and click/hold G0\n");
     }
 }

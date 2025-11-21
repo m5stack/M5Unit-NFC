@@ -191,10 +191,12 @@ struct UID {
         return valid() ? get_user_area_size(type) : 0;
     }
     //! @brief Gets the first user block/page address
-    inline uint16_t firstUserBlock() const {
+    inline uint16_t firstUserBlock() const
+    {
         return valid() ? get_first_user_block(type) : 0xFFFF;
     }
-    inline uint16_t lastUserBlock() const {
+    inline uint16_t lastUserBlock() const
+    {
         return valid() ? get_last_user_block(type) : 0xFFFF;
     }
     //! @brief Retrieve the last 4 bytes

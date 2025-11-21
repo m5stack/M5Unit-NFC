@@ -286,7 +286,7 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, UID& uid, const
             } else {
                 // PICC to IDLE... so need reactivate
                 uint16_t discard{};
-                completed = nfcaRequest(discard) && nfcaSelect(uid);
+                completed = nfcaWakeup(discard) && nfcaSelect(uid);
             }
         }
     }

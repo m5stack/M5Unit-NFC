@@ -5,7 +5,7 @@
  */
 /*
   Example using M5UnitUnified for M5Cardputer-ADV with HackerCap
-  Dump NFC device
+  Dump NFC-A PICC
 */
 #include <M5Unified.h>
 #include <M5UnitUnified.h>
@@ -22,6 +22,7 @@ auto& lcd = M5.Display;
 m5::unit::UnitUnified Units;
 m5::unit::CapST25R3916 cap;  // ST25R3916 in the HackerCap
 m5::unit::nfc::NFCLayerA nfc_a{cap};
+
 // KeyA that can authenticate all blocks
 // If it's a different key value, change it
 constexpr Key keyA = DEFAULT_KEY;  // Default as 0xFFFFFFFFFFFF
@@ -68,8 +69,8 @@ void setup()
     lcd.setFont(&fonts::Font0);
     lcd.fillScreen(0);
     lcd.setCursor(0, 0);
-    lcd.printf("Please put the device and click G0");
-    M5.Log.printf("Please put the device and click G0\n");
+    lcd.printf("Please put the PICC and click G0");
+    M5.Log.printf("Please put the PICC and click G0\n");
 }
 
 void loop()
@@ -80,10 +81,10 @@ void loop()
 
     if (M5.BtnA.wasClicked() || touch.wasClicked()) {
         lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
-        std::vector<UID> devices;
-        if (nfc_a.detect(devices)) {
+        std::vector<UID> uids;
+        if (nfc_a.detect(uids)) {
             // If multiple occurrences are detected, only the first one detected
-            auto& uid = devices.front();
+            auto& uid = uids.front();
             if (nfc_a.reactivate(uid)) {
                 M5.Log.printf("==== Dump %s %s %u/%u====\n", uid.uidAsString().c_str(), uid.typeAsString().c_str(),
                               uid.userAreaSize(), uid.totalSize());
@@ -93,7 +94,7 @@ void loop()
                 M5_LOGE("Failed to activate %s", uid.uidAsString().c_str());
             }
         } else {
-            M5.Log.printf("No devices\n");
+            M5.Log.printf("PICC NOT exists\n");
         }
     }
 }

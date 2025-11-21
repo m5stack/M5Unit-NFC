@@ -96,7 +96,7 @@ void read_ndef()
             }
         }
     } else {
-        M5.Log.printf("NDEF Message TLV is NOT exists");
+        M5.Log.printf("NDEF Message TLV is NOT exists\n");
     }
 }
 
@@ -106,7 +106,7 @@ void write_ndef()
     Record r[5] = {};  // Wellknown as default
 
     // URI record
-    r[0].setURIPayload("https://m5stack.com/", URIProtocol::HTTPS);
+    r[0].setURIPayload("m5stack.com/", URIProtocol::HTTPS);
 
     // Text record with langage type
     const char* en_data = "Hello M5Stack";
@@ -189,10 +189,10 @@ void loop()
     bool held    = M5.BtnA.wasHold();     // For write
 
     if (clicked || held) {
-        std::vector<UID> devices;
-        if (nfc_a.detect(devices)) {
+        std::vector<UID> uids;
+        if (nfc_a.detect(uids)) {
             //  If multiple occurrences are detected, only the first one detected
-            auto& uid = devices.front();
+            auto& uid = uids.front();
             if (nfc_a.reactivate(uid)) {
                 M5.Log.printf("UID:%s %s %u/%u\n", uid.uidAsString().c_str(), uid.typeAsString().c_str(),
                               uid.userAreaSize(), uid.totalSize());
@@ -217,9 +217,11 @@ void loop()
                 }
                 nfc_a.deactivate();
                 lcd.setCursor(0, 0);
-                lcd.printf("Please put the device and click/hold G0");
-                M5.Log.printf("Please put the device and click/hold G0\n");
+                lcd.printf("Please put the PICC and click/hold G0");
+                M5.Log.printf("Please put the PICC and click/hold G0\n");
             }
+        } else {
+            M5.Log.printf("PICC NOT exists\n");
         }
     }
 }

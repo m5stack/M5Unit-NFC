@@ -5,6 +5,6 @@
  */
 /*
   Example using M5UnitUnified for M5Cardputer-ADV with HackerCap
-  Read/Write block example
+  Read/Write example
 */
 #include "main/ReadWrite.cpp"

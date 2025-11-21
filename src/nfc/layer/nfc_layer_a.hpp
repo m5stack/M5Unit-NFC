@@ -80,13 +80,13 @@ public:
      */
     bool wakeup(uint16_t& atqa);
     /*!
-      @brief Detect idle devices
-      @param[out] devices Detected PICC UIDs (one per activated PICC candidate)
+      @brief Detect idle PICCs
+      @param[out] uids Detected PICC UIDs (one per activated PICC candidate)
       @param timeout_ms  Polling time budget in milliseconds
       @return True if successful
       @note The selected PICC is typically put into HALT during enumeration to allow discovering others
      */
-    bool detect(std::vector<m5::nfc::a::UID>& devices, const uint32_t timeout_ms = 10 * 1000U);
+    bool detect(std::vector<m5::nfc::a::UID>& uids, const uint32_t timeout_ms = 10 * 1000U);
     /*!
       @brief Select a PICC (anti-collision + SELECT cascade to ACTIVE)
       @param[out] uid The fully activated UID (single- or multi-cascade)
@@ -161,7 +161,7 @@ public:
       @param[in/out] rx_len in:buffer size, out:actual read size
       @param saddr Reading start block/page address
       @return True if successful
-      @warning For FAST_READ-compatible devices, the rx is in 4-byte units. for others, it is in 16-byte units
+      @warning For FAST_READ-compatible PICC, the rx is in 4-byte units. for others, it is in 16-byte units
       @pre Target blocks must be authenticatable using the specified key if MIFARE classic
     */
     bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
@@ -412,8 +412,8 @@ public:
 protected:
     virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
     virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override;
-    virtual uint16_t firstUserBlock() override;
-    virtual uint16_t lastUserBlock() override;
+    virtual uint16_t firstUserBlock() const override;
+    virtual uint16_t lastUserBlock() const override;
 
     bool read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr);
     bool read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
