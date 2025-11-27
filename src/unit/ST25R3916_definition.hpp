@@ -30,7 +30,7 @@ enum class InitiatorOperationMode : uint8_t {
     NFCIP1           = 0x00 << 3,  //!< NFCIP-1 active communication
     ISO14443A        = 0x01 << 3,  //!< ISO14443A
     ISO14443B        = 0x02 << 3,  //!< ISO14443B
-    Felica           = 0x03 << 3,  //!< Felica
+    FeliCa           = 0x03 << 3,  //!< FeliCa
     NFCForumType1    = 0x04 << 3,  //!< NFC Forum Type 1 tag (Topaz)
     SubCarrierStream = 0x0E << 3,  //!< Sub-carrier stream mode
     BPSKStream       = 0x0F << 3,  //!< BPSK stream mode
@@ -232,40 +232,79 @@ constexpr uint8_t OP_DIRECT_COMMAND{0xC0};           // 11xxxxxxb;
  */
 namespace regval {
 ///@cond
-// IO configuration register 2
+// 0x01 IO configuration register 2
 constexpr uint8_t sup3v{0x80};
 constexpr uint8_t io_drv_lvl{0x04};
 constexpr uint8_t miso_pd1{0x08};
 constexpr uint8_t miso_pd2{0x10};
-// Operation control register
-constexpr uint8_t en{0x80};
-constexpr uint8_t rx_en{0x40};
-constexpr uint8_t tx_en{0x08};
-// ISO14443A and NFC 106kb/s settings register
+
+// 0x02 Operation control register
+constexpr uint8_t en{0x80};     // 1: Enables oscillator and regulator(Ready mode)
+constexpr uint8_t rx_en{0x40};  // 1: Enables Rx operation
+constexpr uint8_t tx_en{0x08};  // 1: Enables Tx operation
+constexpr uint8_t wu{0x04};     // 1: Enables Wake-up mode
+constexpr uint8_t en_fd_c1{0x02};
+constexpr uint8_t en_fd_c0{0x01};
+
+constexpr uint8_t en_fd_mask{0x03};
+constexpr uint8_t en_fd_off{0x00};
+constexpr uint8_t en_fd_manual_ca{0x01};
+constexpr uint8_t en_fd_manual_pdt{0x02};
+constexpr uint8_t en_fd_manual_auto{0x03};
+
+// 0x03 Mode definition register
+constexpr uint8_t targ{0x80};  // 0: Initiator 1: Target
+constexpr uint8_t tr_am{0x04};
+constexpr uint8_t nfc_ar0{0x01};
+constexpr uint8_t nfc_ar1{0x02};
+
+constexpr uint8_t nfc_ar8_off{0x00};
+constexpr uint8_t nfc_ar8_auto{0x01};
+constexpr uint8_t nfc_ar8_always{0x02};
+constexpr uint8_t nfc_ar8_RFI{0x03};
+
+// 0x05 ISO14443A and NFC 106kb/s settings register
 constexpr uint8_t no_tx_par{0x80};
 constexpr uint8_t no_rx_par{0x40};
 constexpr uint8_t antcl{0x01};
-// Auxiliary definition register
+
+// 0x0A Auxiliary definition register
 constexpr uint8_t no_crc_rx{0x80};
-// Main interrupt register
+constexpr uint8_t nfc_n1{0x02};
+constexpr uint8_t nfc_n0{0x01};
+
+constexpr uint8_t nfc_n_mask{0x03};
+
+// 0x12 Timer and EMV control register
+constexpr uint8_t mrt_step{0x08};  // Mask receive timer step size
+constexpr uint8_t nrt_step{0x01};  // No-response timer step size
+
+// 0x1A Main interrupt register
 constexpr uint8_t I_wl{0x40};   // IRQ due to FIFO water level
 constexpr uint8_t I_rxs{0x20};  // IRQ due to start of receive
 constexpr uint8_t I_rxe{0x10};  // IRQ due to end of receive
 constexpr uint8_t I_txe{0x08};  // IRQ due to end of transmission
 constexpr uint8_t I_col{0x04};  // IRQ due to bit collision
-// Timer and NFC interrupt register
+
+// 0x1B Timer and NFC interrupt register
 constexpr uint8_t I_nre{0x40};  // IRQ due to No-response timer expire
 constexpr uint8_t I_cac{0x04};  // IRQ due to detection of collision during RF collision avoidance
-// Timer and EMV control register
-constexpr uint8_t mrt_step{0x08};  // Mask receive timer step size
-constexpr uint8_t nrt_step{0x01};  // No-response timer step size
-//
+constexpr uint8_t I_cat{0x02};  // IRQ after minimum guard time expire
+
+// 0x1D Passive target interrupt register
+constexpr uint8_t I_apon{0x20};  // IRQ due to active P2P field on event
+
 constexpr uint32_t I_wl32  = ((uint32_t)I_wl << 24);
 constexpr uint32_t I_rxs32 = ((uint32_t)I_rxs << 24);
 constexpr uint32_t I_rxe32 = ((uint32_t)I_rxe << 24);
 constexpr uint32_t I_txe32 = ((uint32_t)I_txe << 24);
-constexpr uint32_t I_col32 = ((uint32_t)I_col << 24) | ((uint32_t)I_cac << 16);
+constexpr uint32_t I_col32 = ((uint32_t)I_col << 24);
+
 constexpr uint32_t I_nre32 = ((uint32_t)I_nre << 16);
+constexpr uint32_t I_cac32 = ((uint32_t)I_cac << 16);
+constexpr uint32_t I_cat32 = ((uint32_t)I_cat << 16);
+
+constexpr uint32_t I_apon32 = I_apon;
 
 ///@endcond
 }  // namespace regval

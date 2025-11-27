@@ -631,6 +631,8 @@ bool NFCLayerA::mifareUltralightChangeFormatToNTAG()
                 M5_LIB_LOGE("Failed to write4");
                 return false;
             }
+            // Verify
+            return ntag_check_format();
         }
     }
     return true;
@@ -662,7 +664,7 @@ bool NFCLayerA::ndefRead(std::vector<m5::nfc::ndef::Message>& msgs, const m5::nf
 bool NFCLayerA::ndefWrite(const m5::nfc::ndef::Message& msg)
 {
     std::vector<Message> msgs = {msg};
-    return _activeUID.supportsNFC() && _ndef.write(msgs);
+    return msg.isNDEFMessage() && _activeUID.supportsNFC() && _ndef.write(msgs);
 }
 
 bool NFCLayerA::ndefWrite(const std::vector<m5::nfc::ndef::Message>& msgs)

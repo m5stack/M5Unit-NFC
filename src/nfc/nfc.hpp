@@ -22,6 +22,18 @@ namespace m5 {
  */
 namespace nfc {
 
+/*!
+  @enum NFC
+  @brief Operation Mode
+ */
+enum class NFC : uint8_t {
+    None,  //!< No mode
+    A,     //!< NFC-A
+    B,     //!< NFC-B
+    F,     //!< NFC-F
+    V      //!< NFC-V
+};
+
 }  // namespace nfc
 }  // namespace m5
 

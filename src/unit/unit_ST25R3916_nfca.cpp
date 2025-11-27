@@ -11,20 +11,24 @@
 #include <M5Utility.hpp>
 
 using namespace m5::utility::mmh3;
+
 using namespace m5::unit::types;
 using namespace m5::unit::st25r3916;
 using namespace m5::unit::st25r3916::regval;
 using namespace m5::unit::st25r3916::command;
+
+using namespace m5::nfc;
 using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
-using namespace m5::unit::st25r3916;
-using namespace m5::unit::st25r3916::regval;
-using namespace m5::unit::st25r3916::command;
-using namespace m5::nfc::a;
-using namespace m5::nfc::a::mifare;
-using namespace m5::nfc::a::mifare::classic;
+#define CHECK_MODE()                                   \
+    do {                                               \
+        if (!isNFCMode(NFC::A)) {                      \
+            M5_LIB_LOGE("Illegal mode %u", NFCMode()); \
+            return false;                              \
+        }                                              \
+    } while (0)
 
 namespace {
 void suc_23(const uint32_t Nt, uint32_t& suc2, uint32_t& suc3)
@@ -95,11 +99,37 @@ void append_parity(uint8_t* out, const uint32_t out_len, const uint8_t* in, cons
 
 namespace m5 {
 namespace unit {
-
 // -------------------------------- For NFC-A
+bool UnitST25R3916::configure_nfc_a()
+{
+#if 0    
+    //
+    // ISO14443A
+    // M5_LIB_LOGE(">>>>>> try ISO14443A REQA");
+    writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, 0x01 /* nfc_ar01 */);
+    writeBitrate(Bitrate::FC128_106Kbits, Bitrate::FC128_106Kbits);
+    writeSettingsISO14443A(0x0);
+#endif
+
+    if (!writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, nfc_ar8_auto) ||  //
+        !writeBitrate(Bitrate::FC128_106Kbits, Bitrate::FC128_106Kbits) ||                //
+        !writeSettingsISO14443A(0x00)) {
+        return false;
+    }
+
+    return writeReceiverConfiguration1(0x08) &&  // z600k
+           writeReceiverConfiguration2(0x2D) &&  // sqm_dyn , agc_en, agc_m, agc6_3,
+           writeReceiverConfiguration3(0x00) &&  //
+           writeReceiverConfiguration4(0x00) &&  //
+           writeMaskInterrupts(0) &&             //
+           nfc_initial_field_on();
+}
+
 bool UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                    const uint32_t timeout_ms)
 {
+    CHECK_MODE();
+
     const auto rx_len_org = rx_len;
     rx_len                = 0;
     if (!rx || !rx_len_org || !tx || !tx_len) {
@@ -135,6 +165,8 @@ bool UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t*
 
 bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
 {
+    CHECK_MODE();
+
     _encrypted = false;
     atqa       = 0;
 
@@ -243,6 +275,8 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, UID& uid, const
     completed  = false;
     _encrypted = false;
 
+    CHECK_MODE();
+
     if (lv < 1 || lv > 3) {
         return false;
     }
@@ -297,6 +331,8 @@ bool UnitST25R3916::nfcaSelect(const UID& uid)
 {
     _encrypted = false;
 
+    CHECK_MODE();
+
     if (!uid.valid()) {
         return false;
     }
@@ -340,18 +376,10 @@ bool UnitST25R3916::nfcaSelect(const UID& uid)
 
 bool UnitST25R3916::nfcaHlt()
 {
+    CHECK_MODE();
+
     const uint8_t hlt_frame[2] = {m5::stl::to_underlying(Command::HLTA), 0x00};
 
-#if 0
-
-    if (!write_noresponse_timeout(TIMEOUT_HALT) || !writeSettingsISO14443A(0x00 /*standard*/) ||
-        !writeAuxiliaryDefinition(0) ||
-        
-        !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(hlta, sizeof(hlta)) ||
-        !writeNumberOfTransmittedBytes(sizeof(hlta), 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
-        return false;
-    }
-#else
     if (_encrypted) {
         if (!write_noresponse_timeout(TIMEOUT_HALT) || !mifare_classic_send_encrypt(hlt_frame, sizeof(hlt_frame))) {
             return false;
@@ -365,7 +393,6 @@ bool UnitST25R3916::nfcaHlt()
             return false;
         }
     }
-#endif
     _encrypted = false;
     // No response is coming back, so need to confirm if it was sent
     auto irq = wait_for_interrupt(I_txe32, TIMEOUT_HALT);
@@ -374,6 +401,8 @@ bool UnitST25R3916::nfcaHlt()
 
 bool UnitST25R3916::nfcaReadBlock(uint8_t rx[16], const uint8_t addr)
 {
+    CHECK_MODE();
+
     if (!rx) {
         return false;
     }
@@ -387,6 +416,8 @@ bool UnitST25R3916::nfcaReadBlock(uint8_t rx[16], const uint8_t addr)
 
 bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
 {
+    CHECK_MODE();
+
     if (!tx) {
         return false;
     }
@@ -431,6 +462,8 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
 
 bool UnitST25R3916::nfcaWritePage(const uint8_t page, const uint8_t tx[4])
 {
+    CHECK_MODE();
+
     if (!tx) {
         return false;
     }
@@ -566,6 +599,8 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
 
 bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& uid, const uint8_t block, const Key& mkey)
 {
+    CHECK_MODE();
+
     if ((cmd != Command::AUTH_WITH_KEY_A && cmd != Command::AUTH_WITH_KEY_B) || !uid.isMifareClassic()) {
         return false;
     }
@@ -655,6 +690,8 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& ui
 
 bool UnitST25R3916::mifareClassicValueBlock(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg)
 {
+    CHECK_MODE();
+
     if (cmd != Command::DECREMENT && cmd != Command::INCREMENT && cmd != Command::RESTORE && cmd != Command::TRANSFER) {
         return false;
     }
@@ -692,6 +729,8 @@ bool UnitST25R3916::mifareClassicValueBlock(const m5::nfc::a::Command cmd, const
 // -------------------------------- For NTAG
 bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
 {
+    CHECK_MODE();
+
     if (spage > epage) {
         return false;
     }

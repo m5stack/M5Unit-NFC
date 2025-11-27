@@ -5,7 +5,7 @@
  */
 /*!
   @file nfc_layer_a_ST25R3916.cpp
-  @brief ST25R3916 adapter for common layer
+  @brief ST25R3916 NFC-A adapter for common layer
 */
 #include "nfc/layer/nfc_layer_a.hpp"
 #include "nfc/layer/ndef_layer.hpp"
@@ -21,10 +21,9 @@ using namespace m5::nfc::a::mifare::classic;
 namespace m5 {
 namespace unit {
 namespace nfc {
-
 //
-struct AdapterST25R3916 final : NFCLayerA::Adapter {
-    explicit AdapterST25R3916(UnitST25R3916& ref) : _u{ref}
+struct AdapterST25R3916ForA final : NFCLayerA::Adapter {
+    explicit AdapterST25R3916ForA(UnitST25R3916& ref) : _u{ref}
     {
     }
 
@@ -55,17 +54,17 @@ struct AdapterST25R3916 final : NFCLayerA::Adapter {
     UnitST25R3916& _u;
 };
 
-bool AdapterST25R3916::request(uint16_t& atqa)
+bool AdapterST25R3916ForA::request(uint16_t& atqa)
 {
     return _u.nfcaRequest(atqa);
 }
 
-bool AdapterST25R3916::wakeup(uint16_t& atqa)
+bool AdapterST25R3916ForA::wakeup(uint16_t& atqa)
 {
     return _u.nfcaWakeup(atqa);
 }
 
-bool AdapterST25R3916::select(m5::nfc::a::UID& uid)
+bool AdapterST25R3916ForA::select(m5::nfc::a::UID& uid)
 {
     uint8_t lv{1};  // Cascade level 1-3
     bool completed{};
@@ -78,44 +77,44 @@ bool AdapterST25R3916::select(m5::nfc::a::UID& uid)
     return completed;
 }
 
-bool AdapterST25R3916::activate(const UID& uid)
+bool AdapterST25R3916ForA::activate(const UID& uid)
 {
     return _u.nfcaSelect(uid);
 }
 
-bool AdapterST25R3916::deactivate()
+bool AdapterST25R3916ForA::deactivate()
 {
     return _u.nfcaHlt();
 }
 
-bool AdapterST25R3916::nfca_read_block(uint8_t rx[16], const uint8_t addr)
+bool AdapterST25R3916ForA::nfca_read_block(uint8_t rx[16], const uint8_t addr)
 {
     return _u.nfcaReadBlock(rx, addr);
 }
 
-bool AdapterST25R3916::nfca_write_block(const uint8_t addr, const uint8_t tx[16])
+bool AdapterST25R3916ForA::nfca_write_block(const uint8_t addr, const uint8_t tx[16])
 {
     return _u.nfcaWriteBlock(addr, tx);
 }
 
-bool AdapterST25R3916::ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
+bool AdapterST25R3916ForA::ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
 {
     return _u.ntagReadPage(rx, rx_len, spage, epage);
 }
 
-bool AdapterST25R3916::nfca_write_page(const uint8_t addr, const uint8_t tx[4])
+bool AdapterST25R3916ForA::nfca_write_page(const uint8_t addr, const uint8_t tx[4])
 {
     return _u.nfcaWritePage(addr, tx);
 }
 
-bool AdapterST25R3916::mifare_classic_authenticate(const bool auth_a, const UID& uid, const uint8_t block,
-                                                   const Key& key)
+bool AdapterST25R3916ForA::mifare_classic_authenticate(const bool auth_a, const UID& uid, const uint8_t block,
+                                                       const Key& key)
 {
     return auth_a ? _u.mifareClassicAuthenticateA(uid, block, key) : _u.mifareClassicAuthenticateB(uid, block, key);
 }
 
-bool AdapterST25R3916::mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
-                                                  const uint32_t arg)
+bool AdapterST25R3916ForA::mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
+                                                      const uint32_t arg)
 {
     return _u.mifareClassicValueBlock(cmd, block, arg);
 }
@@ -124,7 +123,7 @@ bool AdapterST25R3916::mifare_classic_value_block(const m5::nfc::a::Command cmd,
 namespace {
 std::unique_ptr<NFCLayerA::Adapter> make_st25r3916_adapter(UnitST25R3916& u)
 {
-    return std::unique_ptr<NFCLayerA::Adapter>(new AdapterST25R3916(u));
+    return std::unique_ptr<NFCLayerA::Adapter>(new AdapterST25R3916ForA(u));
 }
 }  // namespace
 

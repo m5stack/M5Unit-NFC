@@ -42,8 +42,9 @@ public:
       @brief Settings for begin
      */
     struct config_t {
-        bool vdd_voltage_5V{false};    //!< VDD voltage true:5V false:3.3V
-        uint8_t tx_am_modulation{13};  // 0-15 See also 4.5.48 TX driver register
+        m5::nfc::NFC mode{m5::nfc::NFC::A};  //!< Initial Operation Mode
+        bool vdd_voltage_5V{false};          //!< VDD voltage true:5V false:3.3V
+        uint8_t tx_am_modulation{13};        // 0-15 See also 4.5.48 TX driver register
     };
 
     ///@name Settings for begin
@@ -59,6 +60,28 @@ public:
         _cfg = cfg;
     }
     ///@}
+
+    //! @brief Gets the current operating mode
+    inline m5::nfc::NFC NFCMode() const
+    {
+        return _nfcMode;
+    }
+    /*!
+      @brief Configure NFC mode
+      @param mode NFC mode
+      @return True if successful
+     */
+    bool configureNFCMode(const m5::nfc::NFC mode);
+
+    /*!
+      @breif Is the current operating mode the one specified?
+      @param mode Mode
+      @return True if the current operation is in the specified mode
+     */
+    inline bool isNFCMode(const m5::nfc::NFC mode)
+    {
+        return NFCMode() == mode;
+    }
 
     /*!
       @brief Write the direct command with data
@@ -351,8 +374,7 @@ public:
      */
     inline bool writeAuxiliaryDefinition(const uint8_t value)
     {
-        //        return write_register8(st25r3916::command::REG_AUXILIARY_DEFINITION, value | 0x03);
-        return write_register8(st25r3916::command::REG_AUXILIARY_DEFINITION, value | 0x03);
+        return write_register8(st25r3916::command::REG_AUXILIARY_DEFINITION, value);
     }
 
     /*!
@@ -500,7 +522,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool writeP2PReceiverConfiguration(uint8_t& value)
+    inline bool writeP2PReceiverConfiguration(const uint8_t value)
     {
         return write_register8(st25r3916::command::REG_P2P_RECEIVER_CONFIGURATION, value);
     }
@@ -518,7 +540,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool writeCorrelatorConfiguration1(uint8_t& value)
+    inline bool writeCorrelatorConfiguration1(const uint8_t value)
     {
         return write_register8(st25r3916::command::REG_CORRELATOR_CONFIGURATION_1, value);
     }
@@ -536,7 +558,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool writeCorrelatorConfiguration2(uint8_t& value)
+    inline bool writeCorrelatorConfiguration2(const uint8_t value)
     {
         return write_register8(st25r3916::command::REG_CORRELATOR_CONFIGURATION_2, value);
     }
@@ -554,7 +576,7 @@ public:
       @param value Value (MSB cfg1,cfg2 LSB)
       @return True if successful
      */
-    inline bool writeCorrelatorConfiguration(uint16_t& value)
+    inline bool writeCorrelatorConfiguration(const uint16_t value)
     {
         return write_register16(st25r3916::command::REG_CORRELATOR_CONFIGURATION_1, value);
     }
@@ -739,7 +761,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool writeSquelchTimer(uint8_t value)
+    inline bool writeSquelchTimer(const uint8_t value)
     {
         return write_register8(st25r3916::command::REG_SQUELCH_TIMER, value);
     }
@@ -757,7 +779,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool writeNFCFieldOnGuardTimer(uint8_t& value)
+    inline bool writeNFCFieldOnGuardTimer(const uint8_t value)
     {
         return write_register8(st25r3916::command::REG_NFC_FIELD_ON_GUARD_TIMER, value);
     }
@@ -779,7 +801,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool writeMaskMainInterrupt(const uint8_t& value)
+    inline bool writeMaskMainInterrupt(const uint8_t value)
     {
         return write_register8(st25r3916::command::REG_MASK_MAIN_INTERRUPT, value);
     }
@@ -797,7 +819,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool writeMaskTimerAndNFCInterrupt(const uint8_t& value)
+    inline bool writeMaskTimerAndNFCInterrupt(const uint8_t value)
     {
         return write_register8(st25r3916::command::REG_MASK_TIMER_AND_NFC_INTERRUPT, value);
     }
@@ -815,7 +837,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool writeMaskErrorAndWakeupInterrupt(const uint8_t& value)
+    inline bool writeMaskErrorAndWakeupInterrupt(const uint8_t value)
     {
         return write_register8(st25r3916::command::REG_MASK_ERROR_AND_WAKEUP_INTERRUPT, value);
     }
@@ -833,7 +855,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool writeMaskPassiveTargetInterrupt(const uint8_t& value)
+    inline bool writeMaskPassiveTargetInterrupt(const uint8_t value)
     {
         return write_register8(st25r3916::command::REG_MASK_PASSIVE_TARGET_INTERRUPT, value);
     }
@@ -1652,7 +1674,7 @@ public:
     bool readICIdentity(uint8_t& type, uint8_t& rev);
     ///@}
 
-    // ----------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------
     ///@name NFC-A
     ///@{
     /*!
@@ -1779,6 +1801,38 @@ public:
     bool ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
     ///@}
 
+    // ----------------------------------------------------------------------------------------------
+    ///@name NFC-F
+    ///@{
+    /*!
+      @brief Transceive
+      @param rx Receive buffer
+      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param tx Send buffer
+      @param tx_len Size of send buffer
+      @param timeout_ms Timeout(ms)
+      @return True if successful
+     */
+    bool nfcfTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                        const uint32_t timeout_ms);
+    /*!
+      @brief Polling
+      @param[out] PICC detected PICC
+      @param system_code System code
+      @param request_code Request code
+      @param time_slot Maximum number of slots that can be responded
+      @return True if successful
+      @note SENSF_REQ
+     */
+    bool nfcfPolling(m5::nfc::f::PICC& picc, const uint16_t system_code, const m5::nfc::f::RequestCode request_code,
+                     const m5::nfc::f::TimeSlot time_slot);
+
+
+    bool nfcfRequestService(const m5::nfc::f::PICC& picc);
+
+
+    ///@}
+
     // For debug
     void dumpRegister();
 
@@ -1789,10 +1843,9 @@ protected:
     bool read_register8(const uint16_t reg, uint8_t& v);
     bool write_register8(const uint8_t reg, const uint8_t v);
     bool write_register8(const uint16_t reg, const uint8_t v);
-    bool set_bit_register8(const uint8_t reg, const uint8_t bitss);
-    bool set_bit_register8(const uint16_t reg, const uint8_t bitss);
-    bool clear_bit_register8(const uint8_t reg, const uint8_t clear_bitss);
-    bool clear_bit_register8(const uint16_t reg, const uint8_t clear_bitss);
+    bool modify_bit_register8(const uint8_t reg, const uint8_t set_mask, const uint8_t clear_mask);
+    bool modify_bit_register8(const uint16_t reg, const uint8_t set_mask, const uint8_t clear_mask);
+
     bool read_register16(const uint8_t reg, uint16_t& v);
     bool read_register16(const uint16_t reg, uint16_t& v);
     bool write_register16(const uint8_t reg, const uint16_t v);
@@ -1811,19 +1864,25 @@ protected:
     bool wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size = 0);
     bool read_FIFO(std::vector<uint8_t>& out);
 
+    bool configure_nfc_a();
+    bool configure_nfc_b();
+    bool configure_nfc_f();
+    bool configure_nfc_v();
+    bool nfc_initial_field_on();
+
+    // NFC-A
     bool nfca_request_wakeup(uint16_t& atqa, const bool req);
     bool nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv);
-
     bool mifare_classic_send_encrypt(const uint8_t* tx, const uint16_t tx_len);
     bool mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                            const uint32_t timeout_ms, const bool include_crc, const bool decrypt);
     bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::UID& uid, const uint8_t block,
                                      const m5::nfc::a::mifare::classic::Key& key);
-
     bool ntag_get_version(uint8_t info[10]);
 
 private:
     config_t _cfg{};
+    m5::nfc::NFC _nfcMode{};
     m5::nfc::a::mifare::classic::Crypto1 _crypto1{};
     bool _encrypted{};
     volatile bool _interrupt_occurred{};

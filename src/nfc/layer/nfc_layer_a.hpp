@@ -19,8 +19,8 @@
 
 #include "nfc/a/nfca.hpp"
 #include "ndef_layer.hpp"
-#include <memory>
 #include <vector>
+#include <memory>
 
 namespace m5 {
 
@@ -83,7 +83,7 @@ public:
       @brief Detect idle PICCs
       @param[out] uids Detected PICC UIDs (one per activated PICC candidate)
       @param timeout_ms  Polling time budget in milliseconds
-      @return True if successful
+      @return True if detected
       @note The selected PICC is typically put into HALT during enumeration to allow discovering others
      */
     bool detect(std::vector<m5::nfc::a::UID>& uids, const uint32_t timeout_ms = 10 * 1000U);
@@ -339,11 +339,12 @@ public:
     bool mifareClassicRestoreValueBlock(const uint8_t block);
 
     /*!
-      @brief Write change to NFC Type-2 (NDEF) format
+      @brief Write change to NFC Type-2 (NDEF) format for MIFARE Ultralight/C
       @return True if successful
       @note Returns true if the data is already in NDEF format or if the PICC is an NTAG
       @warning Only MIFARE Ultralight,UltralightC
       @warning Changes are irreversible and cannot be undone
+      @warning If the relevant area has already been overwritten, changes may not be possible
     */
     bool mifareUltralightChangeFormatToNTAG();
     ///@}
@@ -365,7 +366,7 @@ public:
      */
     bool ndefRead(m5::nfc::ndef::Message& msg);
     /*!
-      @brief Read any NDEF Message
+      @brief Read any NDEF TLV
       @param[out] msgs Messgae vector
       @param tagBits Bit indicating the group of NDEF tags to be read
       @return True if successful
@@ -374,8 +375,8 @@ public:
     bool ndefRead(std::vector<m5::nfc::ndef::Message>& msgs,
                   const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsAll);
     /*!
-      @brief Write NDEF message TLV
-      @param msg Messgae
+      @brief Write NDEF message
+      @param msg Messgae (NDEF Message)
       @return True if successful
       @note Other existing tags will be preserved
       @warning Existing NDEF message TLVs will be overwritten
@@ -383,7 +384,7 @@ public:
      */
     bool ndefWrite(const m5::nfc::ndef::Message& msg);
     /*!
-      @brief Write any NDEF Messages
+      @brief Write any NDEF Messages TLV
       @param msgs Messgae vector
       @return True if successful
       @note Write starting from the beginning of the user area
@@ -442,6 +443,7 @@ private:
     m5::nfc::ndef::NDEFLayer _ndef;
 };
 
+///@cond
 // Impl for units
 struct NFCLayerA::Adapter {
     virtual ~Adapter() = default;
@@ -466,12 +468,8 @@ struct NFCLayerA::Adapter {
 
     virtual bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage,
                                 const uint8_t epage) = 0;  // FAST_READ
-
-    //    virtual bool mifare_classic_read_block(uint8_t* rx, uint16_t& rx_len, const uint16_t addr)             = 0;
-    //    virtual bool mifare_classic_write_block(const uint16_t addr, const uint8_t* tx, const uint16_t tx_len) = 0;
-
-protected:
 };
+///@endcond
 
 }  // namespace nfc
 }  // namespace unit

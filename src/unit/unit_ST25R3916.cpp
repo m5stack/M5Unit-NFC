@@ -12,10 +12,13 @@
 #include <thread>
 
 using namespace m5::utility::mmh3;
+
 using namespace m5::unit::types;
 using namespace m5::unit::st25r3916;
 using namespace m5::unit::st25r3916::regval;
 using namespace m5::unit::st25r3916::command;
+
+using namespace m5::nfc;
 using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
@@ -81,7 +84,7 @@ uint16_t calculate_nrt(const uint32_t ms, const bool nrt_step)
     if (nrt > max) {
         nrt = max;
     }
-    //    M5_LIB_LOGE(">>>> %ums fc4096:%u => %04X", ms, nrt_step, nrt);
+    // M5_LIB_LOGE(">>>> %ums fc4096:%u => %04X", ms, nrt_step, nrt);
     return nrt;
 }
 
@@ -185,23 +188,7 @@ bool UnitST25R3916::begin()
     readTXDriver(txd);
     M5_LIB_LOGD("TXD:%02X", txd);
 
-    writeReceiverConfiguration1(0x08);  // z600k
-    writeReceiverConfiguration2(0x2D);  // sqm_dyn , agc_en, agc_m, agc6_3,
-    writeReceiverConfiguration3(0x00);
-    writeReceiverConfiguration4(0x00);
-
     //
-    // ISO14443A
-    // M5_LIB_LOGE(">>>>>> try ISO14443A REQA");
-    writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, 0x01 /* nfc_ar01 */);
-    writeBitrate(Bitrate::FC128_106Kbits, Bitrate::FC128_106Kbits);
-    writeSettingsISO14443A(0x0);
-
-    //
-    writeOperationControl(en | rx_en | tx_en);
-    writeMaskInterrupts(0);
-    writeDirectCommand(CMD_NFC_INITIAL_FIELD_ON);
-    m5::utility::delay(5);
 
 #if 0
     // MRT/SQT
@@ -215,70 +202,7 @@ bool UnitST25R3916::begin()
     M5_LIB_LOGE("====== MRT:%02X SQT:%02X", mrt, sqt);
 #endif
 
-//
-#if 0
-    uint8_t a_table[] = {
-        /*
-        0x07, 0x3C, 0x83, 0x08, 0x00, 0x00, 0x00, 0x00, 0x5D, 0x00, 0x00, 0x08, 0x2D, 0xD8, 0x00, 0x0C,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xFF, 0xFF, 0xFF, 0xFB, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0xC3, 0x82, 0x82, 0x70, 0x5F, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        */
-        0x07, 0x3C, 0xCB, 0x08, 0x00, 0x00, 0x00, 0x00, 0x5D, 0x00, 0x03, 0x08, 0x2D, 0x00, 0x00, 0x0E,
-        0x00, 0x23, 0x20, 0x02, 0xC8, 0x80, 0x87, 0xA6, 0x0F, 0x7B, 0x00, 0x20, 0x00, 0x00, 0x02, 0x00,
-        0x00, 0x00, 0x00, 0x38, 0x00, 0xDF, 0x82, 0x82, 0x70, 0x5F, 0x13, 0x02, 0x00, 0x33, 0x00, 0x00,
-        0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    };
-    struct B {
-        uint16_t reg;
-        uint8_t val;
-    } b_table[] = {
-        {0x05, 0x40}, {0x06, 0x00}, {0x0B, 0x0C}, {0x0C, 0x51}, {0x0D, 0x00}, {0x0F, 0x00}, {0x15, 0x00}, {0x28, 0x10},
-        {0x29, 0x7C}, {0x2A, 0x80}, {0x2B, 0x04}, {0x2C, 0xD0}, {0X30, 0x40}, {0x31, 0x03}, {0x32, 0x40}, {0x33, 0x03},
-    };
-
-    uint8_t r{};
-    for (auto&& v : a_table) {
-        write_register8(r++, v);
-    }
-    for (auto&& b : b_table) {
-        write_register8(b.reg, b.val);
-    }
-
-#endif
-
-#if 0
-    write_register8((uint8_t)0x08, 0x5D);
-    write_register8((uint8_t)0x09, 0x03);
-    write_register8((uint8_t)0x12, 0x20);
-    write_register8((uint8_t)0x13, 0x02);
-
-    write_register8((uint8_t)0x25, 0xDF);
-    write_register8((uint8_t)0x26, 0x82);
-    write_register8((uint8_t)0x27, 0x82);
-
-    write_register8((uint8_t)0x28, 0x70);
-    write_register8((uint8_t)0x29, 0x5F);
-    write_register8((uint8_t)0x2A, 0x13);
-    write_register8((uint8_t)0x2B, 0x02);
-
-    write_register8((uint8_t)0x00, 0x07);
-    write_register8((uint8_t)0x01, 0x3C);
-    write_register8((uint8_t)0x02, 0xCB);
-    
-
-    write_register8((uint16_t)0x05, 0x40);
-    write_register8((uint16_t)0x0C, 0x51);
-    write_register8((uint16_t)0x15, 0x00);
-    write_register8((uint16_t)0x2A, 0x80);
-    write_register8((uint16_t)0x2C, 0xD0);
-    write_register8((uint16_t)0x30, 0x40);
-    write_register8((uint16_t)0x31, 0x03);
-    write_register8((uint16_t)0x32, 0x40);
-    write_register8((uint16_t)0x33, 0x03);
-#endif
-
-    return true;
+    return configureNFCMode(_cfg.mode);
 }
 
 void UnitST25R3916::update(const bool /*force*/)
@@ -292,6 +216,188 @@ void UnitST25R3916::update(const bool /*force*/)
         }
     }
     */
+}
+
+bool UnitST25R3916::configureNFCMode(const m5::nfc::NFC mode)
+{
+    if (mode == NFC::None) {
+        return false;
+    }
+
+    if (NFCMode() == mode) {
+        return true;
+    }
+
+    if (!writeDirectCommand(CMD_STOP_ALL_ACTIVITIES) ||            //
+        !modify_bit_register8(REG_OPERATION_CONTROL, 0x00, wu)) {  // Disable wakeup mode
+        return false;
+    }
+
+    bool ok{};
+    switch (mode) {
+        case m5::nfc::NFC::A:
+            ok = configure_nfc_a();
+            break;
+        case m5::nfc::NFC::B:
+            ok = configure_nfc_b();
+            break;
+        case m5::nfc::NFC::F:
+            ok = configure_nfc_f();
+            break;
+        case m5::nfc::NFC::V:
+            ok = configure_nfc_v();
+            break;
+        default:
+            return false;
+    }
+
+    /*
+    write_noresponse_timeout(default_nrt_for(mode));
+    write_mask_receiver_timer(default_mrt_for(mode));
+    write_squelch_timer(default_sqt_for(mode));
+    */
+    if (ok) {
+        M5_LIB_LOGE(">>>> Change to %u", mode);
+        _nfcMode = mode;
+    }
+    return ok;
+}
+
+bool UnitST25R3916::nfc_initial_field_on()
+{
+    uint8_t v{};
+    if (!readOperationControl(v)) {
+        return false;
+    }
+    if (v & tx_en) {
+        M5_LIB_LOGE("Already tx_en");
+        return false;
+    }
+
+    writeDirectCommand(CMD_NFC_INITIAL_FIELD_ON);
+    m5::utility::delay(5);
+    return modify_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en, 0x00);
+
+#if 0
+    
+    if (!writeNFCFieldOnGuardTimer(0x00)) {
+        return false;
+    }
+    if (!modify_bit_register8(REG_OPERATION_CONTROL, en_fd_manual_ca, en_fd_mask)) {
+        return false;
+    }
+
+    //
+    writeExternalFieldDetectorActivationThreshold(0x00);
+    modify_bit_register8(REG_AUXILIARY_DEFINITION, 0x00, nfc_n_mask);
+
+    clearInterrupts();
+
+    uint32_t mask{};
+    readMaskInterrupts(mask);
+    mask |= (I_cac32 | I_cat32 | I_apon32);
+    writeMaskInterrupts(mask);
+
+    writeDirectCommand(CMD_NFC_INITIAL_FIELD_ON);
+
+    bool ret{};
+    auto irq = wait_for_interrupt(I_cac32 | I_cat32 | I_apon32, 10);
+    M5_LIB_LOGE("IRQ:%08X", irq);
+    if (irq & I_cac32) {
+        M5_LIB_LOGE("RF Collison");
+    } else if (irq & I_apon32) {
+        irq = wait_for_interrupt(I_cat32, 10);
+        M5_LIB_LOGE("    IRQ:%08X", irq);
+        ret = (irq & I_cat32) != 0;
+    } else {
+        M5_LIB_LOGE("ERROR");
+    }
+
+    clearInterrupts();
+    mask &= ~(I_cac32 | I_cat32 | I_apon32);
+    writeMaskInterrupts(mask);
+
+    return ret && modify_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en, 0x00);
+#endif
+
+#if 0
+/*******************************************************************************/
+ReturnCode RfalRfST25R3916Class::st25r3916PerformCollisionAvoidance(uint8_t FieldONCmd, uint8_t pdThreshold, uint8_t caThreshold, uint8_t nTRFW)
+{
+  uint8_t    treMask;
+  uint32_t   irqs;
+  ReturnCode err;
+
+  if ((FieldONCmd != ST25R3916_CMD_INITIAL_RF_COLLISION) && (FieldONCmd != ST25R3916_CMD_RESPONSE_RF_COLLISION_N)) {
+    return ERR_PARAM;
+  }
+
+  err = ERR_INTERNAL;
+
+
+  /* Check if new thresholds are to be applied */
+  if ((pdThreshold != ST25R3916_THRESHOLD_DO_NOT_SET) || (caThreshold != ST25R3916_THRESHOLD_DO_NOT_SET)) {
+    treMask = 0;
+
+    if (pdThreshold != ST25R3916_THRESHOLD_DO_NOT_SET) {
+      treMask |= ST25R3916_REG_FIELD_THRESHOLD_ACTV_trg_mask;
+    }
+
+    if (caThreshold != ST25R3916_THRESHOLD_DO_NOT_SET) {
+      treMask |= ST25R3916_REG_FIELD_THRESHOLD_ACTV_rfe_mask;
+    }
+
+    /* Set Detection Threshold and|or Collision Avoidance Threshold */
+    st25r3916ChangeRegisterBits(ST25R3916_REG_FIELD_THRESHOLD_ACTV, treMask, (pdThreshold & ST25R3916_REG_FIELD_THRESHOLD_ACTV_trg_mask) | (caThreshold & ST25R3916_REG_FIELD_THRESHOLD_ACTV_rfe_mask));
+  }
+
+  /* Set n x TRFW */
+  st25r3916ChangeRegisterBits(ST25R3916_REG_AUX, ST25R3916_REG_AUX_nfc_n_mask, nTRFW);
+
+  /*******************************************************************************/
+  /* Enable and clear CA specific interrupts and execute command */
+  st25r3916GetInterrupt((ST25R3916_IRQ_MASK_CAC | ST25R3916_IRQ_MASK_CAT | ST25R3916_IRQ_MASK_APON));
+  st25r3916EnableInterrupts((ST25R3916_IRQ_MASK_CAC | ST25R3916_IRQ_MASK_CAT | ST25R3916_IRQ_MASK_APON));
+
+  st25r3916ExecuteCommand(FieldONCmd);
+
+  /*******************************************************************************/
+  /* Wait for initial APON interrupt, indicating anticollision avoidance done and ST25R3916's
+   * field is now on, or a CAC indicating a collision */
+  irqs = st25r3916WaitForInterruptsTimed((ST25R3916_IRQ_MASK_CAC | ST25R3916_IRQ_MASK_APON), ST25R3916_TOUT_CA);
+
+  if ((ST25R3916_IRQ_MASK_CAC & irqs) != 0U) {       /* Collision occurred */
+    err = ERR_RF_COLLISION;
+  } else if ((ST25R3916_IRQ_MASK_APON & irqs) != 0U) {
+    /* After APON wait for CAT interrupt, indication field was switched on minimum guard time has been fulfilled */
+    irqs = st25r3916WaitForInterruptsTimed((ST25R3916_IRQ_MASK_CAT), ST25R3916_TOUT_CA);
+
+    if ((ST25R3916_IRQ_MASK_CAT & irqs) != 0U) {                            /* No Collision detected, Field On */
+      err = ERR_NONE;
+    }
+  } else {
+    /* MISRA 15.7 - Empty else */
+  }
+
+  /* Clear any previous External Field events and disable CA specific interrupts */
+  st25r3916GetInterrupt((ST25R3916_IRQ_MASK_EOF | ST25R3916_IRQ_MASK_EON));
+  st25r3916DisableInterrupts((ST25R3916_IRQ_MASK_CAC | ST25R3916_IRQ_MASK_CAT | ST25R3916_IRQ_MASK_APON));
+
+  return err;
+}
+#endif
+}
+
+bool UnitST25R3916::configure_nfc_b()
+{
+    M5_LIB_LOGE("Not yet supported");
+    return false;
+}
+
+bool UnitST25R3916::configure_nfc_v()
+{
+    M5_LIB_LOGE("Not yet supported");
+    return false;
 }
 
 bool UnitST25R3916::writeDirectCommand(const uint8_t cmd, const uint8_t* data, uint32_t dlen)
@@ -428,62 +534,6 @@ bool UnitST25R3916::write_register8(const uint16_t reg, const uint8_t v)
     return writeRegister8(to_write_reg(reg), v, false);
 }
 
-bool UnitST25R3916::set_bit_register8(const uint8_t reg, const uint8_t bits)
-{
-    TRANSACTION_GUARD();
-
-    uint8_t v{};
-    if (read_register8(reg, v)) {
-        if ((v & bits) == bits) {
-            return true;  // Already set spesific bits
-        }
-        return write_register8(reg, v | bits);
-    }
-    return false;
-}
-
-bool UnitST25R3916::set_bit_register8(const uint16_t reg, const uint8_t bits)
-{
-    TRANSACTION_GUARD();
-
-    uint8_t v{};
-    if (read_register8(reg, v)) {
-        if ((v & bits) == bits) {
-            return true;  // Already set spesific bits
-        }
-        return write_register8(reg, v | bits);
-    }
-    return false;
-}
-
-bool UnitST25R3916::clear_bit_register8(const uint8_t reg, const uint8_t bits)
-{
-    TRANSACTION_GUARD();
-
-    uint8_t v{};
-    if (read_register8(reg, v)) {
-        if ((v & ~bits) == ~bits) {
-            return true;  // Already cleared spesific bits
-        }
-        return write_register8(reg, v & ~bits);
-    }
-    return false;
-}
-
-bool UnitST25R3916::clear_bit_register8(const uint16_t reg, const uint8_t bits)
-{
-    TRANSACTION_GUARD();
-
-    uint8_t v{};
-    if (read_register8(reg, v)) {
-        if ((v & ~bits) == ~bits) {
-            return true;  // Already cleared spesific bits
-        }
-        return write_register8(reg, v & ~bits);
-    }
-    return false;
-}
-
 bool UnitST25R3916::read_register16(const uint8_t reg, uint16_t& v)
 {
     TRANSACTION_GUARD();
@@ -536,6 +586,34 @@ bool UnitST25R3916::write_register32(const uint16_t reg, const uint32_t v)
     return writeRegister32BE(to_write_reg(reg), v, false);
 }
 
+bool UnitST25R3916::modify_bit_register8(const uint8_t reg, const uint8_t set_mask, const uint8_t clear_mask)
+{
+    uint8_t v{};
+    if (read_register8(reg, v)) {
+        const uint8_t w = (v & ~clear_mask) | set_mask;
+        // M5_LIB_LOGE("[%2u]:%02X %02X/%02X => %02X %08o", reg, v, set_mask, clear_mask, w, OCB(w));
+        if (w == v) {
+            return true;
+        }
+        return write_register8(reg, w);
+    }
+    return false;
+}
+
+bool UnitST25R3916::modify_bit_register8(const uint16_t reg, const uint8_t set_mask, const uint8_t clear_mask)
+{
+    uint8_t v{};
+    if (read_register8(reg, v)) {
+        const uint8_t w = (v & ~clear_mask) | set_mask;
+        // M5_LIB_LOGE("[%2u]:%02X %02X/%02X => %02X %08o", reg, v, set_mask, clear_mask, w, OCB(w));
+        if (w == v) {
+            return true;
+        }
+        return write_register8(reg, w);
+    }
+    return false;
+}
+
 uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms, bool include_error)
 {
     auto timeout_at = m5::utility::millis() + timeout_ms;
@@ -561,13 +639,18 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     auto irq               = wait_for_interrupt(I_rxe32, timeout_ms);
     const uint16_t reqSize = required_size ? required_size : 1;
 
+    if (has_irq32_error(irq)) {
+        M5_LIB_LOGE("Error: %08X", irq);
+        return false;
+    }
+
     if (is_irq32_rxe(irq)) {
         return true;
     }
-    //    M5_LIB_LOGE("IRQ:%08X %u", irq, timeout_ms);
+    // M5_LIB_LOGE("IRQ:%08X %u", irq, timeout_ms);
 
+    // Check the FIFO size in case I_rxe doesn't arrive
     if (is_irq32_rxs(irq)) {
-        // Check the FIFO size in case I_rxe doesn't arrive
         auto timeout_at = m5::utility::millis() + timeout_ms;
         uint16_t bytes{};
         uint8_t bits{};
@@ -578,11 +661,8 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
             }
             m5::utility::delay(1);
         } while (m5::utility::millis() <= timeout_at);
-        readFIFOSize(bytes, bits);
-
-        //        M5_LIB_LOGE("    FIFO:%u,%u/%u", bytes, bits, required_size);
-
-        return bytes >= reqSize;
+        // M5_LIB_LOGE("    FIFO:%u,%u/%u", bytes, bits, required_size);
+        return readFIFOSize(bytes, bits) && bytes >= reqSize;
     }
     return false;
 }
