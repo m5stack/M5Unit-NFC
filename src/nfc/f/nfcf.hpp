@@ -357,7 +357,9 @@ union REG {
         uint8_t reg_c[8];  // RegC
     } __attribute__((packed));
 
-    REG() {};
+    REG()
+    {
+    }
 
     //!@brief Gets the RegA
     inline uint32_t regA() const

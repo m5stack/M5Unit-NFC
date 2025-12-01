@@ -70,21 +70,20 @@ void setup()
 void loop()
 {
     M5.update();
-    auto touch = M5.Touch.getDetail();
     Units.update();
 
-    std::vector<UID> uids;
-    if (nfc_a.detect(uids)) {
+    std::vector<PICC> piccs;
+    if (nfc_a.detect(piccs)) {
         M5.Speaker.tone(3000, 10);
         lcd.fillScreen(0);
         lcd.setCursor(0, 0);
-        lcd.printf("%zu PICC\n", uids.size());
-        M5.Log.printf("%zu PICC\n", uids.size());
+        lcd.printf("%zu PICC\n", piccs.size());
+        M5.Log.printf("%zu PICC\n", piccs.size());
         uint32_t idx{};
-        for (auto&& u : uids) {
-            M5.Log.printf("UID:%s %s %u/%u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.userAreaSize(),
+        for (auto&& u : piccs) {
+            M5.Log.printf("PICC:%s %s %u/%u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.userAreaSize(),
                           u.totalSize());
-            lcd.printf("[%2u]:UID:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
+            lcd.printf("[%2u]:PICC:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
             ++idx;
         }
         nfc_a.deactivate();

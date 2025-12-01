@@ -174,7 +174,7 @@ Type sak_to_type(const uint8_t sak)
     if (sak & 0x02 /*b2*/) {  // RFU?
         return Type::Unknown;
     }
-    if (sak & 0x04 /*b3*/) {  // UID uncompleted
+    if (sak & 0x04 /*b3*/) {  // PICC uncompleted
         return Type::Unknown;
     }
 
@@ -243,7 +243,7 @@ Type version_to_type(const uint8_t info[10])
     return Type::Unknown;
 }
 
-std::string UID::uidAsString() const
+std::string PICC::uidAsString() const
 {
     char buf[2 * 10 + 1]{};
     if (this->size <= 10) {
@@ -255,7 +255,7 @@ std::string UID::uidAsString() const
     return std::string(buf);
 }
 
-std::string UID::typeAsString() const
+std::string PICC::typeAsString() const
 {
     const auto idx = m5::stl::to_underlying(this->type);
     return std::string((this->size && idx <= m5::stl::size(name_table)) ? name_table[idx] : name_unknown);

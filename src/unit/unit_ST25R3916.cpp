@@ -639,11 +639,6 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     auto irq               = wait_for_interrupt(I_rxe32, timeout_ms);
     const uint16_t reqSize = required_size ? required_size : 1;
 
-    if (has_irq32_error(irq)) {
-        M5_LIB_LOGE("Error: %08X", irq);
-        return false;
-    }
-
     if (is_irq32_rxe(irq)) {
         return true;
     }
@@ -663,6 +658,10 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
         } while (m5::utility::millis() <= timeout_at);
         // M5_LIB_LOGE("    FIFO:%u,%u/%u", bytes, bits, required_size);
         return readFIFOSize(bytes, bits) && bytes >= reqSize;
+    }
+
+    if (has_irq32_error(irq)) {
+        M5_LIB_LOGE("Error: %08X", irq);
     }
     return false;
 }

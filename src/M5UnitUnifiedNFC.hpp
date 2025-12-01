@@ -16,7 +16,7 @@
 
 #include "nfc/nfc.hpp"
 #include "nfc/ndef/ndef.hpp"
-#include "nfc/ndef/ndef_message.hpp"
+#include "nfc/ndef/ndef_tlv.hpp"
 #include "nfc/ndef/ndef_record.hpp"
 
 #include "unit/unit_ST25R3916.hpp"

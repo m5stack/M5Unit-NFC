@@ -18,7 +18,7 @@ namespace m5 {
 namespace nfc {
 namespace ndef {
 
-class Message;
+class TLV;
 
 /*!
   @class Record

@@ -45,22 +45,22 @@ public:
     explicit NFCLayerA(CapST25R3916& u);
 
     /*!
-      @brief Is the specified PICC (UID) currently active?
-      @param uid UID to check
+      @brief Is the specified PICC currently active?
+      @param picc PICC to check
       @return True if this PICC is the one currently selected (ACTIVE state)
     */
-    inline bool isActive(const m5::nfc::a::UID& uid) const
+    inline bool isActive(const m5::nfc::a::PICC& picc) const
     {
-        return _activeUID.valid() && _activeUID == uid;
+        return _activePICC.valid() && _activePICC == picc;
     }
     /*!
-      @brief Retrieve the currently activated PICC UID
-      @return Active PICC UID
-      @note Returns an empty UID if no PICC is selected (no ACTIVE state)
+      @brief Retrieve the currently activated PICC
+      @return Active PICC
+      @note Returns an empty PICC if no PICC is selected (no ACTIVE state)
     */
-    const m5::nfc::a::UID& activatedPICC() const
+    const m5::nfc::a::PICC& activatedPICC() const
     {
-        return _activeUID;
+        return _activePICC;
     }
 
     ///@name Detection and activation
@@ -79,51 +79,60 @@ public:
       @post PICC transitions: IDLE/HALT -> READY on successful response
      */
     bool wakeup(uint16_t& atqa);
+
     /*!
-      @brief Detect idle PICCs
-      @param[out] uids Detected PICC UIDs (one per activated PICC candidate)
+      @brief Detect single idle PICC
+      @param[out] picc Detected PICC
       @param timeout_ms  Polling time budget in milliseconds
       @return True if detected
       @note The selected PICC is typically put into HALT during enumeration to allow discovering others
      */
-    bool detect(std::vector<m5::nfc::a::UID>& uids, const uint32_t timeout_ms = 10 * 1000U);
+    bool detect(m5::nfc::a::PICC& picc, const uint32_t timeout_ms = 100U);
+    /*!
+      @brief Detect idle PICCs
+      @param[out] piccs Detected PICC PICCs (one per activated PICC candidate)
+      @param timeout_ms  Polling time budget in milliseconds
+      @return True if detected
+      @note The selected PICC is typically put into HALT during enumeration to allow discovering others
+     */
+    bool detect(std::vector<m5::nfc::a::PICC>& piccs, const uint32_t timeout_ms = 1000U);
     /*!
       @brief Select a PICC (anti-collision + SELECT cascade to ACTIVE)
-      @param[out] uid The fully activated UID (single- or multi-cascade)
+      @param[out] picc The fully activated PICC (single- or multi-cascade)
       @return True if successful
       @pre A PICC is in the READY state (after REQA/WUPA)
       @post PICC transitions: READY -> ACTIVE on successful response
      */
-    bool select(m5::nfc::a::UID& uid);
+    bool select(m5::nfc::a::PICC& picc);
     /*!
-      @brief Activate a specific PICC by UID (anti-collision against the given UID)
-      @param uid UID
+      @brief Activate a specific PICC by PICC (anti-collision against the given PICC)
+      @param picc PICC
       @return True if successful
       @pre PICC is READY state
       @post PICC transitions: READY -> ACTIVE on successful response
      */
-    bool activate(const m5::nfc::a::UID& uid);
+    bool activate(const m5::nfc::a::PICC& picc);
     /*!
-      @brief Wake and activate a specific PICC by UID
-      @param uid Target UID
+      @brief Wake and activate a specific PICC by PICC
+      @param picc Target PICC
       @return True if successful
       @post PICC transitions: IDLE/HALT -> READY -> ACTIVE on a successful sequence
      */
-    bool reactivate(const m5::nfc::a::UID& uid);
+    bool reactivate(const m5::nfc::a::PICC& picc);
     /*!
       @brief Reactivate the previously selected PICC
       @details This function attempts to recover communication with the currently stored
-      _activeUID when the PICC has entered the HALT state, for example
+      _activePICC when the PICC has entered the HALT state, for example
       due to a protocol error, timeout, or loss of RF field synchronization.
       Internally performs a WUPA (Wake-Up) followed by anti-collision and SELECT
-      sequence using the last known UID
+      sequence using the last known PICC
       @return True if successful
-      @pre A valid`_activeUID is stored (i.e., at least one PICC was previously activated)
+      @pre A valid`_activePICC is stored (i.e., at least one PICC was previously activated)
       @note Use this to recover from transient communication errors without performing a full REQA/detect cycle
      */
     inline bool reactivate()
     {
-        return reactivate(_activeUID);
+        return reactivate(_activePICC);
     }
 
     ///@}
@@ -364,7 +373,7 @@ public:
       @note If multiple messages of the same type exist, return the first one
       @warning Only PICC cards supporting NDEF are valid
      */
-    bool ndefRead(m5::nfc::ndef::Message& msg);
+    bool ndefRead(m5::nfc::ndef::TLV& msg);
     /*!
       @brief Read any NDEF TLV
       @param[out] msgs Messgae vector
@@ -372,7 +381,7 @@ public:
       @return True if successful
       @warning Only PICC cards supporting NDEF are valid
      */
-    bool ndefRead(std::vector<m5::nfc::ndef::Message>& msgs,
+    bool ndefRead(std::vector<m5::nfc::ndef::TLV>& tlvs,
                   const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsAll);
     /*!
       @brief Write NDEF message
@@ -382,7 +391,7 @@ public:
       @warning Existing NDEF message TLVs will be overwritten
       @warning Only PICC cards supporting NDEF are valid
      */
-    bool ndefWrite(const m5::nfc::ndef::Message& msg);
+    bool ndefWrite(const m5::nfc::ndef::TLV& msg);
     /*!
       @brief Write any NDEF Messages TLV
       @param msgs Messgae vector
@@ -392,7 +401,7 @@ public:
       @warning so exercise caution if Lock/Memory control is present
       @warning Only PICC cards supporting NDEF are valid
      */
-    bool ndefWrite(const std::vector<m5::nfc::ndef::Message>& msgs);
+    bool ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs);
     ///@}
 
     /*!
@@ -417,6 +426,10 @@ protected:
     virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override;
     virtual uint16_t firstUserBlock() const override;
     virtual uint16_t lastUserBlock() const override;
+    inline virtual uint16_t userBlockUnitSize() const override
+    {
+        return 4u;
+    }
 
     bool read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr);
     bool read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
@@ -430,15 +443,15 @@ protected:
     bool ntag_check_cc_valid();
     bool ntag_check_format();
 
-    bool dump_sector_structure(const m5::nfc::a::UID& uid, const m5::nfc::a::mifare::classic::Key& key);
+    bool dump_sector_structure(const m5::nfc::a::PICC& picc, const m5::nfc::a::mifare::classic::Key& key);
     bool dump_sector(const uint8_t sector);
     bool dump_page_structure(const uint16_t maxPage);
     bool dump_page(const uint8_t page, const uint16_t maxPage);
 
-    static bool push_back_uid(std::vector<m5::nfc::a::UID>& v, const m5::nfc::a::UID& uid);
+    static bool push_back_picc(std::vector<m5::nfc::a::PICC>& v, const m5::nfc::a::PICC& picc);
 
 protected:
-    m5::nfc::a::UID _activeUID{};
+    m5::nfc::a::PICC _activePICC{};
 
 private:
     std::unique_ptr<Adapter> _impl;
@@ -455,15 +468,15 @@ struct NFCLayerA::Adapter {
     virtual bool request(uint16_t& atqa) = 0;
     virtual bool wakeup(uint16_t& atqa)  = 0;
 
-    virtual bool select(m5::nfc::a::UID& uid)         = 0;
-    virtual bool activate(const m5::nfc::a::UID& uid) = 0;
-    virtual bool deactivate()                         = 0;
+    virtual bool select(m5::nfc::a::PICC& picc)         = 0;
+    virtual bool activate(const m5::nfc::a::PICC& picc) = 0;
+    virtual bool deactivate()                           = 0;
 
     virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr)        = 0;  // READ
     virtual bool nfca_write_block(const uint8_t addr, const uint8_t tx[16]) = 0;  // WRITE_BLOCK
     virtual bool nfca_write_page(const uint8_t addr, const uint8_t tx[4])   = 0;  // WRITE_PAGE
 
-    virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::UID& uid, const uint8_t block,
+    virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::PICC& picc, const uint8_t block,
                                              const m5::nfc::a::mifare::classic::Key& key) = 0;
     virtual bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
                                             const uint32_t arg = 0)                       = 0;

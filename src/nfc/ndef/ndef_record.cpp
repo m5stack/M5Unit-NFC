@@ -8,7 +8,7 @@
   @brief NDEF record
 */
 #include "ndef_record.hpp"
-#include "ndef_message.hpp"
+#include "ndef_tlv.hpp"
 #include <M5Utility.hpp>
 #include <algorithm>
 #include <cstring>

@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 /*!
-  @file ndef_message.cpp
-  @brief NDEF message
+  @file ndef_tlv.cpp
+  @brief NDEF TLV
 */
-#include "ndef_message.hpp"
+#include "ndef_tlv.hpp"
 #include <M5Utility.hpp>
 #include <numeric>
 #include <cinttypes>
@@ -25,17 +25,17 @@ namespace m5 {
 namespace nfc {
 namespace ndef {
 
-const Message Message::Terminator(Tag::Terminator);
+const TLV TLV::Terminator(Tag::Terminator);
 
-uint32_t Message::required() const
+uint32_t TLV::required() const
 {
-    uint32_t payload_len = (_tag == Tag::NDEFMessage) ? calculate_record_size(_records) : _payload.size();
+    uint32_t payload_len = (_tag == Tag::Message) ? calculate_record_size(_records) : _payload.size();
     return 1 /* tag */ + ((_tag == Tag::Terminator) ? 0 : ((payload_len >= 0xFF ? 3 : 1) + payload_len));
 }
 
-bool Message::push_back(const Record& r)
+bool TLV::push_back(const Record& r)
 {
-    if (_tag != Tag::NDEFMessage) {
+    if (_tag != Tag::Message) {
         return false;
     }
 
@@ -61,9 +61,9 @@ bool Message::push_back(const Record& r)
     return true;
 }
 
-void Message::pop_back()
+void TLV::pop_back()
 {
-    if (_tag != Tag::NDEFMessage || _records.empty()) {
+    if (_tag != Tag::Message || _records.empty()) {
         return;
     }
 
@@ -84,14 +84,14 @@ void Message::pop_back()
     }
 }
 
-uint32_t Message::encode(uint8_t* buf, const uint32_t blen) const
+uint32_t TLV::encode(uint8_t* buf, const uint32_t blen) const
 {
     if (!buf || !blen) {
         return 0;
     }
 
     uint32_t count{};
-    uint32_t payload_len = (_tag == Tag::NDEFMessage) ? calculate_record_size(_records) : _payload.size();
+    uint32_t payload_len = (_tag == Tag::Message) ? calculate_record_size(_records) : _payload.size();
     if (payload_len > 0xFFFE) {
         return 0;
     }
@@ -101,7 +101,7 @@ uint32_t Message::encode(uint8_t* buf, const uint32_t blen) const
         return 0;
     }
     buf[count++] = m5::stl::to_underlying(_tag);  // Tag
-    if (isTerminator()) {
+    if (isTerminatorTLV()) {
         return count;  // 0xFE only
     }
     // Length (1 byte or 3 bytes)
@@ -119,7 +119,7 @@ uint32_t Message::encode(uint8_t* buf, const uint32_t blen) const
         buf[count++] = payload_len;  // 0x00 - 0xFE
     }
 
-    if (_tag == Tag::NDEFMessage) {  // NDEFMessage
+    if (_tag == Tag::Message) {  // Message
         for (auto&& r : _records) {
             if (count >= blen) {
                 return 0;
@@ -141,7 +141,7 @@ uint32_t Message::encode(uint8_t* buf, const uint32_t blen) const
     return count;
 }
 
-uint32_t Message::decode(const uint8_t* buf, const uint32_t len)
+uint32_t TLV::decode(const uint8_t* buf, const uint32_t len)
 {
     clear();
 
@@ -189,8 +189,8 @@ uint32_t Message::decode(const uint8_t* buf, const uint32_t len)
         return decoded;
     }
 
-    // NDEFMessage
-    if (_tag == Tag::NDEFMessage) {
+    // Message
+    if (_tag == Tag::Message) {
         const uint8_t* payload_end = top + decoded + payload_len;
         while (buf < payload_end) {
             Record r{};
@@ -240,20 +240,20 @@ uint32_t Message::decode(const uint8_t* buf, const uint32_t len)
     return buf - top;
 }
 
-void Message::clear()
+void TLV::clear()
 {
     _tag = Tag::Null;
     _records.clear();
     _payload.clear();
 }
 
-void Message::dump()
+void TLV::dump()
 {
-    uint32_t payload_len = (_tag == Tag::NDEFMessage) ? calculate_record_size(_records) : _payload.size();
+    uint32_t payload_len = (_tag == Tag::Message) ? calculate_record_size(_records) : _payload.size();
     printf("== NDEF Mesage Tag:%02X Payload:%" PRIu32 "\n", m5::stl::to_underlying(_tag),
            payload_len);  // PRIu32 for compile on NanoC6
 
-    if (_tag == Tag::NDEFMessage) {
+    if (_tag == Tag::Message) {
         for (auto&& r : _records) {
             r.dump();
         }

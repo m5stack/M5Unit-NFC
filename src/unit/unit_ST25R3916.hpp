@@ -1709,17 +1709,17 @@ public:
     /*!
       @brief Select PICC with anti-collision
       @param[out] completed Completed select?
-      @param[out]  uid Selected UID
+      @param[out]  picc Selected PICC
       @param lv Cascade level (1-3)
       @return True if successful
      */
-    bool nfcaSelectWithAnticollision(bool& completed, m5::nfc::a::UID& uid, const uint8_t lv);
+    bool nfcaSelectWithAnticollision(bool& completed, m5::nfc::a::PICC& picc, const uint8_t lv);
     /*!
-      @brief Select specific UID
-      @param  uid  UID
+      @brief Select specific PICC
+      @param  picc  PICC
       @return True if successful
      */
-    bool nfcaSelect(const m5::nfc::a::UID& uid);
+    bool nfcaSelect(const m5::nfc::a::PICC& picc);
     /*!
       @brief Read the 1 block / 4 pages (16 bytes)
       @param rx Receiver buffer (at least 16 bytes)
@@ -1754,29 +1754,29 @@ public:
     ///@{
     /*!
       @brief Authentication using keyA of the specified block
-      @param uid UID
+      @param picc PICC
       @param block Block address
       @param key MIFARE classic key
       @return True if successful
      */
     inline bool mifareClassicAuthenticateA(
-        const m5::nfc::a::UID& uid, const uint8_t block,
+        const m5::nfc::a::PICC& picc, const uint8_t block,
         const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY)
     {
-        return mifare_classic_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_A, uid, block, key);
+        return mifare_classic_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_A, picc, block, key);
     }
     /*!
       @brief Authentication using keyB of the specified block
-      @param uid UID
+      @param picc PICC
       @param block Block address
       @param key MIFARE classic key
       @return True if successful
      */
     inline bool mifareClassicAuthenticateB(
-        const m5::nfc::a::UID& uid, const uint8_t block,
+        const m5::nfc::a::PICC& picc, const uint8_t block,
         const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY)
     {
-        return mifare_classic_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_B, uid, block, key);
+        return mifare_classic_authenticate(m5::nfc::a::Command::AUTH_WITH_KEY_B, picc, block, key);
     }
     /*!
       @brief Operation for the value block
@@ -1916,7 +1916,7 @@ protected:
     bool mifare_classic_send_encrypt(const uint8_t* tx, const uint16_t tx_len);
     bool mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                            const uint32_t timeout_ms, const bool include_crc, const bool decrypt);
-    bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::UID& uid, const uint8_t block,
+    bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::PICC& picc, const uint8_t block,
                                      const m5::nfc::a::mifare::classic::Key& key);
     bool ntag_get_version(uint8_t info[10]);
 

@@ -134,10 +134,10 @@ bool is_user_block(const Type t, const uint16_t block);
 uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len);
 
 /*!
-  @struct UID
-  @brief The UID of the PICC
+  @struct PICC
+  @brief PICC for NFC-A
  */
-struct UID {
+struct PICC {
     //! @brief PICC type
     Type type{};
     //! @brief  UID size 4, 7 or 10.
@@ -225,13 +225,13 @@ struct UID {
 };
 
 //! @brief Equal?
-inline bool operator==(const UID& a, const UID& b)
+inline bool operator==(const PICC& a, const PICC& b)
 {
     return (a.size == b.size) && (a.sak == b.sak) && (a.type == b.type) && (a.blocks == b.blocks) &&
            std::memcmp(a.uid, b.uid, 10) == 0;
 }
 //! @brief Not equal?
-inline bool operator!=(const UID& a, const UID& b)
+inline bool operator!=(const PICC& a, const PICC& b)
 {
     return !(a == b);
 }

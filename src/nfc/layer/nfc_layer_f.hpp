@@ -176,6 +176,10 @@ protected:
     virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override;
     virtual uint16_t firstUserBlock() const override;
     virtual uint16_t lastUserBlock() const override;
+    inline virtual uint16_t userBlockUnitSize() const override
+    {
+        return 16u;
+    }
 
     bool dump_felica_lite(const m5::nfc::f::PICC& picc);
     bool dump_felica_lite_s(const m5::nfc::f::PICC& picc);

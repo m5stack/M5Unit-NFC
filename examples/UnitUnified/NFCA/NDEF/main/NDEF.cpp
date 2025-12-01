@@ -69,7 +69,7 @@ constexpr uint32_t poji_64_png_len = 738;
 
 void read_ndef()
 {
-    Message msg;
+    TLV msg;
     // Read NDEF message TLV
     if (!nfc_a.ndefRead(msg)) {
         M5_LOGE("Failed to read");
@@ -77,7 +77,7 @@ void read_ndef()
     }
 
     // If it does not exist, a Null TLV is returned
-    if (msg.isNDEFMessage()) {
+    if (msg.isMessageTLV()) {
         lcd.setCursor(0, lcd.fontHeight());
         for (auto&& r : msg.records()) {
             switch (r.tnf()) {
@@ -102,7 +102,7 @@ void read_ndef()
 
 void write_ndef()
 {
-    Message msg{};
+    TLV msg{};         // Message TLV as default
     Record r[5] = {};  // Wellknown as default
 
     // URI record
@@ -189,14 +189,12 @@ void loop()
     bool held    = M5.BtnA.wasHold();     // For write
 
     if (clicked || held) {
-        std::vector<UID> uids;
-        if (nfc_a.detect(uids)) {
-            //  If multiple occurrences are detected, only the first one detected
-            auto& uid = uids.front();
-            if (nfc_a.reactivate(uid)) {
-                M5.Log.printf("UID:%s %s %u/%u\n", uid.uidAsString().c_str(), uid.typeAsString().c_str(),
-                              uid.userAreaSize(), uid.totalSize());
-                if (uid.supportsNFC()) {
+        PICC picc{};
+        if (nfc_a.detect(picc)) {
+            if (nfc_a.reactivate(picc)) {
+                M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
+                              picc.userAreaSize(), picc.totalSize());
+                if (picc.supportsNFC()) {
                     bool valid{};
                     if (nfc_a.ndefIsValidFormat(valid) && valid) {
                         if (clicked) {

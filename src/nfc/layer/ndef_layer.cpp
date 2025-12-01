@@ -9,7 +9,7 @@
 */
 #include "ndef_layer.hpp"
 #include "nfc/ndef/ndef.hpp"
-#include "nfc/ndef/ndef_message.hpp"
+#include "nfc/ndef/ndef_tlv.hpp"
 #include "nfc/ndef/ndef_record.hpp"
 #include <M5Utility.hpp>
 #include <algorithm>
@@ -44,48 +44,49 @@ bool NDEFLayer::isValidFormat(bool& valid)
     return true;
 }
 
-bool NDEFLayer::read(std::vector<m5::nfc::ndef::Message>& msgs, const m5::nfc::ndef::TagBits tagBits)
+bool NDEFLayer::read(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits)
 {
-    msgs.clear();
+    tlvs.clear();
 
     uint8_t* buf{};
-    uint16_t page      = _interface.firstUserBlock();
-    uint16_t last_page = _interface.lastUserBlock();
-    if (page == 0xFFFF || last_page == 0xFFFF) {
+    uint16_t block      = _interface.firstUserBlock();
+    uint16_t last_block = _interface.lastUserBlock();
+    if (block == 0xFFFF || last_block == 0xFFFF) {
         return false;
     }
 
-    uint16_t buf_size = (last_page - page + 1) * 4;
-    buf               = static_cast<uint8_t*>(malloc(buf_size));
+    uint16_t buf_size = (last_block - block + 1) * _interface.userBlockUnitSize();
+    ;
+    buf = static_cast<uint8_t*>(malloc(buf_size));
     if (!buf) {
         M5_LIB_LOGE("Failed to allocate memory %u", buf_size);
         return false;
     }
     uint16_t actual{buf_size};
-    if (!_interface.read(buf, actual, page) || actual == 0) {
+    if (!_interface.read(buf, actual, block) || actual == 0) {
         M5_LIB_LOGE("Failed to read %u", actual);
         goto skip;
     }
 
     {
         uint32_t offset{}, idx{};
-        Message msg{};
+        TLV tlv{};
         do {
-            auto decoded = msg.decode(buf + offset, actual > offset ? actual - offset : 0);
+            auto decoded = tlv.decode(buf + offset, actual > offset ? actual - offset : 0);
             // Even if decoding fails, return the results up to that point and treat it as a success
             if (!decoded) {
-                M5_LIB_LOGE("Failed to decode [%3u]:%02X", idx, msg.tag());
+                M5_LIB_LOGE("Failed to decode [%3u]:%02X", idx, tlv.tag());
                 break;
             }
             offset += decoded;
             ++idx;
-            M5_LIB_LOGD("Decoded:%u %02X", decoded, msg.tag());
+            M5_LIB_LOGD("Decoded:%u %02X", decoded, tlv.tag());
 
-            if (contains_tag(tagBits, msg.tag())) {
-                msgs.push_back(msg);
+            if (contains_tag(tagBits, tlv.tag())) {
+                tlvs.push_back(tlv);
             }
 
-        } while (!msg.isTerminator() && !msg.isNullMessage());
+        } while (!tlv.isTerminatorTLV() && !tlv.isNullTLV());
     }
 
 skip:
@@ -93,16 +94,17 @@ skip:
     return true;
 }
 
-bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs, const bool keep)
+bool NDEFLayer::write(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep)
 {
     bool ret{};
-    const uint32_t user_bytes = (_interface.lastUserBlock() - _interface.firstUserBlock() + 1) * 4;
+    const uint32_t user_bytes =
+        (_interface.lastUserBlock() - _interface.firstUserBlock() + 1) * _interface.userBlockUnitSize();
 
-    if (msgs.empty()) {
+    if (tlvs.empty()) {
         return false;
     }
 
-    std::vector<Message> tmp{};
+    std::vector<TLV> tmp{};
 
     /*
       Since there is an NTAG containing information such as LockControl starting
@@ -110,27 +112,27 @@ bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs, const boo
      */
     if (keep && read(tmp)) {
         // Remove Null,NDEF,and Terminator (Keep Lock,Memory,Proprietary)
-        auto it = std::remove_if(tmp.begin(), tmp.end(), [](const Message& m) {  //
-            return m.tag() == Tag::Null || m.tag() == Tag::NDEFMessage || m.tag() == Tag::Terminator;
+        auto it = std::remove_if(tmp.begin(), tmp.end(), [](const TLV& m) {  //
+            return m.tag() == Tag::Null || m.tag() == Tag::Message || m.tag() == Tag::Terminator;
         });
         tmp.erase(it, tmp.end());
 
         // Insert argument before Proprietary TLV
-        it = std::find_if(tmp.begin(), tmp.end(), [](const Message& m) { return m.tag() == Tag::Proprietary; });
-        tmp.insert(it, msgs.begin(), msgs.end());
+        it = std::find_if(tmp.begin(), tmp.end(), [](const TLV& m) { return m.tag() == Tag::Proprietary; });
+        tmp.insert(it, tlvs.begin(), tlvs.end());
 
         // Append terminator
         if (tmp.empty() || tmp.back().tag() != Tag::Terminator) {
-            tmp.push_back(Message(Tag::Terminator));
+            tmp.push_back(TLV(Tag::Terminator));
         }
     } else {
         // Overwirte if the TLV is not maintained, or if there is a corrupted NDEF
-        tmp = msgs;
+        tmp = tlvs;
     }
 
     // Calculate encoded size
     uint32_t encoded_size =
-        std::accumulate(tmp.begin(), tmp.end(), 0U, [](uint32_t acc, const Message& m) { return acc + m.required(); });
+        std::accumulate(tmp.begin(), tmp.end(), 0U, [](uint32_t acc, const TLV& m) { return acc + m.required(); });
 
     M5_LIB_LOGD("Encoded size:%u", encoded_size);
 
@@ -163,6 +165,7 @@ bool NDEFLayer::write(const std::vector<m5::nfc::ndef::Message>& msgs, const boo
     }
 
     // Write
+    // M5_LIB_LOGE(">>>>ndef write %u %u", _interface.firstUserBlock(), encoded_size);
     ret = _interface.write(_interface.firstUserBlock(), buf, encoded_size);
 
 skip:
@@ -170,26 +173,27 @@ skip:
     return ret;
 }
 
-bool NDEFLayer::readMessageSize(uint32_t& size, const TagBits tagBits)
+#if 0
+bool NDEFLayer::readTLVSize(uint32_t& size, const TagBits tagBits)
 {
     size = 0;
 
     uint8_t* buf{};
-    uint16_t page      = _interface.firstUserBlock();
-    uint16_t last_page = _interface.lastUserBlock();
-    if (page == 0xFFFF || last_page == 0xFFFF) {
+    uint16_t block      = _interface.firstUserBlock();
+    uint16_t last_block = _interface.lastUserBlock();
+    if (block == 0xFFFF || last_block == 0xFFFF) {
         return false;
     }
 
     bool ret{false};
-    uint16_t buf_size = (last_page - page + 1) * 4;
+    uint16_t buf_size = (last_block - block + 1) * _interface.userBlockUnitSize();
     buf               = static_cast<uint8_t*>(malloc(buf_size));
     if (!buf) {
         M5_LIB_LOGE("Failed to allocate memory");
         return false;
     }
     uint16_t actual{buf_size};
-    if (!_interface.read(buf, actual, page) || actual == 0) {
+    if (!_interface.read(buf, actual, block) || actual == 0) {
         M5_LIB_LOGE("Failed to read %u", actual);
         goto skip;
     }
@@ -256,6 +260,7 @@ bool calculate_ndef_size(uint32_t& size, const uint8_t* p, const uint8_t* end, c
     size = required;
     return true;
 }
+#endif
 
 }  // namespace ndef
 }  // namespace nfc

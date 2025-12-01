@@ -85,8 +85,8 @@ void print_access_conditions(const Key& akey, const Key& key)
 
 void non_rechargeable_value_block(const uint8_t block, const Key& akey, const Key& bkey)
 {
-    auto& uid = nfc_a.activatedPICC();
-    if (!uid.isUserBlock(block) || !uid.isUserBlock(block - 1)) {
+    auto& picc = nfc_a.activatedPICC();
+    if (!picc.isUserBlock(block) || !picc.isUserBlock(block - 1)) {
         M5_LOGE("block and block - 1 must be user block %u %u", block, block - 1);
         return;
     }
@@ -174,8 +174,8 @@ void non_rechargeable_value_block(const uint8_t block, const Key& akey, const Ke
 
 void rechargeable_value_block(const uint8_t block, const Key& akey, const Key& bkey)
 {
-    auto& uid = nfc_a.activatedPICC();
-    if (!uid.isUserBlock(block) || !uid.isUserBlock(block - 1)) {
+    auto& picc = nfc_a.activatedPICC();
+    if (!picc.isUserBlock(block) || !picc.isUserBlock(block - 1)) {
         M5_LOGE("block and block - 1 must be user block %u %u", block, block - 1);
         return;
     }
@@ -327,24 +327,22 @@ void loop()
     bool held    = M5.BtnA.wasHold();     // For increment
 
     if (clicked || held) {
-        std::vector<UID> uids;
-        if (nfc_a.detect(uids)) {
-            //  If multiple occurrences are detected, only the first one detected
-            auto& uid = uids.front();
-            if (nfc_a.reactivate(uid)) {
-                M5.Log.printf("UID:%s %s %u/%u\n", uid.uidAsString().c_str(), uid.typeAsString().c_str(),
-                              uid.userAreaSize(), uid.totalSize());
-                if (uid.isMifareClassic()) {
+        PICC picc{};
+        if (nfc_a.detect(picc)) {
+            if (nfc_a.reactivate(picc)) {
+                M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
+                              picc.userAreaSize(), picc.totalSize());
+                if (picc.isMifareClassic()) {
                     if (clicked) {
                         M5.Speaker.tone(2000, 30);
                         lcd.fillScreen(TFT_BLUE);
                         M5.Log.print("Non rechargeable\n");
-                        non_rechargeable_value_block(uid.blocks - 2, keyA, keyB);
+                        non_rechargeable_value_block(picc.blocks - 2, keyA, keyB);
                     } else if (held) {
                         M5.Speaker.tone(4000, 30);
                         lcd.fillScreen(TFT_YELLOW);
                         M5.Log.print("Rechargeable\n");
-                        rechargeable_value_block(uid.blocks - 2, keyA, keyB);
+                        rechargeable_value_block(picc.blocks - 2, keyA, keyB);
                     }
                     M5.Log.printf("Please remove the PICC from the reader\n");
                 } else {

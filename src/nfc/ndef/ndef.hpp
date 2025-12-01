@@ -38,13 +38,13 @@ inline constexpr uint8_t get_minor_version(const uint8_t v)
 
 /*!
   @enum Tag
-  @brief TLV(Tag,Length,Value) tag for NDEF Message
+  @brief TLV(Tag,Length,Value) tag
  */
 enum class Tag : uint8_t {
     Null,                //!< NULL TLV
     LockControl,         //!< Lock control
     MemoryControl,       //!< Memory control
-    NDEFMessage,         //!< NDEF container
+    Message,             //!< Message
     Proprietary = 0xFD,  //!< Proprietary
     Terminator           //!< Terminator
 };
@@ -61,7 +61,7 @@ constexpr TagBits tag_to_tagbit(const Tag t)
     return (t == Tag::Null)            ? (1u << 0)
            : (t == Tag::LockControl)   ? (1u << 1)
            : (t == Tag::MemoryControl) ? (1u << 2)
-           : (t == Tag::NDEFMessage)   ? (1u << 3)
+           : (t == Tag::Message)       ? (1u << 3)
            : (t == Tag::Proprietary)   ? (1u << 4)
            : (t == Tag::Terminator)    ? (1u << 5)
                                        : 0u;
@@ -108,15 +108,15 @@ inline constexpr bool contains_tag(const TagBits tb, const Tag t)
 
 //! @brief All tags
 constexpr TagBits tagBitsAll =
-    make_tag_bits(m5::nfc::ndef::Tag::LockControl, m5::nfc::ndef::Tag::MemoryControl, m5::nfc::ndef::Tag::NDEFMessage,
+    make_tag_bits(m5::nfc::ndef::Tag::LockControl, m5::nfc::ndef::Tag::MemoryControl, m5::nfc::ndef::Tag::Message,
                   m5::nfc::ndef::Tag::Proprietary, m5::nfc::ndef::Tag::Terminator);
-//! @brief NDEFMessage only
-constexpr TagBits tagBitsNDEFMessage = make_tag_bits(m5::nfc::ndef::Tag::NDEFMessage);
+//! @brief Message only
+constexpr TagBits tagBitsMessage = make_tag_bits(m5::nfc::ndef::Tag::Message);
 
 //! @brief Is valid tag?
 inline bool is_valid_tag(const uint8_t t)
 {
-    return t <= m5::stl::to_underlying(Tag::NDEFMessage) || t == m5::stl::to_underlying(Tag::Proprietary) ||
+    return t <= m5::stl::to_underlying(Tag::Message) || t == m5::stl::to_underlying(Tag::Proprietary) ||
            t == m5::stl::to_underlying(Tag::Terminator);
 }
 

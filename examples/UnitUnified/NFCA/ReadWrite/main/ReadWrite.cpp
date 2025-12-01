@@ -134,7 +134,7 @@ void read_write_sector_structure(const uint8_t block, const Key& key)
 }
 
 // Using read4,16/write4 for Ultralight,NTAG
-void read_write_page_structure(const UID& uid, const uint8_t page)
+void read_write_page_structure(const PICC& picc, const uint8_t page)
 {
     constexpr char msg[] = "M5";
 
@@ -153,7 +153,7 @@ void read_write_page_structure(const UID& uid, const uint8_t page)
 
     // Read
     uint8_t rbuf[16]{};
-    if (uid.isNTAG()) {
+    if (picc.isNTAG()) {
         if (!nfc_a.read4(rbuf, page)) {
             M5_LOGE("Failed to read");
             return;
@@ -228,27 +228,25 @@ void loop()
     bool held    = M5.BtnA.wasHold();
 
     if (clicked || held) {
-        std::vector<UID> uids;
-        if (nfc_a.detect(uids)) {
+        PICC picc;
+        if (nfc_a.detect(picc)) {
             lcd.fillScreen(TFT_DARKGREEN);
-            // If multiple occurrences are detected, only the first one detected
-            auto& uid = uids.front();
-            if (nfc_a.reactivate(uid)) {
-                M5.Log.printf("UID:%s %s %u/%u\n", uid.uidAsString().c_str(), uid.typeAsString().c_str(),
-                              uid.userAreaSize(), uid.totalSize());
+            if (nfc_a.reactivate(picc)) {
+                M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
+                              picc.userAreaSize(), picc.totalSize());
 
                 if (clicked) {
                     M5.Speaker.tone(2000, 30);
                     // Need key if MIFARE classic, Ignore key if not MIFARE classic
                     read_all_user_area(keyA);
-                    auto ret = read_write(0, uid.userAreaSize() >= 120 ? long_msg : short_msg, keyA);
+                    auto ret = read_write(0, picc.userAreaSize() >= 120 ? long_msg : short_msg, keyA);
                     lcd.fillScreen(ret ? 0 : TFT_RED);
                 } else if (held) {
                     M5.Speaker.tone(4000, 30);
-                    if (uid.isMifareClassic()) {
-                        read_write_sector_structure(uid.blocks - 2, keyA);
-                    } else if (uid.supportsNFC()) {
-                        read_write_page_structure(uid, 10);
+                    if (picc.isMifareClassic()) {
+                        read_write_sector_structure(picc.blocks - 2, keyA);
+                    } else if (picc.supportsNFC()) {
+                        read_write_page_structure(picc, 10);
                     } else {
                         M5_LOGE("Not support");
                     }

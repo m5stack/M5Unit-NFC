@@ -11,7 +11,6 @@
 #define M5_UNIT_NFC_NFC_LAYER_NDEFC_LAYER_HPP
 
 #include "nfc_layer.hpp"
-// #include "nfc/ndef/ndef.hpp"
 #include <vector>
 
 namespace m5 {
@@ -19,7 +18,7 @@ namespace nfc {
 class NFCLayerInterface;
 namespace ndef {
 
-class Message;
+class TLV;
 class Record;
 
 /*!
@@ -32,13 +31,14 @@ public:
     {
     }
     bool isValidFormat(bool& valid);
-    bool readMessageSize(uint32_t& size, const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsAll);
-    bool read(std::vector<m5::nfc::ndef::Message>& msgs,
-              const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsNDEFMessage);
-    bool write(const std::vector<m5::nfc::ndef::Message>& msgs, const bool keep = true);
+    bool read(std::vector<m5::nfc::ndef::TLV>& tlvs,
+              const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsMessage);
+    bool write(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep = true);
+
+    // bool readTLVSize(uint32_t& size, const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsAll);
 
 protected:
-    bool calculate_ndef_size(uint32_t& size, const uint8_t* p, const uint8_t* end, const uint8_t targetTagBit);
+    // bool calculate_ndef_size(uint32_t& size, const uint8_t* p, const uint8_t* end, const uint8_t targetTagBit);
 
 private:
     NFCLayerInterface& _interface;

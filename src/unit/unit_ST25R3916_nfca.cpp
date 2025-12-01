@@ -270,7 +270,7 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
     return !collision;
 }
 
-bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, UID& uid, const uint8_t lv)
+bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, const uint8_t lv)
 {
     completed  = false;
     _encrypted = false;
@@ -289,8 +289,8 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, UID& uid, const
     }
     // M5_LIB_LOGE("<<< ANTICOLL");
 
-    // Copy UID
-    memcpy(uid.uid + (lv - 1) * 3, rbuf + (rbuf[0] == 0x88), 4 - (rbuf[0] == 0x88));
+    // Copy PICC
+    memcpy(picc.uid + (lv - 1) * 3, rbuf + (rbuf[0] == 0x88), 4 - (rbuf[0] == 0x88));
 
     uint8_t select_frame[7] = {(uint8_t)(0x91 + lv * 2), 0x70};
     memcpy(select_frame + 2, rbuf, sizeof(rbuf));
@@ -307,33 +307,34 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, UID& uid, const
     //   Completed?
     if (is_sak_completed(sak)) {
         completed = true;
-        uid.size  = 1 + lv * 3;
-        uid.sak   = sak;
-        uid.type = sak_to_type(sak);  // WARNING: This is a preliminary diagnosis; a more accurate diagnosis is required
-        uid.blocks = get_number_of_blocks(uid.type);
+        picc.size = 1 + lv * 3;
+        picc.sak  = sak;
+        picc.type =
+            sak_to_type(sak);  // WARNING: This is a preliminary diagnosis; a more accurate diagnosis is required
+        picc.blocks = get_number_of_blocks(picc.type);
         // More check for type
-        if (uid.type == Type::MIFARE_Ultralight) {
+        if (picc.type == Type::MIFARE_Ultralight) {
             uint8_t ver[10]{};
             if (ntag_get_version(ver)) {
-                uid.type   = version_to_type(ver);
-                uid.blocks = get_number_of_blocks(uid.type);
+                picc.type   = version_to_type(ver);
+                picc.blocks = get_number_of_blocks(picc.type);
             } else {
                 // PICC to IDLE... so need reactivate
                 uint16_t discard{};
-                completed = nfcaWakeup(discard) && nfcaSelect(uid);
+                completed = nfcaWakeup(discard) && nfcaSelect(picc);
             }
         }
     }
     return completed || has_sak_dependent_bit(sak);  // completed or continue
 }
 
-bool UnitST25R3916::nfcaSelect(const UID& uid)
+bool UnitST25R3916::nfcaSelect(const PICC& picc)
 {
     _encrypted = false;
 
     CHECK_MODE();
 
-    if (!uid.valid()) {
+    if (!picc.valid()) {
         return false;
     }
 
@@ -351,14 +352,14 @@ bool UnitST25R3916::nfcaSelect(const UID& uid)
     do {
         select_frame[0] = 0x91 + lv * 2;
         // Build frame
-        if (uid.size > lv * 3 + 1) {
+        if (picc.size > lv * 3 + 1) {
             select_frame[2] = 0x88;
         } else {
-            select_frame[2] = uid.uid[offset++];
+            select_frame[2] = picc.uid[offset++];
         }
-        select_frame[3] = uid.uid[offset++];
-        select_frame[4] = uid.uid[offset++];
-        select_frame[5] = uid.uid[offset++];
+        select_frame[3] = picc.uid[offset++];
+        select_frame[4] = picc.uid[offset++];
+        select_frame[5] = picc.uid[offset++];
         select_frame[6] = calculate_bcc8(select_frame + 2, 4);
 
         // Select
@@ -479,7 +480,7 @@ bool UnitST25R3916::nfcaWritePage(const uint8_t page, const uint8_t tx[4])
     if (nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_WRITE2)) {
         return true;
     }
-    M5_LIB_LOGE("FAiled to write page");
+    M5_LIB_LOGE("Failed to write page");
     return false;
 }
 
@@ -597,11 +598,12 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
     return true;
 }
 
-bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& uid, const uint8_t block, const Key& mkey)
+bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const PICC& picc, const uint8_t block,
+                                                const Key& mkey)
 {
     CHECK_MODE();
 
-    if ((cmd != Command::AUTH_WITH_KEY_A && cmd != Command::AUTH_WITH_KEY_B) || !uid.isMifareClassic()) {
+    if ((cmd != Command::AUTH_WITH_KEY_A && cmd != Command::AUTH_WITH_KEY_B) || !picc.isMifareClassic()) {
         return false;
     }
 
@@ -631,7 +633,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const UID& ui
 
     // 2) Send encrypt token AB (Nr, Ar)
     uint8_t tail4[4]{};
-    uid.tail4(tail4);
+    picc.tail4(tail4);
     const uint32_t u32 = array_to32(tail4);
     uint32_t Nt        = array_to32(RB);
     const uint32_t Nr  = esp_random();  // Change another RNG engine if you want

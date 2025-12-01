@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 /*!
-  @file ndef_message.hpp
-  @brief NDEF message
+  @file ndef_tlv.hpp
+  @brief NDEF TLV
 */
-#ifndef M5_UNIT_NFC_NDEF_NFC_NDEF_MESSAGE_HPP
-#define M5_UNIT_NFC_NDEF_NFC_NDEF_MESSAGE_HPP
+#ifndef M5_UNIT_NFC_NDEF_NFC_NDEF_TLV_HPP
+#define M5_UNIT_NFC_NDEF_NFC_NDEF_TLV_HPP
 
 #include "ndef.hpp"
 #include "ndef_record.hpp"
@@ -21,23 +21,23 @@ namespace ndef {
 class Record;
 
 /*!
-  @class Message
-  @brief NDEF message container
+  @class TLV
+  @brief NDEF TLV container
  */
-class Message {
+class TLV {
 public:
     using container_type = std::vector<Record>;
 
     //!@brief Terminator instance
-    static const Message Terminator;
+    static const TLV Terminator;
 
-    Message() : Message(Tag::NDEFMessage)
+    TLV() : TLV(Tag::Message)
     {
     }
-    explicit Message(const Tag t) : _tag{t}
+    explicit TLV(const Tag t) : _tag{t}
     {
     }
-    ~Message()
+    ~TLV()
     {
     }
 
@@ -47,24 +47,23 @@ public:
         return _tag;
     }
     //! @brief Is termibator
-    inline bool isTerminator() const
+    inline bool isTerminatorTLV() const
     {
         return _tag == Tag::Terminator;
     }
-    //! @brief Is NDEF Messgae?
-    inline bool isNDEFMessage() const
+    //! @brief Is Messgae?
+    inline bool isMessageTLV() const
     {
-        return _tag == Tag::NDEFMessage;
+        return _tag == Tag::Message;
     }
-    //! @brief Is Null Message?
-    inline bool isNullMessage() const
+    //! @brief Is Null TLV?
+    inline bool isNullTLV() const
     {
         return _tag == Tag::Null;
-        ;
     }
     /*!
       @brief Get the records
-      @pre Tag must be NDEFMessage
+      @pre Tag must be Message
     */
     inline const container_type& records() const
     {
@@ -72,7 +71,7 @@ public:
     }
     /*!
       @brief Get the payload
-      @pre Tag must NOT be NDEFMessage
+      @pre Tag must NOT be Message
     */
     inline const std::vector<uint8_t>& payload() const
     {
@@ -80,12 +79,13 @@ public:
     }
     /*!
       @brief Get the payload
-      @pre Tag must NOT be NDEFMessage
+      @pre Tag must NOT be Message
     */
     inline std::vector<uint8_t>& payload()
     {
         return _payload;
     }
+
     //!  @brief Size required for encoding
     uint32_t required() const;
 
@@ -96,7 +96,8 @@ public:
       @note A copy of the Record is inserted at the end
      */
     bool push_back(const Record& r);
-    //! @brief Removes the last recordw
+
+    //! @brief Removes the last record
     void pop_back();
 
     /*!
@@ -109,7 +110,7 @@ public:
     uint32_t encode(uint8_t* buf, const uint32_t blen) const;
     /*!
       @brief Decode
-      @param buf Pointer of the NDEF mesage
+      @param buf Pointer of the TLV
       @param len Buffer length
       @retval > 0 Decoded length
       @retval == 0 Error
@@ -126,8 +127,8 @@ public:
 
 private:
     Tag _tag{};
-    container_type _records{};        //  For NDEFMessage
-    std::vector<uint8_t> _payload{};  // Other than NDEFMessage
+    container_type _records{};
+    std::vector<uint8_t> _payload{};
 };
 }  // namespace ndef
 }  // namespace nfc
