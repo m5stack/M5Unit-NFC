@@ -74,7 +74,7 @@ public:
     bool configureNFCMode(const m5::nfc::NFC mode);
 
     /*!
-      @breif Is the current operating mode the one specified?
+      @brief Is the current operating mode the one specified?
       @param mode Mode
       @return True if the current operation is in the specified mode
      */
@@ -1796,7 +1796,7 @@ public:
       @param spage Start reading page
       @param epage End reading page
       @return True if successful
-      @warning Only PICC supporting the FAST_READ command
+      @warning Only PICC with the FAST_READ command
      */
     bool ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
     ///@}
@@ -1806,7 +1806,7 @@ public:
     ///@{
     /*!
       @brief Transceive
-      @param rx Receive buffer
+      @param[out] rx Receive buffer
       @param[in/out] rx_len in:Size of receive buffer out:actual read size
       @param tx Send buffer
       @param tx_len Size of send buffer
@@ -1827,10 +1827,50 @@ public:
     bool nfcfPolling(m5::nfc::f::PICC& picc, const uint16_t system_code, const m5::nfc::f::RequestCode request_code,
                      const m5::nfc::f::TimeSlot time_slot);
 
+    /*!
+      @brief Requset service
+      @param[out] ky_version Node key version array (at leaset node_size)
+      @param picc PICC
+      @param node_code Node code array
+      @param node_num Number of elements in the node_code array
+      @return True if successful
+      @warning FeliCa Standard only
+     */
+    bool nfcfRequestService(uint16_t key_version[], const m5::nfc::f::PICC& picc, const uint16_t* node_code,
+                            const uint8_t node_num);
 
-    bool nfcfRequestService(const m5::nfc::f::PICC& picc);
-
-
+    /*!
+      @brief Read the area that does not require authentication
+      @param[out] rx Buffer(at least 16 bytes * number of blocks)
+      @param[in/out] rx_len in:Bufffer size out:Actual size
+      @param picc PICC
+      @param service_code Service code array
+      @param service_num Number of elements in the service_code array (1-16)
+      @param block_list Block list
+      @param block_num Number of elements in the block_list array (1-8)
+      @return True if successful
+      @note The read unit is 16 bytes
+      @warning The maximum number of blocks read varies by type
+    */
+    bool nfcfReadWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,
+                                   const uint16_t* service_code, const uint8_t service_num,
+                                   const m5::nfc::f::block_t* block_list, const uint8_t block_num);
+    /*!
+      @brief Write the area that does not require authentication
+      @param picc PICC
+      @param service_code Service code array
+      @param service_num Number of elements in the service_code array (1-16)
+      @param block_list Block list
+      @param block_num Number of elements in the block_list array
+      @param tx Buffer
+      @param tx_len tx size
+      @return True if successful
+      @note The write unit is 16 bytes
+      @warning The maximum number of blocks write varies by type
+    */
+    bool nfcfWriteWithoutEncryption(const m5::nfc::f::PICC& picc, const uint16_t* service_code,
+                                    const uint8_t service_num, const m5::nfc::f::block_t* block_list,
+                                    const uint8_t block_num, const uint8_t* tx, const uint16_t tx_len);
     ///@}
 
     // For debug

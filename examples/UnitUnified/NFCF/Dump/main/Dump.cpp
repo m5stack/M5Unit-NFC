@@ -5,7 +5,7 @@
  */
 /*
   Example using M5UnitUnified for M5Cardputer-ADV with HackerCap
-  Detect NFC-F PICC
+  Dump NFC-F PICC
 */
 #include <M5Unified.h>
 #include <M5UnitUnified.h>
@@ -52,8 +52,6 @@ void setup()
         SPI.begin(spi_sclk, spi_miso, spi_mosi /* SS is shared SD, CC1101, ST25R3916 */);
     }
 
-    delay(1000);
-
     SPISettings settings = {10000000, MSBFIRST, SPI_MODE1};
     if (!Units.add(cap, SPI, settings) || !Units.begin()) {
         M5_LOGE("Failed to begin");
@@ -62,7 +60,6 @@ void setup()
             m5::utility::delay(10000);
         }
     }
-
     M5_LOGI("M5UnitUnified has been begun");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
@@ -71,6 +68,9 @@ void setup()
     }
     lcd.setFont(&fonts::Font0);
     lcd.fillScreen(0);
+    lcd.setCursor(0, 0);
+    lcd.printf("Please put the PICC and click G0");
+    M5.Log.printf("Please put the PICC and click G0\n");
 }
 
 void loop()
@@ -78,13 +78,15 @@ void loop()
     M5.update();
     Units.update();
 
-    std::vector<PICC> piccs;
-    if (nfc_f.detect(piccs)) {
-        M5.Speaker.tone(3000, 10);
-        M5.Log.printf("%zu PICC\n", piccs.size());
-        for (auto&& picc : piccs) {
-            M5.Log.printf("  %s:%s %s F:%02X DF:%04X\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
-                          picc.typeAsString().c_str(), picc.format, picc.dfc_format);
+    if (M5.BtnA.wasClicked()) {
+        lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
+        PICC picc{};
+        if (nfc_f.detect(picc)) {
+            M5.Log.printf("==== Dump %s:%s %s ====\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
+                          picc.typeAsString().c_str());
+            nfc_f.dump(picc);
+        } else {
+            M5.Log.printf("PICC NOT exists\n");
         }
     }
 }

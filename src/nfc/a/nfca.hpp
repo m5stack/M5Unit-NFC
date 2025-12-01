@@ -211,9 +211,9 @@ struct UID {
         return valid() ? is_user_block(type, block) : false;
     }
 
-    //! @breif Gets the uid string for debug
+    //! @brief Gets the uid string
     std::string uidAsString() const;
-    //! @breif Gets the type string for debug
+    //! @brief Gets the type string
     std::string typeAsString() const;
     //! @brief clear
     void clear()

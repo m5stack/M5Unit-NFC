@@ -40,7 +40,17 @@ uint8_t val_table[] = {
 };
 */
 
+uint32_t get_block_list_size(const block_t* block_list, const uint8_t block_num)
+{
+    uint32_t sz{};
+    if (block_list && block_num) {
+        for (uint_fast16_t i = 0; i < block_num; ++i) {
+            sz += 2 + block_list[i].is_3byte();
+        }
+    }
+    return sz;
 }
+}  // namespace
 
 namespace m5 {
 namespace unit {
@@ -142,7 +152,7 @@ bool UnitST25R3916::nfcfPolling(m5::nfc::f::PICC& picc, const uint16_t system_co
 
     // m5::utility::log::dump(packet, sizeof(packet), false);
 
-    uint8_t timeout_ms = TIMEOUT_POLLING * TIMEOUT_POLLING_PICC * timeslot_to_slot(time_slot);
+    uint32_t timeout_ms = TIMEOUT_POLLING * TIMEOUT_POLLING_PICC * timeslot_to_slot(time_slot);
 
     uint8_t rbuf[128]{};
     uint16_t rx_len{128};
@@ -166,24 +176,33 @@ bool UnitST25R3916::nfcfPolling(m5::nfc::f::PICC& picc, const uint16_t system_co
     return true;
 }
 
-bool UnitST25R3916::nfcfRequestService(const m5::nfc::f::PICC& picc)
+bool UnitST25R3916::nfcfRequestService(uint16_t key_version[], const m5::nfc::f::PICC& picc, const uint16_t* node_code,
+                                       const uint8_t node_num)
 {
     CHECK_MODE();
 
-    std::vector<uint8_t> packet{};
-    uint8_t node_size = 1;
-    packet.resize(1 + 8 + 1 + (2 * node_size));
+    if (!key_version || !node_code || !node_num || picc.type != Type::FeliCaStandard) {
+        return false;
+    }
 
-    uint8_t timeout_ms = 10;
+    std::vector<uint8_t> packet{};
+    uint32_t timeout_ms = 10;  // TODO
+
+    packet.resize(1 + 8 + 1 + (2 * node_num));
 
     packet[0] = m5::stl::to_underlying(CommandCode::RequestService);
     memcpy(packet.data() + 1, picc.idm.data(), picc.idm.size());
-    packet[9]  = node_size;
-    packet[10] = 0xAA;  // todo
-    packet[11] = 0xBB;  // toddo
+    packet[9]  = node_num;
+    uint8_t* p = packet.data() + 10;
+    for (uint_fast8_t i = 0; i < node_num; ++i) {
+        *p++ = node_code[i] & 0xFF;
+        *p++ = node_code[i] >> 8;
+    }
 
     uint8_t rbuf[packet.size()]{};
-    uint16_t rx_len{packet.size()};
+    uint16_t rx_len{(uint8_t)packet.size()};
+
+    // m5::utility::log::dump(packet.data(), packet.size(), false);
 
     if (!nfcfTransceive(rbuf, rx_len, packet.data(), packet.size(), timeout_ms)  //
         || rx_len < packet.size() || rbuf[1] != m5::stl::to_underlying(ResponseCode::RequestService)) {
@@ -193,8 +212,114 @@ bool UnitST25R3916::nfcfRequestService(const m5::nfc::f::PICC& picc)
         return false;
     }
 
-    m5::utility::log::dump(rbuf, rx_len, false);
+    // m5::utility::log::dump(rbuf, rx_len, false);
 
+    // TODO
+
+    return false;
+}
+
+bool UnitST25R3916::nfcfReadWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,
+                                              const uint16_t* service_code, const uint8_t service_num,
+                                              const block_t* block_list, const uint8_t block_num)
+{
+    CHECK_MODE();
+
+    auto rx_org_len = rx_len;
+    rx_len          = 0;
+
+    if (!rx || !rx_org_len || !service_code || service_num > 16 || !block_num) {
+        return false;
+    }
+
+    std::vector<uint8_t> packet{};
+    const uint32_t block_size = get_block_list_size(block_list, block_num);
+    uint32_t timeout_ms       = 10;  // TODO
+
+    packet.resize(1 + 8 + 1 + (2 * service_num) + 1 + block_size);
+
+    packet[0] = m5::stl::to_underlying(CommandCode::ReadWithoutEncryption);
+    memcpy(packet.data() + 1, picc.idm.data(), picc.idm.size());
+    packet[9]  = service_num;
+    uint8_t* p = packet.data() + 10;
+    for (uint_fast8_t i = 0; i < service_num; ++i) {
+        *p++ = service_code[i] & 0xFF;
+        *p++ = service_code[i] >> 8;
+    }
+    *p++ = block_num;
+    for (uint_fast8_t i = 0; i < block_num; ++i) {
+        block_t ble = block_list[i];
+        *p++        = ble.header;
+        if (ble.is_3byte()) {
+            *p++ = ble.block() >> 8;
+        }
+        *p++ = ble.block() & 0xFF;
+    }
+
+    //    m5::utility::log::dump(packet.data(), packet.size(), false);
+
+    uint8_t rbuf[1 + 1 + 8 + 1 + 1 + 1 + 16 * block_num]{};
+    uint16_t actual = sizeof(rbuf);
+    if (!nfcfTransceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 11) ||
+        rbuf[1] != m5::stl::to_underlying(ResponseCode::ReadWithoutEncryption) ||  //
+        (rbuf[10] /*status 1*/ != 0x00) || (rbuf[11] /*status 2*/ != 0x00)) {
+        M5_LIB_LOGE("Failed to readWithoutEncryption %u %u %02X %02X", actual, rbuf[0], rbuf[10], rbuf[11]);
+        return false;
+    }
+
+    // m5::utility::log::dump(rbuf, actual, false);
+
+    //    const uint8_t blocks = rbuf[11];
+    rx_len = std::min<uint16_t>(actual - 13, rx_org_len);
+    memcpy(rx, rbuf + 13, rx_len);
+    return true;
+}
+
+bool UnitST25R3916::nfcfWriteWithoutEncryption(const m5::nfc::f::PICC& picc, const uint16_t* service_code,
+                                               const uint8_t service_num, const m5::nfc::f::block_t* block_list,
+                                               const uint8_t block_num, const uint8_t* tx, const uint16_t tx_len)
+{
+    CHECK_MODE();
+    if (!tx || !tx_len || !service_code || service_num > 16 || !block_num) {
+        return false;
+    }
+
+    std::vector<uint8_t> packet{};
+    const uint32_t block_size = get_block_list_size(block_list, block_num);
+    uint32_t timeout_ms       = 10;  // TODO
+
+    packet.resize(1 + 8 + 1 + (2 * service_num) + 1 + block_size + tx_len);
+
+    packet[0] = m5::stl::to_underlying(CommandCode::WriteWithoutEncryption);
+    memcpy(packet.data() + 1, picc.idm.data(), picc.idm.size());
+    packet[9]  = service_num;
+    uint8_t* p = packet.data() + 10;
+    for (uint_fast8_t i = 0; i < service_num; ++i) {
+        *p++ = service_code[i] & 0xFF;
+        *p++ = service_code[i] >> 8;
+    }
+    *p++ = block_num;
+    for (uint_fast8_t i = 0; i < block_num; ++i) {
+        block_t ble = block_list[i];
+        *p++        = ble.header;
+        if (ble.is_3byte()) {
+            *p++ = ble.block() >> 8;
+        }
+        *p++ = ble.block() & 0xFF;
+    }
+    memcpy(p, tx, tx_len);
+
+    // m5::utility::log::dump(packet.data(), packet.size(), false);
+
+    uint8_t rbuf[1 + 1 + 8 + 1 + 1]{};
+    uint16_t actual = sizeof(rbuf);
+    if (!nfcfTransceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 11) ||
+        rbuf[1] != m5::stl::to_underlying(ResponseCode::WriteWithoutEncryption) ||  //
+        (rbuf[10] /*status 1*/ != 0x00) || (rbuf[11] /*status 2*/ != 0x00)) {
+        // m5::utility::log::dump(rbuf, actual, false);
+        M5_LIB_LOGE("Failed to writeWithoutEncryption %u %u %02X %02X", actual, rbuf[0], rbuf[10], rbuf[11]);
+        return false;
+    }
     return true;
 }
 

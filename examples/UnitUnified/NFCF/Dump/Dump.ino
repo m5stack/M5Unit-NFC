@@ -5,6 +5,6 @@
  */
 /*
   Example using M5UnitUnified for M5Cardputer-ADV with HackerCap
-  Detect NFC-F PICC
+  Dump NFC-F PICC
 */
-#include "main/Detect.cpp"
+#include "main/Dump.cpp"

@@ -396,14 +396,16 @@ public:
     ///@}
 
     /*!
-      @brief Dump all blocks for debug
+      @brief Dump all blocks
       @param key MIFARE classic key
+      @return True if successful
       @pre All blocks must be authenticatable using the specified key if MIFARE classic
      */
     bool dump(const m5::nfc::a::mifare::classic::Key& mkey = m5::nfc::a::mifare::classic::DEFAULT_KEY);
     /*!
       @brief Dump 1 block
       @param addr Block address
+      @return True if successful
       @note The sector to which the block belongs is dumped
       @pre The block must be authenticated if MIFARE classic
     */

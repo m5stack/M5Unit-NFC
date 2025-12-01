@@ -28,6 +28,14 @@ struct AdapterST25R3916ForF final : NFCLayerF::Adapter {
 
     virtual bool polling(m5::nfc::f::PICC& picc, const uint16_t system_code, const m5::nfc::f::RequestCode request_code,
                          const m5::nfc::f::TimeSlot time_slot) override;
+    virtual bool requestService(uint16_t key_version[], const m5::nfc::f::PICC& picc, const uint16_t* node_code,
+                                const uint8_t node_num) override;
+    virtual bool readWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,
+                                       const uint16_t* service_code, const uint8_t service_num,
+                                       const block_t* block_list, const uint8_t block_num) override;
+    virtual bool writeWithoutEncryption(const m5::nfc::f::PICC& picc, const uint16_t* service_code,
+                                        const uint8_t service_num, const m5::nfc::f::block_t* block_list,
+                                        const uint8_t block_num, const uint8_t* tx, const uint16_t tx_len) override;
 
     UnitST25R3916& _u;
 };
@@ -36,6 +44,26 @@ bool AdapterST25R3916ForF::polling(m5::nfc::f::PICC& picc, const uint16_t system
                                    const m5::nfc::f::RequestCode request_code, const m5::nfc::f::TimeSlot time_slot)
 {
     return _u.nfcfPolling(picc, system_code, request_code, time_slot);
+}
+
+bool AdapterST25R3916ForF::requestService(uint16_t key_version[], const m5::nfc::f::PICC& picc,
+                                          const uint16_t* node_code, const uint8_t node_num)
+{
+    return _u.nfcfRequestService(key_version, picc, node_code, node_num);
+}
+
+bool AdapterST25R3916ForF::readWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,
+                                                 const uint16_t* service_code, const uint8_t service_num,
+                                                 const block_t* block_list, const uint8_t block_size)
+{
+    return _u.nfcfReadWithoutEncryption(rx, rx_len, picc, service_code, service_num, block_list, block_size);
+}
+
+bool AdapterST25R3916ForF::writeWithoutEncryption(const m5::nfc::f::PICC& picc, const uint16_t* service_code,
+                                                  const uint8_t service_num, const m5::nfc::f::block_t* block_list,
+                                                  const uint8_t block_num, const uint8_t* tx, const uint16_t tx_len)
+{
+    return _u.nfcfWriteWithoutEncryption(picc, service_code, service_num, block_list, block_num, tx, tx_len);
 }
 
 //
