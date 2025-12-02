@@ -67,6 +67,7 @@ bool NFCLayerF::detect(m5::nfc::f::PICC& picc, const uint32_t timeout_ms)
 {
     std::vector<PICC> piccs;
     picc = PICC{};
+
     if (detect(piccs, TimeSlot::Slot1, timeout_ms)) {
         picc = piccs.front();
         return true;
@@ -193,6 +194,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
         picc1.type   = type;
 
         if (picc1.type != Type::Unknown) {
+            M5_LIB_LOGV("Detected:%s", picc1.idmAsString().c_str());
             piccs.push_back(picc1);
             ++detected;
         }
@@ -233,7 +235,21 @@ bool NFCLayerF::read_16(uint8_t rx[16], const block_t block, const bool check_va
     uint16_t rx_len{16};
     uint16_t sc{service_random_read};
     return rx && (check_valid ? _activePICC.valid() : true) &&
-           _impl->readWithoutEncryption(rx, rx_len, _activePICC, &sc, 1, &block, 1);
+           _impl->readWithoutEncryption(rx, rx_len, _activePICC, &sc, 1, &block, 1) && rx_len == 16;
+}
+
+bool NFCLayerF::read16(uint8_t rx[16], const m5::nfc::f::block_t block, const uint16_t service_code)
+{
+    return read16(rx, &block, 1, &service_code, 1);
+}
+
+bool NFCLayerF::read16(uint8_t rx[16], const m5::nfc::f::block_t* block, const uint8_t block_num,
+                       const uint16_t* service_code, const uint8_t service_num)
+{
+    uint16_t rx_len{16};
+    return rx && block && block_num && service_code && service_num && _activePICC.valid() &&
+           _impl->readWithoutEncryption(rx, rx_len, _activePICC, service_code, service_num, block, block_num) &&
+           rx_len == 16;
 }
 
 bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
@@ -319,11 +335,11 @@ bool NFCLayerF::ndefIsValidFormat(bool& valid)
 
 bool NFCLayerF::ndefRead(m5::nfc::ndef::TLV& msg)
 {
-    msg = TLV(Tag::Null);
+    msg = TLV{};
 
     std::vector<TLV> tlvs{};
     if (ndefRead(tlvs, tagBitsMessage)) {
-        msg = !tlvs.empty() ? tlvs.front() : TLV(Tag::Null);
+        msg = !tlvs.empty() ? tlvs.front() : TLV{};
         return true;
     }
     return false;
@@ -363,7 +379,9 @@ bool NFCLayerF::writeSupportNDEF(const bool enabled)
 
     buf[3] = enabled ? 0x01 : 0x00;
     if (write16(lite::MC, buf, 16)) {
-        _activePICC.format |= format_ndef;
+        _activePICC.format &= ~format_ndef;
+        _activePICC.format |= enabled ? format_ndef : 0x00;
+        return true;
     }
     return false;
 }
@@ -380,6 +398,7 @@ bool NFCLayerF::dump()
             M5_LIB_LOGE("Not yet");
             break;
         default:
+            M5_LIB_LOGE("Not supported %X", _activePICC.type);
             break;
     }
     return false;
@@ -414,7 +433,7 @@ bool NFCLayerF::dump_felica_lite_s()
     ret &= dump_felica_lite();
     for (uint8_t block = 0x90; block < 0x93; ++block) {
         // MAC_A(0x91) cannot be read unless written to RC.
-        if (block == 0x91) {
+        if (block == lite_s::MAC_A) {
             printf("[%04X]:MAC_A needs wrtite to RC\n", block);
             continue;
         }

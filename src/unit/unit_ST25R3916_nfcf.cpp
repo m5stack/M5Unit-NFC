@@ -199,24 +199,23 @@ bool UnitST25R3916::nfcfRequestService(uint16_t key_version[], const m5::nfc::f:
         *p++ = node_code[i] >> 8;
     }
 
-    uint8_t rbuf[packet.size()]{};
-    uint16_t rx_len{(uint8_t)packet.size()};
+    uint8_t rbuf[packet.size() + 1 /*LEN*/]{};
+    uint16_t rx_len = sizeof(rbuf);
 
     // m5::utility::log::dump(packet.data(), packet.size(), false);
 
     if (!nfcfTransceive(rbuf, rx_len, packet.data(), packet.size(), timeout_ms)  //
-        || rx_len < packet.size() || rbuf[1] != m5::stl::to_underlying(ResponseCode::RequestService)) {
-        if (rx_len) {
-            M5_LIB_LOGE("Failed to RequestService %u %u", rx_len, rbuf[0]);
-        }
+        || rx_len < sizeof(rbuf) || rbuf[1] != m5::stl::to_underlying(ResponseCode::RequestService)) {
+        M5_LIB_LOGE("Failed to RequestService %u", rx_len);
         return false;
     }
 
     // m5::utility::log::dump(rbuf, rx_len, false);
 
-    // TODO
-
-    return false;
+    for (uint_fast8_t i = 0; i < rbuf[10]; ++i) {
+        key_version[i] = ((uint16_t)rbuf[12 + i * 2] << 8) | rbuf[11 + i * 2];
+    }
+    return true;
 }
 
 bool UnitST25R3916::nfcfReadWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,

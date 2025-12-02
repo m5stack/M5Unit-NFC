@@ -23,9 +23,10 @@ m5::unit::UnitUnified Units;
 m5::unit::CapST25R3916 cap;  // ST25R3916 in the HackerCap
 m5::unit::nfc::NFCLayerF nfc_f{cap};
 
-void read_ndef(const PICC& picc)
+void read_ndef()
 {
-    TLV msg;
+    TLV msg{};
+
     // Read NDEF message TLV
     if (!nfc_f.ndefRead(msg)) {
         M5_LOGE("Failed to read");
@@ -45,10 +46,6 @@ void read_ndef(const PICC& picc)
                 } break;
                 default:
                     M5.Log.printf("SZ:%3u TNF:%u T:%s\n", r.payloadSize(), r.tnf(), r.type());
-                    lcd.printf("T:%s\n", r.type());
-                    if (strcmp(r.type(), "image/png") == 0) {
-                        lcd.drawPng(r.payload(), r.payloadSize(), lcd.width() >> 1, lcd.height() >> 1);
-                    }
                     break;
             }
         }
@@ -57,10 +54,10 @@ void read_ndef(const PICC& picc)
     }
 }
 
-void write_ndef(const PICC& picc)
+void write_ndef()
 {
-    TLV msg{};         // Message as default
-    Record r[4] = {};  // Wellknown as default
+    TLV msg{Tag::Message};  // NDEF Message TLV
+    Record r[4] = {};       // Wellknown as default
 
     // Change format to support NDEF
     if (!nfc_f.writeSupportNDEF(true)) {
@@ -79,7 +76,7 @@ void write_ndef(const PICC& picc)
     const char* zh_data = "你好 M5Stack";
     r[3].setTextPayload(zh_data, "zh");
 
-    uint32_t max_user_size = picc.userAreaSize() - 1 /* terminator TLV */;
+    uint32_t max_user_size = nfc_f.activatedPICC().userAreaSize() - 1 /* terminator TLV */;
     for (auto&& rr : r) {
         msg.push_back(rr);
         if (msg.required() > max_user_size) {
@@ -157,17 +154,17 @@ void loop()
         PICC picc{};
         if (nfc_f.detect(picc)) {
             if (nfc_f.activate(picc)) {
-                M5.Log.printf("  %s:%s %s F:%02X DF:%04X\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
+                M5.Log.printf("%s:%s %s F:%02X DF:%04X\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
                               picc.typeAsString().c_str(), picc.format, picc.dfc_format);
 
                 if (clicked) {
                     M5.Speaker.tone(2000, 30);
                     lcd.fillScreen(TFT_BLUE);
-                    read_ndef(picc);
+                    read_ndef();
                 } else if (held) {
                     M5.Speaker.tone(4000, 30);
                     lcd.fillScreen(TFT_YELLOW);
-                    write_ndef(picc);
+                    write_ndef();
                 }
                 M5.Log.printf("Please remove the PICC from the reader\n");
                 nfc_f.deactivate();

@@ -79,7 +79,7 @@ public:
       @return True if detected
       @warning Misclassification may occur depending on the distance between the reader and the PICC
      */
-    bool detect(m5::nfc::f::PICC& picc, const uint32_t timeout_ms = 25);
+    bool detect(m5::nfc::f::PICC& picc, const uint32_t timeout_ms = 100U);
     /*!
       @brief Detect PICCs
       @param[out] piccs Detected PICCs
@@ -127,6 +127,7 @@ public:
       @brief Activate a specific PICC
       @param picc PICC
       @return True if successful
+      @note For compatibility with other NFCLayer components
      */
     bool activate(const m5::nfc::f::PICC& picc);
     /*!
@@ -146,6 +147,7 @@ public:
     /*!
       @brief Deactivate PICC
       @return True if successful
+      @note For compatibility with other NFCLayer components
      */
     bool deactivate();
 
@@ -160,6 +162,28 @@ public:
     {
         return read_16(rx, block, true);
     }
+    /*!
+      @brief Read the 1 block with service code
+      @param[out] rx Output buffer
+      @param block Target block
+      @param service_code Service code
+      @return True if successful
+      @note Using readWithoutEncryption
+     */
+    bool read16(uint8_t rx[16], const m5::nfc::f::block_t block, const uint16_t service_code);
+    /*!
+      @brief Read the 1 block with service codes
+      @param[out] rx Output buffer
+      @param block Target block array
+      @param block_num Number of block
+      @return True if successful
+      @param service_code Service code array
+      @param service_num Number of service code
+      @note Using readWithoutEncryption
+     */
+    bool read16(uint8_t rx[16], const m5::nfc::f::block_t* block, const uint8_t block_num, const uint16_t* service_code,
+                const uint8_t service_num);
+
     /*!
       @brief Read any bytes from user area
       @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
@@ -193,6 +217,7 @@ public:
       @note Using writeWithoutEncryption
     */
     bool write(const m5::nfc::f::block_t sblock, const uint8_t* tx, const uint16_t tx_len);
+
     ///@}
 
     ///@note For activated PICC

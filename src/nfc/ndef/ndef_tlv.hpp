@@ -31,7 +31,7 @@ public:
     //!@brief Terminator instance
     static const TLV Terminator;
 
-    TLV() : TLV(Tag::Message)
+    TLV() : TLV(Tag::Null)
     {
     }
     explicit TLV(const Tag t) : _tag{t}
@@ -126,8 +126,6 @@ public:
      */
     uint32_t decode_t3t(const uint8_t* buf, const uint32_t len);
 
-
-    
     /*!
       @brief Clear internal buffers
       @warning Keep the tag

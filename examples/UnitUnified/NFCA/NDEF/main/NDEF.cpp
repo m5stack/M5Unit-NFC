@@ -102,7 +102,7 @@ void read_ndef()
 
 void write_ndef()
 {
-    TLV msg{};         // Message TLV as default
+    TLV msg{Tag::Message};
     Record r[5] = {};  // Wellknown as default
 
     // URI record

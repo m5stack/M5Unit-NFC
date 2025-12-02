@@ -61,7 +61,7 @@ bool NDEFLayer::read(const m5::nfc::NFCForumTag ftag, std::vector<m5::nfc::ndef:
         case NFCForumTag::Type3:
         case NFCForumTag::Type4: {
             tlvs.clear();
-            TLV tlv;
+            TLV tlv{};
             if (read_without_tlv(tlv)) {
                 tlvs.emplace_back(tlv);
                 return true;
@@ -223,9 +223,9 @@ skip:
 
 bool NDEFLayer::read_without_tlv(m5::nfc::ndef::TLV& tlv)
 {
-    tlv = TLV{Tag::Null};
+    tlv = TLV{};
 
-    TLV tmp{};  // Message as default
+    TLV tmp{Tag::Message};
     bool ret{};
     uint16_t block      = _interface.firstUserBlock();
     uint16_t last_block = _interface.lastUserBlock();
@@ -242,7 +242,7 @@ bool NDEFLayer::read_without_tlv(m5::nfc::ndef::TLV& tlv)
         return false;
     }
 
-    M5_LIB_LOGD("AB:%02X %u/%u/%u %02X/%02X %u %04X/%04X", ab.version(), ab.max_block_to_read(),
+    M5_LIB_LOGE("AB:%02X %u/%u/%u %02X/%02X %u %04X/%04X", ab.version(), ab.max_block_to_read(),
                 ab.max_block_to_write(), ab.blocks_for_ndef_storage(), ab.write_flag(), ab.access_flag(),
                 ab.current_ndef_message_length(), ab.check_sum(), ab.calculate_check_sum());
 
@@ -252,35 +252,39 @@ bool NDEFLayer::read_without_tlv(m5::nfc::ndef::TLV& tlv)
 
     // NDEF Records
     uint16_t buf_size = ((ab.current_ndef_message_length() + 15) >> 4) << 4;
-    uint8_t* buf      = static_cast<uint8_t*>(malloc(buf_size));
+    uint8_t* buf{};
 
-    if (!buf) {
-        M5_LIB_LOGE("Failed to allocate memory %u", buf_size);
-        return false;
-    }
-    actual = buf_size;
-    if (!_interface.read(buf, actual, block + 1) || actual != buf_size) {
-        M5_LIB_LOGE("Failed to read %u/%u", actual, buf_size);
-        goto skip;
-    }
+    if (buf_size) {
+        buf = static_cast<uint8_t*>(malloc(buf_size));
 
-    {
-        uint16_t decoded{};
-        uint16_t idx{};
-        while (decoded < ab.current_ndef_message_length()) {
-            Record r{};
-            auto len = r.decode(buf + decoded, actual - decoded);
-            if (!len) {
-                M5_LIB_LOGE("Failed to decode %u", idx);
-                goto skip;
-            }
-            tmp.push_back(r);
-            decoded += len;
-            ++idx;
+        if (!buf) {
+            M5_LIB_LOGE("Failed to allocate memory %u", buf_size);
+            return false;
         }
-        ret = true;
+        actual = buf_size;
+        if (!_interface.read(buf, actual, block + 1) || actual != buf_size) {
+            M5_LIB_LOGE("Failed to read %u/%u", actual, buf_size);
+            goto skip;
+        }
+
+        {
+            uint16_t decoded{};
+            uint16_t idx{};
+            while (decoded < ab.current_ndef_message_length()) {
+                Record r{};
+                auto len = r.decode(buf + decoded, actual - decoded);
+                if (!len) {
+                    M5_LIB_LOGE("Failed to decode %u", idx);
+                    goto skip;
+                }
+                tmp.push_back(r);
+                decoded += len;
+                ++idx;
+            }
+        }
         tlv = tmp;
     }
+    ret = true;
 
 skip:
     free(buf);
@@ -333,8 +337,8 @@ bool NDEFLayer::write_without_tlv(const m5::nfc::ndef::TLV& tlv)
         AttributeBlock ab{};
         ab.max_block_to_read(_interface.maximumReadBlocks());
         ab.max_block_to_write(_interface.maximumWriteBlocks());
-        ab.blocks_for_ndef_storage(last_block - first_block + 1 -1);
-        ab.write_flag(AttributeBlock::WriteFlag::InProgress);
+        ab.blocks_for_ndef_storage(last_block - first_block + 1 - 1 /* AB */);
+        ab.write_flag(AttributeBlock::WriteFlag::InProgress);  // protect
         ab.access_flag(AttributeBlock::AccessFlag::ReadWrite);
         ab.current_ndef_message_length(record_size);
         ab.update_check_sum();
@@ -343,14 +347,12 @@ bool NDEFLayer::write_without_tlv(const m5::nfc::ndef::TLV& tlv)
         if (!_interface.write(first_block, ab.block, sizeof(ab.block))) {
             goto skip;
         }
-
         // 2) Write records
         if (!_interface.write(first_block + 1, buf, record_size)) {
             goto skip;
         }
-
         // 3) Write AB again (Done)
-        ab.write_flag(AttributeBlock::WriteFlag::Done);
+        ab.write_flag(AttributeBlock::WriteFlag::Done);  // done
         ab.update_check_sum();
         if (!_interface.write(first_block, ab.block, sizeof(ab.block))) {
             goto skip;

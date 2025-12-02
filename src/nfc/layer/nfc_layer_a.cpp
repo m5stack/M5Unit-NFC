@@ -657,11 +657,11 @@ bool NFCLayerA::ndefIsValidFormat(bool& valid)
 
 bool NFCLayerA::ndefRead(m5::nfc::ndef::TLV& msg)
 {
-    msg = TLV(Tag::Null);
+    msg = TLV{};
 
     std::vector<TLV> tlvs{};
     if (ndefRead(tlvs, tagBitsMessage)) {
-        msg = !tlvs.empty() ? tlvs.front() : TLV(Tag::Null);
+        msg = !tlvs.empty() ? tlvs.front() : TLV{};
         return true;
     }
     return false;

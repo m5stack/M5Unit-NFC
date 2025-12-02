@@ -73,7 +73,7 @@ const char* get_uri_idc_string(const URIProtocol protocol)
 bool AttributeBlock::valid() const
 {
     return version() >= 0x10 && max_block_to_read() && max_block_to_write() && blocks_for_ndef_storage() &&
-           current_ndef_message_length() && write_flag() == WriteFlag::Done && (check_sum() == calculate_check_sum());
+           write_flag() == WriteFlag::Done && (check_sum() == calculate_check_sum());
 }
 
 uint16_t AttributeBlock::calculate_check_sum() const
