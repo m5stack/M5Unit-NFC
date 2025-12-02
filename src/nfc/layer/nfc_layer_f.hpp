@@ -39,7 +39,26 @@ public:
     explicit NFCLayerF(UnitST25R3916& u);
     explicit NFCLayerF(CapST25R3916& u);
 
-    ///@name Detection
+    /*!
+      @brief Is the specified PICC currently active?
+      @param picc PICC to check
+      @return True if this PICC is the one currently selected (ACTIVE state)
+    */
+    inline bool isActive(const m5::nfc::f::PICC& picc) const
+    {
+        return _activePICC.valid() && _activePICC == picc;
+    }
+    /*!
+      @brief Retrieve the currently activated PICC
+      @return Active PICC
+      @note Returns an empty PICC if no PICC is selected (no ACTIVE state)
+    */
+    const m5::nfc::f::PICC& activatedPICC() const
+    {
+        return _activePICC;
+    }
+
+    ///@name Detection and activation
     ///@{
     /*!
       @brief Polling
@@ -103,25 +122,44 @@ public:
      */
     bool detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* private_code, const uint8_t pc_size,
                 m5::nfc::f::TimeSlot time_slot = m5::nfc::f::TimeSlot::Slot16, const uint32_t timeout_ms = 500U);
+
+    /*!
+      @brief Activate a specific PICC
+      @param picc PICC
+      @return True if successful
+     */
+    bool activate(const m5::nfc::f::PICC& picc);
+    /*!
+      @brief Activate a specific PICC
+      @param picc PICC
+      @return True if successful
+      @note For compatibility with other NFCLayer components
+     */
+    inline bool reactivate(const m5::nfc::f::PICC& picc)
+    {
+        return activate(picc);
+    }
     ///@}
 
-    ///@name Request
+    ///@name For activated PICC
     ///@{
-    bool requestService(uint16_t& key_version, const m5::nfc::f::PICC& picc, const uint16_t node_code);
-    bool requestService(uint16_t key_version[], const m5::nfc::f::PICC& picc, const uint16_t* node_code,
-                        const uint8_t node_num);
-    ///@}
+    /*!
+      @brief Deactivate PICC
+      @return True if successful
+     */
+    bool deactivate();
 
-    ///@name Random Read/Write
-    ///@{
     /*!
       @brief Read the 1 block
       @param[out] rx Output buffer
-      @param picc Target PICC
       @param block Target block
-      @return True if detected
+      @return True if successful
+      @note Using readWithoutEncryption
      */
-    bool read16(uint8_t rx[16], const m5::nfc::f::PICC& picc, const m5::nfc::f::block_t block);
+    inline bool read16(uint8_t rx[16], const m5::nfc::f::block_t block)
+    {
+        return read_16(rx, block, true);
+    }
     /*!
       @brief Read any bytes from user area
       @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
@@ -129,22 +167,22 @@ public:
       @param[in/out] rx_len in:buffer size, out:actual read size
       @param sblock Block to start reading
       @return True if successful
+      @note Using readWithoutEncryption
       @warning rx in 16-byte units
     */
-    bool read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc, const m5::nfc::f::block_t sblock);
+    bool read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::block_t sblock);
 
     /*!
       @brief Write the 1 block
-      @param picc Target PICC
       @param block Target block
       @param tx Buffer
       @param tx_len Buffer size
-      @return True if detected
+      @return True if successful
+      @note Using writeWithoutEncryption
       @warning If the tx_len is less than 16 bytes, the remaining space is filled with 0x00
       @warning If the tx_len is larger than 16 bytes, only the first 16 bytes will be written
      */
-    bool write16(const m5::nfc::f::PICC& picc, const m5::nfc::f::block_t block, const uint8_t tx[16],
-                 const uint16_t tx_len);
+    bool write16(const m5::nfc::f::block_t block, const uint8_t tx[16], const uint16_t tx_len);
     /*!
       @brief Write any bytes to user area
       @details Continue writing only the user area from the first block of the user area until tx_len is satisfied
@@ -152,24 +190,87 @@ public:
       @param tx Buffer
       @param tx_len Buffer size
       @return True if successful
+      @note Using writeWithoutEncryption
     */
-    bool write(const m5::nfc::f::PICC& picc, const m5::nfc::f::block_t sblock, const uint8_t* tx,
-               const uint16_t tx_len);
+    bool write(const m5::nfc::f::block_t sblock, const uint8_t* tx, const uint16_t tx_len);
     ///@}
+
+    ///@note For activated PICC
+    ///@name For NDEF
+    ///@{
+    /*!
+      @brief Is the PICC data in NDEF format?
+      @paran[out] valid True if NDEF format
+      @return True if successful
+     */
+    bool ndefIsValidFormat(bool& valid);
+    /*!
+      @brief Read NDEF Message TLV
+      @param[out] msg Messgae If it does not exist, a Null TLV is returned
+      @return True if successful
+      @note If multiple messages of the same type exist, return the first one
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefRead(m5::nfc::ndef::TLV& msg);
+    /*!
+      @brief Read any NDEF TLV
+      @param[out] msgs Messgae vector
+      @param tagBits Bit indicating the group of NDEF tags to be read
+      @return True if successful
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefRead(std::vector<m5::nfc::ndef::TLV>& tlvs,
+                  const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsAll);
+    /*!
+      @brief Write NDEF message
+      @param msg Messgae (NDEF Message)
+      @return True if successful
+      @note Other existing tags will be preserved
+      @warning Existing NDEF message TLVs will be overwritten
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefWrite(const m5::nfc::ndef::TLV& msg);
+    /*!
+      @brief Write any NDEF Messages TLV
+      @param msgs Messgae vector
+      @return True if successful
+      @note Write starting from the beginning of the user area
+      @warning Existing NDEF Message TLVs will be overwritten,
+      @warning so exercise caution if Lock/Memory control is present
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs);
+
+    /*!
+      @brief Write changes for NDEF Support
+      @param enabled Support NDEF if true, NOT support NDEF if false
+      @return True if successful
+      @warning Only FeliCa Lite, Lite-S
+    */
+    bool writeSupportNDEF(const bool enabled);
+    ///@}
+
+    bool requestService(uint16_t& key_version, const uint16_t node_code);
+    bool requestService(uint16_t key_version[], const uint16_t* node_code, const uint8_t node_num);
+
+    ///@note For activated PICC
+    ///@note Dump
+    ///@{
 
     /*!
       @brief Dump all blocks
       @return True if successful
       @note Only the sections that can be read without authentication
      */
-    bool dump(const m5::nfc::f::PICC& picc);
+    bool dump();
     /*!
       @brief Dump 1 block
       @param block block list element
       @return True if successful
       @note Only the sections that can be read without authentication
     */
-    bool dump(const m5::nfc::f::PICC& picc, const m5::nfc::f::block_t block);
+    bool dump(const m5::nfc::f::block_t block);
+    ///@}
 
 protected:
     virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
@@ -180,10 +281,17 @@ protected:
     {
         return 16u;
     }
+    virtual uint8_t maximumReadBlocks() const override;
+    virtual uint8_t maximumWriteBlocks() const override;
 
-    bool dump_felica_lite(const m5::nfc::f::PICC& picc);
-    bool dump_felica_lite_s(const m5::nfc::f::PICC& picc);
-    bool dump_block(const m5::nfc::f::PICC& picc, m5::nfc::f::block_t block);
+    bool read_16(uint8_t rx[16], const m5::nfc::f::block_t block, const bool check_valid);
+
+    bool dump_felica_lite();
+    bool dump_felica_lite_s();
+    bool dump_block(m5::nfc::f::block_t block);
+
+protected:
+    m5::nfc::f::PICC _activePICC{};
 
 private:
     std::unique_ptr<Adapter> _impl;

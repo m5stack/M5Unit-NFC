@@ -24,6 +24,7 @@ namespace ndef {
 ///@name  CC(Capability Container)
 ///@{
 constexpr uint8_t MAGIC_NO{0xE1};  //!< Magic No. in CC
+
 //! @brief Gets the major version
 inline constexpr uint8_t get_major_version(const uint8_t v)
 {
@@ -88,7 +89,7 @@ constexpr TagBits make_tag_bits_impl(TagBits acc, Tag head, Rest... rest)
 ///@endcond
 
 /*!
-  @brief Make TagBit from
+  @brief Make TagBit from tag
   @param tags Tag(s)
   @return TagBit
  */
@@ -127,92 +128,107 @@ inline bool is_terminator_tag(const uint8_t t)
 }
 
 /*!
-  @enum TNF
-  @brief Type Name Field for NDEF Record
+  @struct AttributeBlock
+  @brief For Type 3 tag (T3T)
  */
-enum class TNF : uint8_t {
-    Empty,      //!< Empry
-    Wellknown,  //!< NFC Forum well-known-type
-    MIMEMedia,  //!< Media-type as define in RFC2046
-    URI,        //!< Absolute URI as define in RFC3986
-    External,   //!< NFC Forum external type
-    Unknown,    //!< Unknown
-    Unchanged,  //!< Unchanged
-    Reserved,   //!< Reserved
-};
+struct AttributeBlock {
+    /*!
+      @enum WriteFlag
+      @brief Flag for fault tolerance
+     */
+    enum class WriteFlag : uint8_t {
+        Done,               //!< Done
+        InProgress = 0x0F,  //!< Write in progress
+    };
 
-/*!
-  @struct Attribute
-  @brief NDEF Record attribute (1st byte)
- */
-struct Attribute {
-    ///@name Bit field
-    ///@{
-    static constexpr uint8_t MB{0x80};  //!< Message Begin
-    static constexpr uint8_t ME{0x40};  //!< Message End
-    static constexpr uint8_t CF{0x20};  //!< Chunked Flag
-    static constexpr uint8_t SR{0x10};  //!< Short Flag
-    static constexpr uint8_t IL{0x08};  //!< ID Length (If disabled (specified as 0), ID LENGTH and ID can be omitted)
-    static constexpr uint8_t TNF_MASK{0x07};  //!< Type Name Format
-    ///@}
+    /*!
+      @enum AccessFlag
+      @brief Permission to read and write
+    */
+    enum class AccessFlag : uint8_t {
+        ReadOnly,   //!< Allow read only
+        ReadWrite,  //!< Allow read and write
+    };
+    AttributeBlock() : block{DEFAULT_VERSION}
+    {
+    }
 
-    ///@name Getter
-    ///@{
-    inline bool messageBegin() const
+    // Getter
+    inline uint8_t version() const
     {
-        return value & MB;
+        return block[0];
     }
-    inline bool messageEnd() const
+    inline uint8_t max_block_to_read() const
     {
-        return value & ME;
+        return block[1];
     }
-    inline bool chunk() const
+    inline uint8_t max_block_to_write() const
     {
-        return value & CF;
+        return block[2];
     }
-    inline bool shortRecord() const
+    inline uint16_t blocks_for_ndef_storage() const
     {
-        return value & SR;
+        return ((uint16_t)block[3] << 8) | block[4];
     }
-    inline bool idLength() const
+    inline WriteFlag write_flag() const
     {
-        return value & IL;
+        return (block[9] == 0) ? WriteFlag::Done : WriteFlag::InProgress;
     }
-    inline TNF tnf() const
+    inline AccessFlag access_flag() const
     {
-        return static_cast<TNF>(value & TNF_MASK);
+        return (AccessFlag)block[10];
     }
-    ///@}
+    inline uint32_t current_ndef_message_length() const
+    {
+        return ((uint32_t)block[11] << 16) | ((uint32_t)block[12] << 8) | block[13];
+    }
+    inline uint16_t check_sum() const
+    {
+        return ((uint16_t)block[14] << 8) | block[15];
+    }
 
-    ///@name Setter
-    ///@{
-    inline void messageBegin(const bool b)
+    // Setter
+    inline void version(const uint8_t ver)
     {
-        value = (value & ~MB) | (b ? MB : 0);
+        block[0] = ver;
     }
-    inline void messageEnd(const bool b)
+    inline void max_block_to_read(const uint8_t b)
     {
-        value = (value & ~ME) | (b ? ME : 0);
+        block[1] = b;
     }
-    inline void chunk(const bool b)
+    inline void max_block_to_write(const uint8_t b)
     {
-        value = (value & ~CF) | (b ? CF : 0);
+        block[2] = b;
     }
-    inline void shortRecord(const bool b)
+    inline void blocks_for_ndef_storage(const uint16_t s)
     {
-        value = (value & ~SR) | (b ? SR : 0);
+        block[3] = s >> 8;
+        block[4] = s & 0xFF;
     }
-    inline void idLength(const bool b)
+    inline void write_flag(const WriteFlag f)
     {
-        value = (value & ~IL) | (b ? IL : 0);
+        block[9] = m5::stl::to_underlying(f);
     }
-    inline void tnf(const TNF t)
+    inline void access_flag(const AccessFlag f)
     {
-        value = (value & ~TNF_MASK) | (m5::stl::to_underlying(t) & TNF_MASK);
+        block[10] = m5::stl::to_underlying(f);
     }
-    ///@}
+    inline void current_ndef_message_length(const uint32_t len)
+    {
+        block[11] = len >> 16;
+        block[12] = len >> 8;
+        block[13] = len & 0xFF;
+    }
 
-    uint8_t value{};
+    //
+    bool valid() const;
+    uint16_t calculate_check_sum() const;
+    uint16_t update_check_sum();
+
+    static constexpr uint8_t DEFAULT_VERSION{0x10};
+
+    //
+    uint8_t block[16]{};
 };
 
 /*!

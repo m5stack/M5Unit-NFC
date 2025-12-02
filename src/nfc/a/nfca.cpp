@@ -10,6 +10,8 @@
 #include "nfca.hpp"
 #include <M5Utility.hpp>
 
+using namespace m5::nfc;
+
 namespace {
 constexpr char name_unknown[]       = "Unknown";
 constexpr char name_classic_mini[]  = "MIFARE Classic Mini";
@@ -103,6 +105,17 @@ constexpr uint16_t user_area_size_table[] = {
     0,    0,    0,                          // Desfire
     144,  48,   144,  208,  144, 504, 888,  // NTAG
     0,    0,
+};
+
+constexpr NFCForumTag nfc_forum_tag_table[] = {
+    NFCForumTag::None,                                                               //
+    NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,   // Classic
+    NFCForumTag::Type2, NFCForumTag::Type2,                                          // UltraLight
+    NFCForumTag::None,  NFCForumTag::None,                                           // Plus
+    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                      // DESFire
+    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,  // NTAG
+    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                      // NTAG
+    NFCForumTag::None,  NFCForumTag::None,                                           //
 };
 
 }  // namespace
@@ -243,6 +256,13 @@ Type version_to_type(const uint8_t info[10])
     return Type::Unknown;
 }
 
+m5::nfc::NFCForumTag get_nfc_forum_tag_type(const Type t)
+{
+    uint8_t idx = m5::stl::to_underlying(t);
+    return nfc_forum_tag_table[idx < m5::stl::size(max_block_table) ? idx : 0];
+}
+
+//
 std::string PICC::uidAsString() const
 {
     char buf[2 * 10 + 1]{};

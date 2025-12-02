@@ -256,14 +256,15 @@ bool UnitST25R3916::nfcfReadWithoutEncryption(uint8_t* rx, uint16_t& rx_len, con
         *p++ = ble.block() & 0xFF;
     }
 
-    //    m5::utility::log::dump(packet.data(), packet.size(), false);
+    // m5::utility::log::dump(packet.data(), packet.size(), false);
 
     uint8_t rbuf[1 + 1 + 8 + 1 + 1 + 1 + 16 * block_num]{};
     uint16_t actual = sizeof(rbuf);
     if (!nfcfTransceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 11) ||
         rbuf[1] != m5::stl::to_underlying(ResponseCode::ReadWithoutEncryption) ||  //
         (rbuf[10] /*status 1*/ != 0x00) || (rbuf[11] /*status 2*/ != 0x00)) {
-        M5_LIB_LOGE("Failed to readWithoutEncryption %u %u %02X %02X", actual, rbuf[0], rbuf[10], rbuf[11]);
+        M5_LIB_LOGE("Failed to readWithoutEncryption (%02X, %u) %u %u %02X %02X", block_list[0].block(), rx_org_len,
+                    actual, rbuf[0], rbuf[10], rbuf[11]);
         return false;
     }
 
@@ -317,7 +318,8 @@ bool UnitST25R3916::nfcfWriteWithoutEncryption(const m5::nfc::f::PICC& picc, con
         rbuf[1] != m5::stl::to_underlying(ResponseCode::WriteWithoutEncryption) ||  //
         (rbuf[10] /*status 1*/ != 0x00) || (rbuf[11] /*status 2*/ != 0x00)) {
         // m5::utility::log::dump(rbuf, actual, false);
-        M5_LIB_LOGE("Failed to writeWithoutEncryption %u %u %02X %02X", actual, rbuf[0], rbuf[10], rbuf[11]);
+        M5_LIB_LOGE("Failed to writeWithoutEncryption (%02X, %u) %u %u %02X %02X", block_list[0].block(), tx_len,
+                    actual, rbuf[0], rbuf[10], rbuf[11]);
         return false;
     }
     return true;

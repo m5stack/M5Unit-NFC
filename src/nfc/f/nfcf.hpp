@@ -10,7 +10,9 @@
 #ifndef M5_UNIT_UNIFIED_NFC_NFC_F_NFCF_HPP
 #define M5_UNIT_UNIFIED_NFC_NFC_F_NFCF_HPP
 
+#include "nfc/nfc.hpp"
 #include <cstdint>
+#include <cstring>
 #include <array>
 
 namespace m5 {
@@ -36,6 +38,12 @@ enum class Type : uint8_t {
     FeliCaPlug,      //!< Plug
     //    FeliCaLink,      //!< Link
 };
+
+//! @brief Get NFC Forum Tag Type from PICC type
+inline m5::nfc::NFCForumTag get_nfc_forum_tag_type(const Type t)
+{
+    return (t != Type::Unknown) ? NFCForumTag::Type3 : NFCForumTag::None;
+}
 
 /*!
   @enum Mode
@@ -276,6 +284,8 @@ inline bool is_user_block(const Type t, const uint16_t block)
 }
 //! @brief Maximum number of blocks that can be read simultaneously
 uint8_t get_maxumum_read_blocks(const Type t);
+//! @brief Maximum number of blocks that can be write simultaneously
+uint8_t get_maxumum_write_blocks(const Type t);
 
 ///@name RequestService
 ///@{
@@ -307,18 +317,43 @@ struct PICC {
     {
         return valid() ? get_user_area_size(type) : 0;
     }
-    //! @brief Gets the first user block/page address
+    //! @brief Gets the first user block
     inline uint16_t firstUserBlock() const
     {
         return valid() ? get_first_user_block(type) : 0xFFFF;
     }
+    //! @brief Gets the last user block
     inline uint16_t lastUserBlock() const
     {
         return valid() ? get_last_user_block(type) : 0xFFFF;
     }
+    //! @brief Is user block?
     inline bool isUserBlock(const block_t block) const
     {
         return is_user_block(type, block);
+    }
+
+    //! @brief Maximum number of blocks that can be read simultaneously
+    uint8_t maximumReadBlocks() const
+    {
+        return get_maxumum_read_blocks(type);
+    }
+    //! @brief Maximum number of blocks that can be write simultaneously
+    uint8_t maximumWriteBlocks() const
+    {
+        return get_maxumum_write_blocks(type);
+    }
+
+    //! @brief Check format
+    bool check_format(const Format f)
+    {
+        return (format & f) != 0;
+    }
+
+    //! @brief NFC ForumTag
+    inline NFCForumTag nfcForumTagType() const
+    {
+        return get_nfc_forum_tag_type(type);
     }
 
     //! @brief Gets the IDm string
@@ -332,7 +367,7 @@ struct PICC {
 //! @brief Equal? (Only IDm,PMm)
 inline bool operator==(const PICC& a, const PICC& b)
 {
-    return a.idm == b.idm && a.pmm == b.pmm;
+    return a.valid() && b.valid() && a.idm == b.idm && a.pmm == b.pmm && a.type == b.type;
 }
 //! @brief Not equal?
 inline bool operator!=(const PICC& a, const PICC& b)

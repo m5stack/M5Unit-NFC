@@ -240,6 +240,30 @@ uint32_t TLV::decode(const uint8_t* buf, const uint32_t len)
     return buf - top;
 }
 
+uint32_t TLV::decode_t3t(const uint8_t* buf, const uint32_t len)
+{
+    clear();
+
+    uint32_t decoded{};
+    uint16_t payload_len{};
+    const auto top = buf;
+
+    if (!buf || !len || len < 16) {
+        return 0;
+    }
+
+    // Attribute block (16 byte)
+    AttributeBlock ab{};
+    memcpy(ab.block, buf, 16);
+
+    M5_LIB_LOGE("AB:%02X %u/%u/%u %02X/%02X %u %04X/%04X", ab.version(), ab.max_block_to_read(),
+                ab.max_block_to_write(), ab.blocks_for_ndef_storage(), ab.write_flag(), ab.access_flag(),
+                ab.current_ndef_message_length(), ab.check_sum(), ab.calculate_check_sum());
+
+    //    _tag = Tag::Message;
+    return false;
+}
+
 void TLV::clear()
 {
     _tag = Tag::Null;

@@ -118,6 +118,17 @@ public:
     uint32_t decode(const uint8_t* buf, const uint32_t len);
 
     /*!
+      @brief Decode
+      @param buf Pointer of the T3T buffer
+      @param len Buffer length
+      @retval > 0 Decoded length
+      @retval == 0 Error
+     */
+    uint32_t decode_t3t(const uint8_t* buf, const uint32_t len);
+
+
+    
+    /*!
       @brief Clear internal buffers
       @warning Keep the tag
     */

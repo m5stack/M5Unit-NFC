@@ -669,18 +669,18 @@ bool NFCLayerA::ndefRead(m5::nfc::ndef::TLV& msg)
 
 bool NFCLayerA::ndefRead(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits)
 {
-    return _activePICC.supportsNFC() && _ndef.read(tlvs, tagBits);
+    return _activePICC.supportsNFC() && _ndef.read(_activePICC.nfcForumTagType(), tlvs, tagBits);
 }
 
 bool NFCLayerA::ndefWrite(const m5::nfc::ndef::TLV& msg)
 {
     std::vector<TLV> tlvs = {msg};
-    return msg.isMessageTLV() && _activePICC.supportsNFC() && _ndef.write(tlvs);
+    return msg.isMessageTLV() && _activePICC.supportsNFC() && _ndef.write(_activePICC.nfcForumTagType(), tlvs);
 }
 
 bool NFCLayerA::ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs)
 {
-    return _activePICC.supportsNFC() && _ndef.write(tlvs, false);
+    return _activePICC.supportsNFC() && _ndef.write(_activePICC.nfcForumTagType(), tlvs, false);
 }
 
 //

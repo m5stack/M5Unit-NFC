@@ -102,6 +102,8 @@ namespace unit {
 // -------------------------------- For NFC-A
 bool UnitST25R3916::configure_nfc_a()
 {
+    _encrypted = false;
+
 #if 0    
     //
     // ISO14443A
@@ -282,12 +284,10 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
     }
 
     // Resolve collision
-    // M5_LIB_LOGE(">>> ANTICOLL");
     uint8_t rbuf[5]{};
     if (!nfca_anti_collision(rbuf, lv)) {
         return false;
     }
-    // M5_LIB_LOGE("<<< ANTICOLL");
 
     // Copy PICC
     memcpy(picc.uid + (lv - 1) * 3, rbuf + (rbuf[0] == 0x88), 4 - (rbuf[0] == 0x88));
@@ -510,14 +510,6 @@ bool UnitST25R3916::mifare_classic_send_encrypt(const uint8_t* tx, const uint16_
 
     uint8_t sbytes = total_bits >> 3;
     uint8_t sbits  = total_bits & 0x07;
-
-    /*
-    M5_LIB_LOGE(">>>>> send:%u/%u", sbytes, sbits);
-    m5::utility::log::dump(tx, tx_len, false);
-    m5::utility::log::dump(tmp_tx, sizeof(tmp_tx), false);
-    m5::utility::log::dump(enc_tx, sizeof(enc_tx), false);
-    m5::utility::log::dump(bitstream, sizeof(bitstream), false);
-    */
 
     if (!writeSettingsISO14443A(no_tx_par) ||                                                         //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                  //
@@ -747,7 +739,7 @@ bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t sp
                                          : TIMEOUT_FAST_READ_32PAGE * 2;
 
     if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), timeout)) {
-        M5_LIB_LOGE("Failed to transcive");
+        M5_LIB_LOGE("Failed to transceive");
         return false;
     }
     return true;

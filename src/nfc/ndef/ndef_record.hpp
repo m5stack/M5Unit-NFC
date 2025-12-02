@@ -21,6 +21,95 @@ namespace ndef {
 class TLV;
 
 /*!
+  @enum TNF
+  @brief Type Name Field for NDEF Record
+ */
+enum class TNF : uint8_t {
+    Empty,      //!< Empry
+    Wellknown,  //!< NFC Forum well-known-type
+    MIMEMedia,  //!< Media-type as define in RFC2046
+    URI,        //!< Absolute URI as define in RFC3986
+    External,   //!< NFC Forum external type
+    Unknown,    //!< Unknown
+    Unchanged,  //!< Unchanged
+    Reserved,   //!< Reserved
+};
+
+/*!
+  @struct Attribute
+  @brief NDEF Record attribute (1st byte)
+ */
+struct Attribute {
+    ///@name Bit field
+    ///@{
+    static constexpr uint8_t MB{0x80};  //!< Message Begin
+    static constexpr uint8_t ME{0x40};  //!< Message End
+    static constexpr uint8_t CF{0x20};  //!< Chunked Flag
+    static constexpr uint8_t SR{0x10};  //!< Short Flag
+    static constexpr uint8_t IL{0x08};  //!< ID Length (If disabled (specified as 0), ID LENGTH and ID can be omitted)
+    static constexpr uint8_t TNF_MASK{0x07};  //!< Type Name Format
+    ///@}
+
+    ///@name Getter
+    ///@{
+    inline bool messageBegin() const
+    {
+        return value & MB;
+    }
+    inline bool messageEnd() const
+    {
+        return value & ME;
+    }
+    inline bool chunk() const
+    {
+        return value & CF;
+    }
+    inline bool shortRecord() const
+    {
+        return value & SR;
+    }
+    inline bool idLength() const
+    {
+        return value & IL;
+    }
+    inline TNF tnf() const
+    {
+        return static_cast<TNF>(value & TNF_MASK);
+    }
+    ///@}
+
+    ///@name Setter
+    ///@{
+    inline void messageBegin(const bool b)
+    {
+        value = (value & ~MB) | (b ? MB : 0);
+    }
+    inline void messageEnd(const bool b)
+    {
+        value = (value & ~ME) | (b ? ME : 0);
+    }
+    inline void chunk(const bool b)
+    {
+        value = (value & ~CF) | (b ? CF : 0);
+    }
+    inline void shortRecord(const bool b)
+    {
+        value = (value & ~SR) | (b ? SR : 0);
+    }
+    inline void idLength(const bool b)
+    {
+        value = (value & ~IL) | (b ? IL : 0);
+    }
+    inline void tnf(const TNF t)
+    {
+        value = (value & ~TNF_MASK) | (m5::stl::to_underlying(t) & TNF_MASK);
+    }
+    ///@}
+
+    uint8_t value{};
+};
+
+/*!
   @class Record
   @brief NDEF Record
   @warning CF is not supported

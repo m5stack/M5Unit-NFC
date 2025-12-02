@@ -10,7 +10,9 @@
 #ifndef M5_UNIT_UNIFIED_NFC_NFC_A_NFCA_HPP
 #define M5_UNIT_UNIFIED_NFC_NFC_A_NFCA_HPP
 
+#include "nfc/nfc.hpp"
 #include "mifare.hpp"
+#include <cstdint>
 #include <cstring>
 
 namespace m5 {
@@ -49,6 +51,9 @@ enum class Type : uint8_t {
     ISO_18092,            //!< PICC compliant with ISO/IEC 18092 (NFC)
     NotCompleted = 0xFF,  //!< SAK indicates UID is not complete
 };
+
+//! @brief Get NFC Forum Tag Type from PICC type
+m5::nfc::NFCForumTag get_nfc_forum_tag_type(const Type t);
 
 //! @brief Is type MIFARE Classic?
 inline bool is_mifare_classic(const Type t)
@@ -104,10 +109,7 @@ inline bool is_sak_completed(const uint8_t sak)
   @warning This is a preliminary diagnosis, a more accurate diagnosis is required
  */
 Type sak_to_type(const uint8_t sak);
-
-/*!
-  @brief Inferring the type from GterVersionL3
- */
+//!  @brief Inferring the type from GetVersionL3
 Type version_to_type(const uint8_t info[10]);
 
 //! @brief Gets the number of blocks
@@ -130,6 +132,7 @@ uint16_t get_first_user_block(const Type t);
 uint16_t get_last_user_block(const Type t);
 //! @brief Is block user area?
 bool is_user_block(const Type t, const uint16_t block);
+
 //! @brief Calculate bcc8
 uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len);
 
@@ -170,7 +173,7 @@ struct PICC {
     {
         return valid() && is_ntag(type);
     }
-    //! @brief Supports NFC tag?
+    //! @brief Supports NFC?
     inline bool supportsNFC() const
     {
         return valid() && supports_NFC(type);
@@ -199,6 +202,12 @@ struct PICC {
     {
         return valid() ? get_last_user_block(type) : 0xFFFF;
     }
+    //! @brief Is user block?
+    inline bool isUserBlock(const uint8_t block) const
+    {
+        return valid() ? is_user_block(type, block) : false;
+    }
+
     //! @brief Retrieve the last 4 bytes
     void tail4(uint8_t buf[4]) const
     {
@@ -206,9 +215,11 @@ struct PICC {
             memcpy(buf, uid + size - 4, 4);
         }
     }
-    inline bool isUserBlock(const uint8_t block) const
+
+    //! @brief NFC ForumTag
+    inline NFCForumTag nfcForumTagType() const
     {
-        return valid() ? is_user_block(type, block) : false;
+        return get_nfc_forum_tag_type(type);
     }
 
     //! @brief Gets the uid string

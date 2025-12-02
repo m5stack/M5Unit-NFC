@@ -22,7 +22,9 @@ constexpr const char* name_table[] = {name_unknown, name_standard, name_lite, na
 // Maximum block number (Note that there are gaps in the blocks)
 constexpr uint16_t max_block_table[] = {0, 0, 0x88, 0xA0, 0};
 // Maximum number of blocks that can be read simultaneously
-constexpr uint16_t max_read_block_table[] = {1, 8, 4, 4, 4};
+constexpr uint16_t max_read_block_table[] = {0, 8, 4, 4, 4};
+// Maximum number of blocks that can be write simultaneously
+constexpr uint16_t max_write_block_table[] = {0, 1, 1, 1, 1};
 
 // [first/last]
 constexpr uint8_t user_block_table[][2] = {{0XFF, 0XFF}, {0XFF, 0XFF}, {0x00, 0x0D}, {0x00, 0x0D}, {0XFF, 0XFF}};
@@ -74,6 +76,12 @@ uint8_t get_maxumum_read_blocks(const Type t)
 {
     uint8_t idx = m5::stl::to_underlying(t);
     return max_read_block_table[idx < m5::stl::size(max_block_table) ? idx : 0];
+}
+
+uint8_t get_maxumum_write_blocks(const Type t)
+{
+    uint8_t idx = m5::stl::to_underlying(t);
+    return max_write_block_table[idx < m5::stl::size(max_block_table) ? idx : 0];
 }
 
 //

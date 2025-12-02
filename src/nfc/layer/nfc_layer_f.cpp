@@ -46,6 +46,11 @@ void print_block(const uint8_t buf[16], const int16_t block)
     ::puts(tmp);
 }
 
+inline bool is_same_idm_and_pmm(const PICC& a, const PICC& b)
+{
+    return a.idm == b.idm && a.pmm == b.pmm;
+}
+
 }  // namespace
 
 namespace m5 {
@@ -94,6 +99,8 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             continue;
         }
 
+        _activePICC = picc1;
+
         // 2. Check IDm for NFCIP-1 Transport Protocol / DFC
         if (picc1.idm[0] == 0x01 && picc1.idm[1] == 0xFE) {
             format |= format_nfcip1;
@@ -114,7 +121,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
                     continue;
                 }
                 if (polling(picc2, code, RequestCode::None, time_slot)) {
-                    if (picc1 != picc2) {
+                    if (!is_same_idm_and_pmm(picc1, picc2)) {
                         continue;
                     }
                     format |= format_private;
@@ -128,7 +135,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
 
         // 4. Check NDEF
         if (polling(picc2, system_code_ndef, RequestCode::None, time_slot)) {
-            if (picc1 != picc2) {
+            if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
             format |= format_ndef;
@@ -136,7 +143,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
 
         // 5. Check shared area
         if (polling(picc2, system_code_shared, RequestCode::None, time_slot)) {
-            if (picc1 != picc2) {
+            if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
             format |= format_shared;
@@ -144,7 +151,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
 
         // 6. Check DFC
         if (polling(picc2, system_code_dfc, RequestCode::None, time_slot)) {
-            if (picc1 != picc2) {
+            if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
             format |= format_dfc;
@@ -152,7 +159,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
 
         // 7. Check secure
         if (polling(picc2, system_code_felica_secure_id, RequestCode::None, time_slot)) {
-            if (picc1 != picc2) {
+            if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
             format |= format_secure;
@@ -160,7 +167,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
 
         // Type identification
         if (polling(picc2, system_code_felica_plug, RequestCode::None, time_slot)) {
-            if (picc1 != picc2) {
+            if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
             type = Type::FeliCaPlug;
@@ -168,8 +175,8 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             // Lite or LiteS?
             if (format & format_dfc) {
                 uint8_t rbuf[16]{};
-                type = read16(rbuf, picc1, 0xA0 /* CRC_CHECK */) ? Type::FeliCaLiteS : Type::FeliCaLite;
-                if (!read16(rbuf, picc1, 0x82)) {  // Read ID(DFC format)
+                type = read_16(rbuf, 0xA0 /* CRC_CHECK */, false) ? Type::FeliCaLiteS : Type::FeliCaLite;
+                if (!read_16(rbuf, 0x82, false)) {  // Read ID(DFC format)
                     continue;
                 }
                 picc1.dfc_format = rbuf[8] | ((uint16_t)rbuf[9] << 8);
@@ -185,39 +192,51 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
         picc1.format = format;
         picc1.type   = type;
 
-        piccs.push_back(picc1);
-        ++detected;
+        if (picc1.type != Type::Unknown) {
+            piccs.push_back(picc1);
+            ++detected;
+        }
+        deactivate();
     } while (detected < slots && m5::utility::millis() <= timeout_at);
-
+    deactivate();
     return detected > 0;
 }
 
-bool NFCLayerF::requestService(uint16_t& key_version, const m5::nfc::f::PICC& picc, const uint16_t node_code)
+bool NFCLayerF::activate(const m5::nfc::f::PICC& picc)
 {
-    uint16_t n[1] = {node_code};
-    uint16_t k[1]{};
-    key_version = KEY_VERIOSN_NONE;
-    if (requestService(k, picc, n, 1)) {
-        key_version = k[0];
+    if (picc.valid()) {
+        _activePICC = picc;
         return true;
     }
     return false;
 }
 
-bool NFCLayerF::requestService(uint16_t key_version[], const m5::nfc::f::PICC& picc, const uint16_t* node_code,
-                               const uint8_t node_size)
+bool NFCLayerF::deactivate()
 {
-    return _impl->requestService(key_version, picc, node_code, node_size);
+    _activePICC = PICC{};
+    return true;
 }
 
-bool NFCLayerF::read16(uint8_t rx[16], const m5::nfc::f::PICC& picc, const block_t block)
+bool NFCLayerF::requestService(uint16_t& key_version, const uint16_t node_code)
+{
+    key_version = KEY_VERIOSN_NONE;
+    return requestService(&key_version, &node_code, 1);
+}
+
+bool NFCLayerF::requestService(uint16_t key_version[], const uint16_t* node_code, const uint8_t node_size)
+{
+    return _activePICC.valid() && _impl->requestService(key_version, _activePICC, node_code, node_size);
+}
+
+bool NFCLayerF::read_16(uint8_t rx[16], const block_t block, const bool check_valid)
 {
     uint16_t rx_len{16};
     uint16_t sc{service_random_read};
-    return rx && _impl->readWithoutEncryption(rx, rx_len, picc, &sc, 1, &block, 1);
+    return rx && (check_valid ? _activePICC.valid() : true) &&
+           _impl->readWithoutEncryption(rx, rx_len, _activePICC, &sc, 1, &block, 1);
 }
 
-bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc, const block_t sblock)
+bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
 {
     auto rx_len_org = rx_len;
     rx_len          = 0;
@@ -225,12 +244,13 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc
     uint16_t sc{service_random_read};
     uint16_t start  = sblock.block();
     uint16_t blocks = rx_len_org >> 4;
-    uint16_t last   = std::min<uint16_t>(picc.lastUserBlock(), start + blocks - 1);
-    if (!rx || !rx_len_org || !picc.isUserBlock(sblock) || !picc.isUserBlock(last)) {
+    uint16_t last   = std::min<uint16_t>(_activePICC.lastUserBlock(), start + blocks - 1);
+    if (!_activePICC.valid() || !rx || !rx_len_org || !_activePICC.isUserBlock(sblock) ||
+        !_activePICC.isUserBlock(last)) {
         return false;
     }
 
-    const uint16_t batch_size = get_maxumum_read_blocks(picc.type);
+    const uint16_t batch_size = get_maxumum_read_blocks(_activePICC.type);
     uint8_t rbuf[16 * batch_size]{};
     block_t block{start};
     auto out = rx;
@@ -246,7 +266,7 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc
         }
         // M5_LIB_LOGE("rx_len:%u block_list_num:%u", actual, num);
 
-        if (!_impl->readWithoutEncryption(rbuf, actual, picc, &sc, 1, block_list, num) || actual != 16 * num) {
+        if (!_impl->readWithoutEncryption(rbuf, actual, _activePICC, &sc, 1, block_list, num) || actual != 16 * num) {
             return false;
         }
         memcpy(out, rbuf, actual);
@@ -258,29 +278,23 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc
     return true;
 }
 
-bool NFCLayerF::write16(const m5::nfc::f::PICC& picc, const m5::nfc::f::block_t block, const uint8_t tx[16],
-                        const uint16_t tx_len)
+bool NFCLayerF::write16(const m5::nfc::f::block_t block, const uint8_t tx[16], const uint16_t tx_len)
 {
-    if (tx && tx_len) {
+    if (_activePICC.valid() && tx && tx_len) {
         uint16_t sc{service_random_read_write};
         uint8_t buf[16]{};
         memcpy(buf, tx, std::min<uint16_t>(16u, tx_len));
-        return _impl->writeWithoutEncryption(picc, &sc, 1, &block, 1, buf, 16);
+        return _impl->writeWithoutEncryption(_activePICC, &sc, 1, &block, 1, buf, 16);
     }
     return false;
 }
 
-bool NFCLayerF::write(const m5::nfc::f::PICC& picc, const m5::nfc::f::block_t sblock, const uint8_t* tx,
-                      const uint16_t tx_len)
+bool NFCLayerF::write(const m5::nfc::f::block_t sblock, const uint8_t* tx, const uint16_t tx_len)
 {
-    if (!tx || !tx_len) {
-        return false;
-    }
-
     uint16_t start  = sblock.block();
     uint16_t blocks = (tx_len + 15) >> 4;
-    uint16_t last   = std::min<uint16_t>(picc.lastUserBlock(), start + blocks - 1);
-    if (!tx || !tx_len || !picc.isUserBlock(sblock) || !picc.isUserBlock(last)) {
+    uint16_t last   = std::min<uint16_t>(_activePICC.lastUserBlock(), start + blocks - 1);
+    if (!_activePICC.valid() || !tx || !tx_len || !_activePICC.isUserBlock(sblock) || !_activePICC.isUserBlock(last)) {
         return false;
     }
 
@@ -288,7 +302,7 @@ bool NFCLayerF::write(const m5::nfc::f::PICC& picc, const m5::nfc::f::block_t sb
     for (uint16_t block = start; block <= last; ++block) {
         const uint16_t wsize = std::min<uint16_t>(tx_len - written, 16);
         // M5_LIB_LOGE("write:%02X %u", block, wsize);
-        if (!write16(picc, block, tx + written, wsize)) {
+        if (!write16(block, tx + written, wsize)) {
             return false;
         }
         written += wsize;
@@ -296,32 +310,89 @@ bool NFCLayerF::write(const m5::nfc::f::PICC& picc, const m5::nfc::f::block_t sb
     return true;
 }
 
-bool NFCLayerF::dump(const PICC& picc)
+bool NFCLayerF::ndefIsValidFormat(bool& valid)
 {
-    switch (picc.type) {
+    valid = false;
+    /* TODO NDEF*/
+    return _ndef.isValidFormat(valid);
+}
+
+bool NFCLayerF::ndefRead(m5::nfc::ndef::TLV& msg)
+{
+    msg = TLV(Tag::Null);
+
+    std::vector<TLV> tlvs{};
+    if (ndefRead(tlvs, tagBitsMessage)) {
+        msg = !tlvs.empty() ? tlvs.front() : TLV(Tag::Null);
+        return true;
+    }
+    return false;
+}
+
+bool NFCLayerF::ndefRead(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits)
+{
+    return _activePICC.valid() && _ndef.read(_activePICC.nfcForumTagType(), tlvs, tagBits);
+}
+
+bool NFCLayerF::ndefWrite(const m5::nfc::ndef::TLV& msg)
+{
+    std::vector<TLV> tlvs = {msg};
+    return msg.isMessageTLV() && _activePICC.valid() && _ndef.write(_activePICC.nfcForumTagType(), tlvs);
+}
+
+bool NFCLayerF::ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs)
+{
+    return _activePICC.valid() && _ndef.write(_activePICC.nfcForumTagType(), tlvs, false);
+}
+
+bool NFCLayerF::writeSupportNDEF(const bool enabled)
+{
+    if (!_activePICC.valid() || (_activePICC.type != Type::FeliCaLite && _activePICC.type != Type::FeliCaLiteS)) {
+        return false;
+    }
+
+    uint8_t buf[16]{};
+    if (!read16(buf, lite::MC /* Same as lite_s::MC */)) {
+        return false;
+    }
+
+    // Already?
+    if (buf[3 /* SYS_OP */] == (enabled ? 0x01 : 0x00)) {
+        return true;
+    }
+
+    buf[3] = enabled ? 0x01 : 0x00;
+    if (write16(lite::MC, buf, 16)) {
+        _activePICC.format |= format_ndef;
+    }
+    return false;
+}
+
+bool NFCLayerF::dump()
+{
+    switch (_activePICC.type) {
         case Type::FeliCaLite:
-            return dump_felica_lite(picc);
+            return dump_felica_lite();
         case Type::FeliCaLiteS:
-            return dump_felica_lite_s(picc);
+            return dump_felica_lite_s();
         case Type::FeliCaStandard:
+        case Type::FeliCaPlug:
             M5_LIB_LOGE("Not yet");
             break;
         default:
-            M5_LIB_LOGE("Not yet");
             break;
     }
     return false;
 }
 
-bool NFCLayerF::dump(const PICC& picc, const block_t block)
+bool NFCLayerF::dump(const block_t block)
 {
-    // TODO
-    return dump_block(picc, block);
+    return _activePICC.valid() && dump_block(block);
 }
 
 //
 
-bool NFCLayerF::dump_felica_lite(const m5::nfc::f::PICC& picc)
+bool NFCLayerF::dump_felica_lite()
 {
     puts(
         "Block: 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n"
@@ -329,35 +400,35 @@ bool NFCLayerF::dump_felica_lite(const m5::nfc::f::PICC& picc)
 
     bool ret{true};
     for (uint8_t block = 0; block < 0x0F; ++block) {
-        ret &= dump_block(picc, block);
+        ret &= dump_block(block);
     }
     for (uint8_t block = 0x80; block < 0x89; ++block) {
-        ret &= dump_block(picc, block);
+        ret &= dump_block(block);
     }
     return ret;
 }
 
-bool NFCLayerF::dump_felica_lite_s(const m5::nfc::f::PICC& picc)
+bool NFCLayerF::dump_felica_lite_s()
 {
     bool ret{true};
-    ret &= dump_felica_lite(picc);
+    ret &= dump_felica_lite();
     for (uint8_t block = 0x90; block < 0x93; ++block) {
         // MAC_A(0x91) cannot be read unless written to RC.
         if (block == 0x91) {
             printf("[%04X]:MAC_A needs wrtite to RC\n", block);
             continue;
         }
-        ret &= dump_block(picc, block);
+        ret &= dump_block(block);
     }
-    ret &= dump_block(picc, 0xA0);
+    ret &= dump_block(0xA0);
     return ret;
 }
 
-bool NFCLayerF::dump_block(const m5::nfc::f::PICC& picc, m5::nfc::f::block_t block)
+bool NFCLayerF::dump_block(m5::nfc::f::block_t block)
 {
     uint8_t buf[16]{};
 
-    if (read16(buf, picc, block)) {
+    if (read16(buf, block)) {
         print_block(buf, block.block());
         return true;
     }
@@ -368,19 +439,33 @@ bool NFCLayerF::dump_block(const m5::nfc::f::PICC& picc, m5::nfc::f::block_t blo
 //
 bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
 {
+    if (_activePICC.check_format(format_ndef)) {
+        return read(rx, rx_len, block_t(saddr));
+    }
+    rx_len = 0;
     return false;
 }
 bool NFCLayerF::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
 {
-    return false;
+    return _activePICC.check_format(format_ndef) && write(block_t(saddr), tx, tx_len);
 }
 uint16_t NFCLayerF::firstUserBlock() const
 {
-    return 0;
+    return _activePICC.firstUserBlock();
 }
 uint16_t NFCLayerF::lastUserBlock() const
 {
-    return 0;
+    return _activePICC.lastUserBlock();
+}
+
+uint8_t NFCLayerF::maximumReadBlocks() const
+{
+    return _activePICC.maximumReadBlocks();
+}
+
+uint8_t NFCLayerF::maximumWriteBlocks() const
+{
+    return _activePICC.maximumWriteBlocks();
 }
 
 }  // namespace nfc

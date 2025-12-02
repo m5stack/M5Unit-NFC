@@ -24,7 +24,15 @@ public:
     virtual uint16_t lastUserBlock() const     = 0;
     virtual uint16_t userBlockUnitSize() const = 0;
 
-private:
+    // For NFC-F AttributeBlock
+    virtual uint8_t maximumReadBlocks() const
+    {
+        return 0;
+    }
+    virtual uint8_t maximumWriteBlocks() const
+    {
+        return 0;
+    }
 };
 
 }  // namespace nfc

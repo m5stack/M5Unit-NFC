@@ -13,13 +13,19 @@
 #include <M5UnitComponent.hpp>
 #include "ST25R3916_definition.hpp"
 #include "nfc/nfc.hpp"
+#include "nfc/a/nfca.hpp"
+#include "nfc/a/mifare.hpp"
 #include "nfc/a/mifare_classic_crypto1.hpp"
+#include "nfc/b/nfcb.hpp"
+#include "nfc/f/nfcf.hpp"
+#include "nfc/v/nfcv.hpp"
 
 namespace m5 {
 namespace unit {
+
 namespace nfc {
 struct AdapterST25R3916;
-}
+}  // namespace nfc
 
 /*!
   @class UnitST25R3916

@@ -105,7 +105,7 @@ public:
      */
     bool select(m5::nfc::a::PICC& picc);
     /*!
-      @brief Activate a specific PICC by PICC (anti-collision against the given PICC)
+      @brief Activate a specific PICC  (anti-collision against the given PICC)
       @param picc PICC
       @return True if successful
       @pre PICC is READY state
@@ -215,6 +215,7 @@ public:
                const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
     ///@}
 
+    ///@note For activated PICC
     ///@name For MIFARE classic
     ///@{
     /*!
@@ -358,6 +359,7 @@ public:
     bool mifareUltralightChangeFormatToNTAG();
     ///@}
 
+    ///@note For activated PICC
     ///@name For NDEF
     ///@{
     /*!
@@ -404,6 +406,9 @@ public:
     bool ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs);
     ///@}
 
+    ///@note For activated PICC
+    ///@note Dump
+    ///@{
     /*!
       @brief Dump all blocks
       @param key MIFARE classic key

@@ -68,6 +68,31 @@ const char* get_uri_idc_string(const URIProtocol protocol)
     return uri_idc_table[idx < m5::stl::size(uri_idc_table) ? idx : 0];
 }
 
+//
+
+bool AttributeBlock::valid() const
+{
+    return version() >= 0x10 && max_block_to_read() && max_block_to_write() && blocks_for_ndef_storage() &&
+           current_ndef_message_length() && write_flag() == WriteFlag::Done && (check_sum() == calculate_check_sum());
+}
+
+uint16_t AttributeBlock::calculate_check_sum() const
+{
+    uint16_t sum{};
+    for (uint_fast8_t i = 0; i < 14; ++i) {
+        sum += block[i];
+    }
+    return sum;
+}
+
+uint16_t AttributeBlock::update_check_sum()
+{
+    uint16_t sum = calculate_check_sum();
+    block[14]    = sum >> 8;
+    block[15]    = sum & 0xFF;
+    return sum;
+}
+
 }  // namespace ndef
 }  // namespace nfc
 }  // namespace m5
