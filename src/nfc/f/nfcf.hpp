@@ -434,14 +434,14 @@ union REG {
     //!@brief Set the RegC
     void regC(const uint64_t v)
     {
-        reg_c[0] = v & 0xFF;
-        reg_c[1] = v >> 8;
-        reg_c[2] = v >> 16;
-        reg_c[3] = v >> 24;
-        reg_c[4] = v >> 32;
-        reg_c[5] = v >> 40;
-        reg_c[6] = v >> 48;
-        reg_c[7] = v >> 56;
+        reg_c[7] = v & 0xFF;
+        reg_c[6] = v >> 8;
+        reg_c[5] = v >> 16;
+        reg_c[4] = v >> 24;
+        reg_c[3] = v >> 32;
+        reg_c[2] = v >> 40;
+        reg_c[1] = v >> 48;
+        reg_c[0] = v >> 56;
     }
 
     inline operator const uint8_t*() const

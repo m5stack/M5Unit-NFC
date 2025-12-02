@@ -82,9 +82,12 @@ void loop()
         lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
         PICC picc{};
         if (nfc_f.detect(picc)) {
-            M5.Log.printf("==== Dump %s:%s %s ====\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
-                          picc.typeAsString().c_str());
-            nfc_f.dump(picc);
+            if (nfc_f.activate(picc)) {
+                M5.Log.printf("==== Dump %s:%s %s ====\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
+                              picc.typeAsString().c_str());
+                nfc_f.dump(picc);
+                nfc_f.deactivate();
+            }
         } else {
             M5.Log.printf("PICC NOT exists\n");
         }
