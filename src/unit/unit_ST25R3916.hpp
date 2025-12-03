@@ -37,6 +37,9 @@ class UnitST25R3916 : public Component {
 public:
     explicit UnitST25R3916(const uint8_t arg = DEFAULT_ADDRESS) : Component(arg)
     {
+        auto ccfg  = component_config();
+        ccfg.clock = 400 * 1000U;
+        component_config(ccfg);
     }
     virtual ~UnitST25R3916() = default;
 
@@ -1863,7 +1866,7 @@ public:
       @warning FeliCa Standard only
      */
     bool nfcfRequestSystemCode(uint16_t code_list[255], uint8_t& code_num, const m5::nfc::f::PICC& picc);
-    
+
     /*!
       @brief Read the area that does not require authentication
       @param[out] rx Buffer(at least 16 bytes * number of blocks)

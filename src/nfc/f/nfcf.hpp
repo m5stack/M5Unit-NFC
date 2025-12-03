@@ -499,14 +499,6 @@ inline bool can_write_reg(const REG& o, const REG& n)
     return (o.regA() >= n.regA()) && (o.regB() >= n.regB());
 }
 
-///@name AES for MAC
-///@{
-
-bool make_session_key(uint8_t sk1[8], uint8_t sk2[8], const uint8_t ck1[8], const uint8_t ck2[8], const uint8_t rc1[8],
-                      const uint8_t rc2[8]);
-
-///@}
-
 }  // namespace f
 }  // namespace nfc
 }  // namespace m5

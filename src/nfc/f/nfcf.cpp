@@ -10,8 +10,8 @@
 
 #include "nfcf.hpp"
 #include <M5Utility.hpp>
-#include <mbedtls/aes.h>
 #include <mbedtls/des.h>
+#include <algorithm>
 
 namespace {
 constexpr char name_unknown[]      = "Unknown";
@@ -19,7 +19,7 @@ constexpr char name_standard[]     = "FeliCa Standard";
 constexpr char name_lite[]         = "FeliCa Lite";
 constexpr char name_lite_s[]       = "FeliCa Lite-S";
 constexpr char name_plug[]         = "FeliCa Plug";
-constexpr const char* name_table[] = {name_unknown, name_standard, name_lite, name_lite_s, name_plug};
+constexpr const char *name_table[] = {name_unknown, name_standard, name_lite, name_lite_s, name_plug};
 
 // Maximum block number (Note that there are gaps in the blocks)
 constexpr uint16_t max_block_table[] = {0, 0, 0x88, 0xA0, 0};
@@ -31,7 +31,7 @@ constexpr uint16_t max_write_block_table[] = {0, 1, 1, 1, 1};
 // [first/last]
 constexpr uint8_t user_block_table[][2] = {{0XFF, 0XFF}, {0XFF, 0XFF}, {0x00, 0x0D}, {0x00, 0x0D}, {0XFF, 0XFF}};
 
-std::string to_string(const uint8_t* p, const uint8_t size)
+std::string to_string(const uint8_t *p, const uint8_t size)
 {
     char buf[2 * size + 1]{};
     if (p && size) {
@@ -84,15 +84,6 @@ uint8_t get_maxumum_write_blocks(const Type t)
 {
     uint8_t idx = m5::stl::to_underlying(t);
     return max_write_block_table[idx < m5::stl::size(max_block_table) ? idx : 0];
-}
-
-bool make_session_key(uint8_t sk1[8], uint8_t sk2[8], const uint8_t ck1[8], const uint8_t ck2[8], const uint8_t rc1[8],
-                      const uint8_t rc2[8])
-{
-    if (!sk1 || !sk2 || !ck1 || !ck2 || !rc1 || !rc2) {
-        return false;
-    }
-    return false;
 }
 
 //

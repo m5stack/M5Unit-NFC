@@ -512,78 +512,78 @@ bool UnitST25R3916::read_register8(const uint8_t reg, uint8_t& v)
 {
     TRANSACTION_GUARD();
     v = 0;
-    return readRegister8(to_read_reg(reg), v, 0, false);
+    return readRegister8(to_read_reg(reg), v, 0, false /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::read_register8(const uint16_t reg, uint8_t& v)
 {
     TRANSACTION_GUARD();
     v = 0;
-    return readRegister8(to_read_reg(reg), v, 0, false);
+    return readRegister8(to_read_reg(reg), v, 0, false /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::write_register8(const uint8_t reg, const uint8_t v)
 {
     TRANSACTION_GUARD();
-    return writeRegister8(to_write_reg(reg), v, false);
+    return writeRegister8(to_write_reg(reg), v, true /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::write_register8(const uint16_t reg, const uint8_t v)
 {
     TRANSACTION_GUARD();
-    return writeRegister8(to_write_reg(reg), v, false);
+    return writeRegister8(to_write_reg(reg), v, true /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::read_register16(const uint8_t reg, uint16_t& v)
 {
     TRANSACTION_GUARD();
     v = 0;
-    return readRegister16BE(to_read_reg(reg), v, 0, false);
+    return readRegister16BE(to_read_reg(reg), v, 0, false /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::read_register16(const uint16_t reg, uint16_t& v)
 {
     TRANSACTION_GUARD();
     v = 0;
-    return readRegister16BE(to_read_reg(reg), v, 0, false);
+    return readRegister16BE(to_read_reg(reg), v, 0, false /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::write_register16(const uint8_t reg, const uint16_t v)
 {
     TRANSACTION_GUARD();
-    return writeRegister16BE(to_write_reg(reg), v, false);
+    return writeRegister16BE(to_write_reg(reg), v, true /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::write_register16(const uint16_t reg, const uint16_t v)
 {
     TRANSACTION_GUARD();
-    return writeRegister16BE(to_write_reg(reg), v, false);
+    return writeRegister16BE(to_write_reg(reg), v, true /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::read_register32(const uint8_t reg, uint32_t& v)
 {
     TRANSACTION_GUARD();
     v = 0;
-    return readRegister32BE(to_read_reg(reg), v, 0, false);
+    return readRegister32BE(to_read_reg(reg), v, 0, false /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::read_register32(const uint16_t reg, uint32_t& v)
 {
     TRANSACTION_GUARD();
     v = 0;
-    return readRegister32BE(to_read_reg(reg), v, 0, false);
+    return readRegister32BE(to_read_reg(reg), v, 0, false /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::write_register32(const uint8_t reg, const uint32_t v)
 {
     TRANSACTION_GUARD();
-    return writeRegister32BE(to_write_reg(reg), v, false);
+    return writeRegister32BE(to_write_reg(reg), v, true /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::write_register32(const uint16_t reg, const uint32_t v)
 {
     TRANSACTION_GUARD();
-    return writeRegister32BE(to_write_reg(reg), v, false);
+    return writeRegister32BE(to_write_reg(reg), v, true /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::modify_bit_register8(const uint8_t reg, const uint8_t set_mask, const uint8_t clear_mask)
