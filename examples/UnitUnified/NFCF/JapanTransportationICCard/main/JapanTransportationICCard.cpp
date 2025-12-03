@@ -56,6 +56,11 @@ struct tm buf_to_tm(const uint8_t date[2], const uint8_t time[2] = nullptr)
 
 void dump_jtic()
 {
+    Mode m{};
+    if (!nfc_f.requestResponse(m)) {
+        return;
+    }
+
     // Balance
     uint16_t key_version{};
     if (nfc_f.requestService(key_version, service_balance) && key_version != 0xFFFF) {
@@ -202,20 +207,15 @@ void setup()
     }
     lcd.setFont(&fonts::Font0);
     lcd.fillScreen(0);
-
-    //
-    //    cap.dumpRegister();
-    //
 }
 
 void loop()
 {
     M5.update();
     Units.update();
-    bool clicked = M5.BtnA.wasClicked();  // For read
-    bool held    = M5.BtnA.wasHold();     // For write
+    bool clicked = M5.BtnA.wasClicked();
 
-    if (clicked || held) {
+    if (clicked) {
         std::vector<PICC> piccs{};
         if (nfc_f.detect(piccs, jtic_system_code, sizeof(jtic_system_code), TimeSlot::Slot1, 50)) {
             PICC picc = piccs.front();

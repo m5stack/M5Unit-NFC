@@ -8,7 +8,6 @@
   @brief MIFARE definitions
 */
 #include "mifare.hpp"
-#include <M5Utility.hpp>
 
 namespace m5 {
 namespace nfc {

@@ -213,6 +213,22 @@ public:
     */
     bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len,
                const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+
+    /*!
+      @brief Dump all blocks
+      @param key MIFARE classic key
+      @return True if successful
+      @pre All blocks must be authenticatable using the specified key if MIFARE classic
+     */
+    bool dump(const m5::nfc::a::mifare::classic::Key& mkey = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+    /*!
+      @brief Dump 1 block
+      @param addr Block address
+      @return True if successful
+      @note The sector to which the block belongs is dumped
+      @pre The block must be authenticated if MIFARE classic
+    */
+    bool dump(const uint8_t block);
     ///@}
 
     ///@note For activated PICC
@@ -404,26 +420,6 @@ public:
       @warning Only PICC cards supporting NDEF are valid
      */
     bool ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs);
-    ///@}
-
-    ///@note For activated PICC
-    ///@note Dump
-    ///@{
-    /*!
-      @brief Dump all blocks
-      @param key MIFARE classic key
-      @return True if successful
-      @pre All blocks must be authenticatable using the specified key if MIFARE classic
-     */
-    bool dump(const m5::nfc::a::mifare::classic::Key& mkey = m5::nfc::a::mifare::classic::DEFAULT_KEY);
-    /*!
-      @brief Dump 1 block
-      @param addr Block address
-      @return True if successful
-      @note The sector to which the block belongs is dumped
-      @pre The block must be authenticated if MIFARE classic
-    */
-    bool dump(const uint8_t block);
     ///@}
 
 protected:

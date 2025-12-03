@@ -31,7 +31,7 @@ public:
     explicit NDEFLayer(NFCLayerInterface& layer) : _interface{layer}
     {
     }
-    bool isValidFormat(bool& valid);
+    bool isValidFormat(const m5::nfc::NFCForumTag ftag, bool& valid);
     bool read(const m5::nfc::NFCForumTag ftag, std::vector<m5::nfc::ndef::TLV>& tlvs,
               const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsMessage);
     bool write(const m5::nfc::NFCForumTag ftag, const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep = true);

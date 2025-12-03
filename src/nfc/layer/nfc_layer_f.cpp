@@ -30,7 +30,8 @@ inline bool exists_known_system_code(const uint16_t code)
 
 inline bool exists_picc(const std::vector<PICC>& v, const PICC& picc)
 {
-    return std::find_if(v.begin(), v.end(), [&picc](const PICC& p) { return p == picc; }) != v.end();
+    return std::find_if(v.begin(), v.end(),
+                        [&picc](const PICC& p) { return p.idm == picc.idm && p.pmm == picc.pmm; }) != v.end();
 }
 
 void print_block(const uint8_t buf[16], const int16_t block)
@@ -185,8 +186,20 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
         }
 
         //
-        if (type == Type::Unknown && format) {
-            type = Type::FeliCaStandard;
+        if (type == Type::Unknown) {
+            if (format) {
+                type = Type::FeliCaStandard;
+            } else {
+                continue;
+            }
+        }
+
+        // Re-check
+        if (type == Type::FeliCaStandard) {
+            Mode mode{};
+            if (!_impl->requestResponse(mode, _activePICC)) {
+                continue;
+            }
         }
 
         //
@@ -228,6 +241,16 @@ bool NFCLayerF::requestService(uint16_t& key_version, const uint16_t node_code)
 bool NFCLayerF::requestService(uint16_t key_version[], const uint16_t* node_code, const uint8_t node_size)
 {
     return _activePICC.valid() && _impl->requestService(key_version, _activePICC, node_code, node_size);
+}
+
+bool NFCLayerF::requestResponse(m5::nfc::f::Mode& mode)
+{
+    return _activePICC.valid() && _impl->requestResponse(mode, _activePICC);
+}
+
+bool NFCLayerF::requestSystemCode(uint16_t code_list[255], uint8_t& code_num)
+{
+    return _activePICC.valid() && _impl->requestSystemCode(code_list, code_num, _activePICC);
 }
 
 bool NFCLayerF::read_16(uint8_t rx[16], const block_t block, const bool check_valid)
@@ -329,8 +352,7 @@ bool NFCLayerF::write(const m5::nfc::f::block_t sblock, const uint8_t* tx, const
 bool NFCLayerF::ndefIsValidFormat(bool& valid)
 {
     valid = false;
-    /* TODO NDEF*/
-    return _ndef.isValidFormat(valid);
+    return _activePICC.supportsNDEF() && _ndef.isValidFormat(_activePICC.nfcForumTagType(), valid);
 }
 
 bool NFCLayerF::ndefRead(m5::nfc::ndef::TLV& msg)
@@ -338,27 +360,17 @@ bool NFCLayerF::ndefRead(m5::nfc::ndef::TLV& msg)
     msg = TLV{};
 
     std::vector<TLV> tlvs{};
-    if (ndefRead(tlvs, tagBitsMessage)) {
+    if (_activePICC.valid() && _ndef.read(_activePICC.nfcForumTagType(), tlvs, tagBitsMessage)) {
         msg = !tlvs.empty() ? tlvs.front() : TLV{};
         return true;
     }
     return false;
 }
 
-bool NFCLayerF::ndefRead(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits)
-{
-    return _activePICC.valid() && _ndef.read(_activePICC.nfcForumTagType(), tlvs, tagBits);
-}
-
 bool NFCLayerF::ndefWrite(const m5::nfc::ndef::TLV& msg)
 {
     std::vector<TLV> tlvs = {msg};
     return msg.isMessageTLV() && _activePICC.valid() && _ndef.write(_activePICC.nfcForumTagType(), tlvs);
-}
-
-bool NFCLayerF::ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs)
-{
-    return _activePICC.valid() && _ndef.write(_activePICC.nfcForumTagType(), tlvs, false);
 }
 
 bool NFCLayerF::writeSupportNDEF(const bool enabled)
@@ -458,7 +470,7 @@ bool NFCLayerF::dump_block(m5::nfc::f::block_t block)
 //
 bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
 {
-    if (_activePICC.check_format(format_ndef)) {
+    if (_activePICC.checkFormat(format_ndef)) {
         return read(rx, rx_len, block_t(saddr));
     }
     rx_len = 0;
@@ -466,7 +478,7 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
 }
 bool NFCLayerF::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
 {
-    return _activePICC.check_format(format_ndef) && write(block_t(saddr), tx, tx_len);
+    return _activePICC.checkFormat(format_ndef) && write(block_t(saddr), tx, tx_len);
 }
 uint16_t NFCLayerF::firstUserBlock() const
 {

@@ -8,10 +8,6 @@
   @brief Common layer for NDEF related
 */
 #include "ndef_layer.hpp"
-#include "nfc/a/nfca.hpp"
-#include "nfc/b/nfcb.hpp"
-#include "nfc/f/nfcf.hpp"
-#include "nfc/v/nfcv.hpp"
 #include "nfc/ndef/ndef.hpp"
 #include "nfc/ndef/ndef_tlv.hpp"
 #include "nfc/ndef/ndef_record.hpp"
@@ -19,33 +15,45 @@
 #include <algorithm>
 #include <numeric>
 
-using namespace m5::nfc::a;
-using namespace m5::nfc::b;
-using namespace m5::nfc::f;
-using namespace m5::nfc::v;
+using namespace m5::nfc;
 using namespace m5::nfc::ndef;
 
 namespace m5 {
 namespace nfc {
 namespace ndef {
 
-bool NDEFLayer::isValidFormat(bool& valid)
+bool NDEFLayer::isValidFormat(const m5::nfc::NFCForumTag ftag, bool& valid)
 {
     valid = false;
 
-    uint8_t rbuf[16]{};
-    uint16_t rlen{16};
     auto block = _interface.firstUserBlock();
     if (block == 0xFFFF) {
         return false;
     }
 
-    if (!_interface.read(rbuf, rlen, block)) {
+    AttributeBlock ab{};
+    uint16_t rlen{16};
+    if (!_interface.read(ab.block, rlen, block)) {
         M5_LIB_LOGE("Failed to read %u", block);
         return false;
     }
-    valid = is_valid_tag(rbuf[0]);
-    return true;
+
+    switch (ftag) {
+        case NFCForumTag::Type1:
+        case NFCForumTag::Type2:
+        case NFCForumTag::Type5:
+            // Has TLV
+            valid = is_valid_tag(ab.block[0]);
+            return true;
+        case NFCForumTag::Type3:
+        case NFCForumTag::Type4:
+            // Has AttributeBlock
+            valid = ab.valid();
+            return true;
+        default:
+            break;
+    }
+    return false;
 }
 
 bool NDEFLayer::read(const m5::nfc::NFCForumTag ftag, std::vector<m5::nfc::ndef::TLV>& tlvs,
@@ -242,7 +250,7 @@ bool NDEFLayer::read_without_tlv(m5::nfc::ndef::TLV& tlv)
         return false;
     }
 
-    M5_LIB_LOGE("AB:%02X %u/%u/%u %02X/%02X %u %04X/%04X", ab.version(), ab.max_block_to_read(),
+    M5_LIB_LOGD("AB:%02X %u/%u/%u %02X/%02X %u %04X/%04X", ab.version(), ab.max_block_to_read(),
                 ab.max_block_to_write(), ab.blocks_for_ndef_storage(), ab.write_flag(), ab.access_flag(),
                 ab.current_ndef_message_length(), ab.check_sum(), ab.calculate_check_sum());
 

@@ -56,7 +56,7 @@ void subtract_register()
     auto tmp = reg;
     reg.regA(reg.regA() + 1);
     if (!nfc_f.write16(lite::REG, reg.reg, sizeof(reg.reg))) {
-        M5.Log.printf("Increases are prohibited\n");
+        M5.Log.printf("Increases are prohibited %u\n", can_write_reg(tmp, reg));
     } else {
         M5_LOGE("Oops!?");
     }
@@ -64,7 +64,7 @@ void subtract_register()
     reg = tmp;
     reg.regB(reg.regB() + 1);
     if (!nfc_f.write16(lite::REG, reg.reg, sizeof(reg.reg))) {
-        M5.Log.printf("Increases are prohibited\n");
+        M5.Log.printf("Increases are prohibited %u\n", can_write_reg(tmp, reg));
     } else {
         M5_LOGE("Oops!?");
     }
@@ -72,6 +72,8 @@ void subtract_register()
     // RegC can write some value if A>=A' and B>=B'
     reg = tmp;
     reg.regC(0xFFFFFFFFFFFFFFFFull);
+    M5.Log.printf("regC can %s write\n", can_write_reg(tmp, reg) ? "" : "NOT");
+
     if (!nfc_f.write16(lite::REG, reg.reg, sizeof(reg.reg))) {
         M5_LOGE("Failed to write");
     }

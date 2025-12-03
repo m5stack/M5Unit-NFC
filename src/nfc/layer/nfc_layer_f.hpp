@@ -152,11 +152,62 @@ public:
     bool deactivate();
 
     /*!
+      @brief Request service
+      @param[out] key_version Key version
+      @param node_code Node code
+      @return True if successful
+      @warning FeliCa Standard only
+     */
+    bool requestService(uint16_t& key_version, const uint16_t node_code);
+    /*!
+      @brief Request service
+      @param[out] key_version Key version array (at leaset node_num)
+      @param node_code Node code array
+      @param node_num Number of node_code
+      @return True if successful
+      @warning FeliCa Standard only
+     */
+    bool requestService(uint16_t key_version[], const uint16_t* node_code, const uint8_t node_num);
+
+    /*!
+      @brief Request response
+      @return True if successful
+      @param[out] mode Mode if detected
+      @warning FeliCa Standard only
+     */
+    bool requestResponse(m5::nfc::f::Mode& mode);
+
+    /*!
+      @brief Request system code
+      @param[out] code_list Code list array (at least 255)
+      @param[out] code_num Number of code_list
+      @return True if successful
+      @warning FeliCa Standard only
+     */
+    bool requestSystemCode(uint16_t code_list[255], uint8_t& code_num);
+
+    /*!
+      @brief Dump all blocks
+      @return True if successful
+      @note Only the sections that can be read without encryption
+     */
+    bool dump();
+    /*!
+      @brief Dump 1 block
+      @param block block list element
+      @return True if successful
+      @note Only the sections that can be read without encryption
+    */
+    bool dump(const m5::nfc::f::block_t block);
+    ///@}
+
+    ///@note For activated PICC
+    ///@name Read/Write without encryption
+    /*!
       @brief Read the 1 block
       @param[out] rx Output buffer
       @param block Target block
       @return True if successful
-      @note Using readWithoutEncryption
      */
     inline bool read16(uint8_t rx[16], const m5::nfc::f::block_t block)
     {
@@ -168,7 +219,6 @@ public:
       @param block Target block
       @param service_code Service code
       @return True if successful
-      @note Using readWithoutEncryption
      */
     bool read16(uint8_t rx[16], const m5::nfc::f::block_t block, const uint16_t service_code);
     /*!
@@ -179,7 +229,6 @@ public:
       @return True if successful
       @param service_code Service code array
       @param service_num Number of service code
-      @note Using readWithoutEncryption
      */
     bool read16(uint8_t rx[16], const m5::nfc::f::block_t* block, const uint8_t block_num, const uint16_t* service_code,
                 const uint8_t service_num);
@@ -191,7 +240,6 @@ public:
       @param[in/out] rx_len in:buffer size, out:actual read size
       @param sblock Block to start reading
       @return True if successful
-      @note Using readWithoutEncryption
       @warning rx in 16-byte units
     */
     bool read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::block_t sblock);
@@ -202,7 +250,6 @@ public:
       @param tx Buffer
       @param tx_len Buffer size
       @return True if successful
-      @note Using writeWithoutEncryption
       @warning If the tx_len is less than 16 bytes, the remaining space is filled with 0x00
       @warning If the tx_len is larger than 16 bytes, only the first 16 bytes will be written
      */
@@ -214,18 +261,38 @@ public:
       @param tx Buffer
       @param tx_len Buffer size
       @return True if successful
-      @note Using writeWithoutEncryption
     */
     bool write(const m5::nfc::f::block_t sblock, const uint8_t* tx, const uint16_t tx_len);
-
     ///@}
 
     ///@note For activated PICC
-    ///@name For NDEF
+    ///@name Read/Write with MAC
+    /*!
+      @brief Read the 1 block
+      @param[out] rx Output buffer
+      @param block Target block
+      @return True if successful
+     */
+    bool readWithMAC16(uint8_t rx[16], const m5::nfc::f::block_t block);
+
+    /*!
+      @brief Write the 1 block
+      @param block Target block
+      @param tx Buffer
+      @param tx_len Buffer size
+      @return True if successful
+      @warning If the tx_len is less than 16 bytes, the remaining space is filled with 0x00
+      @warning If the tx_len is larger than 16 bytes, only the first 16 bytes will be written
+     */
+    bool writeWithMAC16(const m5::nfc::f::block_t block, const uint8_t tx[16], const uint16_t tx_len);
+    ///@}
+
+    ///@note For activated PICC
+    ///@name NDEF
     ///@{
     /*!
       @brief Is the PICC data in NDEF format?
-      @paran[out] valid True if NDEF format
+      @param[out] valid True if NDEF format
       @return True if successful
      */
     bool ndefIsValidFormat(bool& valid);
@@ -238,33 +305,13 @@ public:
      */
     bool ndefRead(m5::nfc::ndef::TLV& msg);
     /*!
-      @brief Read any NDEF TLV
-      @param[out] msgs Messgae vector
-      @param tagBits Bit indicating the group of NDEF tags to be read
+      @brief Write NDEF message TLV
+      @param msg Messgae TLV
       @return True if successful
-      @warning Only PICC cards supporting NDEF are valid
-     */
-    bool ndefRead(std::vector<m5::nfc::ndef::TLV>& tlvs,
-                  const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsAll);
-    /*!
-      @brief Write NDEF message
-      @param msg Messgae (NDEF Message)
-      @return True if successful
-      @note Other existing tags will be preserved
-      @warning Existing NDEF message TLVs will be overwritten
+      @warning Existing record will be overwritten
       @warning Only PICC cards supporting NDEF are valid
      */
     bool ndefWrite(const m5::nfc::ndef::TLV& msg);
-    /*!
-      @brief Write any NDEF Messages TLV
-      @param msgs Messgae vector
-      @return True if successful
-      @note Write starting from the beginning of the user area
-      @warning Existing NDEF Message TLVs will be overwritten,
-      @warning so exercise caution if Lock/Memory control is present
-      @warning Only PICC cards supporting NDEF are valid
-     */
-    bool ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs);
 
     /*!
       @brief Write changes for NDEF Support
@@ -273,28 +320,6 @@ public:
       @warning Only FeliCa Lite, Lite-S
     */
     bool writeSupportNDEF(const bool enabled);
-    ///@}
-
-    bool requestService(uint16_t& key_version, const uint16_t node_code);
-    bool requestService(uint16_t key_version[], const uint16_t* node_code, const uint8_t node_num);
-
-    ///@note For activated PICC
-    ///@note Dump
-    ///@{
-
-    /*!
-      @brief Dump all blocks
-      @return True if successful
-      @note Only the sections that can be read without authentication
-     */
-    bool dump();
-    /*!
-      @brief Dump 1 block
-      @param block block list element
-      @return True if successful
-      @note Only the sections that can be read without authentication
-    */
-    bool dump(const m5::nfc::f::block_t block);
     ///@}
 
 protected:
@@ -329,9 +354,13 @@ struct NFCLayerF::Adapter {
     virtual ~Adapter() = default;
 
     virtual bool polling(m5::nfc::f::PICC& picc, const uint16_t system_code, const m5::nfc::f::RequestCode request_code,
-                         const m5::nfc::f::TimeSlot time_slot)                                             = 0;
+                         const m5::nfc::f::TimeSlot time_slot) = 0;
+
     virtual bool requestService(uint16_t key_version[], const m5::nfc::f::PICC& picc, const uint16_t* node_code,
-                                const uint8_t node_num)                                                    = 0;
+                                const uint8_t node_num)                                                      = 0;
+    virtual bool requestResponse(m5::nfc::f::Mode& mode, const m5::nfc::f::PICC& picc)                       = 0;
+    virtual bool requestSystemCode(uint16_t code_list[255], uint8_t& code_num, const m5::nfc::f::PICC& picc) = 0;
+
     virtual bool readWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,
                                        const uint16_t* service_code, const uint8_t service_num,
                                        const m5::nfc::f::block_t* block_list, const uint8_t block_num)     = 0;

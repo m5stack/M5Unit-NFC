@@ -652,7 +652,7 @@ bool NFCLayerA::mifareUltralightChangeFormatToNTAG()
 bool NFCLayerA::ndefIsValidFormat(bool& valid)
 {
     valid = false;
-    return ntag_check_cc_valid() && _ndef.isValidFormat(valid);
+    return ntag_check_cc_valid() && _ndef.isValidFormat(_activePICC.nfcForumTagType(), valid);
 }
 
 bool NFCLayerA::ndefRead(m5::nfc::ndef::TLV& msg)

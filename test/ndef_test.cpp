@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: MIT
  */
 /*
-  UnitTest for NFC
+  UnitTest for NDEF
 */
 #include <gtest/gtest.h>
 #include <M5Unified.h>
 #include <nfc/ndef/ndef.hpp>
-#include <nfc/ndef/ndef_message.hpp>
+#include <nfc/ndef/ndef_tlv.hpp>
 #include <nfc/ndef/ndef_record.hpp>
 #include <cstring>
 
@@ -130,22 +130,22 @@ TEST(NDEF, Record)
     }
 }
 
-TEST(NDEF, Message)
+TEST(NDEF, TLV)
 {
     constexpr uint8_t empty[3] = {0x03, 0x00, 0xFE};
     uint8_t buf[1024]{};
-    Message msg{};
+    TLV msg{Tag::Message};
     Record r0{}, r1{}, r2{};
 
     {
-        EXPECT_EQ(msg.tag(), Tag::NDEFMessage);
+        EXPECT_EQ(msg.tag(), Tag::Message);
         EXPECT_EQ(msg.records().size(), 0U);
-        EXPECT_EQ(msg.required(), 3);  // tag + record len + terminator
+        EXPECT_EQ(msg.required(), 2);  // tag + record len
         // msg.dump();
 
         auto encoded = msg.encode(buf, 256);
-        EXPECT_EQ(encoded, 3);
-        EXPECT_TRUE(std::memcmp(buf, empty, 3) == 0);
+        EXPECT_EQ(encoded, 2);
+        EXPECT_TRUE(std::memcmp(buf, empty, 2) == 0);
 
         //
 
@@ -157,11 +157,11 @@ TEST(NDEF, Message)
 
         msg.push_back(r0);
         EXPECT_EQ(msg.records().size(), 1U);
-        EXPECT_EQ(msg.required(), 3 + 20);  // tag + record len + records + terminator
-        EXPECT_EQ(msg.required(), 3 + r0.required());
+        EXPECT_EQ(msg.required(), 2 + 20);  // tag + record len + records
+        EXPECT_EQ(msg.required(), 2 + r0.required());
 
         encoded = msg.encode(buf, 1024);
-        EXPECT_EQ(encoded, 23);
+        EXPECT_EQ(encoded, 22);
         EXPECT_EQ(encoded, msg.required());
 
         // 1
@@ -172,11 +172,11 @@ TEST(NDEF, Message)
 
         msg.push_back(r1);
         EXPECT_EQ(msg.records().size(), 2U);
-        EXPECT_EQ(msg.required(), 3 + 20 + 21);  // tag + record len + records + terminator
-        EXPECT_EQ(msg.required(), 3 + r0.required() + r1.required());
+        EXPECT_EQ(msg.required(), 2 + 20 + 21);  // tag + record len + records
+        EXPECT_EQ(msg.required(), 2 + r0.required() + r1.required());
 
         encoded = msg.encode(buf, 1024);
-        EXPECT_EQ(encoded, 44);
+        EXPECT_EQ(encoded, 43);
         EXPECT_EQ(encoded, msg.required());
 
         // 2
@@ -187,11 +187,11 @@ TEST(NDEF, Message)
 
         msg.push_back(r2);
         EXPECT_EQ(msg.records().size(), 3U);
-        EXPECT_EQ(msg.required(), 3 + 20 + 21 + 17);  // tag + record len + records + terminator
-        EXPECT_EQ(msg.required(), 3 + r0.required() + r1.required() + r2.required());
+        EXPECT_EQ(msg.required(), 2 + 20 + 21 + 17);  // tag + record len + records
+        EXPECT_EQ(msg.required(), 2 + r0.required() + r1.required() + r2.required());
 
         encoded = msg.encode(buf, 1024);
-        EXPECT_EQ(encoded, 61);
+        EXPECT_EQ(encoded, 60);
         EXPECT_EQ(encoded, msg.required());
 
         // M5_LOGI("[%s]", r2.payloadAsString().c_str());
@@ -199,8 +199,8 @@ TEST(NDEF, Message)
     }
 
     {
-        auto encoded = msg.encode(buf, 256, false /* exclude terminator */);
-        Message msg2{};
+        auto encoded = msg.encode(buf, 256);
+        TLV msg2{};
         auto decoded = msg2.decode(buf, encoded);
 
         EXPECT_EQ(encoded, decoded);

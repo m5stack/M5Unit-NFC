@@ -66,7 +66,7 @@ constexpr Format format_private{0x0004};      //!< Has private area
 constexpr Format format_ndef{0x0008};         //!< Support NDEF
 constexpr Format format_shared{0x0010};       //!< Has shared area
 constexpr Format format_secure{0x0020};       //!< FeliCa Secure ID
-constexpr Format format_felica_plug{0x0040};  //< FeliCa Plug
+constexpr Format format_felica_plug{0x0040};  //!< FeliCa Plug
 ///@}
 
 /*!
@@ -79,6 +79,7 @@ enum class CommandCode : uint8_t {
     RequestResponse        = 0x04,
     ReadWithoutEncryption  = 0x06,
     WriteWithoutEncryption = 0x08,
+    RequestSystemCode      = 0x0C,
 };
 
 /*!
@@ -91,6 +92,7 @@ enum class ResponseCode : uint8_t {
     RequestResponse        = 0x05,
     ReadWithoutEncryption  = 0x07,
     WriteWithoutEncryption = 0x09,
+    RequestSystemCode      = 0x0D,
 };
 
 ///@name SystemCode
@@ -162,11 +164,12 @@ struct block_t {
     uint8_t header{};   //!< size:1 access:3 order:4
     uint16_t number{};  //!< block number (using low byte if 2 byte mode)
 
-    inline block_t() : block_t(0)
+    inline constexpr block_t() : block_t(0)
     {
     }
+    // Allow implicit type conversion
     inline constexpr block_t(const uint16_t num, const uint8_t access = 0, const uint8_t order = 0)
-        : header{(uint8_t)(((num > 0xFF) ? 0x00 : 0x80) | ((access & 0x03) << 4) | (order & 0x0F))}, number{num}
+        : header{(uint8_t)(((num > 0xFF) ? 0x00 : 0x80) | ((access & 0x07) << 4) | (order & 0x0F))}, number{num}
     {
     }
     inline constexpr bool is_2byte() const
@@ -181,7 +184,7 @@ struct block_t {
     {
         return (header >> 4) & 0x07;
     }
-    inline constexpr uint8_t ordere() const
+    inline constexpr uint8_t order() const
     {
         return (header & 0x0F);
     }
@@ -189,9 +192,35 @@ struct block_t {
     {
         return number;
     }
+
+    inline void block(const uint16_t num)
+    {
+        number = num;
+        header = (header & ~0x80) | (num > 0xFF ? 0x00 : 0x80);
+    }
+    inline void access_mode(const uint8_t a)
+    {
+        header = (header & ~(0x07 << 4)) | ((a & 0x07) << 4);
+    }
+    inline void order(const uint8_t o)
+    {
+        header = (header & ~0x0F) | (o & 0x0F);
+    }
+
     inline operator uint16_t() const
     {
         return block();
+    }
+
+    uint8_t store(uint8_t buf[3]) const
+    {
+        uint8_t idx{};
+        buf[idx++] = header;
+        buf[idx++] = number & 0xFF;
+        if (is_3byte()) {
+            buf[idx++] = number >> 8;
+        }
+        return idx;
     }
 };
 
@@ -334,20 +363,25 @@ struct PICC {
     }
 
     //! @brief Maximum number of blocks that can be read simultaneously
-    uint8_t maximumReadBlocks() const
+    inline uint8_t maximumReadBlocks() const
     {
         return get_maxumum_read_blocks(type);
     }
     //! @brief Maximum number of blocks that can be write simultaneously
-    uint8_t maximumWriteBlocks() const
+    inline uint8_t maximumWriteBlocks() const
     {
         return get_maxumum_write_blocks(type);
     }
 
     //! @brief Check format
-    bool check_format(const Format f)
+    inline bool checkFormat(const Format f) const
     {
         return (format & f) != 0;
+    }
+    //! @brief Supports NDEF?
+    inline bool supportsNDEF() const
+    {
+        return checkFormat(format_ndef);
     }
 
     //! @brief NFC ForumTag
@@ -387,9 +421,9 @@ constexpr uint32_t TIMEOUT_POLLING_PICC{2};  // 2 ms per PICC
 union REG {
     uint8_t reg[16]{};
     struct {
-        uint8_t reg_a[4];  // RegA
-        uint8_t reg_b[4];  // RegB
-        uint8_t reg_c[8];  // RegC
+        uint8_t reg_a[4];  // RegA (LE)
+        uint8_t reg_b[4];  // RegB (LE)
+        uint8_t reg_c[8];  // RegC (BE)
     } __attribute__((packed));
 
     REG()
@@ -464,6 +498,14 @@ inline bool can_write_reg(const REG& o, const REG& n)
 {
     return (o.regA() >= n.regA()) && (o.regB() >= n.regB());
 }
+
+///@name AES for MAC
+///@{
+
+bool make_session_key(uint8_t sk1[8], uint8_t sk2[8], const uint8_t ck1[8], const uint8_t ck2[8], const uint8_t rc1[8],
+                      const uint8_t rc2[8]);
+
+///@}
 
 }  // namespace f
 }  // namespace nfc

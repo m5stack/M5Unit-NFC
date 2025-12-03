@@ -10,6 +10,8 @@
 
 #include "nfcf.hpp"
 #include <M5Utility.hpp>
+#include <mbedtls/aes.h>
+#include <mbedtls/des.h>
 
 namespace {
 constexpr char name_unknown[]      = "Unknown";
@@ -82,6 +84,15 @@ uint8_t get_maxumum_write_blocks(const Type t)
 {
     uint8_t idx = m5::stl::to_underlying(t);
     return max_write_block_table[idx < m5::stl::size(max_block_table) ? idx : 0];
+}
+
+bool make_session_key(uint8_t sk1[8], uint8_t sk2[8], const uint8_t ck1[8], const uint8_t ck2[8], const uint8_t rc1[8],
+                      const uint8_t rc2[8])
+{
+    if (!sk1 || !sk2 || !ck1 || !ck2 || !rc1 || !rc2) {
+        return false;
+    }
+    return false;
 }
 
 //

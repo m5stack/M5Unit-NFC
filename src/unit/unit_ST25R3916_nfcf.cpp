@@ -218,6 +218,81 @@ bool UnitST25R3916::nfcfRequestService(uint16_t key_version[], const m5::nfc::f:
     return true;
 }
 
+bool UnitST25R3916::nfcfRequestResponse(m5::nfc::f::Mode& mode, const m5::nfc::f::PICC& picc)
+{
+    CHECK_MODE();
+
+    mode = Mode::Mode0;
+
+    if (picc.type != Type::FeliCaStandard) {
+        return false;
+    }
+
+    std::vector<uint8_t> packet{};
+    uint32_t timeout_ms = 10;  // TODO
+
+    packet.resize(1 + 8);
+
+    packet[0] = m5::stl::to_underlying(CommandCode::RequestResponse);
+    memcpy(packet.data() + 1, picc.idm.data(), picc.idm.size());
+
+    uint8_t rbuf[packet.size() + 1 /*LEN*/ + 1]{};
+    uint16_t rx_len = sizeof(rbuf);
+
+    // m5::utility::log::dump(packet.data(), packet.size(), false);
+
+    if (!nfcfTransceive(rbuf, rx_len, packet.data(), packet.size(), timeout_ms)  //
+        || rx_len < sizeof(rbuf) || rbuf[1] != m5::stl::to_underlying(ResponseCode::RequestResponse)) {
+        M5_LIB_LOGE("Failed to RequestResponse %u", rx_len);
+        return false;
+    }
+
+    // m5::utility::log::dump(rbuf, rx_len, false);
+
+    mode = static_cast<Mode>(rbuf[10]);
+    return true;
+}
+
+bool UnitST25R3916::nfcfRequestSystemCode(uint16_t code_list[255], uint8_t& code_num, const m5::nfc::f::PICC& picc)
+{
+    CHECK_MODE();
+
+    memset(code_list, 0x00, 2 * 255);
+
+    if (!code_list || picc.type != Type::FeliCaStandard) {
+        return false;
+    }
+
+    std::vector<uint8_t> packet{};
+    uint32_t timeout_ms = 10;  // TODO
+
+    packet.resize(1 + 8);
+
+    packet[0] = m5::stl::to_underlying(CommandCode::RequestSystemCode);
+    memcpy(packet.data() + 1, picc.idm.data(), picc.idm.size());
+
+    // m5::utility::log::dump(packet.data(), packet.size(), false);
+
+    uint8_t rbuf[1 + 1 + 8 + 1 + 2 * 255]{};
+    uint16_t rx_len = sizeof(rbuf);
+
+    if (!nfcfTransceive(rbuf, rx_len, packet.data(), packet.size(), timeout_ms)  //
+        || rx_len < 11 || rbuf[1] != m5::stl::to_underlying(ResponseCode::RequestSystemCode)) {
+        M5_LIB_LOGE("Failed to RequestResponse %u", rx_len);
+        return false;
+    }
+
+    // m5::utility::log::dump(rbuf, rx_len, false);
+
+    code_num      = rbuf[10];
+    const auto* p = rbuf + 11;
+    for (uint_fast16_t i = 0; i < code_num; ++i) {
+        code_list[i] = p[1] | ((uint16_t)p[0] << 8);
+        p += 2;
+    }
+    return true;
+}
+
 bool UnitST25R3916::nfcfReadWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,
                                               const uint16_t* service_code, const uint8_t service_num,
                                               const block_t* block_list, const uint8_t block_num)
@@ -248,11 +323,7 @@ bool UnitST25R3916::nfcfReadWithoutEncryption(uint8_t* rx, uint16_t& rx_len, con
     *p++ = block_num;
     for (uint_fast8_t i = 0; i < block_num; ++i) {
         block_t ble = block_list[i];
-        *p++        = ble.header;
-        if (ble.is_3byte()) {
-            *p++ = ble.block() >> 8;
-        }
-        *p++ = ble.block() & 0xFF;
+        p += ble.store(p);
     }
 
     // m5::utility::log::dump(packet.data(), packet.size(), false);
@@ -301,11 +372,7 @@ bool UnitST25R3916::nfcfWriteWithoutEncryption(const m5::nfc::f::PICC& picc, con
     *p++ = block_num;
     for (uint_fast8_t i = 0; i < block_num; ++i) {
         block_t ble = block_list[i];
-        *p++        = ble.header;
-        if (ble.is_3byte()) {
-            *p++ = ble.block() >> 8;
-        }
-        *p++ = ble.block() & 0xFF;
+        p += ble.store(p);
     }
     memcpy(p, tx, tx_len);
 
