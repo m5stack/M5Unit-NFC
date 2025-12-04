@@ -130,10 +130,13 @@ void IRAM_ATTR UnitST25R3916::on_irq(void* arg)
 
 bool UnitST25R3916::begin()
 {
-
     // Attach interrupt
-    pinMode(PIN_ST25R3916_IRQ, INPUT_PULLDOWN);
-    attachInterruptArg(digitalPinToInterrupt(PIN_ST25R3916_IRQ), &UnitST25R3916::on_irq, this, RISING);
+    if (_cfg.using_irq) {
+        M5_LIB_LOGE("Using IRQ:%u", _cfg.irq);
+        pinMode(_cfg.irq, INPUT_PULLDOWN);
+        attachInterruptArg(digitalPinToInterrupt(_cfg.irq), &UnitST25R3916::on_irq, this, RISING);
+        _using_irq = true;
+    }
 
     // Chip detection
     uint8_t type{}, rev{};
@@ -262,7 +265,7 @@ bool UnitST25R3916::configureNFCMode(const m5::nfc::NFC mode)
     write_squelch_timer(default_sqt_for(mode));
     */
     if (ok) {
-        M5_LIB_LOGE(">>>> Change to %u", mode);
+        M5_LIB_LOGD("Change mode to %u", mode);
         _nfcMode = mode;
     }
     return ok;
@@ -619,12 +622,12 @@ bool UnitST25R3916::modify_bit_register8(const uint16_t reg, const uint8_t set_m
     return false;
 }
 
-uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms, bool include_error)
+uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms)
 {
     auto timeout_at = m5::utility::millis() + timeout_ms;
     uint32_t flags{};
     do {
-        if (_interrupt_occurred) {
+        if (!_using_irq || _interrupt_occurred) {
             _interrupt_occurred = false;
             uint32_t v{};
             if (readInterrupts(v)) {
@@ -744,18 +747,21 @@ const char CapST25R3916::name[] = "CapST25R3916";
 const types::uid_t CapST25R3916::uid{"CapST25R39162"_mmh3};
 const types::attr_t CapST25R3916::attr{attribute::AccessSPI};
 
+CapST25R3916::CapST25R3916(const uint8_t cs_pin) : UnitST25R3916(cs_pin)
+{
+    // HackerCap has IRQ PIN
+    auto cfg      = config();
+    cfg.using_irq = true;
+    cfg.irq       = PIN_ST25R3916_IRQ;
+    config(cfg);
+}
+
 bool CapST25R3916::begin()
 {
     // Disbale ST25R3816
     pinMode(PIN_CS_ST25R3916, OUTPUT);
     digitalWrite(PIN_CS_ST25R3916, HIGH);
 
-#if 0    
-    // Attach interrupt
-    pinMode(PIN_ST25R3916_IRQ, INPUT_PULLDOWN);
-    attachInterruptArg(digitalPinToInterrupt(PIN_ST25R3916_IRQ), &UnitST25R3916::on_irq, this, RISING);
-#endif
-    
     return UnitST25R3916::begin();
 }
 

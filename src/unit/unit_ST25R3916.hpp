@@ -53,7 +53,9 @@ public:
     struct config_t {
         m5::nfc::NFC mode{m5::nfc::NFC::A};  //!< Initial Operation Mode
         bool vdd_voltage_5V{false};          //!< VDD voltage true:5V false:3.3V
-        uint8_t tx_am_modulation{13};        // 0-15 See also 4.5.48 TX driver register
+        uint8_t tx_am_modulation{13};        //!< 0-15 See also 4.5.48 TX driver register
+        bool using_irq{};                    //!< Exists IRQ PIN?
+        uint8_t irq{};                       //!< IRQ PIN
     };
 
     ///@name Settings for begin
@@ -1927,7 +1929,7 @@ protected:
     bool write_mask_receiver_timer(const uint32_t us);
     bool write_squelch_timer(const uint32_t us);
 
-    uint32_t wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms = 100, const bool include_error = true);
+    uint32_t wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms = 100);
 
     bool wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size = 0);
     bool read_FIFO(std::vector<uint8_t>& out);
@@ -1953,6 +1955,7 @@ private:
     m5::nfc::NFC _nfcMode{};
     m5::nfc::a::mifare::classic::Crypto1 _crypto1{};
     bool _encrypted{};
+    bool _using_irq{};
     volatile bool _interrupt_occurred{};
 };
 
@@ -1964,14 +1967,10 @@ class CapST25R3916 : public UnitST25R3916 {
     M5_UNIT_COMPONENT_HPP_BUILDER(CapST25R3916, 0x06 /* SPI CS pin */);
 
 public:
-    explicit CapST25R3916(const uint8_t cs_pin = DEFAULT_ADDRESS) : UnitST25R3916(cs_pin)
-    {
-    }
+    explicit CapST25R3916(const uint8_t cs_pin = DEFAULT_ADDRESS);
     virtual ~CapST25R3916() = default;
 
     virtual bool begin() override;
-
-protected:
 };
 
 }  // namespace unit
