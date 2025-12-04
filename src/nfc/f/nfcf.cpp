@@ -19,7 +19,7 @@ constexpr char name_standard[]     = "FeliCa Standard";
 constexpr char name_lite[]         = "FeliCa Lite";
 constexpr char name_lite_s[]       = "FeliCa Lite-S";
 constexpr char name_plug[]         = "FeliCa Plug";
-constexpr const char *name_table[] = {name_unknown, name_standard, name_lite, name_lite_s, name_plug};
+constexpr const char* name_table[] = {name_unknown, name_standard, name_lite, name_lite_s, name_plug};
 
 // Maximum block number (Note that there are gaps in the blocks)
 constexpr uint16_t max_block_table[] = {0, 0, 0x88, 0xA0, 0};
@@ -31,7 +31,7 @@ constexpr uint16_t max_write_block_table[] = {0, 1, 1, 1, 1};
 // [first/last]
 constexpr uint8_t user_block_table[][2] = {{0XFF, 0XFF}, {0XFF, 0XFF}, {0x00, 0x0D}, {0x00, 0x0D}, {0XFF, 0XFF}};
 
-std::string to_string(const uint8_t *p, const uint8_t size)
+std::string to_string(const uint8_t* p, const uint8_t size)
 {
     char buf[2 * size + 1]{};
     if (p && size) {

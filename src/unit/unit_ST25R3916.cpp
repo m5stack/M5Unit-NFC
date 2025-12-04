@@ -130,6 +130,11 @@ void IRAM_ATTR UnitST25R3916::on_irq(void* arg)
 
 bool UnitST25R3916::begin()
 {
+
+    // Attach interrupt
+    pinMode(PIN_ST25R3916_IRQ, INPUT_PULLDOWN);
+    attachInterruptArg(digitalPinToInterrupt(PIN_ST25R3916_IRQ), &UnitST25R3916::on_irq, this, RISING);
+
     // Chip detection
     uint8_t type{}, rev{};
     if (!readICIdentity(type, rev) || type != VALID_IDENTIFY_TYPE || rev == 0) {
@@ -745,10 +750,12 @@ bool CapST25R3916::begin()
     pinMode(PIN_CS_ST25R3916, OUTPUT);
     digitalWrite(PIN_CS_ST25R3916, HIGH);
 
+#if 0    
     // Attach interrupt
     pinMode(PIN_ST25R3916_IRQ, INPUT_PULLDOWN);
     attachInterruptArg(digitalPinToInterrupt(PIN_ST25R3916_IRQ), &UnitST25R3916::on_irq, this, RISING);
-
+#endif
+    
     return UnitST25R3916::begin();
 }
 
