@@ -424,7 +424,7 @@ bool UnitST25R3916::configure_nfc_v()
 bool UnitST25R3916::writeDirectCommand(const uint8_t cmd, const uint8_t* data, uint32_t dlen)
 {
     TRANSACTION_GUARD();
-    return writeRegister(cmd, data, dlen, false);
+    return writeRegister(cmd, data, dlen, true /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::readInterrupts(uint32_t& value)
@@ -513,7 +513,7 @@ bool UnitST25R3916::writeFIFO(const uint8_t* buf, const uint16_t buf_size)
         M5_LIB_LOGE("Max FIFO depth is %u (%u)", MAX_FIFO_DEPTH, buf_size);
         return false;
     }
-    return writeRegister(OP_LOAD_FIFO, buf, buf_size, false);
+    return writeRegister(OP_LOAD_FIFO, buf, buf_size, true /*I2C, SPI not used*/);
 }
 
 bool UnitST25R3916::readICIdentity(uint8_t& type, uint8_t& rev)
