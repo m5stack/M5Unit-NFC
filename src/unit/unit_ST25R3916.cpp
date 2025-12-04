@@ -131,6 +131,7 @@ void IRAM_ATTR UnitST25R3916::on_irq(void* arg)
 bool UnitST25R3916::begin()
 {
     // Attach interrupt
+    M5_LIB_LOGE(">>>> IRQ:%u", _cfg.using_irq);
     if (_cfg.using_irq) {
         M5_LIB_LOGE("Using IRQ:%u", _cfg.irq);
         pinMode(_cfg.irq, INPUT_PULLDOWN);
@@ -139,24 +140,30 @@ bool UnitST25R3916::begin()
     }
 
     // Chip detection
+    M5_LIB_LOGE(">>>> Chip detection");
     uint8_t type{}, rev{};
     if (!readICIdentity(type, rev) || type != VALID_IDENTIFY_TYPE || rev == 0) {
         M5_LIB_LOGE("Not detected ST25R3916 %02X,%02X", type, rev);
         return false;
     }
+    M5_LIB_LOGE("<<<< Chip detection %02X:%02X", type, rev);
 
     // Power-on sequence
     // 1) Set to default
+    M5_LIB_LOGE(">>>> Set to default");
     if (!writeDirectCommand(CMD_SET_DEFAULT)) {
         M5_LIB_LOGE("Failed to CMD_SET_DEFAULT");
         return false;
     }
+
     // 2) To prevent the internal overheat protection to trigger below the junction temperature
+    M5_LIB_LOGE(">>>> Protection");
     if (!writeDirectCommand(CMD_TEST_ACCESS, protection_command, sizeof(protection_command))) {
         M5_LIB_LOGE("Failed to send protection command");
         return false;
     }
     // 3) I/O settings
+    M5_LIB_LOGE(">>>> I/O");
     if (!writeIOConfiguration((adapter()->type() == Adapter::Type::I2C ? io_config12_i2c : io_config12_spi) |
                               (_cfg.vdd_voltage_5V ? 0x0000 : sup3v))) {
         M5_LIB_LOGE("Failed to writeIOConfiguration");
@@ -165,16 +172,19 @@ bool UnitST25R3916::begin()
 
     // 4) The internal voltage regulators have to be configuration
     // It is recommended to use direct command Adjust regulators to improve the system PSRR.
+    M5_LIB_LOGE(">>>> Mask");
     if (!writeMaskInterrupts(0xFFFF00FF) && clearInterrupts()) {  // Mask all interrupts exclusive error
         M5_LIB_LOGE("Failed to writeMaskInterrupt");
         return false;
     }
 
     // Adjust regulators
+    M5_LIB_LOGE(">>>> Adjust 1");
     if (!writeOperationControl(en)) {
         M5_LIB_LOGE("Failed to writeOperationControl");
         return false;
     }
+    M5_LIB_LOGE(">>>> Adjust 2");
     if (!writeDirectCommand(CMD_ADJUST_REGULATORS)) {
         M5_LIB_LOGE("Failed to CMD_ADJUST_REGULATORS");
         return false;
@@ -182,12 +192,14 @@ bool UnitST25R3916::begin()
     m5::utility::delay(5);  // Need wait
 
     // Check vdd voltage
+    M5_LIB_LOGE(">>>> VDD");
     uint8_t value{};
     if (readRegulatorDisplay(value)) {
         M5_LIB_LOGD("Regulated voltages:%02X:%1.1fV", value, regulated_voltages(value, _cfg.vdd_voltage_5V));
     }
 
     // Antenna Settings
+    M5_LIB_LOGE(">>>> Antenna");
     uint8_t txd{};
     if (!readTXDriver(txd) || !writeTXDriver((txd & 0x0F) | ((_cfg.tx_am_modulation & 0x0F) << 4))) {
         M5_LIB_LOGE("Failed to TXDriver");
@@ -210,6 +222,7 @@ bool UnitST25R3916::begin()
     M5_LIB_LOGE("====== MRT:%02X SQT:%02X", mrt, sqt);
 #endif
 
+    M5_LIB_LOGE(">>>> Config");
     return configureNFCMode(_cfg.mode);
 }
 
