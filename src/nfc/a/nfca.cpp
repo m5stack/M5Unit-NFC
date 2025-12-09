@@ -13,43 +13,46 @@
 using namespace m5::nfc;
 
 namespace {
-constexpr char name_unknown[]       = "Unknown";
-constexpr char name_classic_mini[]  = "MIFARE Classic Mini";
-constexpr char name_classic_1K[]    = "MIFARE Classsic1K";
-constexpr char name_classic_2K[]    = "MIFARE Classsic2K";
-constexpr char name_classic_4K[]    = "MIFARE Classsic4K";
-constexpr char name_ultra_light[]   = "MIFARE Ultralight";
-constexpr char name_ultra_light_c[] = "MIFARE UltralightC";
-constexpr char name_plus_2K[]       = "MIFARE Plus2K";
-constexpr char name_plus_4K[]       = "MIFARE Plus4K";
-constexpr char name_desfire_2K[]    = "MIFARE DESFire2K";
-constexpr char name_desfire_4K[]    = "MIFARE DESFire4K";
-constexpr char name_desfire_8K[]    = "MIFARE DESFire8K";
-constexpr char name_ntag203[]       = "NTAG 203";
-constexpr char name_ntag210u[]      = "NTAG 210u";
-constexpr char name_ntag210[]       = "NTAG 210";
-constexpr char name_ntag212[]       = "NTAG 212";
-constexpr char name_ntag213[]       = "NTAG 213";
-constexpr char name_ntag215[]       = "NTAG 215";
-constexpr char name_ntag216[]       = "NTAG 216";
-constexpr char name_iso14443_4[]    = "ISO14443-4";
-constexpr char name_iso18092[]      = "ISO18092";
-constexpr const char* name_table[]  = {
-    name_unknown,                                                             //
-    name_classic_mini, name_classic_1K,    name_classic_2K, name_classic_4K,  // Classic
-    name_ultra_light,  name_ultra_light_c,                                    // Light
-    name_plus_2K,      name_plus_4K,                                          // Plus
-    name_desfire_2K,   name_desfire_4K,    name_desfire_8K,                   // DESFire
-    name_ntag203,      name_ntag210u,      name_ntag210,                      // NTAG
-    name_ntag212,      name_ntag213,       name_ntag215,                      // NTAG
-    name_ntag216,                                                             // NTAG
-    name_iso14443_4,   name_iso18092,                                         //
+constexpr char name_unknown[]      = "Unknown";
+constexpr char name_classic_mini[] = "MIFARE Classic Mini";
+constexpr char name_classic_1K[]   = "MIFARE Classsic1K";
+constexpr char name_classic_2K[]   = "MIFARE Classsic2K";
+constexpr char name_classic_4K[]   = "MIFARE Classsic4K";
+constexpr char name_ul[]           = "MIFARE Ultralight";
+constexpr char name_ul_ev1_1[]     = "MIFARE Ultralight EV1 1";
+constexpr char name_ul_ev1_2[]     = "MIFARE Ultralight EV1 2";
+constexpr char name_ul_nano[]      = "MIFARE Ultralight Nano";
+constexpr char name_ul_c[]         = "MIFARE UltralightC";
+constexpr char name_plus_2K[]      = "MIFARE Plus2K";
+constexpr char name_plus_4K[]      = "MIFARE Plus4K";
+constexpr char name_desfire_2K[]   = "MIFARE DESFire2K";
+constexpr char name_desfire_4K[]   = "MIFARE DESFire4K";
+constexpr char name_desfire_8K[]   = "MIFARE DESFire8K";
+constexpr char name_ntag203[]      = "NTAG 203";
+constexpr char name_ntag210u[]     = "NTAG 210u";
+constexpr char name_ntag210[]      = "NTAG 210";
+constexpr char name_ntag212[]      = "NTAG 212";
+constexpr char name_ntag213[]      = "NTAG 213";
+constexpr char name_ntag215[]      = "NTAG 215";
+constexpr char name_ntag216[]      = "NTAG 216";
+constexpr char name_iso14443_4[]   = "ISO14443-4";
+constexpr char name_iso18092[]     = "ISO18092";
+constexpr const char* name_table[] = {
+    name_unknown,                                                                     //
+    name_classic_mini, name_classic_1K, name_classic_2K, name_classic_4K,             // Classic
+    name_ul,           name_ul_ev1_1,   name_ul_ev1_2,   name_ul_nano,    name_ul_c,  // Light
+    name_plus_2K,      name_plus_4K,                                                  // Plus
+    name_desfire_2K,   name_desfire_4K, name_desfire_8K,                              // DESFire
+    name_ntag203,      name_ntag210u,   name_ntag210,                                 // NTAG
+    name_ntag212,      name_ntag213,    name_ntag215,                                 // NTAG
+    name_ntag216,                                                                     // NTAG
+    name_iso14443_4,   name_iso18092,                                                 //
 };
 
 // included system area
 constexpr uint16_t max_block_table[] = {0,                                 // Unknown
                                         20,  64,  128, 256,                // Classic
-                                        16,  48,                           // Light
+                                        16,  20,  40,  14,  48,            // Light
                                         128, 256,                          // Plus
                                         0,   0,   0,                       // DESFire (Not has blocks, File base system)
                                         42,  20,  16,  40,  45, 135, 231,  // NTAG
@@ -65,6 +68,9 @@ constexpr uint8_t user_block_table[][2] = {
     {1, 254},  // Exclusive 0 (Manufacturer Block) and last 1 block (Sector Trailer)
     // Light
     {4, 15},  // Exclusive 0-3 and last 4 pages
+    {4, 15},  // Exclusive 0-3 and last 4 pages
+    {4, 35},  // Exclusive 0-3 and last 5 pages
+    {4, 13},  // Exclusive 0-3
     {4, 39},  // Exclusive 0-3 and last 8 pages
     // Plus
     {0, 0},
@@ -89,7 +95,7 @@ constexpr uint8_t user_block_table[][2] = {
 constexpr uint8_t max_sector_table[] = {
     0,                        // Unknown
     5,  16, 32, 40,           // Classic
-    0,  0,                    // Light
+    0,  0,  0,  0,  0,        // Light
     32, 40,                   // Plus
     0,  0,  0,                // Desfire
     0,  0,  0,  0,  0, 0, 0,  // NTAG
@@ -100,7 +106,7 @@ constexpr uint16_t user_area_size_table[] = {
     // bytes
     0,                                      // Unknown
     240,  752,  1504, 3440,                 // Classic
-    48,   144,                              // Light
+    48,   48,   128,  40,   144,            // Light
     1504, 3440,                             // Plus
     0,    0,    0,                          // Desfire
     144,  48,   144,  208,  144, 504, 888,  // NTAG
@@ -108,14 +114,14 @@ constexpr uint16_t user_area_size_table[] = {
 };
 
 constexpr NFCForumTag nfc_forum_tag_table[] = {
-    NFCForumTag::None,                                                               //
-    NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,   // Classic
-    NFCForumTag::Type2, NFCForumTag::Type2,                                          // UltraLight
-    NFCForumTag::None,  NFCForumTag::None,                                           // Plus
-    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                      // DESFire
-    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,  // NTAG
-    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                      // NTAG
-    NFCForumTag::None,  NFCForumTag::None,                                           //
+    NFCForumTag::None,                                                                                   //
+    NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                       // Classic
+    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,  // UltraLight
+    NFCForumTag::None,  NFCForumTag::None,                                                               // Plus
+    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                                          // DESFire
+    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                      // NTAG
+    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                                          // NTAG
+    NFCForumTag::None,  NFCForumTag::None,                                                               //
 };
 
 }  // namespace
@@ -237,6 +243,8 @@ Type version_to_type(const uint8_t info[10])
         return Type::Unknown;
     }
 
+    // m5::utility::log::dump(info,10,false);
+
     if (info[0] != 0x00 || info[1] != 0x04 /*NXP*/ || info[7] != 0x03 /* ISO14443-A*/) {
         return Type::Unknown;
     }
@@ -250,8 +258,11 @@ Type version_to_type(const uint8_t info[10])
                                    : Type::Unknown;
     }
     if (info[2] == 0x03 /*Ultralight */) {
-        // Ultralight EV1, Nano
-        return Type::Unknown;
+        // Ultralight EV1 or Nano
+        return (info[4] == 0x01)   ? (info[6] == 0x0B ? Type::MIFARE_Ultralight_EV1_1
+                                                      : (info[6] == 0x0E ? Type::MIFARE_Ultralight_EV1_2 : Type::Unknown))
+               : (info[4] == 0x02) ? Type::MIFARE_Ultralight_Nano
+                                   : Type::Unknown;
     }
     return Type::Unknown;
 }

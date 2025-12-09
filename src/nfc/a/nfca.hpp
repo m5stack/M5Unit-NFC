@@ -28,28 +28,31 @@ namespace a {
   @brief Type of the PICC
  */
 enum class Type : uint8_t {
-    Unknown,              //!< Unknown type
-    MIFARE_Classic_Mini,  //!< Also known as MIFARE Standard mini
-    MIFARE_Classic_1K,    //!< Also known as MIFARE Standard 1K
-    MIFARE_Classic_2K,    //!< Also known as MIFARE Standard 2K
-    MIFARE_Classic_4K,    //!< Also known as MIFARE Standard 4K
-    MIFARE_Ultralight,    //!< MIFARE Ultralight
-    MIFARE_UltralightC,   //!< MIFARE UltralightC
-    MIFARE_Plus_2K,       //!< MIFARE Plus 2K
-    MIFARE_Plus_4K,       //!< MIFARE Plus 4K
-    MIFARE_DESFire_2K,    //!< MIFARE DESFire 2K
-    MIFARE_DESFire_4K,    //!< MIFARE DESFire 4K
-    MIFARE_DESFire_8K,    //!< MIFARE DESFire 8K
-    NTAG_203,             //!< NATG 203
-    NTAG_210u,            //!< NTAG 210μ
-    NTAG_210,             //!< NTAG 210
-    NTAG_212,             //!< NTAG 212
-    NTAG_213,             //!< NTAG 213
-    NTAG_215,             //!< NTAG 215
-    NTAG_216,             //!< NTAG 216
-    ISO_14443_4,          //!< PICC compliant with ISO/IEC 14443-4
-    ISO_18092,            //!< PICC compliant with ISO/IEC 18092 (NFC)
-    NotCompleted = 0xFF,  //!< SAK indicates UID is not complete
+    Unknown,                  //!< Unknown type
+    MIFARE_Classic_Mini,      //!< Also known as MIFARE Standard mini
+    MIFARE_Classic_1K,        //!< Also known as MIFARE Standard 1K
+    MIFARE_Classic_2K,        //!< Also known as MIFARE Standard 2K
+    MIFARE_Classic_4K,        //!< Also known as MIFARE Standard 4K
+    MIFARE_Ultralight,        //!< MIFARE Ultralight
+    MIFARE_Ultralight_EV1_1,  //!< MIFARE Ultralight EV1 MF0UL11
+    MIFARE_Ultralight_EV1_2,  //!< MIFARE Ultralight EV1 MF0UL21
+    MIFARE_Ultralight_Nano,   //!< MIFARE Ultralight Nano
+    MIFARE_UltralightC,       //!< MIFARE UltralightC
+    MIFARE_Plus_2K,           //!< MIFARE Plus 2K
+    MIFARE_Plus_4K,           //!< MIFARE Plus 4K
+    MIFARE_DESFire_2K,        //!< MIFARE DESFire 2K
+    MIFARE_DESFire_4K,        //!< MIFARE DESFire 4K
+    MIFARE_DESFire_8K,        //!< MIFARE DESFire 8K
+    NTAG_203,                 //!< NATG 203
+    NTAG_210u,                //!< NTAG 210μ
+    NTAG_210,                 //!< NTAG 210
+    NTAG_212,                 //!< NTAG 212
+    NTAG_213,                 //!< NTAG 213
+    NTAG_215,                 //!< NTAG 215
+    NTAG_216,                 //!< NTAG 216
+    ISO_14443_4,              //!< PICC compliant with ISO/IEC 14443-4
+    ISO_18092,                //!< PICC compliant with ISO/IEC 18092 (NFC)
+    NotCompleted = 0xFF,      //!< SAK indicates UID is not complete
 };
 
 //! @brief Get NFC Forum Tag Type from PICC type
@@ -76,8 +79,7 @@ inline bool is_ntag(const Type t)
 //! @brief Does the specified type function as NFC?
 inline bool supports_NFC(const Type t)
 {
-    return t == Type::MIFARE_Ultralight || t == Type::MIFARE_UltralightC ||  // Light/C
-           is_ntag(t);
+    return (t >= Type::MIFARE_Ultralight && t <= Type::MIFARE_UltralightC) || is_ntag(t);
 }
 
 //! @brief Has FAST_READ command?
@@ -268,8 +270,8 @@ enum class Command : uint8_t {
     // MIFARE
     AUTH_WITH_KEY_A = 0x60,  //!< MIFARE Classic. Authentication with Key A
     AUTH_WITH_KEY_B = 0x61,  //!< MIFARE Classic. Authentication with Key B
-    AUTHENTICATE_1  = 0x1A,  //!< MIFARE Ultralight/C. Authentication 1st
-    AUTHENTICATE_2  = 0xAF,  //!< MIFARE Ultralight/C. Authentication 2nd
+    AUTHENTICATE_1  = 0x1A,  //!< MIFARE UltralightC. Authentication 1st
+    AUTHENTICATE_2  = 0xAF,  //!< MIFARE UltralightC. Authentication 2nd
     WRITE_BLOCK     = 0xA0,  //!< MIFARE Classic. write
     WRITE_PAGE      = 0xA2,  //!< MIFARE Ultralight/C and NTAG write
     DECREMENT       = 0xC0,  //!< MIFARE Classic. decrement value block
@@ -290,10 +292,10 @@ enum class Command : uint8_t {
 
 ///@name Timeout
 ///@{
-constexpr uint32_t TIMEOUT_REQ_WUP{4};
-constexpr uint32_t TIMEOUT_SELECT{4};
-constexpr uint32_t TIMEOUT_ANTICOLL{8};
-constexpr uint32_t TIMEOUT_HALT{2};
+constexpr uint32_t TIMEOUT_REQ_WUP{4};   // 4?
+constexpr uint32_t TIMEOUT_SELECT{4};    // 4?
+constexpr uint32_t TIMEOUT_ANTICOLL{8};  // 8?
+constexpr uint32_t TIMEOUT_HALT{2};      // 2?
 constexpr uint32_t TIMEOUT_GET_VERSION{5};
 constexpr uint32_t TIMEOUT_3DES{10};
 constexpr uint32_t TIMEOUT_AUTH1{2};

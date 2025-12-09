@@ -100,12 +100,13 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
         if (!request(atqa)) {
             break;
         }
+        // M5_LIB_LOGE("==> ATQA:%04X", atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
-        M5_LIB_LOGD("Detect:%s %s", picc.uidAsString().c_str(), picc.typeAsString().c_str());
+        M5_LIB_LOGV("Detect:%s %s", picc.uidAsString().c_str(), picc.typeAsString().c_str());
 
         // Hlt
         if (!deactivate()) {
