@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 /*
-  Example using M5UnitUnified for M5Cardputer-ADV with HackerCap
-  JapanTransportationICCard example
+  Example using M5UnitUnified for ST25R3916
+  Read JapanTransportationICCard
   日本国内の交通系カード(CJRC規格準拠)の認証のいらない領域の表示サンプル
 */
 #include <M5Unified.h>
@@ -15,14 +15,33 @@
 #include <vector>
 #include <ctime>
 
+// *************************************************************
+// Choose one define symbol to match the unit you are using
+// *************************************************************
+#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP)
+// For UnitNFC
+// #define USING_UNIT_NFC
+// For CapNFC
+// #define USING_HACKER_CAP
+#endif
+
 using namespace m5::nfc;
 using namespace m5::nfc::f;
 
 namespace {
 auto& lcd = M5.Display;
 m5::unit::UnitUnified Units;
-m5::unit::CapST25R3916 cap;  // ST25R3916 in the HackerCap
-m5::unit::nfc::NFCLayerF nfc_f{cap};
+
+#if defined(USING_UNIT_NFC)
+#pragma message "Choose UnitNFC"
+m5::unit::UnitNFC unit{};  // I2C
+#elif defined(USING_HACKER_CAP)
+#pragma message "Choose HackerCapNFC"
+m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
+#else
+#error Choose unit please!
+#endif
+m5::unit::nfc::NFCLayerF nfc_f{unit};
 
 constexpr uint16_t jtic_system_code[] = {
     0x0003,  // Suica,PASMO,ICOCA,PiTaPa,TOICA ...
@@ -56,7 +75,7 @@ struct tm buf_to_tm(const uint8_t date[2], const uint8_t time[2] = nullptr)
 
 void dump_jtic()
 {
-    Mode m{};
+    standard::Mode m{};
     if (!nfc_f.requestResponse(m)) {
         return;
     }
@@ -163,10 +182,11 @@ void dump_jtic()
 void setup()
 {
     M5.begin();
+    M5.setTouchButtonHeightByRatio(100);
 
-    auto cfg = cap.config();
+    auto cfg = unit.config();
     cfg.mode = NFC::F;
-    cap.config(cfg);
+    unit.config(cfg);
 
 #if 0
     //// M5GFX 0.2.15 NG! with HackerCap
@@ -180,6 +200,21 @@ void setup()
     }
 #endif
 
+#if defined(USING_UNIT_NFC)
+    auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
+    auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
+    M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
+    Wire.end();
+    Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
+
+    if (!Units.add(unit, Wire) || !Units.begin()) {
+        M5_LOGE("Failed to begin");
+        lcd.clear(TFT_RED);
+        while (true) {
+            m5::utility::delay(10000);
+        }
+    }
+#elif defined(USING_HACKER_CAP)
     if (!SPI.bus()) {
         auto spi_sclk = M5.getPin(m5::pin_name_t::sd_spi_sclk);
         auto spi_mosi = M5.getPin(m5::pin_name_t::sd_spi_mosi);
@@ -188,17 +223,15 @@ void setup()
         SPI.begin(spi_sclk, spi_miso, spi_mosi /* SS is shared SD, CC1101, ST25R3916 */);
     }
 
-    delay(1000);
-
     SPISettings settings = {10000000, MSBFIRST, SPI_MODE1};
-    if (!Units.add(cap, SPI, settings) || !Units.begin()) {
+    if (!Units.add(unit, SPI, settings) || !Units.begin()) {
         M5_LOGE("Failed to begin");
         lcd.fillScreen(TFT_RED);
         while (true) {
             m5::utility::delay(10000);
         }
     }
-
+#endif
     M5_LOGI("M5UnitUnified has been begun");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
@@ -213,13 +246,13 @@ void loop()
 {
     M5.update();
     Units.update();
-    bool clicked = M5.BtnA.wasClicked();
 
-    if (clicked) {
+    if (M5.BtnA.wasClicked()) {
         std::vector<PICC> piccs{};
         if (nfc_f.detect(piccs, jtic_system_code, sizeof(jtic_system_code), TimeSlot::Slot1, 50)) {
             PICC picc = piccs.front();
             if (nfc_f.activate(picc)) {
+                M5.Speaker.tone(2500, 20);
                 M5.Log.printf("%s:%s %s F:%02X DF:%04X\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
                               picc.typeAsString().c_str(), picc.format, picc.dfc_format);
                 dump_jtic();

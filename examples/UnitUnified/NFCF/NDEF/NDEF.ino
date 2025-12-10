@@ -4,7 +4,16 @@
  * SPDX-License-Identifier: MIT
  */
 /*
-  Example using M5UnitUnified for M5Cardputer-ADV with HackerCap
-  NDEF example
+  Example using M5UnitUnified for ST25R3916
+  Read/write NDEF NFC-F PICC
 */
+// *************************************************************
+// Choose one define symbol to match the unit you are using
+// *************************************************************
+#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP)
+// For UnitNFC
+// #define USING_UNIT_NFC
+// For CapNFC
+// #define USING_HACKER_CAP
+#endif
 #include "main/NDEF.cpp"

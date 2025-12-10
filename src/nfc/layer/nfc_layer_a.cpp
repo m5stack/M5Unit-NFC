@@ -107,18 +107,16 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
     uint16_t atqa{};
     do {
         // Exists PICC?
-        M5_LIB_LOGI(">>>");
         if (!request(atqa)) {
             break;
         }
-        M5_LIB_LOGI("<<<");
         // M5_LIB_LOGE("==> ATQA:%04X", atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
-        M5_LIB_LOGE("Detect:%s %s", picc.uidAsString().c_str(), picc.typeAsString().c_str());
+        M5_LIB_LOGV("Detect:%s %s", picc.uidAsString().c_str(), picc.typeAsString().c_str());
 
         // Hlt
         if (!deactivate()) {
@@ -652,10 +650,10 @@ bool NFCLayerA::mifareUltralightChangeFormatToNTAG()
         return false;
     }
 
-    if (_activePICC.type == Type::MIFARE_Ultralight || _activePICC.type == Type::MIFARE_UltralightC) {
+    if (_activePICC.isMifareUltralight()) {
         if (!ntag_check_format()) {
             uint8_t buf[4] = {MAGIC_NO, 0x10 /* version 1.0 */, (uint8_t)(_activePICC.userAreaSize() / 8), 0x00};
-            if (!write4(3 /* CC */, buf, sizeof(buf))) {
+            if (!write4(3 /* CC */, buf, sizeof(buf), false)) {
                 M5_LIB_LOGE("Failed to write4");
                 return false;
             }
@@ -915,7 +913,7 @@ bool NFCLayerA::mifare_classic_value_block(const m5::nfc::a::Command cmd, const 
 
 bool NFCLayerA::ntag_check_cc_valid()
 {
-    if (_activePICC.type == Type::MIFARE_Ultralight || _activePICC.type == Type::MIFARE_UltralightC) {
+    if (_activePICC.isMifareUltralight()) {
         if (!ntag_check_format()) {
             M5_LIB_LOGW("NOT NTAG CC %s", _activePICC.typeAsString().c_str());
             return false;
@@ -928,7 +926,7 @@ bool NFCLayerA::ntag_check_format()
 {
     if (_activePICC.supportsNFC()) {
         // Need check CC(Capability Container)
-        if (_activePICC.type == Type::MIFARE_Ultralight || _activePICC.type == Type::MIFARE_UltralightC) {
+        if (_activePICC.isMifareUltralight()) {
             uint8_t rbuf[16]{};
             if (!read16(rbuf, 0 /* page 0-3 */)) {
                 M5_LIB_LOGE("Failed to read 0-3");

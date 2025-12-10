@@ -5,7 +5,12 @@
  */
 /*
   Example using M5UnitUnified for ST25R3916
-  Read JapanTransportationICCard
+  Read/Write with MAC example for FeliCa Lite-S
+
+  *******************************************************************************************************************
+  NOTICE: Please note that cards that have undergone the initial issuance procedure cannot be read without subsequent
+  authentication.
+  *******************************************************************************************************************
 */
 // *************************************************************
 // Choose one define symbol to match the unit you are using
@@ -16,4 +21,4 @@
 // For CapNFC
 // #define USING_HACKER_CAP
 #endif
-#include "main/JapanTransportationICCard.cpp"
+#include "main/ReadWriteMAC.cpp"

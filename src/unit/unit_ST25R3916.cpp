@@ -475,28 +475,14 @@ bool UnitST25R3916::readICIdentity(uint8_t& type, uint8_t& rev)
 
 bool UnitST25R3916::disableField()
 {
-    return writeDirectCommand(CMD_STOP_ALL_ACTIVITIES) && writeOperationControl(0x00);
+    return writeDirectCommand(CMD_STOP_ALL_ACTIVITIES) &&
+           modify_bit_register8(REG_OPERATION_CONTROL, 0x00, tx_en | rx_en);
 }
 
 bool UnitST25R3916::enableField()
 {
-    // Adjust regulators
-    if (!writeOperationControl(en)) {
-        M5_LIB_LOGE("Failed to writeOperationControl");
-        return false;
-    }
-    if (!writeDirectCommand(CMD_ADJUST_REGULATORS)) {
-        M5_LIB_LOGE("Failed to CMD_ADJUST_REGULATORS");
-        return false;
-    }
-    m5::utility::delay(5);  // Need wait
-
-    // Check vdd voltage
-    uint8_t value{};
-    if (readRegulatorDisplay(value)) {
-        M5_LIB_LOGD("Regulated voltages:%02X:%1.1fV", value, regulated_voltages(value, _cfg.vdd_voltage_5V));
-    }
-    return configureNFCMode(_cfg.mode);
+    return writeDirectCommand(CMD_STOP_ALL_ACTIVITIES) &&
+           modify_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en, 0x00);
 }
 
 //

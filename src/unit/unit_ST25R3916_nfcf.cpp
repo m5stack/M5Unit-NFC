@@ -225,6 +225,7 @@ bool UnitST25R3916::nfcfRequestResponse(m5::nfc::f::standard::Mode& mode, const 
     mode = standard::Mode::Mode0;
 
     if (picc.type != Type::FeliCaStandard) {
+        M5_LIB_LOGE("========================");
         return false;
     }
 

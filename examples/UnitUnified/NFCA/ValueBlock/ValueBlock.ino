@@ -4,7 +4,16 @@
  * SPDX-License-Identifier: MIT
  */
 /*
-  Example using M5UnitUnified for M5Cardputer-ADV with HackerCap
-  Value block example (Only MIFARE classic)
+  Example using M5UnitUnified for ST25R3916
+  Value block for MIFARE classic
 */
+// *************************************************************
+// Choose one define symbol to match the unit you are using
+// *************************************************************
+#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP)
+// For UnitNFC
+// #define USING_UNIT_NFC
+// For CapNFC
+// #define USING_HACKER_CAP
+#endif
 #include "main/ValueBlock.cpp"

@@ -111,7 +111,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             continue;
         }
 
-        M5_LIB_LOGV("detect %s", picc1.idmAsString().c_str());
+        M5_LIB_LOGE("detect %s", picc1.idmAsString().c_str());
 
         _activePICC = picc1;
 
@@ -199,6 +199,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
 
         //
         if (type == Type::Unknown) {
+            M5_LIB_LOGE("Unknown: %x", format);
             if (format) {
                 type = Type::FeliCaStandard;
             } else {
@@ -209,7 +210,10 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
         // Re-check
         if (type == Type::FeliCaStandard) {
             standard::Mode mode{};
-            if (!_impl->requestResponse(mode, _activePICC)) {
+            PICC tmp = picc1;
+            tmp.type = Type::FeliCaStandard;
+            if (!_impl->requestResponse(mode, tmp)) {
+                M5_LIB_LOGE("mode error");
                 continue;
             }
         }
@@ -693,7 +697,7 @@ bool NFCLayerF::external_authenticate_lite_s(const uint8_t ck[16], const uint16_
         M5_LIB_LOGE("Failed to internal_authenticate_lite_s");
         return false;
     }
-    M5_LIB_LOGE("WCNT:%02X:%02X:%02X:%02X", wcnt[0], wcnt[1], wcnt[2], wcnt[3]);
+    // M5_LIB_LOGE("WCNT:%02X:%02X:%02X:%02X", wcnt[0], wcnt[1], wcnt[2], wcnt[3]);
 
     //
     uint8_t state[16]{

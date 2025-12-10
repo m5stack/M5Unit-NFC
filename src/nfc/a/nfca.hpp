@@ -70,6 +70,12 @@ inline bool is_mifare(const Type t)
     return t >= Type::MIFARE_Classic_Mini && t <= Type::MIFARE_DESFire_8K;
 }
 
+//! @brief Is type MIFARE Ultralight series?
+inline bool is_mifare_ultralight(const Type t)
+{
+    return t >= Type::MIFARE_Ultralight && t <= Type::MIFARE_UltralightC;
+}
+
 //! @brief Is type NTAG?
 inline bool is_ntag(const Type t)
 {
@@ -170,6 +176,12 @@ struct PICC {
     {
         return valid() && is_mifare_classic(type);
     }
+    //! @brief Is MIFARE Ultralight series?
+    inline bool isMifareUltralight() const
+    {
+        return valid() && is_mifare_ultralight(type);
+    }
+
     //! @brief Is NTAG?
     inline bool isNTAG() const
     {

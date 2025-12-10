@@ -13,7 +13,15 @@
 #include <M5Utility.h>
 #include <vector>
 
-//#define USING_I2C
+// *************************************************************
+// Choose one define symbol to match the unit you are using
+// *************************************************************
+#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP)
+// For UnitNFC
+// #define USING_UNIT_NFC
+// For CapNFC
+// #define USING_HACKER_CAP
+#endif
 
 using namespace m5::nfc::a;
 
@@ -21,13 +29,16 @@ namespace {
 auto& lcd = M5.Display;
 m5::unit::UnitUnified Units;
 
-#if defined(USING_I2C)
-m5::unit::UnitST25R3916 unit{};  // I2C connected
+#if defined(USING_UNIT_NFC)
+#pragma message "Choose UnitNFC"
+m5::unit::UnitNFC unit{};  // I2C
+#elif defined(USING_HACKER_CAP)
+#pragma message "Choose HackerCapNFC"
+m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
 #else
-m5::unit::CapST25R3916 unit{};  // ST25R3916 in the HackerCap
+#error Choose unit please!
 #endif
 m5::unit::nfc::NFCLayerA nfc_a{unit};
-
 }  // namespace
 
 void setup()
@@ -46,7 +57,7 @@ void setup()
     }
 #endif
 
-#if defined(USING_I2C)
+#if defined(USING_UNIT_NFC)
     auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
     auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
     M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
@@ -60,7 +71,7 @@ void setup()
             m5::utility::delay(10000);
         }
     }
-#else
+#elif defined(USING_HACKER_CAP)
     if (!SPI.bus()) {
         auto spi_sclk = M5.getPin(m5::pin_name_t::sd_spi_sclk);
         auto spi_mosi = M5.getPin(m5::pin_name_t::sd_spi_mosi);
@@ -78,7 +89,6 @@ void setup()
         }
     }
 #endif
-
     M5_LOGI("M5UnitUnified has been begun");
     M5_LOGI("%s", Units.debugInfo().c_str());
 

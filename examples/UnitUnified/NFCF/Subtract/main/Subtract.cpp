@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 /*
-  Example using M5UnitUnified for M5Cardputer-ADV with HackerCap
-  Subtract register  example (Lite,Lite-S only)
+  Example using M5UnitUnified for ST25R3916
+  Subtract register example for Lite,Lite-S
 */
 #include <M5Unified.h>
 #include <M5UnitUnified.h>
@@ -13,14 +13,33 @@
 #include <M5Utility.h>
 #include <vector>
 
+// *************************************************************
+// Choose one define symbol to match the unit you are using
+// *************************************************************
+#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP)
+// For UnitNFC
+// #define USING_UNIT_NFC
+// For CapNFC
+// #define USING_HACKER_CAP
+#endif
+
 using namespace m5::nfc;
 using namespace m5::nfc::f;
 
 namespace {
 auto& lcd = M5.Display;
 m5::unit::UnitUnified Units;
-m5::unit::CapST25R3916 cap;  // ST25R3916 in the HackerCap
-m5::unit::nfc::NFCLayerF nfc_f{cap};
+
+#if defined(USING_UNIT_NFC)
+#pragma message "Choose UnitNFC"
+m5::unit::UnitNFC unit{};  // I2C
+#elif defined(USING_HACKER_CAP)
+#pragma message "Choose HackerCapNFC"
+m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
+#else
+#error Choose unit please!
+#endif
+m5::unit::nfc::NFCLayerF nfc_f{unit};
 
 void subtract_register()
 {
@@ -90,10 +109,11 @@ void subtract_register()
 void setup()
 {
     M5.begin();
+    M5.setTouchButtonHeightByRatio(100);
 
-    auto cfg = cap.config();
+    auto cfg = unit.config();
     cfg.mode = NFC::F;
-    cap.config(cfg);
+    unit.config(cfg);
 
 #if 0
     //// M5GFX 0.2.15 NG! with HackerCap
@@ -107,6 +127,21 @@ void setup()
     }
 #endif
 
+#if defined(USING_UNIT_NFC)
+    auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
+    auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
+    M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
+    Wire.end();
+    Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
+
+    if (!Units.add(unit, Wire) || !Units.begin()) {
+        M5_LOGE("Failed to begin");
+        lcd.clear(TFT_RED);
+        while (true) {
+            m5::utility::delay(10000);
+        }
+    }
+#elif defined(USING_HACKER_CAP)
     if (!SPI.bus()) {
         auto spi_sclk = M5.getPin(m5::pin_name_t::sd_spi_sclk);
         auto spi_mosi = M5.getPin(m5::pin_name_t::sd_spi_mosi);
@@ -116,13 +151,14 @@ void setup()
     }
 
     SPISettings settings = {10000000, MSBFIRST, SPI_MODE1};
-    if (!Units.add(cap, SPI, settings) || !Units.begin()) {
+    if (!Units.add(unit, SPI, settings) || !Units.begin()) {
         M5_LOGE("Failed to begin");
         lcd.fillScreen(TFT_RED);
         while (true) {
             m5::utility::delay(10000);
         }
     }
+#endif
     M5_LOGI("M5UnitUnified has been begun");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
@@ -132,8 +168,8 @@ void setup()
     lcd.setFont(&fonts::Font0);
     lcd.fillScreen(0);
     lcd.setCursor(0, 0);
-    lcd.printf("Please put the PICC and click G0");
-    M5.Log.printf("Please put the PICC and click G0\n");
+    lcd.printf("Please put the PICC and click BtnA");
+    M5.Log.printf("Please put the PICC and click BtnA\n");
 }
 
 void loop()
@@ -149,6 +185,7 @@ void loop()
                           picc.typeAsString().c_str(), picc.format, picc.dfc_format);
             if (picc.type == Type::FeliCaLite || picc.type == Type::FeliCaLiteS) {
                 if (nfc_f.activate(picc)) {
+                    M5.Speaker.tone(2500, 20);
                     subtract_register();
                     nfc_f.deactivate();
                 }
