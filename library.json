@@ -12,7 +12,7 @@
     },
     "dependencies":
     {
-	"m5stack/M5UnitUnified": ">=0.1.0"
+	"m5stack/M5UnitUnified": ">=0.3.0"
     },
     "version": "0.0.1",
     "frameworks": [
