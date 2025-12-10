@@ -175,7 +175,7 @@ public:
       @param[out] mode Mode if detected
       @warning FeliCa Standard only
      */
-    bool requestResponse(m5::nfc::f::Mode& mode);
+    bool requestResponse(m5::nfc::f::standard::Mode& mode);
 
     /*!
       @brief Request system code
@@ -245,6 +245,17 @@ public:
     bool read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::block_t sblock);
 
     /*!
+      @breif Read the specified block list
+      @param[out] rx Buffer (At least 16 * block_num)
+      @param[in/out] rx_len in:buffer size, out:actual read size
+      @param block Target block array
+      @param block_num Number of block
+      @return True if successful
+      @warning rx in 16-byte units
+     */
+    bool read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::block_t* block, const uint8_t block_num);
+
+    /*!
       @brief Write the 1 block
       @param block Target block
       @param tx Buffer
@@ -267,11 +278,34 @@ public:
 
     ///@note For activated PICC
     ///@name Read/Write with MAC
+    ///@{
+    /*!
+      @brief Internal authentication
+      @param ck Card key
+      @param ckv Card key version
+      @param rc Random challenge
+      @return True if successful
+     */
+    bool internalAuthenticate(const uint8_t ck[16], const uint16_t ckv, const uint8_t rc[16]);
+    /*!
+      @brief External authentication
+      @param wcnt WCNT value
+      @return True if successful
+      @pre internalAuthenticate
+     */
+    bool externalAuthenticate(const uint8_t ck[16], const uint16_t ckv);
+
+    void clearAuthenticate()
+    {
+        _authenticated = false;
+    }
+
     /*!
       @brief Read the 1 block
       @param[out] rx Output buffer
       @param block Target block
       @return True if successful
+      @pre internalAuthentication
      */
     bool readWithMAC16(uint8_t rx[16], const m5::nfc::f::block_t block);
 
@@ -292,7 +326,7 @@ public:
     ///@{
     /*!
       @brief Is the PICC data in NDEF format?
-      @param[out] valid True if NDEF format
+[      @param[out] valid True if NDEF format
       @return True if successful
      */
     bool ndefIsValidFormat(bool& valid);
@@ -334,11 +368,16 @@ protected:
     virtual uint8_t maximumReadBlocks() const override;
     virtual uint8_t maximumWriteBlocks() const override;
 
-    bool read_16(uint8_t rx[16], const m5::nfc::f::block_t block, const bool check_valid);
+    bool read_16(uint8_t rx[16], const m5::nfc::f::block_t block, const bool check_picc_valid);
+    bool write_32(const m5::nfc::f::block_t block[2], const uint8_t tx[32]);  // For write with MAC
 
     bool dump_felica_lite();
     bool dump_felica_lite_s();
     bool dump_block(m5::nfc::f::block_t block);
+
+    bool internal_authenticate_lite_s(const uint8_t ck[16], const uint16_t ckv, const uint8_t rc[16],
+                                      const bool include_wcnt = false);
+    bool external_authenticate_lite_s(const uint8_t ck[16], const uint16_t ckv);
 
 protected:
     m5::nfc::f::PICC _activePICC{};
@@ -346,6 +385,15 @@ protected:
 private:
     std::unique_ptr<Adapter> _impl;
     m5::nfc::ndef::NDEFLayer _ndef;
+    union {
+        uint8_t _sk[16]{};
+        struct {
+            uint8_t _sk1[8];
+            uint8_t _sk2[8];
+        };
+    };
+    uint8_t _rc[16]{};
+    bool _authenticated{};
 };
 
 ///@cond
@@ -358,7 +406,7 @@ struct NFCLayerF::Adapter {
 
     virtual bool requestService(uint16_t key_version[], const m5::nfc::f::PICC& picc, const uint16_t* node_code,
                                 const uint8_t node_num)                                                      = 0;
-    virtual bool requestResponse(m5::nfc::f::Mode& mode, const m5::nfc::f::PICC& picc)                       = 0;
+    virtual bool requestResponse(m5::nfc::f::standard::Mode& mode, const m5::nfc::f::PICC& picc)             = 0;
     virtual bool requestSystemCode(uint16_t code_list[255], uint8_t& code_num, const m5::nfc::f::PICC& picc) = 0;
 
     virtual bool readWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,

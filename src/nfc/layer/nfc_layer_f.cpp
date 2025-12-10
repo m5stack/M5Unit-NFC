@@ -13,6 +13,7 @@
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
+#include <esp_random.h>
 
 using namespace m5::nfc::f;
 using namespace m5::nfc::ndef;
@@ -52,6 +53,14 @@ inline bool is_same_idm_and_pmm(const PICC& a, const PICC& b)
     return a.idm == b.idm && a.pmm == b.pmm;
 }
 
+const uint8_t* make_rc(uint8_t rc[16])
+{
+    for (uint_fast8_t i = 0; i < 16; ++i) {
+        rc[i] = esp_random();
+    }
+    return rc;
+}
+
 }  // namespace
 
 namespace m5 {
@@ -81,6 +90,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
 {
     uint8_t slots = timeslot_to_slot(time_slot);
 
+    _authenticated = false;
     piccs.clear();
     piccs.reserve(slots);
 
@@ -100,6 +110,8 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
         if (exists_picc(piccs, picc1)) {
             continue;
         }
+
+        M5_LIB_LOGV("detect %s", picc1.idmAsString().c_str());
 
         _activePICC = picc1;
 
@@ -196,7 +208,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
 
         // Re-check
         if (type == Type::FeliCaStandard) {
-            Mode mode{};
+            standard::Mode mode{};
             if (!_impl->requestResponse(mode, _activePICC)) {
                 continue;
             }
@@ -220,7 +232,8 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
 bool NFCLayerF::activate(const m5::nfc::f::PICC& picc)
 {
     if (picc.valid()) {
-        _activePICC = picc;
+        _activePICC    = picc;
+        _authenticated = false;
         return true;
     }
     return false;
@@ -228,7 +241,8 @@ bool NFCLayerF::activate(const m5::nfc::f::PICC& picc)
 
 bool NFCLayerF::deactivate()
 {
-    _activePICC = PICC{};
+    _activePICC    = PICC{};
+    _authenticated = false;
     return true;
 }
 
@@ -243,7 +257,7 @@ bool NFCLayerF::requestService(uint16_t key_version[], const uint16_t* node_code
     return _activePICC.valid() && _impl->requestService(key_version, _activePICC, node_code, node_size);
 }
 
-bool NFCLayerF::requestResponse(m5::nfc::f::Mode& mode)
+bool NFCLayerF::requestResponse(m5::nfc::f::standard::Mode& mode)
 {
     return _activePICC.valid() && _impl->requestResponse(mode, _activePICC);
 }
@@ -251,14 +265,6 @@ bool NFCLayerF::requestResponse(m5::nfc::f::Mode& mode)
 bool NFCLayerF::requestSystemCode(uint16_t code_list[255], uint8_t& code_num)
 {
     return _activePICC.valid() && _impl->requestSystemCode(code_list, code_num, _activePICC);
-}
-
-bool NFCLayerF::read_16(uint8_t rx[16], const block_t block, const bool check_valid)
-{
-    uint16_t rx_len{16};
-    uint16_t sc{service_random_read};
-    return rx && (check_valid ? _activePICC.valid() : true) &&
-           _impl->readWithoutEncryption(rx, rx_len, _activePICC, &sc, 1, &block, 1) && rx_len == 16;
 }
 
 bool NFCLayerF::read16(uint8_t rx[16], const m5::nfc::f::block_t block, const uint16_t service_code)
@@ -273,6 +279,17 @@ bool NFCLayerF::read16(uint8_t rx[16], const m5::nfc::f::block_t* block, const u
     return rx && block && block_num && service_code && service_num && _activePICC.valid() &&
            _impl->readWithoutEncryption(rx, rx_len, _activePICC, service_code, service_num, block, block_num) &&
            rx_len == 16;
+}
+
+bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::block_t* block, const uint8_t block_num)
+{
+    if (!_activePICC.valid() || !rx || !rx_len || !block || !block_num || block_num > _activePICC.maximumReadBlocks()) {
+        return false;
+    }
+
+    uint16_t sc{service_random_read};
+    return _impl->readWithoutEncryption(rx, rx_len, _activePICC, &sc, 1, block, block_num) ||
+           (rx_len != 16 * block_num);
 }
 
 bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
@@ -317,6 +334,67 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
     return true;
 }
 
+bool NFCLayerF::readWithMAC16(uint8_t rx[16], const m5::nfc::f::block_t block)
+{
+    if (!_authenticated) {
+        M5_LIB_LOGW("NOT authenticated");
+        return false;
+    }
+    if (!_activePICC.valid() || (_activePICC.type != Type::FeliCaLite && _activePICC.type != Type::FeliCaLiteS)) {
+        return false;
+    }
+
+    const bool liteS     = (_activePICC.type == Type::FeliCaLiteS);
+    block_t mac_block    = liteS ? lite_s::MAC_A : lite::MAC;
+    block_t block_list[] = {block, mac_block};
+
+    uint8_t rbuf[16 * 2]{};
+    uint16_t rx_len = sizeof(rbuf);
+
+    if (!read(rbuf, rx_len, block_list, 2) || rx_len < sizeof(rbuf)) {
+        M5_LIB_LOGE("Failed to read");
+        return false;
+    }
+
+    const uint8_t* data_block = rbuf;
+    const uint8_t* mac_card   = rbuf + 16;
+    const uint8_t* sk1        = _sk;
+    const uint8_t* sk2        = _sk + 8;
+    const uint8_t* rc         = _rc;
+    uint8_t mac_host[8]{};
+
+    if (liteS) {
+        uint8_t plain[8] = {
+            static_cast<uint8_t>(block.block()),
+            0x00,
+            static_cast<uint8_t>(mac_block.block()),
+            0x00,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+        };
+        if (!generate_mac(mac_host, plain, sizeof(plain), data_block, 16, sk1, sk2, rc)) {
+            return false;
+        }
+    } else {
+        if (!generate_mac(mac_host, nullptr, 0, data_block, 16, sk1, sk2, rc)) {
+            return false;
+        }
+    }
+
+    if (std::memcmp(mac_host, mac_card, 8) != 0) {
+        M5_LIB_LOGE("MAC mismatch");
+        // M5_LIB_LOGE("Not match %u", liteS);
+        m5::utility::log::dump(mac_host, 8, false);
+        m5::utility::log::dump(mac_card, 8, false);
+        return false;
+    }
+
+    std::memcpy(rx, data_block, 16);
+    return true;
+}
+
 bool NFCLayerF::write16(const m5::nfc::f::block_t block, const uint8_t tx[16], const uint16_t tx_len)
 {
     if (_activePICC.valid() && tx && tx_len) {
@@ -347,6 +425,85 @@ bool NFCLayerF::write(const m5::nfc::f::block_t sblock, const uint8_t* tx, const
         written += wsize;
     }
     return true;
+}
+
+bool NFCLayerF::writeWithMAC16(const m5::nfc::f::block_t block, const uint8_t tx[16], const uint16_t tx_len)
+{
+    if (!_authenticated) {
+        M5_LIB_LOGW("NOT authenticated");
+        return false;
+    }
+    if (!_activePICC.valid() || (_activePICC.type != Type::FeliCaLite && _activePICC.type != Type::FeliCaLiteS)) {
+        return false;
+    }
+
+    uint8_t tx2[16]{};
+    memcpy(tx2, tx, std::min<uint16_t>(tx_len, sizeof(tx2)));
+
+    const bool liteS   = (_activePICC.type == Type::FeliCaLiteS);
+    block_t mac_block  = liteS ? lite_s::MAC_A : lite::MAC;
+    const uint8_t* sk1 = _sk;
+    const uint8_t* sk2 = _sk + 8;
+    const uint8_t* rc  = _rc;
+    uint8_t mac_host[8]{};
+    uint8_t wcnt[4]{};
+    if (liteS) {
+        // Read WCNT
+        uint8_t wcnt_block[16]{};
+        if (!read16(wcnt_block, lite_s::WCNT)) {
+            return false;
+        }
+        std::memcpy(wcnt, wcnt_block, 4);  // Using first 4 bytes (for Link Lite-S mode)
+
+        uint8_t plain[8] = {
+            wcnt[0],
+            wcnt[1],
+            wcnt[2],
+            wcnt[3],  //  Always 0 if Lite/Lite-S
+            static_cast<uint8_t>(block.block()),
+            0x00,
+            static_cast<uint8_t>(mac_block.block()),
+            0x00,
+        };
+        if (!generate_mac(mac_host, plain, sizeof(plain), tx2, 16, sk2, sk1, rc)) {
+            return false;
+        }
+    } else {
+        if (!generate_mac(mac_host, nullptr /* plain*/, 0 /*plain  num */, tx2, 16, sk1, sk2, rc)) {
+            return false;
+        }
+    }
+
+    uint8_t wbuf[32]{};
+    std::memcpy(wbuf, tx2, 16);
+    std::memcpy(wbuf + 16, mac_host, 8);
+    std::memcpy(wbuf + 24, wcnt, 4);
+    block_t block_list[2] = {block, mac_block};
+
+    m5::utility::log::dump(wbuf, 32);
+    return false;
+
+    return write_32(block_list, wbuf);
+}
+
+bool NFCLayerF::internalAuthenticate(const uint8_t ck[16], const uint16_t ckv, const uint8_t rc[16])
+{
+    if (!_activePICC.valid() || (_activePICC.type != Type::FeliCaLiteS)) {
+        return false;
+    }
+    return internal_authenticate_lite_s(ck, ckv, rc);
+}
+
+bool NFCLayerF::externalAuthenticate(const uint8_t ck[16], const uint16_t ckv)
+{
+    if (!_activePICC.valid() || _activePICC.type != Type::FeliCaLiteS) {
+        return false;
+    }
+    if (!_authenticated) {
+        M5_LIB_LOGW("NOT authenticated");
+        return false;
+    }
+    return external_authenticate_lite_s(ck, ckv);
 }
 
 bool NFCLayerF::ndefIsValidFormat(bool& valid)
@@ -422,6 +579,163 @@ bool NFCLayerF::dump(const block_t block)
 }
 
 //
+bool NFCLayerF::read_16(uint8_t rx[16], const block_t block, const bool check_valid)
+{
+    uint16_t rx_len{16};
+    uint16_t sc{service_random_read};
+    return rx && (check_valid ? _activePICC.valid() : true) &&
+           _impl->readWithoutEncryption(rx, rx_len, _activePICC, &sc, 1, &block, 1) && rx_len == 16;
+}
+
+bool NFCLayerF::write_32(const m5::nfc::f::block_t block[2], const uint8_t tx[32])
+{
+    // 2nd block must be MAC_A
+    uint16_t sc{service_random_read_write};
+    if (block && tx && block[1].block() == lite_s::MAC_A.block()) {
+        return _impl->writeWithoutEncryption(_activePICC, &sc, 1, block, 2, tx, 32);
+    }
+    return false;
+}
+
+bool NFCLayerF::internal_authenticate_lite_s(const uint8_t ck[16], const uint16_t ckv, const uint8_t rc[16],
+                                             const bool include_wcnt)
+{
+    _authenticated = false;
+
+    // Make session key
+    uint8_t sk[16]{};
+    const uint8_t* sk1 = sk;
+    const uint8_t* sk2 = sk + 8;
+    if (!make_session_key(sk, ck, rc)) {
+        M5_LIB_LOGE("Failed to make_session_key");
+        return false;
+    }
+    // m5::utility::log::dump(sk, 16, false);
+
+    // Write RC
+    if (!write16(lite::RC, rc, 16)) {
+        M5_LIB_LOGE("Failed to write CK");
+        return false;
+    }
+
+    // Read ID,CKV, WCNT, MAC(Lite)/MAC_A(Lite-S)
+    block_t block_list[4] = {lite::ID, lite::CKV,                              //
+                             (include_wcnt ? lite_s::WCNT : lite_s::MAC_A),    //
+                             (include_wcnt ? lite_s::MAC_A : block_t{0x00})};  //
+    uint8_t rbuf[16 * 4]{};
+    uint16_t rx_len = include_wcnt ? (4 * 16) : (3 * 16);
+    auto needs      = rx_len;
+    if (!read(rbuf, rx_len, block_list, include_wcnt ? 4 : 3) || rx_len != needs) {
+        M5_LIB_LOGE("Failed to read blocks %u/%u", rx_len, needs);
+        return false;
+    }
+    // m5::utility::log::dump(rbuf, rx_len, false);
+
+    // Compare CKV
+    const uint8_t* ckv_block = rbuf + 16;  // 2nd block
+    const uint16_t ckv_card  = (static_cast<uint16_t>(ckv_block[0]) << 8) | static_cast<uint16_t>(ckv_block[1]);
+    if (ckv_card != ckv) {
+        M5_LIB_LOGE("CKV mismatch %04X,%04X", ckv_card, ckv);
+        return false;
+    }
+
+    // Compare MAC
+    uint8_t mac_host[8]{};
+    uint8_t plain[8] = {static_cast<uint8_t>(block_list[0].block()),
+                        0x00,
+                        static_cast<uint8_t>(block_list[1].block()),
+                        0x00,
+                        static_cast<uint8_t>(block_list[2].block()),
+                        0x00,
+                        static_cast<uint8_t>(include_wcnt ? block_list[3].block() : 0xFF),
+                        static_cast<uint8_t>(include_wcnt ? 0x00 : 0xFF)};
+    if (!generate_mac(mac_host, plain, sizeof(plain),                             //
+                      rbuf, 32 /*ID + CKV*/ + (include_wcnt != 0) * 16 /*WCNT*/,  //
+                      sk1, sk2, rc)) {
+        M5_LIB_LOGE("Failed to generate_mac");
+        return false;
+    }
+    // m5::utility::log::dump(mac, 8, false);
+
+    const uint8_t* mac_card = rbuf + 32 + (include_wcnt != 0) * 16;  // MAC_A
+    if (std::memcmp(mac_host, mac_card, 8) != 0) {
+        M5_LIB_LOGE("MAC mismatch CKV:%04X,%04X", ckv_card, ckv);
+        // M5_LIB_LOGE("Not match %u", liteS);
+        m5::utility::log::dump(mac_host, 8, false);
+        m5::utility::log::dump(mac_card, 8, false);
+        return false;
+    }
+
+    memcpy(_sk, sk, sizeof(_sk));
+    memcpy(_rc, rc, sizeof(_rc));
+    _authenticated = true;
+
+    return true;
+}
+
+bool NFCLayerF::external_authenticate_lite_s(const uint8_t ck[16], const uint16_t ckv)
+{
+    // Write RC
+    uint8_t rc[16]{};
+    make_rc(rc);
+    if (!write16(lite_s::RC, rc, sizeof(rc))) {
+        return false;
+    }
+
+    // internal auth with WCNT
+    if (!internal_authenticate_lite_s(ck, ckv, rc)) {
+        M5_LIB_LOGE("Failed to internal_authenticate_lite_s");
+        return false;
+    }
+
+    uint8_t wcnt[16]{};
+    if (!read16(wcnt, lite_s::WCNT)) {
+        M5_LIB_LOGE("Failed to internal_authenticate_lite_s");
+        return false;
+    }
+    M5_LIB_LOGE("WCNT:%02X:%02X:%02X:%02X", wcnt[0], wcnt[1], wcnt[2], wcnt[3]);
+
+    //
+    uint8_t state[16]{
+        0x01 /* Authed */,
+    };
+
+    uint8_t plain_w[8] = {wcnt[0],
+                          wcnt[1],
+                          wcnt[2],
+                          wcnt[3],  //  Always 0x00 if Lite/Lite-S
+                          static_cast<uint8_t>(lite_s::STATE.block()),
+                          0x00,
+                          static_cast<uint8_t>(lite_s::MAC_A.block()),
+                          0x00};
+
+    const uint8_t* sk1 = _sk;
+    const uint8_t* sk2 = _sk + 8;
+    uint8_t mac_w[8]{};
+    if (!generate_mac(mac_w, plain_w, sizeof(plain_w), state, sizeof(state), sk2, sk1, rc)) {
+        M5_LIB_LOGE("Failed to generate_mac");
+        return false;
+    }
+
+    uint8_t tx[32]{};
+    std::memcpy(tx, state, 16);
+    std::memcpy(tx + 16, mac_w, 8);
+    std::memcpy(tx + 24, wcnt, 4);
+
+    block_t block_list[2] = {lite_s::STATE, lite_s::MAC_A};
+    if (!write_32(block_list, tx)) {
+        M5_LIB_LOGE("Failed to write_32");
+        return false;
+    }
+
+    /*
+    read16(state, lite_s::STATE);
+    M5_LIB_LOGE("=== STATE");
+    m5::utility::log::dump(state, 16);
+    */
+
+    return true;
+}
 
 bool NFCLayerF::dump_felica_lite()
 {

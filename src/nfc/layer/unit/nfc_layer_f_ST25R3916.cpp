@@ -31,7 +31,7 @@ struct AdapterST25R3916ForF final : NFCLayerF::Adapter {
 
     virtual bool requestService(uint16_t key_version[], const m5::nfc::f::PICC& picc, const uint16_t* node_code,
                                 const uint8_t node_num) override;
-    virtual bool requestResponse(m5::nfc::f::Mode& mode, const m5::nfc::f::PICC& picc) override;
+    virtual bool requestResponse(m5::nfc::f::standard::Mode& mode, const m5::nfc::f::PICC& picc) override;
     virtual bool requestSystemCode(uint16_t code_list[255], uint8_t& code_num, const m5::nfc::f::PICC& picc) override;
 
     virtual bool readWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,
@@ -56,7 +56,7 @@ bool AdapterST25R3916ForF::requestService(uint16_t key_version[], const m5::nfc:
     return _u.nfcfRequestService(key_version, picc, node_code, node_num);
 }
 
-bool AdapterST25R3916ForF::requestResponse(m5::nfc::f::Mode& mode, const m5::nfc::f::PICC& picc)
+bool AdapterST25R3916ForF::requestResponse(m5::nfc::f::standard::Mode& mode, const m5::nfc::f::PICC& picc)
 {
     return _u.nfcfRequestResponse(mode, picc);
 }

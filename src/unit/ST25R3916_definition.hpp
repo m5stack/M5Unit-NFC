@@ -232,6 +232,13 @@ constexpr uint8_t OP_DIRECT_COMMAND{0xC0};           // 11xxxxxxb;
  */
 namespace regval {
 ///@cond
+// 0x00 IO configuration register 1
+constexpr uint8_t i2c_thd1{0x20};
+constexpr uint8_t i2c_thd0{0x10};
+
+constexpr uint16_t i2c_thd116{0x2000};
+constexpr uint16_t i2c_thd016{0x1000};
+
 // 0x01 IO configuration register 2
 constexpr uint8_t sup3v{0x80};
 constexpr uint8_t io_drv_lvl{0x04};

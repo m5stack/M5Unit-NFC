@@ -34,6 +34,10 @@ namespace m5 {
   @brief Unit-related namespace
  */
 namespace unit {
+
+using UnitNFC      = m5::unit::UnitST25R3916;
+using HackerCapNFC = m5::unit::CapST25R3916;
+
 }  // namespace unit
 }  // namespace m5
 #endif

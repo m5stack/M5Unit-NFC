@@ -111,8 +111,7 @@ bool NDEFLayer::read_with_tlv(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::n
     }
 
     uint16_t buf_size = (last_block - block + 1) * _interface.userBlockUnitSize();
-    ;
-    buf = static_cast<uint8_t*>(malloc(buf_size));
+    buf               = static_cast<uint8_t*>(malloc(buf_size));
     if (!buf) {
         M5_LIB_LOGE("Failed to allocate memory %u", buf_size);
         return false;
@@ -460,6 +459,7 @@ bool calculate_ndef_size(uint32_t& size, const uint8_t* p, const uint8_t* end, c
     size = required;
     return true;
 }
+
 #endif
 
 }  // namespace ndef

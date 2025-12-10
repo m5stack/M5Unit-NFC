@@ -13,6 +13,7 @@
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
+#include <esp_random.h>
 
 using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
@@ -61,6 +62,15 @@ void dump_block(const uint8_t buf[16], const int16_t block = -1, const int16_t s
     }
     ::puts(tmp);
 }
+
+void rotate_byte_left(uint8_t out[8], const uint8_t in[8])
+{
+    for (int i = 0; i < 7; ++i) {
+        out[i] = in[i + 1];
+    }
+    out[7] = in[0];
+}
+
 }  // namespace
 
 namespace m5 {
@@ -97,16 +107,18 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
     uint16_t atqa{};
     do {
         // Exists PICC?
+        M5_LIB_LOGI(">>>");
         if (!request(atqa)) {
             break;
         }
+        M5_LIB_LOGI("<<<");
         // M5_LIB_LOGE("==> ATQA:%04X", atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
-        M5_LIB_LOGV("Detect:%s %s", picc.uidAsString().c_str(), picc.typeAsString().c_str());
+        M5_LIB_LOGE("Detect:%s %s", picc.uidAsString().c_str(), picc.typeAsString().c_str());
 
         // Hlt
         if (!deactivate()) {
@@ -147,7 +159,11 @@ bool NFCLayerA::reactivate(const PICC& picc)
     // If arg referrence is the same as _activePICC, it will cause an error, so it must be a separate instance (*1)
     PICC tmp = picc;
     uint16_t discard{};
-    return tmp.valid() && deactivate() && wakeup(discard) && activate(tmp);
+    if (tmp.valid() && deactivate()) {
+        m5::utility::delay(2);
+        return wakeup(discard) && activate(tmp);
+    }
+    return false;
 }
 
 bool NFCLayerA::deactivate()
@@ -646,6 +662,84 @@ bool NFCLayerA::mifareUltralightChangeFormatToNTAG()
             // Verify
             return ntag_check_format();
         }
+    }
+    return true;
+}
+
+bool NFCLayerA::mifareUltralightCAuthenticate(const uint8_t key[16])
+{
+    using m5::utility::crypto::TripleDES;
+
+    TripleDES::Key16 key16{};
+    memcpy(key16.data(), key, 16);
+
+    // Auth step 1. Receive ek(RndB)
+    uint8_t ek_rndB[8]{};
+    if (!_impl->mifare_ultralightC_authenticate1(ek_rndB)) {
+        M5_LIB_LOGE("Failed to auth1");
+        return false;
+    }
+
+    // Decrypt ek
+    uint8_t iv[8]{};
+    uint8_t rndB[8]{};
+    {
+        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, iv};
+        if (!des.decrypt(rndB, ek_rndB, sizeof(ek_rndB), key16)) {
+            M5_LIB_LOGE("Failed to decrypt");
+            return false;
+        }
+    }
+
+    // Make rndA
+    uint8_t rndA[8]{};
+    for (auto& r : rndA) {
+        r = esp_random();
+    }
+
+    // Make RndB',RandA'
+    uint8_t rndB_rot[8]{};
+    uint8_t rndA_rot[8]{};
+    rotate_byte_left(rndB_rot, rndB);
+    rotate_byte_left(rndA_rot, rndA);
+
+    // Make plain
+    uint8_t plain_AB[16]{};
+    memcpy(plain_AB, rndA, 8);
+    memcpy(plain_AB + 8, rndB_rot, 8);
+
+    // Make ek(RndA || RndB')
+    uint8_t ek_AB[16]{};
+    {
+        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_rndB};
+        if (!des.encrypt(ek_AB, plain_AB, sizeof(plain_AB), key16)) {
+            M5_LIB_LOGE("Failed to encrypt");
+            return false;
+        }
+    }
+
+    // Auth step 2. Send [AF || ek(RndA||RndB')], Receive [RndA']
+    uint8_t ek_rndA_rot_from_card[8]{};
+    if (!_impl->mifare_ultralightC_authenticate2(ek_rndA_rot_from_card, ek_AB)) {
+        M5_LIB_LOGE("Failed to auth2");
+        return false;
+    }
+
+    // Decrypt RndA'
+    uint8_t rndA_rot_from_card[8]{};
+    {
+        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_AB + 8};
+        if (!des.decrypt(rndA_rot_from_card, ek_rndA_rot_from_card, sizeof(ek_rndA_rot_from_card), key16)) {
+            return false;
+        }
+    }
+
+    // Compare
+    if (memcmp(rndA_rot, rndA_rot_from_card, 8) != 0) {
+        M5_LIB_LOGE("Not match");
+        m5::utility::log::dump(rndA_rot, 8, false);
+        m5::utility::log::dump(rndA_rot_from_card, 8, false);
+        return false;
     }
     return true;
 }

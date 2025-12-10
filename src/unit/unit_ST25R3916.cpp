@@ -66,6 +66,11 @@ constexpr uint16_t io_config12_i2c{io_drv_lvl};
 constexpr uint16_t io_config12_spi{miso_pd1 | miso_pd2};
 // constexpr uint16_t io_config12_spi{miso_pd1 | miso_pd2 | io_drv_lvl};
 
+constexpr uint16_t get_i2c_thd_bits16(const uint32_t clk)
+{
+    return (clk >= 1000 * 1000u) ? (i2c_thd016 | i2c_thd116) : ((clk >= 400 * 1000u) ? i2c_thd016 : 0x0000);
+}
+
 float regulated_voltages(const uint8_t regulator_display_reg_value, const bool voltage5V = false)
 {
     auto rv = (regulator_display_reg_value >> 4) & 0x0F;
@@ -131,7 +136,6 @@ void IRAM_ATTR UnitST25R3916::on_irq(void* arg)
 bool UnitST25R3916::begin()
 {
     // Attach interrupt
-    M5_LIB_LOGE(">>>> IRQ:%u", _cfg.using_irq);
     if (_cfg.using_irq) {
         M5_LIB_LOGE("Using IRQ:%u", _cfg.irq);
         pinMode(_cfg.irq, INPUT_PULLDOWN);
@@ -140,51 +144,63 @@ bool UnitST25R3916::begin()
     }
 
     // Chip detection
-    M5_LIB_LOGE(">>>> Chip detection");
     uint8_t type{}, rev{};
     if (!readICIdentity(type, rev) || type != VALID_IDENTIFY_TYPE || rev == 0) {
         M5_LIB_LOGE("Not detected ST25R3916 %02X,%02X", type, rev);
         return false;
     }
-    M5_LIB_LOGE("<<<< Chip detection %02X:%02X", type, rev);
 
     // Power-on sequence
     // 1) Set to default
-    M5_LIB_LOGE(">>>> Set to default");
     if (!writeDirectCommand(CMD_SET_DEFAULT)) {
         M5_LIB_LOGE("Failed to CMD_SET_DEFAULT");
         return false;
     }
 
     // 2) To prevent the internal overheat protection to trigger below the junction temperature
-    M5_LIB_LOGE(">>>> Protection");
     if (!writeDirectCommand(CMD_TEST_ACCESS, protection_command, sizeof(protection_command))) {
         M5_LIB_LOGE("Failed to send protection command");
         return false;
     }
     // 3) I/O settings
-    M5_LIB_LOGE(">>>> I/O");
-    if (!writeIOConfiguration((adapter()->type() == Adapter::Type::I2C ? io_config12_i2c : io_config12_spi) |
-                              (_cfg.vdd_voltage_5V ? 0x0000 : sup3v))) {
+    uint16_t params{};
+    if (adapter()->type() == Adapter::Type::I2C) {
+        // I2C settings
+        uint16_t i2c_thd = get_i2c_thd_bits16(component_config().clock);
+        params           = i2c_thd | io_config12_i2c | (_cfg.vdd_voltage_5V ? 0x0000 : sup3v);
+    } else if (adapter()->type() == Adapter::Type::SPI) {
+        // SPI settings
+        params = io_config12_spi | (_cfg.vdd_voltage_5V ? 0x0000 : sup3v);
+    } else {
+        M5_LIB_LOGE("Not support connection %u", adapter()->type());
+        return false;
+    }
+    if (!writeIOConfiguration(params)) {
         M5_LIB_LOGE("Failed to writeIOConfiguration");
         return false;
     }
 
+#if 0
+    {
+        uint8_t io1{}, io2{};
+        readIOConfiguration1(io1);
+        readIOConfiguration2(io2);
+        M5_LIB_LOGE(">>>>> IO1:%02X IO2:%02X", io1, io2);
+    }
+#endif
+
     // 4) The internal voltage regulators have to be configuration
     // It is recommended to use direct command Adjust regulators to improve the system PSRR.
-    M5_LIB_LOGE(">>>> Mask");
     if (!writeMaskInterrupts(0xFFFF00FF) && clearInterrupts()) {  // Mask all interrupts exclusive error
         M5_LIB_LOGE("Failed to writeMaskInterrupt");
         return false;
     }
 
     // Adjust regulators
-    M5_LIB_LOGE(">>>> Adjust 1");
     if (!writeOperationControl(en)) {
         M5_LIB_LOGE("Failed to writeOperationControl");
         return false;
     }
-    M5_LIB_LOGE(">>>> Adjust 2");
     if (!writeDirectCommand(CMD_ADJUST_REGULATORS)) {
         M5_LIB_LOGE("Failed to CMD_ADJUST_REGULATORS");
         return false;
@@ -192,14 +208,12 @@ bool UnitST25R3916::begin()
     m5::utility::delay(5);  // Need wait
 
     // Check vdd voltage
-    M5_LIB_LOGE(">>>> VDD");
     uint8_t value{};
     if (readRegulatorDisplay(value)) {
         M5_LIB_LOGD("Regulated voltages:%02X:%1.1fV", value, regulated_voltages(value, _cfg.vdd_voltage_5V));
     }
 
     // Antenna Settings
-    M5_LIB_LOGE(">>>> Antenna");
     uint8_t txd{};
     if (!readTXDriver(txd) || !writeTXDriver((txd & 0x0F) | ((_cfg.tx_am_modulation & 0x0F) << 4))) {
         M5_LIB_LOGE("Failed to TXDriver");
@@ -209,7 +223,6 @@ bool UnitST25R3916::begin()
     M5_LIB_LOGD("TXD:%02X", txd);
 
     //
-
 #if 0
     // MRT/SQT
     if (!write_mask_receiver_timer(0) || !write_squelch_timer(0)) {
@@ -222,7 +235,6 @@ bool UnitST25R3916::begin()
     M5_LIB_LOGE("====== MRT:%02X SQT:%02X", mrt, sqt);
 #endif
 
-    M5_LIB_LOGE(">>>> Config");
     return configureNFCMode(_cfg.mode);
 }
 
@@ -340,73 +352,6 @@ bool UnitST25R3916::nfc_initial_field_on()
 
     return ret && modify_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en, 0x00);
 #endif
-
-#if 0
-/*******************************************************************************/
-ReturnCode RfalRfST25R3916Class::st25r3916PerformCollisionAvoidance(uint8_t FieldONCmd, uint8_t pdThreshold, uint8_t caThreshold, uint8_t nTRFW)
-{
-  uint8_t    treMask;
-  uint32_t   irqs;
-  ReturnCode err;
-
-  if ((FieldONCmd != ST25R3916_CMD_INITIAL_RF_COLLISION) && (FieldONCmd != ST25R3916_CMD_RESPONSE_RF_COLLISION_N)) {
-    return ERR_PARAM;
-  }
-
-  err = ERR_INTERNAL;
-
-
-  /* Check if new thresholds are to be applied */
-  if ((pdThreshold != ST25R3916_THRESHOLD_DO_NOT_SET) || (caThreshold != ST25R3916_THRESHOLD_DO_NOT_SET)) {
-    treMask = 0;
-
-    if (pdThreshold != ST25R3916_THRESHOLD_DO_NOT_SET) {
-      treMask |= ST25R3916_REG_FIELD_THRESHOLD_ACTV_trg_mask;
-    }
-
-    if (caThreshold != ST25R3916_THRESHOLD_DO_NOT_SET) {
-      treMask |= ST25R3916_REG_FIELD_THRESHOLD_ACTV_rfe_mask;
-    }
-
-    /* Set Detection Threshold and|or Collision Avoidance Threshold */
-    st25r3916ChangeRegisterBits(ST25R3916_REG_FIELD_THRESHOLD_ACTV, treMask, (pdThreshold & ST25R3916_REG_FIELD_THRESHOLD_ACTV_trg_mask) | (caThreshold & ST25R3916_REG_FIELD_THRESHOLD_ACTV_rfe_mask));
-  }
-
-  /* Set n x TRFW */
-  st25r3916ChangeRegisterBits(ST25R3916_REG_AUX, ST25R3916_REG_AUX_nfc_n_mask, nTRFW);
-
-  /*******************************************************************************/
-  /* Enable and clear CA specific interrupts and execute command */
-  st25r3916GetInterrupt((ST25R3916_IRQ_MASK_CAC | ST25R3916_IRQ_MASK_CAT | ST25R3916_IRQ_MASK_APON));
-  st25r3916EnableInterrupts((ST25R3916_IRQ_MASK_CAC | ST25R3916_IRQ_MASK_CAT | ST25R3916_IRQ_MASK_APON));
-
-  st25r3916ExecuteCommand(FieldONCmd);
-
-  /*******************************************************************************/
-  /* Wait for initial APON interrupt, indicating anticollision avoidance done and ST25R3916's
-   * field is now on, or a CAC indicating a collision */
-  irqs = st25r3916WaitForInterruptsTimed((ST25R3916_IRQ_MASK_CAC | ST25R3916_IRQ_MASK_APON), ST25R3916_TOUT_CA);
-
-  if ((ST25R3916_IRQ_MASK_CAC & irqs) != 0U) {       /* Collision occurred */
-    err = ERR_RF_COLLISION;
-  } else if ((ST25R3916_IRQ_MASK_APON & irqs) != 0U) {
-    /* After APON wait for CAT interrupt, indication field was switched on minimum guard time has been fulfilled */
-    irqs = st25r3916WaitForInterruptsTimed((ST25R3916_IRQ_MASK_CAT), ST25R3916_TOUT_CA);
-
-    if ((ST25R3916_IRQ_MASK_CAT & irqs) != 0U) {                            /* No Collision detected, Field On */
-      err = ERR_NONE;
-    }
-  } else {
-    /* MISRA 15.7 - Empty else */
-  }
-
-  /* Clear any previous External Field events and disable CA specific interrupts */
-  st25r3916GetInterrupt((ST25R3916_IRQ_MASK_EOF | ST25R3916_IRQ_MASK_EON));
-  st25r3916DisableInterrupts((ST25R3916_IRQ_MASK_CAC | ST25R3916_IRQ_MASK_CAT | ST25R3916_IRQ_MASK_APON));
-
-  return err;
-}
-#endif
 }
 
 bool UnitST25R3916::configure_nfc_b()
@@ -481,7 +426,7 @@ bool UnitST25R3916::readFIFOSize(uint16_t& bytes, uint8_t& bits)
     return false;
 }
 
-bool UnitST25R3916::readFIFO(uint16_t& actual, uint8_t* buf, const uint16_t buf_size)
+uint32_t UnitST25R3916::readFIFO(uint16_t& actual, uint8_t* buf, const uint16_t buf_size)
 {
     actual = 0;
 
@@ -497,9 +442,9 @@ bool UnitST25R3916::readFIFO(uint16_t& actual, uint8_t* buf, const uint16_t buf_
             return false;
         }
         actual = readSz;
-        return true;
+        return ((uint16_t)bits << 16) | bytes;
     }
-    return false;
+    return 0u;
 }
 
 bool UnitST25R3916::writeFIFO(const uint8_t* buf, const uint16_t buf_size)
@@ -526,6 +471,32 @@ bool UnitST25R3916::readICIdentity(uint8_t& type, uint8_t& rev)
         return true;
     }
     return false;
+}
+
+bool UnitST25R3916::disableField()
+{
+    return writeDirectCommand(CMD_STOP_ALL_ACTIVITIES) && writeOperationControl(0x00);
+}
+
+bool UnitST25R3916::enableField()
+{
+    // Adjust regulators
+    if (!writeOperationControl(en)) {
+        M5_LIB_LOGE("Failed to writeOperationControl");
+        return false;
+    }
+    if (!writeDirectCommand(CMD_ADJUST_REGULATORS)) {
+        M5_LIB_LOGE("Failed to CMD_ADJUST_REGULATORS");
+        return false;
+    }
+    m5::utility::delay(5);  // Need wait
+
+    // Check vdd voltage
+    uint8_t value{};
+    if (readRegulatorDisplay(value)) {
+        M5_LIB_LOGD("Regulated voltages:%02X:%1.1fV", value, regulated_voltages(value, _cfg.vdd_voltage_5V));
+    }
+    return configureNFCMode(_cfg.mode);
 }
 
 //
@@ -661,6 +632,7 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     const uint16_t reqSize = required_size ? required_size : 1;
 
     if (is_irq32_rxe(irq)) {
+        // M5_LIB_LOGE(" rxe OK IRQ:%08X", irq);
         return true;
     }
     // M5_LIB_LOGE("IRQ:%08X %u", irq, timeout_ms);
@@ -671,11 +643,10 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
         uint16_t bytes{};
         uint8_t bits{};
         do {
-            readFIFOSize(bytes, bits);
-            if (bytes >= reqSize) {
+            if (readFIFOSize(bytes, bits) && bytes >= reqSize) {
                 break;
             }
-            m5::utility::delay(1);
+            std::this_thread::yield();
         } while (m5::utility::millis() <= timeout_at);
         // M5_LIB_LOGE("    FIFO:%u,%u/%u", bytes, bits, required_size);
         return readFIFOSize(bytes, bits) && bytes >= reqSize;

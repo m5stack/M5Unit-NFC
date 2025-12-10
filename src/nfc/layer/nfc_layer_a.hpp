@@ -183,7 +183,7 @@ public:
       @param tx_len Buffer size
       @param safety Fail to write to out of the user memory area if true (safety measure)
       @return True if successful
-      @warning Supports NTAG and UltraLight only
+      @warning Supports NTAG and Ultralight series  only
       @warning If the tx_len is less than 4 bytes, the remaining space is filled with 0x00
       @warning If the tx_len is larger than 4 bytes, only the first 4 bytes will be written
      */
@@ -207,7 +207,7 @@ public:
       @param tx Buffer
       @param tx_len buffer size
       @return True if successful
-      @warning For NTAG and UltraLight, the tx is in 4-byte units; for others, it is in 16-byte units
+      @warning For NTAG and Ultralight series, the tx is in 4-byte units; for others, it is in 16-byte units
       @warning If the value is less than the unit, it is padded with 0x00
       @pre Target blocks must be authenticatable using the specified key if MIFARE classic
     */
@@ -368,11 +368,16 @@ public:
       @brief Write change to NFC Type-2 (NDEF) format for MIFARE Ultralight/C
       @return True if successful
       @note Returns true if the data is already in NDEF format or if the PICC is an NTAG
-      @warning Only MIFARE Ultralight,UltralightC
+      @warning Only MIFARE Ultralight series
       @warning Changes are irreversible and cannot be undone
       @warning If the relevant area has already been overwritten, changes may not be possible
     */
     bool mifareUltralightChangeFormatToNTAG();
+
+    /*!
+      @brief Authentication for MIFARE UltralightC
+     */
+    bool mifareUltralightCAuthenticate(const uint8_t key[16]);
     ///@}
 
     ///@note For activated PICC
@@ -478,9 +483,11 @@ struct NFCLayerA::Adapter {
     virtual bool nfca_write_page(const uint8_t addr, const uint8_t tx[4])   = 0;  // WRITE_PAGE
 
     virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::PICC& picc, const uint8_t block,
-                                             const m5::nfc::a::mifare::classic::Key& key) = 0;
+                                             const m5::nfc::a::mifare::classic::Key& key)    = 0;
     virtual bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
-                                            const uint32_t arg = 0)                       = 0;
+                                            const uint32_t arg = 0)                          = 0;
+    virtual bool mifare_ultralightC_authenticate1(uint8_t ek[8])                             = 0;
+    virtual bool mifare_ultralightC_authenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16]) = 0;
 
     virtual bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage,
                                 const uint8_t epage) = 0;  // FAST_READ

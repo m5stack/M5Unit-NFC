@@ -281,7 +281,7 @@ enum class Command : uint8_t {
     PERSONALIZE_UID_USAGE = 0x40,  //!< MIFARE Classic Personalize UID Usage
     SET_MOD_TYPE          = 0x43,  //!< MIFARE Classic SET_MOD_TYPE
     // NTAG
-    GET_VERSION = 0x60,  //!< NTAG 21x. Gets the version information
+    GET_VERSION = 0x60,  //!< NTAG 21x/UL EV1,Nano Gets the version information
     FAST_READ   = 0x3A,  //!< NTAG 21x. excluding 210u. Read multiple pages
     READ_CNT    = 0x39,  //!< NTAG 213/5/6. Read counter value
     PWD_AUTH    = 0x1B,  //!< NTAG 21x excluding 210u. Authentication for protected area

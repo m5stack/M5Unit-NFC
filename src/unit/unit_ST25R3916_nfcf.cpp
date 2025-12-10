@@ -218,11 +218,11 @@ bool UnitST25R3916::nfcfRequestService(uint16_t key_version[], const m5::nfc::f:
     return true;
 }
 
-bool UnitST25R3916::nfcfRequestResponse(m5::nfc::f::Mode& mode, const m5::nfc::f::PICC& picc)
+bool UnitST25R3916::nfcfRequestResponse(m5::nfc::f::standard::Mode& mode, const m5::nfc::f::PICC& picc)
 {
     CHECK_MODE();
 
-    mode = Mode::Mode0;
+    mode = standard::Mode::Mode0;
 
     if (picc.type != Type::FeliCaStandard) {
         return false;
@@ -249,7 +249,7 @@ bool UnitST25R3916::nfcfRequestResponse(m5::nfc::f::Mode& mode, const m5::nfc::f
 
     // m5::utility::log::dump(rbuf, rx_len, false);
 
-    mode = static_cast<Mode>(rbuf[10]);
+    mode = static_cast<standard::Mode>(rbuf[10]);
     return true;
 }
 

@@ -86,6 +86,101 @@ uint8_t get_maxumum_write_blocks(const Type t)
     return max_write_block_table[idx < m5::stl::size(max_block_table) ? idx : 0];
 }
 
+bool make_session_key(uint8_t sk[16], const uint8_t ck[16], const uint8_t rc[16])
+{
+    using m5::utility::crypto::TripleDES;
+    using Key16 = TripleDES::Key16;
+
+    // 1) (CK[7..0] reversed + CK[15..8] reversed)
+    Key16 key{};
+    for (int i = 0; i < 8; ++i) {
+        key[i]     = ck[7 - i];   // CK1 reversed
+        key[8 + i] = ck[15 - i];  // CK2 reversed
+    }
+
+    // 2)  (RC[7..0] reversed + RC[15..8] reversed)
+    uint8_t data[16]{};
+    for (int i = 0; i < 8; ++i) {
+        data[i]     = rc[7 - i];   // RC1 reversed
+        data[8 + i] = rc[15 - i];  // RC2 reversed
+    }
+
+    // 3) 2-key 3DES CBC(IV=0)
+    TripleDES des(TripleDES::Mode::CBC, TripleDES::Padding::None);
+
+    uint8_t tmp[16]{};
+    if (des.encrypt(tmp, data, sizeof(data), key) != 16) {
+        return false;
+    }
+
+    // 4) expand
+    //    SK1 = reverse(tmp[0..7])
+    //    SK2 = reverse(tmp[8..15])
+    for (int i = 0; i < 8; ++i) {
+        sk[i]     = tmp[7 - i];   // SK1
+        sk[8 + i] = tmp[15 - i];  // SK2
+    }
+
+    return true;
+}
+
+bool generate_mac(uint8_t mac[8], const uint8_t* plain, uint32_t plain_len, const uint8_t* block_data,
+                  uint32_t block_len, const uint8_t sk1[8], const uint8_t sk2[8], const uint8_t rc[16])
+{
+    using m5::utility::crypto::TripleDES;
+
+    if (!mac || !block_data || !block_len || !sk1 || !sk2 || !rc) {
+        return false;
+    }
+
+    // key1[::-1] + key2[::-1]
+    TripleDES::Key16 key{};
+    for (int i = 0; i < 8; ++i) {
+        key[i]     = sk1[7 - i];
+        key[8 + i] = sk2[7 - i];
+    }
+
+    // IV = RC1[7..0] (first 8byte in RC)
+    uint8_t iv[8]{};
+    for (int i = 0; i < 8; ++i) {
+        iv[i] = rc[7 - i];
+    }
+
+    TripleDES des(TripleDES::Mode::CBC, TripleDES::Padding::None, iv);
+
+    // plain[::-1] + concat(each 8byte chunk reversed)
+    std::vector<uint8_t> buf;
+    buf.reserve(((plain_len + block_len) + 7) & ~7u);
+
+    // plain[::-1]
+    if (plain && plain_len) {
+        for (uint32_t i = 0; i < plain_len; ++i) {
+            buf.push_back(plain[plain_len - 1 - i]);
+        }
+    }
+
+    // block_data[i:i+8][::-1]
+    for (uint32_t off = 0; off < block_len; off += 8) {
+        uint32_t chunk = std::min<uint32_t>(8, block_len - off);
+        uint8_t tmp[8]{};
+        std::memcpy(tmp, block_data + off, chunk);
+        for (uint32_t i = 0; i < 8; ++i) {
+            buf.push_back(tmp[7 - i]);
+        }
+    }
+
+    std::vector<uint8_t> out(buf.size());
+    auto len = des.encrypt(out.data(), buf.data(), static_cast<uint32_t>(buf.size()), key);
+    if (len != buf.size()) {
+        return false;
+    }
+
+    for (int i = 0; i < 8; ++i) {
+        mac[i] = out[out.size() - 1 - i];
+    }
+    return true;
+}
+
 //
 std::string PICC::idmAsString() const
 {

@@ -9,6 +9,7 @@
 */
 #include "unit_ST25R3916.hpp"
 #include <M5Utility.hpp>
+#include <esp_random.h>
 
 using namespace m5::utility::mmh3;
 
@@ -127,8 +128,8 @@ bool UnitST25R3916::configure_nfc_a()
            nfc_initial_field_on();
 }
 
-bool UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                   const uint32_t timeout_ms)
+uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                                       const uint32_t timeout_ms)
 {
     CHECK_MODE();
 
@@ -157,11 +158,13 @@ bool UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t*
     }
 
     uint16_t actual{};
-    if (readFIFO(actual, rx, rx_len_org)) {
+    auto bb = readFIFO(actual, rx, rx_len_org);
+    if (bb) {
+        // M5_LIB_LOGE("readFIFO %u/%u %u/%u %02X", actual, rx_len_org, bb >> 16, bb & 0xFFFF, rx[0]);
         rx_len = actual;
-        return true;
+        return bb;
     }
-    M5_LIB_LOGE("Failed to readFIFO %u/%u", actual, rx_len_org);
+    M5_LIB_LOGD("Failed to readFIFO %u/%u", actual, rx_len_org);
     return false;
 }
 
@@ -192,9 +195,9 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
         if (readFIFO(actual, rbuf, sizeof(rbuf)) && actual) {
             if (actual == 2) {
                 atqa = ((uint16_t)rbuf[1] << 8) | (uint16_t)rbuf[0];
-                M5_LIB_LOGD("ATQA:%04X", atqa);
             }
-            // When ocuur collisions, the ATQA value is inaccurate
+            // M5_LIB_LOGE("ATQA:%04X %u", atqa, actual);
+            //  When ocuur collisions, the ATQA value is inaccurate
             return true;
         }
     }
@@ -234,7 +237,7 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
         auto irq  = wait_for_interrupt(I_rxe32 | I_col32, TIMEOUT_ANTICOLL);
         collision = is_irq32_collision(irq);
         if ((!collision && !is_irq32_rxe(irq))) {
-            M5_LIB_LOGD("Failed ANTICOL:%02X %08X", lv, irq);
+            M5_LIB_LOGE("Failed Lv::%u col:%u %08X", lv, collision, irq);
             return false;
         }
         uint8_t cd{};
@@ -312,19 +315,38 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
         picc.type =
             sak_to_type(sak);  // WARNING: This is a preliminary diagnosis; a more accurate diagnosis is required
         picc.blocks = get_number_of_blocks(picc.type);
-        // More check for type
+
+        // More detailed type identification
         if (picc.type == Type::MIFARE_Ultralight) {
-            uint8_t ver[10]{};
+            picc.type = Type::Unknown;
+            uint8_t ver[8]{};
+            uint16_t discard{};
+            // GetVersion
             if (ntag_get_version(ver)) {
-                picc.type   = version_to_type(ver);
-                picc.blocks = get_number_of_blocks(picc.type);
+                picc.type = version_to_type(ver);
             } else {
-                // PICC to IDLE... so need reactivate
-                uint16_t discard{};
+                //  PICC is IDLE... so need reactivate
+                completed = nfcaWakeup(discard) && nfcaSelect(picc);
+            }
+            if (picc.type == Type::Unknown) {
+                uint8_t discard_ek[8]{};
+                if (mifareUltralightCAuthenticate1(discard_ek)) {
+                    // ULC has AUTH
+                    picc.type = Type::MIFARE_UltralightC;
+                    // Throw an Hlt to transition to IDLE
+                    // Otherwise, subsequent commands become invalid in an incomplete state, causing unexpected IDLE
+                    nfcaHlt();
+                } else {
+                    //   really UL
+                    picc.type = Type::MIFARE_Ultralight;
+                }
+                picc.blocks = get_number_of_blocks(picc.type);
+                // PICC is IDLE... so need reactivate
                 completed = nfcaWakeup(discard) && nfcaSelect(picc);
             }
         }
     }
+    //    M5_LIB_LOGE(">>>> Select %02X %u %u", sak, completed, has_sak_dependent_bit(sak));
     return completed || has_sak_dependent_bit(sak);  // completed or continue
 }
 
@@ -334,9 +356,7 @@ bool UnitST25R3916::nfcaSelect(const PICC& picc)
 
     CHECK_MODE();
 
-    if (!picc.valid()) {
-        return false;
-    }
+    // Select even if picc is not valid
 
     bool completed{};
     uint8_t select_frame[7] = {0x93, 0x70};
@@ -372,12 +392,16 @@ bool UnitST25R3916::nfcaSelect(const PICC& picc)
 
         ++lv;
     } while (!completed && lv < 4);
+    // M5_LIB_LOGE("   >>>> SELECT Result:%u", completed);
+
     return completed;
 }
 
 bool UnitST25R3916::nfcaHlt()
 {
     CHECK_MODE();
+
+    _encrypted = false;
 
     const uint8_t hlt_frame[2] = {m5::stl::to_underlying(Command::HLTA), 0x00};
 
@@ -391,10 +415,10 @@ bool UnitST25R3916::nfcaHlt()
             !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
             !writeFIFO(hlt_frame, sizeof(hlt_frame)) || !writeNumberOfTransmittedBytes(sizeof(hlt_frame), 0) ||  //
             !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
+            M5_LIB_LOGE("Failed to hlt");
             return false;
         }
     }
-    _encrypted = false;
     // No response is coming back, so need to confirm if it was sent
     auto irq = wait_for_interrupt(I_txe32, TIMEOUT_HALT);
     return is_irq32_txe(irq);
@@ -485,6 +509,22 @@ bool UnitST25R3916::nfcaWritePage(const uint8_t page, const uint8_t tx[4])
 }
 
 // -------------------------------- For MIFARE classic
+bool UnitST25R3916::mifare_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                                      const uint32_t timeout_ms)
+{
+    if (!rx | !rx_len || !tx || !tx_len) {
+        return false;
+    }
+    auto bb = nfcaTransceive(rx, rx_len, tx, tx_len, timeout_ms);
+    if (!bb) {
+        return false;
+    }
+    // Check NACK
+    uint16_t bytes = bb & 0xffff;
+    uint16_t bits  = (bb >> 16) & 0xFF;
+    return (bytes == 1 && bits == 4) ? rx[0] == ACK_NIBBLE : true;
+}
+
 bool UnitST25R3916::mifare_classic_send_encrypt(const uint8_t* tx, const uint16_t tx_len)
 {
     if (!tx || !tx_len || tx_len > 32) {
@@ -720,6 +760,36 @@ bool UnitST25R3916::mifareClassicValueBlock(const m5::nfc::a::Command cmd, const
     return !wait_for_FIFO(TIMEOUT_VALUE_BLOCK);  // Consider the timeout a success
 }
 
+bool UnitST25R3916::mifareUltralightCAuthenticate1(uint8_t ek[8])
+{
+    uint8_t cmd[2] = {m5::stl::to_underlying(Command::AUTHENTICATE_1), 0x00};
+    uint8_t rx[9]{};
+    uint16_t rx_len{9};
+    if (ek && mifare_transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_AUTH1) && rx_len == 9 && rx[0] == 0xAF) {
+        memcpy(ek, rx + 1, 8);
+        return true;
+    }
+    return false;
+}
+
+bool UnitST25R3916::mifareUltralightCAuthenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16])
+{
+    if (!rx_ek || !tx_ek) {
+        return false;
+    }
+
+    uint8_t cmd[1 + 16] = {m5::stl::to_underlying(Command::AUTHENTICATE_2)};
+    memcpy(cmd + 1, tx_ek, 16);
+
+    uint8_t rx[9]{};
+    uint16_t rx_len{9};
+    if (mifare_transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_AUTH2) && rx_len == 9 && rx[0] == 0x00) {
+        memcpy(rx_ek, rx + 1, 8);
+        return true;
+    }
+    return false;
+}
+
 // -------------------------------- For NTAG
 bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
 {
@@ -745,11 +815,11 @@ bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t sp
     return true;
 }
 
-bool UnitST25R3916::ntag_get_version(uint8_t info[10])
+bool UnitST25R3916::ntag_get_version(uint8_t info[8])
 {
-    uint8_t gv[1]   = {m5::stl::to_underlying(Command::GET_VERSION)};
-    uint16_t rx_len = 10;
-    return nfcaTransceive(info, rx_len, gv, sizeof(gv), TIMEOUT_GET_VERSION);
+    uint8_t cmd[1]  = {m5::stl::to_underlying(Command::GET_VERSION)};
+    uint16_t rx_len = 8;
+    return info && mifare_transceive(info, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION);
 }
 
 }  // namespace unit

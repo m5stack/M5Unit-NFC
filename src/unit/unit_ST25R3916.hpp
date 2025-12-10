@@ -149,9 +149,10 @@ public:
       @param[out] actual Actual read size
       @param[out] buf Buffer
       @param buf_size Buffer size
-      @return True if successful
+      @retval == 0 Failed
+      @retval != 0 Upper 16 bits: Number of bits read Lower 16 bits: Number of bytes read
      */
-    bool readFIFO(uint16_t& actual, uint8_t* buf, const uint16_t buf_size);
+    uint32_t readFIFO(uint16_t& actual, uint8_t* buf, const uint16_t buf_size);
     /*!
       @brief Write to FIFO
       @param buf Buffer
@@ -1685,6 +1686,22 @@ public:
     bool readICIdentity(uint8_t& type, uint8_t& rev);
     ///@}
 
+    ///@name Field
+    ///@{
+    /*!
+      @brief Disable the Field to stop communication with the PICC
+      @return True if successful
+      @note Disconnect power supply to the PICC
+     */
+    bool disableField();
+    /*!
+      @brief Enable the Field to begin communication with the PICC
+      @return True if successful
+      @brief Begin supplying power to the PICC
+     */
+    bool enableField();
+    ///@}
+
     // ----------------------------------------------------------------------------------------------
     ///@name NFC-A
     ///@{
@@ -1695,10 +1712,11 @@ public:
       @param tx Send buffer
       @param tx_len Size of send buffer
       @param timeout_ms Timeout(ms)
-      @return True if successful
+      @retval == 0 Failed
+      @retval != 0 Upper 16 bits: Number of bits read Lower 16 bits: Number of bytes read
      */
-    bool nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                        const uint32_t timeout_ms);
+    uint32_t nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                            const uint32_t timeout_ms);
     /*!
       @brief Request for idle PICC
       @param[out atqa ATQA
@@ -1761,7 +1779,7 @@ public:
     bool nfcaHlt();
     ///@}
 
-    ///@name MIFARE classic
+    ///@name MIFARE
     ///@{
     /*!
       @brief Authentication using keyA of the specified block
@@ -1794,8 +1812,23 @@ public:
       @param cmd Command
       @param block Block address
       @param arg Arrgument for command if needs
+      @return True if successful
      */
     bool mifareClassicValueBlock(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
+
+    /*!
+      @brief Authentication step 1 for UltralightC
+      @param[out] ek ek(RndB) 8-byte encrypted PICC random number RndB
+      @return True if successful
+     */
+    bool mifareUltralightCAuthenticate1(uint8_t ek[8]);
+    /*!
+      @brief Authentication step 1 for UltralightC
+      @param[out] rx_ek ek(RndA') 8-byte encrypted, shifted PCD random number RndA'
+      @param tx_ek ek(RandA || RndB') 16-byte encrypted random numbers RNDA concatenated by RndB'
+      @return True if successful
+     */
+    bool mifareUltralightCAuthenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16]);
     ///@}
 
     ///@name NTAG
@@ -1857,7 +1890,7 @@ public:
       @return True if successful
       @warning FeliCa Standard only
      */
-    bool nfcfRequestResponse(m5::nfc::f::Mode& mode, const m5::nfc::f::PICC& picc);
+    bool nfcfRequestResponse(m5::nfc::f::standard::Mode& mode, const m5::nfc::f::PICC& picc);
 
     /*!
       @brief Request system code
@@ -1943,12 +1976,15 @@ protected:
     // NFC-A
     bool nfca_request_wakeup(uint16_t& atqa, const bool req);
     bool nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv);
+    bool mifare_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                           const uint32_t timeout_ms);
     bool mifare_classic_send_encrypt(const uint8_t* tx, const uint16_t tx_len);
     bool mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                            const uint32_t timeout_ms, const bool include_crc, const bool decrypt);
     bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::PICC& picc, const uint8_t block,
                                      const m5::nfc::a::mifare::classic::Key& key);
-    bool ntag_get_version(uint8_t info[10]);
+
+    bool ntag_get_version(uint8_t info[8]);
 
 private:
     config_t _cfg{};

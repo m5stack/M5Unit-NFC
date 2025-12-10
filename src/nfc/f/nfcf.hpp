@@ -45,18 +45,6 @@ inline m5::nfc::NFCForumTag get_nfc_forum_tag_type(const Type t)
     return (t != Type::Unknown) ? NFCForumTag::Type3 : NFCForumTag::None;
 }
 
-/*!
-  @enum Mode
-  @brief NFC-F Mode status
- */
-enum class Mode : uint8_t {
-    Mode0,  //!< Power was supplied to the PICC
-    Mode1,  //!< Certification for PICC has been completed (Auth1)
-    Mode2,  //!< After mutual authentication is complete (Auth2)
-    Mode3,  //!< After registering area services or executing system partitioning
-
-};
-
 ///@name Format bits
 ///@{
 using Format = uint8_t;
@@ -226,10 +214,31 @@ struct block_t {
 
 /*!
   @namespacce lite
+  @brief For FeliCa Standard
+ */
+namespace standard {
+/*!
+  @enum Mode
+  @brief Mode for Standard
+ */
+enum class Mode : uint8_t {
+    Mode0,  //!< Power was supplied to the PICC
+    Mode1,  //!< Certification for PICC has been completed (Auth1)
+    Mode2,  //!< After mutual authentication is complete (Auth2)
+    Mode3,  //!< After registering area services or executing system partitioning
+
+};
+}  // namespace standard
+
+/*!
+  @namespacce lite
   @brief For FeliCa Lite
  */
 namespace lite {
 ///@name
+
+///@name Block
+///@{
 constexpr block_t S_PAD0{0x00};
 constexpr block_t S_PAD1{0x01};
 constexpr block_t S_PAD2{0x02};
@@ -254,6 +263,7 @@ constexpr block_t SYS_C{0x85};
 constexpr block_t CKV{0x86};
 constexpr block_t CK{0x87};
 constexpr block_t MC{0x88};
+///@}
 
 }  // namespace lite
 
@@ -262,34 +272,49 @@ constexpr block_t MC{0x88};
   @brief For FeliCa Lite-S
  */
 namespace lite_s {
-constexpr block_t S_PAD0{0x00};
-constexpr block_t S_PAD1{0x01};
-constexpr block_t S_PAD2{0x02};
-constexpr block_t S_PAD3{0x03};
-constexpr block_t S_PAD4{0x04};
-constexpr block_t S_PAD5{0x05};
-constexpr block_t S_PAD6{0x06};
-constexpr block_t S_PAD7{0x07};
-constexpr block_t S_PAD8{0x08};
-constexpr block_t S_PAD9{0x09};
-constexpr block_t S_PAD10{0x0A};
-constexpr block_t S_PAD11{0x0B};
-constexpr block_t S_PAD12{0X0C};
-constexpr block_t S_PAD13{0x0D};
-constexpr block_t REG{0x0E};
-constexpr block_t RC{0x80};
-constexpr block_t MAC{0x81};
-constexpr block_t ID{0x082};
-constexpr block_t D_ID{0x83};
-constexpr block_t SER_C{0x84};
-constexpr block_t SYS_C{0x85};
-constexpr block_t CKV{0x86};
-constexpr block_t CK{0x87};
-constexpr block_t MC{0x88};
+
+/*!
+  @enum Mode
+  @brief Mode for LiteS
+ */
+enum class Mode : uint8_t {
+    Mode00,  //!< External authentication incomplete, polling response possible
+    Mode01,  //!< External authentication incomplete, polling response not possible
+    Mode10,  //!< External authentication complete, polling response possibl
+    Mode11,  //!< External authentication complete, polling response not possible
+};
+
+///@name Block
+///@{
+constexpr block_t S_PAD0{0x00};   // Same as Lite
+constexpr block_t S_PAD1{0x01};   // Same as Lite
+constexpr block_t S_PAD2{0x02};   // Same as Lite
+constexpr block_t S_PAD3{0x03};   // Same as Lite
+constexpr block_t S_PAD4{0x04};   // Same as Lite
+constexpr block_t S_PAD5{0x05};   // Same as Lite
+constexpr block_t S_PAD6{0x06};   // Same as Lite
+constexpr block_t S_PAD7{0x07};   // Same as Lite
+constexpr block_t S_PAD8{0x08};   // Same as Lite
+constexpr block_t S_PAD9{0x09};   // Same as Lite
+constexpr block_t S_PAD10{0x0A};  // Same as Lite
+constexpr block_t S_PAD11{0x0B};  // Same as Lite
+constexpr block_t S_PAD12{0X0C};  // Same as Lite
+constexpr block_t S_PAD13{0x0D};  // Same as Lite
+constexpr block_t REG{0x0E};      // Same as Lite
+constexpr block_t RC{0x80};       // Same as Lite
+constexpr block_t MAC{0x81};      // Same as Lite
+constexpr block_t ID{0x082};      // Same as Lite
+constexpr block_t D_ID{0x83};     // Same as Lite
+constexpr block_t SER_C{0x84};    // Same as Lite
+constexpr block_t SYS_C{0x85};    // Same as Lite
+constexpr block_t CKV{0x86};      // Same as Lite
+constexpr block_t CK{0x87};       // Same as Lite
+constexpr block_t MC{0x88};       // Same as Lite
 constexpr block_t WCNT{0x90};
 constexpr block_t MAC_A{0x91};
 constexpr block_t STATE{0x92};
 constexpr block_t CRC_CHECK{0xA0};
+///@}
 
 }  // namespace lite_s
 
@@ -498,6 +523,34 @@ inline bool can_write_reg(const REG& o, const REG& n)
 {
     return (o.regA() >= n.regA()) && (o.regB() >= n.regB());
 }
+
+///@name For MAC
+///@{
+/*!
+  @brief Make session key
+  @param[out] sk Session key (sk1 8byte + sk2 8byte)
+  @param ck Card key
+  @param rc Random challenge
+  @return True if successful
+ */
+bool make_session_key(uint8_t sk[16], const uint8_t ck[16], const uint8_t rc[16]);
+
+/*!
+  @brief Generate MAC
+  @param[out] mac MAC
+  @param plain Plain blocks (If nullptr, do not use)
+  @param plain_num Number of plain (If zero, do not use)
+  @param block_data Block data
+  @param block_len Length of block_data
+  @param sk1 Session key 1
+  @param sk2 Session key 2
+  @param rc Random challenge
+  @return True if successful
+*/
+bool generate_mac(uint8_t mac[8], const uint8_t* plain, uint32_t plain_len, const uint8_t* block_data,
+                  uint32_t block_len, const uint8_t sk1[8], const uint8_t sk2[8], const uint8_t rc[16]);
+
+///@}
 
 }  // namespace f
 }  // namespace nfc

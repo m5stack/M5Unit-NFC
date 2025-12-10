@@ -47,6 +47,8 @@ struct AdapterST25R3916ForA final : NFCLayerA::Adapter {
                                              const m5::nfc::a::mifare::classic::Key& key) override;
     virtual bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
                                             const uint32_t arg = 0) override;
+    virtual bool mifare_ultralightC_authenticate1(uint8_t ek[8]) override;
+    virtual bool mifare_ultralightC_authenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16]) override;
 
     virtual bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage,
                                 const uint8_t epage) override;  // FAST_READ
@@ -117,6 +119,16 @@ bool AdapterST25R3916ForA::mifare_classic_value_block(const m5::nfc::a::Command 
                                                       const uint32_t arg)
 {
     return _u.mifareClassicValueBlock(cmd, block, arg);
+}
+
+bool AdapterST25R3916ForA::mifare_ultralightC_authenticate1(uint8_t ek[8])
+{
+    return _u.mifareUltralightCAuthenticate1(ek);
+}
+
+bool AdapterST25R3916ForA::mifare_ultralightC_authenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16])
+{
+    return _u.mifareUltralightCAuthenticate2(rx_ek, tx_ek);
 }
 
 //
