@@ -21,8 +21,9 @@ constexpr Type type_table[] = {
     Type::Unknown, Type::FeliCaStandard, Type::FeliCaLite, Type::FeliCaLiteS, Type::FeliCaPlug,
     //    FeliCaLink,
 };
-constexpr TimeSlot time_slot_table[]    = {TimeSlot::Slot1, TimeSlot::Slot2, TimeSlot::Slot4, TimeSlot::Slot8,
-                                           TimeSlot::Slot16};
+constexpr TimeSlot time_slot_table[] = {
+    TimeSlot::Slot1, TimeSlot::Slot2, TimeSlot::Slot4, TimeSlot::Slot8, TimeSlot::Slot16,
+};
 constexpr block_t block_table[]         = {0x00, 0xFF, 0x100, 0xFFFF};
 constexpr uint32_t block_number_table[] = {0x00, 0xFF, 0x100, 0xFFFF};
 

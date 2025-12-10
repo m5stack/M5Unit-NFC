@@ -1845,6 +1845,25 @@ public:
     bool ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
     ///@}
 
+    ///@name ISO/IEC 14443-4
+    ///@{
+    /*!
+      @brief Request for answer to select (RATS)
+      @param[out] ats Answer to select (ATS)
+      @param fsdi Frame Size for PCD Integer
+      @param cid Card Identifier
+      @return True if successful
+     */
+    bool iso144434RequestATS(m5::nfc::a::ATS& ats, const uint8_t fsdi = 5, const uint8_t cid = 0);
+    /*!
+      @brief Deselect ISO/IEC 14443-4 PICC
+      @return True if successful
+      @note Call before nfcaHlt if ISO/IEC 14443-4 PICC
+     */
+    bool iso14434Deselect();
+
+    ///@}
+
     // ----------------------------------------------------------------------------------------------
     ///@name NFC-F
     ///@{
@@ -1976,6 +1995,9 @@ protected:
     // NFC-A
     bool nfca_request_wakeup(uint16_t& atqa, const bool req);
     bool nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv);
+
+
+    // MIFARE
     bool mifare_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                            const uint32_t timeout_ms);
     bool mifare_classic_send_encrypt(const uint8_t* tx, const uint16_t tx_len);
@@ -1984,8 +2006,9 @@ protected:
     bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::PICC& picc, const uint8_t block,
                                      const m5::nfc::a::mifare::classic::Key& key);
 
-    bool ntag_get_version(uint8_t info[8]);
-
+    bool mifare_get_version3(uint8_t info[8]);
+    bool mifare_get_version4(uint8_t info[8]);
+    
 private:
     config_t _cfg{};
     m5::nfc::NFC _nfcMode{};

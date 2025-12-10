@@ -24,8 +24,18 @@ namespace mifare {
   @namespace classic
   @brief For MIFARE classic
  */
-namespace classic {
 
+///@name Historical bytes for identiy type
+///@{
+constexpr std::array<uint8_t, 7> historical_bytes_mifare_plus_s   = {0xC1, 0x05, 0x2F, 0x2F, 0x00, 0x35, 0xC7};
+constexpr std::array<uint8_t, 7> historical_bytes_mifare_plus_x   = {0xC1, 0x05, 0x2F, 0x2F, 0x01, 0xBC, 0xD6};
+constexpr std::array<uint8_t, 7> historical_bytes_mifare_plus_se0 = {0xC1, 0x05, 0x21, 0x30, 0x00, 0xF6, 0xD1};
+constexpr std::array<uint8_t, 7> historical_bytes_mifare_plus_se1 = {0xC1, 0x05, 0x21, 0x30, 0x10, 0xF6, 0xD1};
+constexpr std::array<uint8_t, 7> historical_bytes_mifare_plus_se2 = {0xC1, 0x05, 0x21, 0x30,
+                                                                     0x00, 0x77, 0xC1};  // Unofficial?
+///@}
+
+namespace classic {
 /*!
   @typedef Key
   @brief MIFARE classic Key

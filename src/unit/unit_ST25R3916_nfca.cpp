@@ -306,7 +306,37 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
     }
 
     uint8_t sak = rbuf[0];
-    // M5_LIB_LOGE(">>>> SAK:%02X (%u)", sak, is_sak_completed(sak));
+    // M5_LIB_LOGE(">>>> SAK:%02X (%u, %u)  %u ",  //
+    //              sak, is_sak_completed(sak), is_sak_completed_14443_4(sak), sak_to_type(sak));
+
+    // Need RATS?
+    if (is_sak_completed_14443_4(sak)) {
+        ATS ats{};
+        // RATS
+        if (!iso144434RequestATS(ats)) {
+            return false;
+        }
+        picc.size = 1 + lv * 3;
+        picc.sak  = sak;
+
+        // GetVersion(L4)
+        uint8_t ver[8]{};
+        if (mifare_get_version4(ver)) {
+            // m5::utility::log::dump(ver, 8, false);
+            picc.type   = version4_to_type(picc.sub_type, ver);
+            picc.blocks = get_number_of_blocks(picc.type);
+            completed   = true;
+        } else {
+            // M5_LIB_LOGE(">>>>>> HIS");
+            //  Check historical bytes
+            picc.type =
+                historical_bytes_to_type_sak20(picc.sub_type, ats.historical.data(), ats.historical_len, picc.atqa);
+            picc.blocks = get_number_of_blocks(picc.type);
+            completed   = true;
+        }
+        return true;
+    }
+
     //   Completed?
     if (is_sak_completed(sak)) {
         completed = true;
@@ -316,14 +346,16 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
             sak_to_type(sak);  // WARNING: This is a preliminary diagnosis; a more accurate diagnosis is required
         picc.blocks = get_number_of_blocks(picc.type);
 
+        // M5_LIB_LOGE(">>>>    tmp type %s", picc.typeAsString().c_str());
+
         // More detailed type identification
         if (picc.type == Type::MIFARE_Ultralight) {
             picc.type = Type::Unknown;
             uint8_t ver[8]{};
             uint16_t discard{};
-            // GetVersion
-            if (ntag_get_version(ver)) {
-                picc.type = version_to_type(ver);
+            // GetVersion(L3)
+            if (mifare_get_version3(ver)) {
+                picc.type = version3_to_type(ver);
             } else {
                 //  PICC is IDLE... so need reactivate
                 completed = nfcaWakeup(discard) && nfcaSelect(picc);
@@ -346,7 +378,7 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
             }
         }
     }
-    //    M5_LIB_LOGE(">>>> Select %02X %u %u", sak, completed, has_sak_dependent_bit(sak));
+    // M5_LIB_LOGE(">>>> Select %02X %u %u", sak, completed, has_sak_dependent_bit(sak));
     return completed || has_sak_dependent_bit(sak);  // completed or continue
 }
 
@@ -790,6 +822,65 @@ bool UnitST25R3916::mifareUltralightCAuthenticate2(uint8_t rx_ek[8], const uint8
     return false;
 }
 
+bool UnitST25R3916::mifare_get_version3(uint8_t info[8])
+{
+    // GetVerison (L3)
+    uint8_t cmd[1]  = {m5::stl::to_underlying(Command::GET_VERSION)};
+    uint16_t rx_len = 8;
+    return info && mifare_transceive(info, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION);
+}
+
+bool UnitST25R3916::mifare_get_version4(uint8_t info[8])
+{
+    // GetVerison (L4)
+    uint8_t cmd[2] = {0x02, m5::stl::to_underlying(Command::GET_VERSION)};
+    uint8_t rx[128]{};
+    uint16_t rx_len = 128;
+    if (info && mifare_transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION) && rx_len >= 10) {
+        //        M5_LIB_LOGE(">>>> VER L4");
+        // m5::utility::log::dump(rx,rx_len, false);
+
+        const uint8_t* p = rx;
+        uint8_t* q       = info;
+        while (p < rx + rx_len && q < info + 8) {
+            if (*p == 0xAF) {
+                ++p;
+                continue;
+            }
+            *q++ = *p++;
+        }
+        return true;
+    }
+    return false;
+}
+
+// -------------------------------- For ISO/IEC 14443-4
+bool UnitST25R3916::iso144434RequestATS(m5::nfc::a::ATS& ats, const uint8_t fsdi, const uint8_t cid)
+{
+    uint8_t rx[128]{};
+    uint16_t rx_len = sizeof(rx);
+    uint8_t cmd[2]  = {m5::stl::to_underlying(Command::RATS)};
+    cmd[1]          = ((fsdi & 0x0F) << 4) | (cid & 0x0F);
+
+    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_RATS) || rx_len < 7) {
+        return false;
+    }
+    // M5_LIB_LOGE(">>>>ATS %u bytes", rx_len);
+    // m5::utility::log::dump(rx, rx_len, false);
+
+    memcpy(ats.header, rx, 5);
+    if (7 < rx_len) {
+        memcpy(ats.historical.data(), rx + 5, rx_len - 7);
+    }
+    ats.historical_len = rx_len - 7;
+    return true;
+}
+
+bool UnitST25R3916::iso14434Deselect()
+{
+    return false;
+}
+
 // -------------------------------- For NTAG
 bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
 {
@@ -813,13 +904,6 @@ bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t sp
         return false;
     }
     return true;
-}
-
-bool UnitST25R3916::ntag_get_version(uint8_t info[8])
-{
-    uint8_t cmd[1]  = {m5::stl::to_underlying(Command::GET_VERSION)};
-    uint16_t rx_len = 8;
-    return info && mifare_transceive(info, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION);
 }
 
 }  // namespace unit

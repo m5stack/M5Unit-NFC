@@ -28,31 +28,53 @@ namespace a {
   @brief Type of the PICC
  */
 enum class Type : uint8_t {
-    Unknown,                  //!< Unknown type
-    MIFARE_Classic_Mini,      //!< Also known as MIFARE Standard mini
-    MIFARE_Classic_1K,        //!< Also known as MIFARE Standard 1K
-    MIFARE_Classic_2K,        //!< Also known as MIFARE Standard 2K
-    MIFARE_Classic_4K,        //!< Also known as MIFARE Standard 4K
+    Unknown,  //!< Unknown type
+
+    MIFARE_Classic_Mini,  //!< Also known as MIFARE Standard mini
+    MIFARE_Classic_1K,    //!< Also known as MIFARE Standard 1K
+    MIFARE_Classic_2K,    //!< Also known as MIFARE Standard 2K
+    MIFARE_Classic_4K,    //!< Also known as MIFARE Standard 4K
+
     MIFARE_Ultralight,        //!< MIFARE Ultralight
     MIFARE_Ultralight_EV1_1,  //!< MIFARE Ultralight EV1 MF0UL11
     MIFARE_Ultralight_EV1_2,  //!< MIFARE Ultralight EV1 MF0UL21
     MIFARE_Ultralight_Nano,   //!< MIFARE Ultralight Nano
     MIFARE_UltralightC,       //!< MIFARE UltralightC
-    MIFARE_Plus_2K,           //!< MIFARE Plus 2K
-    MIFARE_Plus_4K,           //!< MIFARE Plus 4K
-    MIFARE_DESFire_2K,        //!< MIFARE DESFire 2K
-    MIFARE_DESFire_4K,        //!< MIFARE DESFire 4K
-    MIFARE_DESFire_8K,        //!< MIFARE DESFire 8K
-    NTAG_203,                 //!< NATG 203
-    NTAG_210u,                //!< NTAG 210μ
-    NTAG_210,                 //!< NTAG 210
-    NTAG_212,                 //!< NTAG 212
-    NTAG_213,                 //!< NTAG 213
-    NTAG_215,                 //!< NTAG 215
-    NTAG_216,                 //!< NTAG 216
-    ISO_14443_4,              //!< PICC compliant with ISO/IEC 14443-4
-    ISO_18092,                //!< PICC compliant with ISO/IEC 18092 (NFC)
-    NotCompleted = 0xFF,      //!< SAK indicates UID is not complete
+
+    MIFARE_Plus_2K,  //!< MIFARE Plus 2K
+    MIFARE_Plus_4K,  //!< MIFARE Plus 4K
+    MIFARE_Plus_SE,  //!< MIFARE Plus SE 1K
+
+    MIFARE_DESFire_2K,  //!< MIFARE DESFire 2K
+    MIFARE_DESFire_4K,  //!< MIFARE DESFire 4K
+    MIFARE_DESFire_8K,  //!< MIFARE DESFire 8K
+
+    NTAG_203,   //!< NATG 203
+    NTAG_210u,  //!< NTAG 210μ
+    NTAG_210,   //!< NTAG 210
+    NTAG_212,   //!< NTAG 212
+    NTAG_213,   //!< NTAG 213
+    NTAG_215,   //!< NTAG 215
+    NTAG_216,   //!< NTAG 216
+
+    ISO_14443_4,  //!< PICC compliant with ISO/IEC 14443-4
+    ISO_18092,    //!< PICC compliant with ISO/IEC 18092 (NFC)
+
+    NotCompleted = 0xFF,  //!< SAK indicates UID is not complete
+};
+
+enum class SubTypePlus : uint8_t {
+    None,
+    EV1,
+    EV2,
+    S,
+    X,
+};
+
+enum SubTypeDESFire : uint8_t {
+    EV1,
+    EV2,
+    EV3,
 };
 
 //! @brief Get NFC Forum Tag Type from PICC type
@@ -80,6 +102,12 @@ inline bool is_mifare_ultralight(const Type t)
 inline bool is_ntag(const Type t)
 {
     return t >= Type::NTAG_203 && t <= Type::NTAG_216;
+}
+
+//! @brief Is type MIFARE Plus?
+inline bool is_mifare_plus(const Type t)
+{
+    return t >= Type::MIFARE_Plus_2K && t <= Type::MIFARE_Plus_SE;
 }
 
 //! @brief Does the specified type function as NFC?
@@ -117,8 +145,16 @@ inline bool is_sak_completed(const uint8_t sak)
   @warning This is a preliminary diagnosis, a more accurate diagnosis is required
  */
 Type sak_to_type(const uint8_t sak);
-//!  @brief Inferring the type from GetVersionL3
-Type version_to_type(const uint8_t info[10]);
+//!  @brief Inferring the type from GetVersion L3
+Type version3_to_type(const uint8_t info[8]);
+//!  @brief Inferring the type from GetVersion L4
+Type version4_to_type(uint8_t& sub, const uint8_t info[8]);
+//! @brief Historical bytes to type on SAK 0x18
+Type historical_bytes_to_type_sak18(uint8_t& sub, const uint8_t* bytes, const uint8_t len);
+//! @brief Historical bytes to type on SAK 0x08
+Type historical_bytes_to_type_sak08(uint8_t& sub, const uint8_t* bytes, const uint8_t len);
+//! @brief Historical bytes to type on SAK 0x20
+Type historical_bytes_to_type_sak20(uint8_t& sub, const uint8_t* bytes, const uint8_t len, const uint16_t atqa);
 
 //! @brief Gets the number of blocks
 uint16_t get_number_of_blocks(const Type t);
@@ -144,21 +180,48 @@ bool is_user_block(const Type t, const uint16_t block);
 //! @brief Calculate bcc8
 uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len);
 
+struct ATS {
+    union {
+        uint8_t header[5]{};
+        struct {
+            uint8_t tl;   // length
+            uint8_t t0;   // format
+            uint8_t ta1;  // interface DS/DR
+            uint8_t tb1;  // interface FWI/SFGI
+            uint8_t tc1;  // code protocol options
+        };
+    };
+    std::array<uint8_t, 32> historical{};
+    uint8_t historical_len{};
+#if 0
+    //
+    uint8_t fsci{};        // (T0 under 4bit)
+    uint16_t fsd{};        // Frame Size Device
+    uint16_t fsc{};        // Frame Size Card
+    uint8_t supportedD{};  // bitRate combo  (106/212/424/848)
+    bool supportsCID{};
+    bool supportsNAD{};
+#endif
+};
+
 /*!
   @struct PICC
   @brief PICC for NFC-A
  */
 struct PICC {
-    //! @brief PICC type
-    Type type{};
-    //! @brief  UID size 4, 7 or 10.
-    uint8_t size{};
-    //! @brief  The SAK (Select acknowledge) returned from the PICC after successful selection
-    uint8_t sak{};
-    //! @brief uid data (Valid up to the value of size)
-    uint8_t uid[10]{};
-    //! @brief The number of the blocks or pages
-    uint16_t blocks{};
+    uint8_t _pad{};
+    Type type{};  //!< PICC type
+    union {
+        uint8_t sub_type{};               //!< uint8_t access
+        SubTypePlus sub_type_plus;        //!< For Plus
+        SubTypeDESFire sub_type_desfire;  //!< For DESFire
+    };  //!< SubType for Plus/DESFire;
+    uint8_t sak{};             //!< The SAK (Select acknowledge) returned from the PICC after successful selection
+    uint8_t security_level{};  //!< Security level for Plus
+    uint8_t size{};            //!<  UID size 4, 7 or 10.
+    uint8_t uid[10]{};         //!< uid (Valid up to the value of size)
+    uint16_t atqa{};           //!< ATQA
+    uint16_t blocks{};         //!< Number of the blocks or pages
 
     //! @brief Valid?
     inline bool valid() const
@@ -181,12 +244,17 @@ struct PICC {
     {
         return valid() && is_mifare_ultralight(type);
     }
-
+    //! @brief Is MIFARE Plus?
+    inline bool isMifarePlus() const
+    {
+        return valid() && is_mifare_plus(type);
+    }
     //! @brief Is NTAG?
     inline bool isNTAG() const
     {
         return valid() && is_ntag(type);
     }
+
     //! @brief Supports NFC?
     inline bool supportsNFC() const
     {
@@ -278,7 +346,7 @@ enum class Command : uint8_t {
     SELCT_CL3_OPT = 0x96,  //!< Select CL3 and swich bit rate to fc/64 after receive SAK
     READ          = 0x30,  //!< Read
     // ISO/IEC 14443-4
-    RATS = 0x0E,  //!< Request for Answer to Select
+    RATS = 0xE0,  //!< Request for Answer to Select
     // MIFARE
     AUTH_WITH_KEY_A = 0x60,  //!< MIFARE Classic. Authentication with Key A
     AUTH_WITH_KEY_B = 0x61,  //!< MIFARE Classic. Authentication with Key B
@@ -304,10 +372,10 @@ enum class Command : uint8_t {
 
 ///@name Timeout
 ///@{
-constexpr uint32_t TIMEOUT_REQ_WUP{4};   // 4?
-constexpr uint32_t TIMEOUT_SELECT{4};    // 4?
-constexpr uint32_t TIMEOUT_ANTICOLL{8};  // 8?
-constexpr uint32_t TIMEOUT_HALT{2};      // 2?
+constexpr uint32_t TIMEOUT_REQ_WUP{4};
+constexpr uint32_t TIMEOUT_SELECT{4};
+constexpr uint32_t TIMEOUT_ANTICOLL{8};
+constexpr uint32_t TIMEOUT_HALT{2};
 constexpr uint32_t TIMEOUT_GET_VERSION{5};
 constexpr uint32_t TIMEOUT_3DES{10};
 constexpr uint32_t TIMEOUT_AUTH1{2};
@@ -320,6 +388,8 @@ constexpr uint32_t TIMEOUT_FAST_READ_32PAGE{12};  // 11.8
 constexpr uint32_t TIMEOUT_WRITE1{5};
 constexpr uint32_t TIMEOUT_WRITE2{10};
 constexpr uint32_t TIMEOUT_VALUE_BLOCK{5};  // Value block operation
+constexpr uint32_t TIMEOUT_RATS{5};
+
 ///@}
 
 ///@name 4bit ACK

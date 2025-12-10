@@ -102,21 +102,21 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
     piccs.clear();
 
     auto timeout_at = m5::utility::millis() + timeout_ms;
-    PICC picc{};
 
-    uint16_t atqa{};
     do {
+        PICC picc{};
+
         // Exists PICC?
-        if (!request(atqa)) {
+        if (!request(picc.atqa)) {
             break;
         }
-        // M5_LIB_LOGE("==> ATQA:%04X", atqa);
+        // M5_LIB_LOGE(">>>>ATQA:%04X", picc.atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
-        M5_LIB_LOGV("Detect:%s %s", picc.uidAsString().c_str(), picc.typeAsString().c_str());
+        M5_LIB_LOGV("Detect:%04X %s %s", picc.atqa, picc.uidAsString().c_str(), picc.typeAsString().c_str());
 
         // Hlt
         if (!deactivate()) {
