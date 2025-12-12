@@ -10,8 +10,6 @@
 #include "unit_ST25R3916.hpp"
 #include <M5Utility.hpp>
 
-using namespace m5::utility::mmh3;
-
 using namespace m5::unit::types;
 using namespace m5::unit::st25r3916;
 using namespace m5::unit::st25r3916::regval;
@@ -54,7 +52,6 @@ uint32_t get_block_list_size(const block_t* block_list, const uint8_t block_num)
 
 namespace m5 {
 namespace unit {
-
 // -------------------------------- For NFC-F
 bool UnitST25R3916::configure_nfc_f()
 {

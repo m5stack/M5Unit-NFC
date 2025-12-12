@@ -85,7 +85,7 @@ public:
       @param[out] picc Detected PICC
       @param timeout_ms  Polling time budget in milliseconds
       @return True if detected
-      @note The selected PICC is typically put into HALT during enumeration to allow discovering others
+      @note The detected PICC is typically put into HALT during enumeration to allow discovering others
      */
     bool detect(m5::nfc::a::PICC& picc, const uint32_t timeout_ms = 100U);
     /*!
@@ -93,7 +93,7 @@ public:
       @param[out] piccs Detected PICC PICCs (one per activated PICC candidate)
       @param timeout_ms  Polling time budget in milliseconds
       @return True if detected
-      @note The selected PICC is typically put into HALT during enumeration to allow discovering others
+      @note The detected PICC is typically put into HALT during enumeration to allow discovering others
      */
     bool detect(std::vector<m5::nfc::a::PICC>& piccs, const uint32_t timeout_ms = 1000U);
     /*!
@@ -134,7 +134,6 @@ public:
     {
         return reactivate(_activePICC);
     }
-
     ///@}
 
     ///@name For activated PICC

@@ -13,6 +13,7 @@
 #include "nfc/nfc.hpp"
 #include "mifare.hpp"
 #include <cstdint>
+#include <string>
 #include <cstring>
 
 namespace m5 {

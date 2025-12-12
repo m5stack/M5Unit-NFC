@@ -256,7 +256,6 @@ bool UnitST25R3916::configureNFCMode(const m5::nfc::NFC mode)
     if (mode == NFC::None) {
         return false;
     }
-
     if (NFCMode() == mode) {
         return true;
     }
@@ -352,18 +351,6 @@ bool UnitST25R3916::nfc_initial_field_on()
 
     return ret && modify_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en, 0x00);
 #endif
-}
-
-bool UnitST25R3916::configure_nfc_b()
-{
-    M5_LIB_LOGE("Not yet supported");
-    return false;
-}
-
-bool UnitST25R3916::configure_nfc_v()
-{
-    M5_LIB_LOGE("Not yet supported");
-    return false;
 }
 
 bool UnitST25R3916::writeDirectCommand(const uint8_t cmd, const uint8_t* data, uint32_t dlen)
@@ -475,6 +462,10 @@ bool UnitST25R3916::readICIdentity(uint8_t& type, uint8_t& rev)
 
 bool UnitST25R3916::disableField()
 {
+    //////// >>>>>>>
+    //    /* Set Analog configurations for Field Off event */
+    //    rfalSetAnalogConfig((RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_FIELD_OFF));
+
     return writeDirectCommand(CMD_STOP_ALL_ACTIVITIES) &&
            modify_bit_register8(REG_OPERATION_CONTROL, 0x00, tx_en | rx_en);
 }

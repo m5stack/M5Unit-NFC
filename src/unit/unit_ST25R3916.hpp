@@ -1865,6 +1865,11 @@ public:
     ///@}
 
     // ----------------------------------------------------------------------------------------------
+    ///@name NFC-B
+    ///@{
+    ///@}
+
+    // ----------------------------------------------------------------------------------------------
     ///@name NFC-F
     ///@{
     /*!
@@ -1955,6 +1960,117 @@ public:
                                     const uint8_t block_num, const uint8_t* tx, const uint16_t tx_len);
     ///@}
 
+    // ----------------------------------------------------------------------------------------------
+    ///@name NFC-V
+    ///@{
+    /*!
+      @brief Transceive
+      @param[out] rx Receive buffer
+      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param tx Send buffer
+      @param tx_len Size of send buffer
+      @param timeout_ms Timeout(ms)
+      @param mode ModulationMode
+      @return True if successful
+      @note Perform encoding/decoding for transmission and reception internally
+     */
+    bool nfcvTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_bytes,
+                        const uint32_t timeout_ms,
+                        const m5::nfc::v::ModulationMode mode = m5::nfc::v::ModulationMode::OneOf4);
+    /*!
+      @brief Check inventory slots
+      @param[out] piccs Detected PICCs
+      @param single Using 1 slot if true, using 16 slot if false
+      @return True if successful
+      @note ISO/IEC 15693-3 INVENTORY
+     */
+    bool nfcvInventry(std::vector<m5::nfc::v::PICC>& piccs, const bool single = true);
+    /*!
+      @brief Stay quiet
+      @patam picc PICC
+      @return True if successful
+      @note ISO/IEC 15693-3 STAY QUIET
+     */
+    bool nfcvStayQuiet(const m5::nfc::v::PICC& picc);
+    /*!
+      @brief Select
+      @patam picc PICC
+      @return True if successful
+      @note ISO/IEC 15693-3 SELECT
+     */
+    bool nfcvSelect(const m5::nfc::v::PICC& picc);
+    /*!
+      @brief Reset to ready for specific PICC
+      @patam picc PICC
+      @return True if successful
+      @note ISO/IEC 15693-3 RESET TO READY
+     */
+    bool nfcvResetToReady(const m5::nfc::v::PICC& picc);
+    /*!
+      @brief Reset to ready for selected PICC
+      @return True if successful
+      @note ISO/IEC 15693-3 RESET TO READY
+     */
+    bool nfcvResetToReady();
+    /*!
+      @brief  Get system information
+      @patam[in/out] picc PICC
+      @return True if successful
+      @note ISO/IEC 15693-3 GET SYSTEM INFORMATION
+      @note The information obtained is used to update the PICC
+     */
+    bool nfcvGetSystemInformation(m5::nfc::v::PICC& picc);
+    /*!
+      @brief Read the block of the specified PICC
+      @param[out] rx Output buffer (At least the size of one PICC block)
+      @patam picc PICC
+      @param block Block address
+      @return True if successful
+      @note The specified PICC status is not required
+      @warning The required size varies depending on the PICC
+      @warning The maximum is 32
+     */
+    bool nfcvReadSingleBlock(uint8_t rx[32], const m5::nfc::v::PICC& picc, const uint8_t block);
+    /*!
+      @brief Read the block of the selected PICC
+      @param[out] rx Output buffer (At least the size of one PICC block)
+      @patam picc PICC
+      @param block Block address
+      @return True if successful
+      @warning The required size varies depending on the PICC
+      @warning The maximum is 32
+     */
+    bool nfcvReadSingleBlock(uint8_t rx[32], const uint8_t block);
+    /*!
+      @brief Write the block of the specified PICC
+      @patam picc PICC
+      @param block Block address
+      @param tx Input buffer
+      @param tx_len Input buffer length
+      @return True if successful
+      @note The specified PICC status is not required
+      @note If tx_len is less than the size of one PICC block, it is padded with 0x00
+      @note If it is larger than the size of one block, it is truncated
+      @warning The required tx_size varies depending on the PICC
+      @warning The maximum is 32
+     */
+    bool nfcvWriteSingleBlock(const m5::nfc::v::PICC& picc, const uint8_t block, const uint8_t* tx,
+                              const uint8_t tx_len);
+    /*!
+      @brief Write the block of the selected PICC
+      @param block Block address
+      @param tx Input buffer
+      @param tx_len Input buffer length
+      @return True if successful
+      @note The specified PICC status is not required
+      @note If tx_len is less than the size of one PICC block, it is padded with 0x00
+      @note If it is larger than the size of one block, it is truncated
+      @warning The required tx_size varies depending on the PICC
+      @warning The maximum is 32
+     */
+    bool nfcvWriteSingleBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len);
+    ///@}
+
     // For debug
     void dumpRegister();
 
@@ -1996,7 +2112,6 @@ protected:
     bool nfca_request_wakeup(uint16_t& atqa, const bool req);
     bool nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv);
 
-
     // MIFARE
     bool mifare_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                            const uint32_t timeout_ms);
@@ -2008,7 +2123,14 @@ protected:
 
     bool mifare_get_version3(uint8_t info[8]);
     bool mifare_get_version4(uint8_t info[8]);
-    
+
+    // NFC-V
+    bool nfcv_transmit(const uint8_t* tx, const uint16_t tx_len, const m5::nfc::v::ModulationMode mode,
+                       const uint32_t timeout_ms);
+    bool nfcv_reset_to_ready(const m5::nfc::v::PICC* picc);
+
+    bool nfcv_read_single_block(uint8_t rx[32], const uint8_t req, const m5::nfc::v::PICC* picc, const uint8_t block);
+
 private:
     config_t _cfg{};
     m5::nfc::NFC _nfcMode{};

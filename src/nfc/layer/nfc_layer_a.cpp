@@ -22,7 +22,7 @@ using namespace m5::nfc::ndef;
 
 namespace {
 
-void dump_block(const uint8_t buf[16], const int16_t block = -1, const int16_t sector = -1, const uint8_t ab = 0xFF,
+void print_block(const uint8_t buf[16], const int16_t block = -1, const int16_t sector = -1, const uint8_t ab = 0xFF,
                 const bool aberror = false, const bool value_block = false)
 {
     char tmp[128 + 1] = "   ";
@@ -108,7 +108,8 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
 
         // Exists PICC?
         if (!request(picc.atqa)) {
-            break;
+            m5::utility::delay(1);
+            continue;
         }
         // M5_LIB_LOGE(">>>>ATQA:%04X", picc.atqa);
 
@@ -832,11 +833,11 @@ bool NFCLayerA::dump_sector(const uint8_t sector)
         const uint8_t poffset      = (blocks == 4) ? i : i / 5;
         const uint8_t permission   = permissions[poffset];
         const bool show_permission = (blocks == 4) ? true : (i % 5) == 0;
-        dump_block(dbuf, base + i, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, error,
+        print_block(dbuf, base + i, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, error,
                    can_value_block_permission(permission));
     }
     // Sector trailer
-    dump_block(sbuf, saddr, -1, permissions[3], error);
+    print_block(sbuf, saddr, -1, permissions[3], error);
 
     return true;
 }

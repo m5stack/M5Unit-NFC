@@ -12,7 +12,7 @@
 
 #include "nfc/nfc.hpp"
 #include <cstdint>
-#include <cstring>
+#include <string>
 #include <array>
 
 namespace m5 {
@@ -358,7 +358,8 @@ struct PICC {
     RequestCode request_code{};  //!< Tyepe of the request_data
     Type type{};                 //!< PICC Type
     Format format{};             //!< Format type group bits
-    uint16_t dfc_format{};       //!< DFC format (ID[8],ID[9] LE) if format include DFC
+    uint8_t _pad{};
+    uint16_t dfc_format{};  //!< DFC format (ID[8],ID[9] LE) if format include DFC
 
     //! @brief Valid?
     inline bool valid() const

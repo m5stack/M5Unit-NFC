@@ -23,6 +23,7 @@
 
 #include "nfc/layer/nfc_layer_a.hpp"
 #include "nfc/layer/nfc_layer_f.hpp"
+#include "nfc/layer/nfc_layer_v.hpp"
 
 /*!
   @namespace m5

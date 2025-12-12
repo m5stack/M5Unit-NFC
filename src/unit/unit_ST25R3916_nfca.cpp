@@ -11,8 +11,6 @@
 #include <M5Utility.hpp>
 #include <esp_random.h>
 
-using namespace m5::utility::mmh3;
-
 using namespace m5::unit::types;
 using namespace m5::unit::st25r3916;
 using namespace m5::unit::st25r3916::regval;
