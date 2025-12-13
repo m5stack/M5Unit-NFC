@@ -20,16 +20,18 @@ public:
     virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)             = 0;
     virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) = 0;
 
-    virtual uint16_t firstUserBlock() const    = 0;
-    virtual uint16_t lastUserBlock() const     = 0;
-    virtual uint16_t userBlockUnitSize() const = 0;
+    virtual uint16_t first_user_block() const = 0;
+    virtual uint16_t last_user_block() const  = 0;
+    virtual uint16_t user_area_size() const   = 0;
+    virtual uint16_t unit_size_read() const   = 0;
+    virtual uint16_t unit_size_write() const  = 0;
 
     // For NFC-F AttributeBlock
-    virtual uint8_t maximumReadBlocks() const
+    virtual uint8_t maximum_read_blocks() const
     {
         return 0;
     }
-    virtual uint8_t maximumWriteBlocks() const
+    virtual uint8_t maximum_write_blocks() const
     {
         return 0;
     }

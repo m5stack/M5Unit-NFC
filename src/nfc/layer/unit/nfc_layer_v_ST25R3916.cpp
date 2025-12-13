@@ -30,6 +30,7 @@ struct AdapterST25R3916ForV final : NFCLayerV::Adapter {
     virtual bool stay_quiet(const m5::nfc::v::PICC& picc) override;
     virtual bool select(const m5::nfc::v::PICC& picc) override;
     virtual bool reset_to_ready() override;
+    virtual bool reset_to_ready(const m5::nfc::v::PICC& picc) override;
     virtual bool get_system_information(m5::nfc::v::PICC& picc) override;
     virtual bool read_single_block(uint8_t rx[32], const uint8_t block) override;
     virtual bool write_single_block(const uint8_t block, const uint8_t* tx, const uint8_t tx_len) override;
@@ -50,6 +51,11 @@ bool AdapterST25R3916ForV::stay_quiet(const m5::nfc::v::PICC& picc)
 bool AdapterST25R3916ForV::select(const m5::nfc::v::PICC& picc)
 {
     return _u.nfcvSelect(picc);
+}
+
+bool AdapterST25R3916ForV::reset_to_ready(const m5::nfc::v::PICC& picc)
+{
+    return _u.nfcvResetToReady(picc);
 }
 
 bool AdapterST25R3916ForV::reset_to_ready()

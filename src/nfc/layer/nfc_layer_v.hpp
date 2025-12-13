@@ -86,10 +86,8 @@ public:
       @post PICC transitions: READY/QUIET -> SELECTED on a successful response
      */
     bool activate(const m5::nfc::v::PICC& picc);
-    inline bool reactivate(const m5::nfc::v::PICC& picc)
-    {
-        return activate(picc);
-    }
+
+    bool reactivate(const m5::nfc::v::PICC& picc);
     inline bool reactivate()
     {
         return reactivate(_activePICC);
@@ -108,12 +106,40 @@ public:
     /*!
       @brief Read single block
       @param[out] rx Output buffer (At least the size of one PICC block)
-      @param block Block address (0-255)
+      @param block Block address
       @return True if successful
       @warning The required size varies depending on the PICC
-      @warning The maximum is 32
+      @warning The maximum rx size is 32
      */
     bool readBlock(uint8_t rx[32], const uint8_t block);
+    /*!
+      @brief Write single block
+      @param block Block address
+      @param tx buffer
+      @param tx_len buffer size
+      @warning If the tx_len is less than the size of one PICC block, the remaining space is filled with 0x00
+      @warning If the tx_len is larger than the size of one PICC block, only the first 4 bytes will be written
+     */
+    bool writeBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len);
+    /*!
+      @brief Read any bytes from user area
+      @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
+      @param rx Buffer
+      @param[in/out] rx_len in:buffer size, out:actual read size
+      @param sblock Reading start block
+      @return True if successful
+     */
+    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
+    /*!
+      @brief Write any bytes to user area
+      @details Continue writing only the user area from the first block of the user area until tx_len is satisfied
+      @param sblock Writing start block
+      @param tx Buffer
+      @param tx_len buffer size
+      @return True if successful
+      @warning The write unit is the size of one block in PICC
+     */
+    virtual bool write(const uint8_t sblock, const uint8_t* tx, const uint16_t tx_len) override;
 
     /*!
       @brief Dump all blocks
@@ -126,7 +152,34 @@ public:
       @return True if successful
     */
     bool dump(const uint8_t block);
+    ///@}
 
+    ///@note For activated PICC
+    ///@name For NDEF
+    ///@{
+    /*!
+      @brief Is the PICC data in NDEF format?
+      @paran[out] valid True if NDEF format
+      @return True if successful
+     */
+    bool ndefIsValidFormat(bool& valid);
+    /*!
+      @brief Read NDEF Message TLV
+      @param[out] msg Messgae If it does not exist, a Null TLV is returned
+      @return True if successful
+      @note If multiple messages of the same type exist, return the first one
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefRead(m5::nfc::ndef::TLV& msg);
+    /*!
+      @brief Write NDEF message
+      @param msg Messgae (NDEF Message)
+      @return True if successful
+      @note Other existing tags will be preserved
+      @warning Existing NDEF message TLVs will be overwritten
+      @warning Only PICC cards supporting NDEF are valid
+     */
+    bool ndefWrite(const m5::nfc::ndef::TLV& msg);
     ///@}
 
 protected:
@@ -134,15 +187,26 @@ protected:
     bool dump_block(const uint8_t block);
 
 protected:
-    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
-    virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override;
-    virtual uint16_t firstUserBlock() const override;
-    virtual uint16_t lastUserBlock() const override;
-    inline virtual uint16_t userBlockUnitSize() const override
+    virtual uint16_t first_user_block() const override
+    {
+        return _activePICC.firstUserBlock();
+    }
+    virtual uint16_t last_user_block() const override
+    {
+        return _activePICC.lastUserBlock();
+    }
+    inline virtual uint16_t user_area_size() const
+    {
+        return _activePICC.userAreaSize();
+    }
+    inline virtual uint16_t unit_size_read() const override
     {
         return _activePICC.block_size;
     }
-
+    inline virtual uint16_t unit_size_write() const override
+    {
+        return _activePICC.block_size;
+    }
     bool detect_single(m5::nfc::v::PICC& picc);
 
 protected:
@@ -163,6 +227,7 @@ struct NFCLayerV::Adapter {
     virtual bool inventory(std::vector<m5::nfc::v::PICC>& piccs)                                  = 0;
     virtual bool stay_quiet(const m5::nfc::v::PICC& picc)                                         = 0;
     virtual bool select(const m5::nfc::v::PICC& picc)                                             = 0;
+    virtual bool reset_to_ready(const m5::nfc::v::PICC& picc)                                     = 0;
     virtual bool reset_to_ready()                                                                 = 0;
     virtual bool get_system_information(m5::nfc::v::PICC& picc)                                   = 0;
     virtual bool read_single_block(uint8_t rx[32], const uint8_t block)                           = 0;

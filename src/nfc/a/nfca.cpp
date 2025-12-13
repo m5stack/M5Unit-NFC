@@ -46,6 +46,10 @@ constexpr char name_ntag213[]  = "NTAG 213";
 constexpr char name_ntag215[]  = "NTAG 215";
 constexpr char name_ntag216[]  = "NTAG 216";
 //
+constexpr char name_st25ta_2k[]  = "ST25TA 2K";
+constexpr char name_st25ta_16k[] = "ST25TA 16K";
+constexpr char name_st25ta_64k[] = "ST25TA 64K";
+//
 constexpr char name_iso14443_4[] = "ISO14443-4";
 constexpr char name_iso18092[]   = "ISO18092";
 
@@ -58,6 +62,7 @@ constexpr const char* name_table[] = {
     name_ntag203,      name_ntag210u,   name_ntag210,                                 // NTAG
     name_ntag212,      name_ntag213,    name_ntag215,                                 // NTAG
     name_ntag216,                                                                     // NTAG
+    name_st25ta_2k,    name_st25ta_16k, name_st25ta_64k,                              // ST25A
     name_iso14443_4,   name_iso18092,                                                 // Others
 };
 
@@ -83,6 +88,7 @@ constexpr uint16_t max_block_table[] = {0,                                 // Un
                                         128, 256, 64,                      // Plus
                                         0,   0,   0,                       // DESFire (Not has blocks, File base system)
                                         42,  20,  16,  40,  45, 135, 231,  // NTAG
+                                        0,   0,   0,                       // ST25TA
                                         0,   0};
 
 // [first/last]
@@ -118,6 +124,10 @@ constexpr uint8_t user_block_table[][2] = {
     //
     {0, 0},
     {0, 0},
+    {0, 0},
+    //
+    {0, 0},
+    {0, 0},
 };
 
 constexpr uint8_t max_sector_table[] = {
@@ -127,6 +137,7 @@ constexpr uint8_t max_sector_table[] = {
     32, 40, 16,               // Plus
     0,  0,  0,                // Desfire
     0,  0,  0,  0,  0, 0, 0,  // NTAG
+    0,  0,  0,                // ST25TA
     0,  0,
 };
 
@@ -149,6 +160,7 @@ constexpr NFCForumTag nfc_forum_tag_table[] = {
     NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                                          // DESFire
     NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                      // NTAG
     NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                                          // NTAG
+    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                                          // ST25TA
     NFCForumTag::None,  NFCForumTag::None,                                                               //
 };
 
@@ -329,7 +341,7 @@ Type version4_to_type(uint8_t& sub, const uint8_t info[8])
     const uint8_t hw_version = info[4];
     const uint8_t size       = info[6];
 
-    //M5_LIB_LOGE(">>>> hw_type:%02X hw_ver:%02X size:%02X", hw_type, hw_version, size);
+    // M5_LIB_LOGE(">>>> hw_type:%02X hw_ver:%02X size:%02X", hw_type, hw_version, size);
 
     if (hw_type == 0x02 || hw_type == 0x82) {
         switch (hw_version) {
@@ -429,7 +441,6 @@ m5::nfc::NFCForumTag get_nfc_forum_tag_type(const Type t)
     return nfc_forum_tag_table[idx < m5::stl::size(max_block_table) ? idx : 0];
 }
 
-//
 std::string PICC::uidAsString() const
 {
     char buf[2 * 10 + 1]{};

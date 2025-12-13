@@ -5,7 +5,7 @@
  */
 /*
   Example using M5UnitUnified for ST25R3916
-  Read/write NDEF NFC-A PICC
+  Read/write NDEF NFC-V PICC
 */
 #include <M5Unified.h>
 #include <M5UnitUnified.h>
@@ -23,8 +23,8 @@
 // #define USING_HACKER_CAP
 #endif
 
-using namespace m5::nfc::a;
-using namespace m5::nfc::a::mifare;
+using namespace m5::nfc;
+using namespace m5::nfc::v;
 using namespace m5::nfc::ndef;
 
 namespace {
@@ -40,7 +40,7 @@ m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
 #else
 #error Choose unit please!
 #endif
-m5::unit::nfc::NFCLayerA nfc_a{unit};
+m5::unit::nfc::NFCLayerV nfc_v{unit};
 
 // PNG image binary
 constexpr uint8_t poji_64_png[] = {
@@ -88,18 +88,9 @@ constexpr uint32_t poji_64_png_len = 738;
 
 void read_ndef()
 {
-    bool valid{};
-    if (!nfc_a.ndefIsValidFormat(valid)) {
-        return;
-    }
-    if (!valid) {
-        M5.Log.printf("Data format is NOT NDEF\n");
-        return;
-    }
-
     TLV msg;
     // Read NDEF message TLV
-    if (!nfc_a.ndefRead(msg)) {
+    if (!nfc_v.ndefRead(msg)) {
         M5_LOGE("Failed to read");
         return;
     }
@@ -130,19 +121,6 @@ void read_ndef()
 
 void write_ndef()
 {
-    /*
-      **** NOTICE *********************************************
-      Change the Ultralight series to NDEF format
-      Note: This change cannot be undone
-      *********************************************************
-    */
-    if (nfc_a.activatedPICC().isMifareUltralight()) {
-        if (!nfc_a.mifareUltralightChangeFormatToNDEF()) {
-            M5_LOGE("Failed to mifareUltralightChangeFormatToNTAG");
-            return;
-        }
-    }
-
     TLV msg{Tag::Message};
     Record r[5] = {};  // Wellknown as default
 
@@ -163,7 +141,7 @@ void write_ndef()
     png.setPayload(poji_64_png, poji_64_png_len);
     r[4] = png;
 
-    uint32_t max_user_size = nfc_a.activatedPICC().userAreaSize() - 1 /* terminator TLV */;
+    uint32_t max_user_size = nfc_v.activatedPICC().userAreaSize() - 1 /* terminator TLV */;
     for (auto&& rr : r) {
         msg.push_back(rr);
         if (msg.required() > max_user_size) {
@@ -172,11 +150,11 @@ void write_ndef()
         }
     }
 
-    if (!nfc_a.ndefWrite(msg)) {
+    if (!nfc_v.ndefWrite(msg)) {
         M5_LOGE("Failed to write");
         return;
     }
-    nfc_a.dump();
+    nfc_v.dump();
 }
 
 }  // namespace
@@ -185,6 +163,10 @@ void setup()
 {
     M5.begin();
     M5.setTouchButtonHeightByRatio(100);
+
+    auto cfg = unit.config();
+    cfg.mode = NFC::V;
+    unit.config(cfg);
 
 #if 0
     //// M5GFX 0.2.15 NG! with HackerCap
@@ -247,53 +229,28 @@ void loop()
 
     if (clicked || held) {
         PICC picc{};
-        if (nfc_a.detect(picc)) {
-            if (nfc_a.reactivate(picc)) {
-                M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
-                              picc.userAreaSize(), picc.totalSize());
-                if (picc.supportsNFC()) {
-                    if (clicked) {
-                        M5.Speaker.tone(2000, 30);
-                        lcd.fillScreen(TFT_BLUE);
-                        //nfc_a.dump();
-                        read_ndef();
-                    } else if (held) {
-                        M5.Speaker.tone(4000, 30);
-                        lcd.fillScreen(TFT_YELLOW);
-                        write_ndef();
-                    }
-                    M5.Log.printf("Please remove the PICC from the reader\n");
-
-                } else {
-                    M5.Log.printf("Not support the NDEF\n");
+        if (nfc_v.detect(picc)) {
+            if (nfc_v.reactivate(picc)) {
+                M5.Log.printf("PICC:%s %s %u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
+                              picc.totalSize());
+                if (clicked) {
+                    M5.Speaker.tone(2000, 30);
+                    lcd.fillScreen(TFT_BLUE);
+                    nfc_v.dump();
+                    read_ndef();
+                } else if (held) {
+                    M5.Speaker.tone(4000, 30);
+                    lcd.fillScreen(TFT_YELLOW);
+                    write_ndef();
                 }
+                M5.Log.printf("Please remove the PICC from the reader\n");
+                nfc_v.deactivate();
+                lcd.setCursor(0, 0);
+                lcd.printf("Please put the PICC and click/hold BtnA");
+                M5.Log.printf("Please put the PICC and click/hold BtnA\n");
             }
-            nfc_a.deactivate();
-            lcd.setCursor(0, 0);
-            lcd.printf("Please put the PICC and click/hold BtnA");
-            M5.Log.printf("Please put the PICC and click/hold BtnA\n");
         } else {
             M5.Log.printf("PICC NOT exists\n");
         }
     }
 }
-/*
-  6:19:30.599 > Page    :00 01 02 03
-16:19:30.605 > --------------------
-16:19:30.605 > [000/00]:04 49 37 F2
-16:19:30.605 > [001/01]:D2 A6 1C 90
-16:19:30.610 > [002/02]:F8 48 00 00
-16:19:30.610 > [003/03]:E1 10 12 00
-16:19:30.610 > [004/04]:03 0F D1 01
-16:19:30.616 > [005/05]:0B 54 02 65
-16:19:30.616 > [006/06]:6E 33 37 42
-16:19:30.616 > [007/07]:37 34 43 37
-16:19:30.622 > [008/08]:41 FE 00 00
-16:19:30.622 > [009/09]:00 00 00 00
-16:19:30.622 > [010/0A]:00 00 00 00
-16:19:30.627 > [011/0B]:00 00 00 00
-16:19:30.627 > [012/0C]:00 00 00 00
-16:19:30.627 > [013/0D]:00 00 00 00
-16:19:30.632 > [014/0E]:00 00 00 00
-16:19:30.632 > [015/0F]:00 00 00 00
-*/

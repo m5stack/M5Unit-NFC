@@ -49,6 +49,7 @@ enum class Type : uint8_t {
     MIFARE_DESFire_2K,  //!< MIFARE DESFire 2K
     MIFARE_DESFire_4K,  //!< MIFARE DESFire 4K
     MIFARE_DESFire_8K,  //!< MIFARE DESFire 8K
+    // LIGHT
 
     NTAG_203,   //!< NATG 203
     NTAG_210u,  //!< NTAG 210μ
@@ -58,8 +59,12 @@ enum class Type : uint8_t {
     NTAG_215,   //!< NTAG 215
     NTAG_216,   //!< NTAG 216
 
+    ST25TA_2K,   //!< ST25TA02K
+    ST25TA_16K,  //!< ST25TA16K
+    ST25TA_64K,  //!< ST25TA64K
+
     ISO_14443_4,  //!< PICC compliant with ISO/IEC 14443-4
-    ISO_18092,    //!< PICC compliant with ISO/IEC 18092 (NFC)
+    ISO_18092,    //!< PICC compliant with ISO/IEC 18092
 
     NotCompleted = 0xFF,  //!< SAK indicates UID is not complete
 };
@@ -203,6 +208,8 @@ struct ATS {
     bool supportsCID{};
     bool supportsNAD{};
 #endif
+
+    Type identify() const;
 };
 
 /*!

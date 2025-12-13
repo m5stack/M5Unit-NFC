@@ -118,9 +118,10 @@ void loop()
         lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
         PICC picc{};
         if (nfc_v.detect(picc)) {
-            if (nfc_v.activate(picc)) {
+            if (nfc_v.reactivate(picc)) {
                 M5.Speaker.tone(3000, 20);
-                M5.Log.printf("==== Dump %s %u bytes ====\n", picc.uidAsString().c_str(), picc.totalSize());
+                M5.Log.printf("==== Dump %s %s %u bytes ====\n", picc.uidAsString().c_str(),
+                              picc.typeAsString().c_str(), picc.totalSize());
                 nfc_v.dump();
                 nfc_v.deactivate();
             }

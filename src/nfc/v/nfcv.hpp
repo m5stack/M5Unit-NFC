@@ -24,6 +24,32 @@ namespace nfc {
  */
 namespace v {
 
+/*!
+  @enum Type
+  @brief Type of the PICC
+ */
+enum class Type : uint8_t {
+    Unknown,  //!< Unknown type
+
+    NXP_ICODE_SLI,     //!< ICODE SLI
+    NXP_ICODE_SLIX,    //!< ICODE SLIX
+    NXP_ICODE_SLIX_2,  //!< ICODE SLIX2
+    NXP,               //!< NXP (Unclassified)
+
+    TI_TAGIT_HF_I,       //!< Tag-it
+    TI_TAGIT_HF_I_Plus,  //!< Tag-it Plus
+    TI,                  //!< TI (Unclassified)
+
+    ST_LRI,     //!< ST LRI
+    ST_ST25DV,  //!< ST25DV
+    ST,         //!< ST (Unclassified)
+
+    Fujitsu_FRAM,  //!< FRAM
+    Fujitsu,       //!< Fujitsu (Unclassified)
+
+    Unclassified,  //!< Unclassified
+};
+
 ///@name Request flags
 ///@{
 const uint8_t option_flag{0x40};
@@ -46,35 +72,18 @@ enum class ModulationMode : uint8_t {
 };
 
 /*!
-  @brief Encode to VCD frame
-  @param out Output buffer
-  @param mode ModulationMode
-  @param buffer Input buffer
-  @param length Input buffer length
-  @param high_rate High data rate if true
-  @param add_crc Append CRC16 if true
-  @return True if successful
+  @brief Identify the type from  Manufacturer Code, IC Identifier, IC Reference
+  @return Type
+  @warning Not all tags can be identified
+  @warning If identification is impossible, Unclassified is returned
  */
-bool encode_VCD(std::vector<uint8_t>& out, const ModulationMode mode, const uint8_t* buffer, const uint32_t length,
-                const bool high_rate = true, const bool add_crc = true);
+Type identify_type(const uint8_t mf, const uint8_t ic, const uint8_t ir, const uint8_t uid4);
 
-/*!
-  @brief Decode from VICC frame
-  @param out Output buffer
-  @param buffer Input buffer
-  @param length Input buffer length
-  @return True if successful
- */
-bool decode_VICC(std::vector<uint8_t>& out, const uint8_t* buffer, const uint32_t length,
-                 const uint32_t ignore_bits = 16);
-
-/*!
-  @enum Type
-  @brief Type of the PICC
- */
-enum class Type : uint8_t {
-    Unknown,  //!< Unknown type
-};
+//! @brief Get NFC Forum Tag Type from PICC type
+inline m5::nfc::NFCForumTag get_nfc_forum_tag_type(const Type t)
+{
+    return (t != Type::Unknown) ? NFCForumTag::Type5 : NFCForumTag::None;
+}
 
 /*!
   @struct PICC
@@ -82,10 +91,12 @@ enum class Type : uint8_t {
  */
 struct PICC {
     uint8_t uid[8]{};      //!< UID (MSB-first)
+    Type type{};           //!< Type
     uint8_t dsfID{};       //!< Data Storage Format Identifier
     uint8_t afi{};         //!< Application Family Identifier
     uint8_t icRef{};       //!< IC Reference
     uint8_t block_size{};  //!< Byte size of 1 block
+    uint8_t _pad{};        //
     uint16_t blocks{};     //!< Number of blocks
 
     inline bool valid() const
@@ -96,13 +107,45 @@ struct PICC {
     {
         return valid() ? uid[1] : 0xFF;
     }
+    inline uint8_t icIdentifier() const
+    {
+        return valid() ? uid[2] : 0x00;
+    }
+    inline uint8_t icReference() const
+    {
+        return valid() ? icRef : 0xFF;
+    }
+
+    //
     inline uint16_t totalSize() const
     {
         return blocks * block_size;
     }
+    //! @brief Total user area size
+    inline uint16_t userAreaSize() const
+    {
+        return totalSize();  // Same as totalSize
+    }
+    //! @brief NFC ForumTag
+    inline NFCForumTag nfcForumTagType() const
+    {
+        return get_nfc_forum_tag_type(type);
+    }
+
+    //! @brief Gets the first user block/page address
+    inline uint16_t firstUserBlock() const
+    {
+        return valid() ? 0 : 0xFFFF;
+    }
+    inline uint16_t lastUserBlock() const
+    {
+        return valid() ? (blocks - 1) : 0xFFFF;
+    }
 
     //! @brief Gets the uid string
     std::string uidAsString() const;
+    //! @brief Gets the type string
+    std::string typeAsString() const;
 };
 
 //! @brief Equal?
@@ -138,8 +181,31 @@ constexpr uint32_t TIMEOUT_SELECT{16};
 constexpr uint32_t TIMEOUT_RESET_TO_READY{16};
 constexpr uint32_t TIMEOUT_GET_SYSTEM_INFORMATION{20};
 constexpr uint32_t TIMEOUT_READ_SINGLE_BLOCK{20};
-constexpr uint32_t TIMEOUT_WRITE_SINGLE_BLOCK{50};
+constexpr uint32_t TIMEOUT_WRITE_SINGLE_BLOCK{40};
 ///@}
+
+/*!
+  @brief Encode to VCD frame
+  @param out Output buffer
+  @param mode ModulationMode
+  @param buffer Input buffer
+  @param length Input buffer length
+  @param high_rate High data rate if true
+  @param add_crc Append CRC16 if true
+  @return True if successful
+ */
+bool encode_VCD(std::vector<uint8_t>& out, const ModulationMode mode, const uint8_t* buffer, const uint32_t length,
+                const bool high_rate = true, const bool add_crc = true);
+
+/*!
+  @brief Decode from VICC frame
+  @param out Output buffer
+  @param buffer Input buffer
+  @param length Input buffer length
+  @return True if successful
+ */
+bool decode_VICC(std::vector<uint8_t>& out, const uint8_t* buffer, const uint32_t length,
+                 const uint32_t ignore_bits = 16);
 
 }  // namespace v
 }  // namespace nfc

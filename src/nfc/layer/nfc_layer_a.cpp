@@ -23,7 +23,7 @@ using namespace m5::nfc::ndef;
 namespace {
 
 void print_block(const uint8_t buf[16], const int16_t block = -1, const int16_t sector = -1, const uint8_t ab = 0xFF,
-                const bool aberror = false, const bool value_block = false)
+                 const bool aberror = false, const bool value_block = false)
 {
     char tmp[128 + 1] = "   ";
     uint32_t left{};
@@ -111,13 +111,13 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
-        // M5_LIB_LOGE(">>>>ATQA:%04X", picc.atqa);
+        M5_LIB_LOGE(">>>>ATQA:%04X", picc.atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
-        M5_LIB_LOGV("Detect:%04X %s %s", picc.atqa, picc.uidAsString().c_str(), picc.typeAsString().c_str());
+        M5_LIB_LOGE("Detect:%04X %s %s", picc.atqa, picc.uidAsString().c_str(), picc.typeAsString().c_str());
 
         // Hlt
         if (!deactivate()) {
@@ -181,15 +181,10 @@ bool NFCLayerA::read4(uint8_t rx[4], const uint8_t addr)
 
 bool NFCLayerA::read16(uint8_t rx[16], const uint8_t addr)
 {
-#if 1
     uint16_t rx_len{16};
     return rx && _activePICC.valid() &&
            (_activePICC.canFastRead() ? (_impl->ntag_read_page(rx, rx_len, addr, addr + 3) && rx_len == 16)
                                       : _impl->nfca_read_block(rx, addr));
-#else
-    // AN13089 3.1.2 Only in case of 4 pages reading the READ command is faster than the FAST_READ.
-    return rx && _activePICC.valid() && _impl->nfca_read_block(rx, addr);
-#endif
 }
 
 bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t addr, const m5::nfc::a::mifare::classic::Key& key)
@@ -203,14 +198,15 @@ bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t addr, const m5
 bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t addr)
 {
     const Type t = _activePICC.type;
-    // ST25R3916 512 but cannot use long length...why?
+    //  ST25R3916 512 but cannot use long length...why?
     uint16_t fifo_depth = std::min<uint16_t>(_impl->max_fifo_depth(), 64);
 
     const uint16_t last = get_last_user_block(t);
     uint16_t need_page  = ((rx_len + 3) >> 2);
-    uint16_t from       = std::min<uint16_t>(last, std::max<uint16_t>(addr, get_first_user_block(t)));
-    uint16_t to         = std::min<uint16_t>(from + need_page - 1, last);
-    uint16_t pages      = to - from + 1;
+    //    uint16_t from       = std::min<uint16_t>(last, std::max<uint16_t>(addr, get_first_user_block(t)));
+    uint16_t from  = addr;
+    uint16_t to    = std::min<uint16_t>(from + need_page - 1, last);
+    uint16_t pages = to - from + 1;
 
     uint16_t read_size = pages << 2;  // 4 byte unit
     if (read_size > rx_len) {
@@ -251,12 +247,13 @@ bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t add
 bool NFCLayerA::read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t addr,
                                   const m5::nfc::a::mifare::classic::Key& key)
 {
-    const Type t        = _activePICC.type;
+    // const Type t        = _activePICC.type;
     uint16_t need_block = ((rx_len + 15) >> 4);
     uint16_t last       = get_last_user_block(_activePICC.type);
-    uint16_t from       = std::min<uint16_t>(last, std::max<uint16_t>(addr, get_first_user_block(t)));
-    uint16_t to         = std::min<uint16_t>(from + need_block - 1, last);
-    uint16_t blocks     = to - from + 1;
+    //    uint16_t from       = std::min<uint16_t>(last, std::max<uint16_t>(addr, get_first_user_block(t)));
+    uint16_t from   = addr;
+    uint16_t to     = std::min<uint16_t>(from + need_block - 1, last);
+    uint16_t blocks = to - from + 1;
 
     uint16_t read_size = blocks << 4;  // 16 byte unit
     if (read_size > rx_len) {
@@ -285,7 +282,8 @@ bool NFCLayerA::read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t a
                 }
             }
         }
-        if (!is_user_block(_activePICC.type, cur)) {
+        // Skip sector trailer
+        if (_activePICC.isMifareClassic() && !is_user_block(_activePICC.type, cur)) {
             ++cur;
             continue;
         }
@@ -645,22 +643,32 @@ bool NFCLayerA::mifareClassicRestoreValueBlock(const uint8_t block)
     return _activePICC.isMifareClassic() && mifare_classic_value_block(Command::RESTORE, block);
 }
 
-bool NFCLayerA::mifareUltralightChangeFormatToNTAG()
+bool NFCLayerA::mifareUltralightChangeFormatToNDEF()
 {
-    if (!_activePICC.supportsNFC()) {
+    if (!_activePICC.supportsNFC() || !_activePICC.isMifareUltralight()) {
         return false;
     }
 
-    if (_activePICC.isMifareUltralight()) {
-        if (!ntag_check_format()) {
-            uint8_t buf[4] = {MAGIC_NO, 0x10 /* version 1.0 */, (uint8_t)(_activePICC.userAreaSize() / 8), 0x00};
-            if (!write4(3 /* CC */, buf, sizeof(buf), false)) {
-                M5_LIB_LOGE("Failed to write4");
-                return false;
-            }
-            // Verify
-            return ntag_check_format();
-        }
+    type2::CapabilityContainer cc{};
+    if (!_ndef.readCapabilityContainer(cc)) {
+        return false;
+    }
+
+    if (cc.valid()) {  // Already NDEF format?
+        return true;
+    }
+
+    cc.block[0] = MAGIC_NO_CC4;
+    cc.major_version(NDEF_MAJOR_VERSION);
+    cc.minor_version(NDEF_MINOR_VERSION);
+    cc.ndef_size(_activePICC.userAreaSize());
+    cc.read_access(ACCESS_FREE);
+    cc.write_access(ACCESS_FREE);
+    // m5::utility::log::dump(cc.block, 4, false);
+
+    if (!write4(TYPE2_CC_BLOCK, cc.block, sizeof(cc.block), false)) {
+        M5_LIB_LOGE("Failed to write");
+        return false;
     }
     return true;
 }
@@ -746,7 +754,9 @@ bool NFCLayerA::mifareUltralightCAuthenticate(const uint8_t key[16])
 bool NFCLayerA::ndefIsValidFormat(bool& valid)
 {
     valid = false;
-    return ntag_check_cc_valid() && _ndef.isValidFormat(_activePICC.nfcForumTagType(), valid);
+    return (_activePICC.supportsNFC() || _activePICC.isMifareUltralight())
+               ? _ndef.isValidFormat(valid, _activePICC.nfcForumTagType())
+               : false;
 }
 
 bool NFCLayerA::ndefRead(m5::nfc::ndef::TLV& msg)
@@ -834,7 +844,7 @@ bool NFCLayerA::dump_sector(const uint8_t sector)
         const uint8_t permission   = permissions[poffset];
         const bool show_permission = (blocks == 4) ? true : (i % 5) == 0;
         print_block(dbuf, base + i, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, error,
-                   can_value_block_permission(permission));
+                    can_value_block_permission(permission));
     }
     // Sector trailer
     print_block(sbuf, saddr, -1, permissions[3], error);
@@ -912,37 +922,6 @@ bool NFCLayerA::mifare_classic_value_block(const m5::nfc::a::Command cmd, const 
     return _impl->mifare_classic_value_block(cmd, block, arg);
 }
 
-bool NFCLayerA::ntag_check_cc_valid()
-{
-    if (_activePICC.isMifareUltralight()) {
-        if (!ntag_check_format()) {
-            M5_LIB_LOGW("NOT NTAG CC %s", _activePICC.typeAsString().c_str());
-            return false;
-        }
-    }
-    return _activePICC.supportsNFC();
-}
-
-bool NFCLayerA::ntag_check_format()
-{
-    if (_activePICC.supportsNFC()) {
-        // Need check CC(Capability Container)
-        if (_activePICC.isMifareUltralight()) {
-            uint8_t rbuf[16]{};
-            if (!read16(rbuf, 0 /* page 0-3 */)) {
-                M5_LIB_LOGE("Failed to read 0-3");
-                return false;
-            }
-            if (rbuf[12] != MAGIC_NO || rbuf[13] < 0x10 /* version */) {
-                M5_LIB_LOGE("Illegal CC %02X:%02X:%02X:%02X", rbuf[12], rbuf[13], rbuf[14], rbuf[15]);
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
 bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
 {
     if (!rx || !rx_len || !_activePICC.valid()) {
@@ -959,16 +938,6 @@ bool NFCLayerA::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_
     }
     return _activePICC.supportsNFC() ? write_using_write4(saddr, tx, tx_len)
                                      : write_using_write16(saddr, tx, tx_len, DEFAULT_KEY);
-}
-
-uint16_t NFCLayerA::firstUserBlock() const
-{
-    return _activePICC.firstUserBlock();
-}
-
-uint16_t NFCLayerA::lastUserBlock() const
-{
-    return _activePICC.lastUserBlock();
 }
 
 }  // namespace nfc

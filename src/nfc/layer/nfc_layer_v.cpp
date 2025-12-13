@@ -85,6 +85,7 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
         if (!_impl->get_system_information(picc)) {
             continue;
         }
+        picc.type   = identify_type(picc.manufacturerCode(), picc.icIdentifier(), picc.icReference(), picc.uid[3]);
         _activePICC = picc;
         M5_LIB_LOGV("Detect:%s", picc.uidAsString().c_str());
 
@@ -98,11 +99,13 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
         m5::utility::delay(1);
     } while (m5::utility::millis() <= timeout_at);
 
+    _activePICC = {};
     return !piccs.empty();
 }
 
 bool NFCLayerV::activate(const m5::nfc::v::PICC& picc)
 {
+    _activePICC = PICC{};
     if (_impl->select(picc)) {
         _activePICC = picc;
         return true;
@@ -110,19 +113,119 @@ bool NFCLayerV::activate(const m5::nfc::v::PICC& picc)
     return false;
 }
 
+bool NFCLayerV::reactivate(const m5::nfc::v::PICC& picc)
+{
+    PICC tmp = picc;
+    if (picc.valid()) {
+        if ((tmp == _activePICC) ? _impl->reset_to_ready() : _impl->reset_to_ready(picc) && _impl->select(picc)) {
+            _activePICC = picc;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool NFCLayerV::deactivate()
 {
-    if (_impl->reset_to_ready()) {
-        //    if (_impl->stay_quiet(_activePICC)) {
+    if (_activePICC.valid() && _impl->reset_to_ready()) {
         _activePICC = PICC{};
         return true;
     }
+    _activePICC = PICC{};
     return false;
 }
 
 bool NFCLayerV::readBlock(uint8_t rx[32], const uint8_t block)
 {
     return _impl->read_single_block(rx, block);
+}
+
+bool NFCLayerV::read(uint8_t* rx, uint16_t& rx_len, const uint8_t sblock)
+{
+    auto rx_len_org = rx_len;
+    rx_len          = 0;
+
+    const uint8_t block_size = _activePICC.block_size;
+    const uint16_t blocks    = rx_len_org / block_size;
+    const uint16_t last      = std::min<uint16_t>(_activePICC.blocks - 1, (uint16_t)sblock + blocks - 1);
+    if (!_activePICC.valid() || !rx || !rx_len_org) {
+        return false;
+    }
+
+    uint16_t read_count{};
+    uint16_t block = sblock;
+    while (block <= last) {
+        uint8_t rbuf[32]{};
+        if (!readBlock(rbuf, block)) {
+            return false;
+        }
+        memcpy(rx + read_count, rbuf, block_size);
+        read_count += block_size;
+        ++block;
+    }
+    rx_len = read_count;
+    return true;
+}
+
+bool NFCLayerV::writeBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len)
+{
+    return _impl->write_single_block(block, tx, tx_len);
+}
+
+bool NFCLayerV::write(const uint8_t sblock, const uint8_t* tx, const uint16_t tx_len)
+{
+    const uint8_t block_size = _activePICC.block_size;
+    const uint16_t blocks    = (tx_len + block_size - 1) / block_size;
+    const uint16_t last      = std::min<uint16_t>(_activePICC.lastUserBlock(), blocks - 1);
+
+    //M5_LIB_LOGE(">>>>WRITE %u %p %u (%u-%u) ", sblock, tx, tx_len, sblock, last);
+
+    if (!_activePICC.valid() || !tx || !tx_len) {
+        return false;
+    }
+
+    uint16_t written{};
+    uint8_t wtmp[block_size]{};
+    for (uint_fast16_t block = sblock; block <= last; ++block) {
+        const uint16_t wsize = std::min<uint16_t>(tx_len - written, block_size);
+        //M5_LIB_LOGE("    write:%02X %u", block, wsize);
+
+        const uint8_t* wp = tx + written;
+        // Adjust by block_size
+        if (tx_len < block_size) {
+            memcpy(wtmp, tx + written, wsize);
+            wp = wtmp;
+        }
+
+        if (!writeBlock(block, wp, block_size)) {
+            return false;
+        }
+        written += wsize;
+    }
+    return true;
+}
+
+bool NFCLayerV::ndefIsValidFormat(bool& valid)
+{
+    return _ndef.isValidFormat(valid, _activePICC.nfcForumTagType());
+}
+
+bool NFCLayerV::ndefRead(m5::nfc::ndef::TLV& msg)
+{
+    msg = TLV{};
+
+    std::vector<TLV> tlvs{};
+    if (_activePICC.valid() && _ndef.read(_activePICC.nfcForumTagType(), tlvs, tagBitsMessage)) {
+        msg = !tlvs.empty() ? tlvs.front() : TLV{};
+        return true;
+    }
+    return false;
+}
+
+bool NFCLayerV::ndefWrite(const m5::nfc::ndef::TLV& msg)
+{
+    std::vector<TLV> tlvs = {msg};
+    return msg.isMessageTLV() && _activePICC.valid() && _ndef.write(_activePICC.nfcForumTagType(), tlvs);
 }
 
 bool NFCLayerV::detect_single(m5::nfc::v::PICC& picc)
@@ -174,25 +277,6 @@ bool NFCLayerV::dump_block(const uint8_t block)
     }
     puts("ERROR");
     return false;
-}
-
-//
-bool NFCLayerV::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
-{
-    return false;
-}
-bool NFCLayerV::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
-{
-    return false;
-}
-uint16_t NFCLayerV::firstUserBlock() const
-{
-    return _activePICC.valid() ? 0 : 0xFFFF;
-}
-
-uint16_t NFCLayerV::lastUserBlock() const
-{
-    return _activePICC.valid() ? (_activePICC.blocks - 1) : 0xFFFF;
 }
 
 }  // namespace nfc

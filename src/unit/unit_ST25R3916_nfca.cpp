@@ -304,8 +304,8 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
     }
 
     uint8_t sak = rbuf[0];
-    // M5_LIB_LOGE(">>>> SAK:%02X (%u, %u)  %u ",  //
-    //              sak, is_sak_completed(sak), is_sak_completed_14443_4(sak), sak_to_type(sak));
+    M5_LIB_LOGE(">>>> SAK:%02X (%u, %u)  %u ",  //
+                sak, is_sak_completed(sak), is_sak_completed_14443_4(sak), sak_to_type(sak));
 
     // Need RATS?
     if (is_sak_completed_14443_4(sak)) {
@@ -320,17 +320,21 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
         // GetVersion(L4)
         uint8_t ver[8]{};
         if (mifare_get_version4(ver)) {
-            // m5::utility::log::dump(ver, 8, false);
             picc.type   = version4_to_type(picc.sub_type, ver);
             picc.blocks = get_number_of_blocks(picc.type);
-            completed   = true;
         } else {
-            // M5_LIB_LOGE(">>>>>> HIS");
             //  Check historical bytes
+            m5::utility::log::dump(ats.header, sizeof(ats.header), false);
+            m5::utility::log::dump(ats.historical.data(), ats.historical_len, false);
             picc.type =
                 historical_bytes_to_type_sak20(picc.sub_type, ats.historical.data(), ats.historical_len, picc.atqa);
             picc.blocks = get_number_of_blocks(picc.type);
-            completed   = true;
+            completed   = (picc.type != Type::Unknown);
+        }
+        if (!completed) {
+            picc.type = Type::ISO_14443_4;
+            // Need more CCile,SystemFile
+            completed = true;
         }
         return true;
     }
@@ -887,7 +891,6 @@ bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t sp
     if (spage > epage) {
         return false;
     }
-
     uint8_t cmd[3] = {m5::stl::to_underlying(Command::FAST_READ), spage, epage};
 
     const uint8_t pages = epage - spage + 1;

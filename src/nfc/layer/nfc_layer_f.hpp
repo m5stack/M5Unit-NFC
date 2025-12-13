@@ -359,14 +359,34 @@ public:
 protected:
     virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
     virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override;
-    virtual uint16_t firstUserBlock() const override;
-    virtual uint16_t lastUserBlock() const override;
-    inline virtual uint16_t userBlockUnitSize() const override
+    inline virtual uint16_t first_user_block() const override
     {
-        return 16u;
+        return _activePICC.firstUserBlock();
     }
-    virtual uint8_t maximumReadBlocks() const override;
-    virtual uint8_t maximumWriteBlocks() const override;
+    inline virtual uint16_t last_user_block() const override
+    {
+        return _activePICC.lastUserBlock();
+    }
+    inline virtual uint16_t user_area_size() const
+    {
+        return _activePICC.userAreaSize();
+    }
+    inline virtual uint16_t unit_size_read() const override
+    {
+        return 16;
+    }
+    inline virtual uint16_t unit_size_write() const override
+    {
+        return 16;
+    }
+    inline virtual uint8_t maximum_read_blocks() const override
+    {
+        return _activePICC.maximumReadBlocks();
+    }
+    inline virtual uint8_t maximum_write_blocks() const override
+    {
+        return _activePICC.maximumWriteBlocks();
+    }
 
     bool read_16(uint8_t rx[16], const m5::nfc::f::block_t block, const bool check_picc_valid);
     bool write_32(const m5::nfc::f::block_t block[2], const uint8_t tx[32]);  // For write with MAC

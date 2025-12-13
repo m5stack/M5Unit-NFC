@@ -31,21 +31,27 @@ public:
     explicit NDEFLayer(NFCLayerInterface& layer) : _interface{layer}
     {
     }
-    bool isValidFormat(const m5::nfc::NFCForumTag ftag, bool& valid);
+    bool isValidFormat(bool& valid, const m5::nfc::NFCForumTag ftag);
+
     bool read(const m5::nfc::NFCForumTag ftag, std::vector<m5::nfc::ndef::TLV>& tlvs,
               const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsMessage);
     bool write(const m5::nfc::NFCForumTag ftag, const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep = true);
 
-    // bool readTLVSize(uint32_t& size, const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsAll);
+    bool readCapabilityContainer(m5::nfc::ndef::type2::CapabilityContainer& cc);
+    bool readAttributeBlock(m5::nfc::ndef::type3::AttributeBlock& ab);
+    bool readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContainer& cc);
 
 protected:
-    bool read_with_tlv(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits);
-    bool write_with_tlv(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep);
+    bool read_type2(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits);
+    bool read_type3(m5::nfc::ndef::TLV& tlv);
+    bool read_type5(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits);
 
-    bool read_without_tlv(m5::nfc::ndef::TLV& tlv);
-    bool write_without_tlv(const m5::nfc::ndef::TLV& tlv);
+    bool write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep);
+    bool write_type3(const m5::nfc::ndef::TLV& tlv);
+    bool write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep);
 
-    // bool calculate_ndef_size(uint32_t& size, const uint8_t* p, const uint8_t* end, const uint8_t targetTagBit);
+    std::vector<m5::nfc::ndef::TLV> merge_tlv(std::vector<m5::nfc::ndef::TLV>& old_tlvs,
+                                              const std::vector<m5::nfc::ndef::TLV>& tlvs);
 
 private:
     NFCLayerInterface& _interface;

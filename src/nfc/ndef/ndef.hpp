@@ -21,20 +21,17 @@ namespace nfc {
  */
 namespace ndef {
 
-///@name  CC(Capability Container)
+///@name CapabilityContainer
 ///@{
-constexpr uint8_t MAGIC_NO{0xE1};  //!< Magic No. in CC
+constexpr uint8_t NDEF_MAJOR_VERSION{1};     //!< Support major version
+constexpr uint8_t NDEF_MINOR_VERSION{0};     //!< Support minor version
+constexpr uint8_t MAGIC_NO_CC4{0xE1};        //!< 4 byte CC
+constexpr uint8_t MAGIC_NO_CC8{0xE2};        //!< 8 byte CC (Type5)
+constexpr uint8_t ACCESS_FREE{0x00};         //!< Access condition (Free access)
+constexpr uint8_t ACCESS_PROPRIETARY{0x02};  //!< Access condition (proprietary)
 
-//! @brief Gets the major version
-inline constexpr uint8_t get_major_version(const uint8_t v)
-{
-    return (v >> 4) & 0x0F;
-}
-//! @brief Gets the minor version
-inline constexpr uint8_t get_minor_version(const uint8_t v)
-{
-    return v & 0x0F;
-}
+constexpr uint8_t TYPE2_CC_BLOCK{3};           //!< Block for CC type2
+constexpr uint16_t CC4_MAX_NDEF_LENGTH{2040};  //!< Maximum ndef length for 4 byte CC
 ///@}
 
 /*!
@@ -48,6 +45,49 @@ enum class Tag : uint8_t {
     Message,             //!< Message
     Proprietary = 0xFD,  //!< Proprietary
     Terminator           //!< Terminator
+};
+
+/*!
+  @enum URIProtocol
+  @brief URI Identifier Code
+ */
+enum class URIProtocol : uint8_t {
+    NA,           //!< N/A
+    HTTP_WWW,     //!< http://www.
+    HTTPS_WWW,    //!< https://www.
+    HTTP,         //!< http://
+    HTTPS,        //!< https://
+    TEL,          //!< tel:
+    MAILTO,       //!< mailto:
+    FTP_AA,       //!< ftp://anonymous:anonymous@
+    FTP_FTP,      //!< ftp://ftp.
+    FTPS,         //!< ftps://
+    SFTP,         //!< sftp://
+    SMB,          //!< smb://
+    NFS,          //!< nfs://
+    FTP,          //!< ftp://
+    DEV,          //!< dav://
+    NEWS,         //!< news:
+    TELNET,       //!< telnet://
+    IMAP,         //!< imap:
+    RSTP,         //!< rtsp://
+    URN,          //!< urn:
+    POP,          //!< pop:
+    SIP,          //!< sip:
+    SIPS,         //!< sips:
+    TFTP,         //!< tftp:
+    BTSPP,        //!< btspp://
+    BTL2CAP,      //!< btl2cap://
+    BTGOEP,       //!< btgoep://
+    TCPOBEX,      //!< tcpobex://
+    IRDAOBEX,     //!< irdaobex://
+    FILE,         //!< file://
+    URN_EPC_ID,   //!< urn:epc:id:
+    URN_EPC_TAG,  //!< urn:epc:tag:
+    URN_EPC_PAT,  //!< urn:epc:pat:
+    URN_EPC_RAW,  //!< urn:epc:raw:
+    URN_EPC,      //!< urn:epc:
+    NFC,          //!< urn:nfc:
 };
 
 /*!
@@ -127,11 +167,94 @@ inline bool is_terminator_tag(const uint8_t t)
     return t == m5::stl::to_underlying(Tag::Terminator);
 }
 
+//! @brief Get string of the URI IDC
+const char* get_uri_idc_string(const URIProtocol protocol);
+
+/*!
+  @namespace type2
+  @brief For NDEF Type2
+ */
+namespace type2 {
+/*!
+  @struct CapabilityContainer
+  @brief Capability container for Type2
+ */
+struct CapabilityContainer {
+    uint8_t block[4]{};
+
+    inline bool valid() const
+    {
+        return (block[0] == MAGIC_NO_CC4) && (major_version() >= NDEF_MAJOR_VERSION) &&
+               ((int16_t)minor_version() >= NDEF_MINOR_VERSION) && ndef_size();
+    }
+    inline bool can_read() const
+    {
+        return read_access() == ACCESS_FREE;
+    }
+    inline bool can_write() const
+    {
+        return write_access() == ACCESS_FREE;
+    }
+
+    // Getter
+    inline uint8_t major_version() const
+    {
+        return (block[1] >> 4) & 0x0F;
+    }
+    inline uint8_t minor_version() const
+    {
+        return block[1] & 0x0F;
+    }
+    inline uint16_t ndef_size() const
+    {
+        return (uint16_t)block[2] << 3;
+    }
+    inline uint8_t read_access() const
+    {
+        return (block[3] >> 4) & 0x0F;
+    }
+    inline uint8_t write_access() const
+    {
+        return block[3] & 0x0F;
+    }
+    // Setter
+    inline void major_version(const uint8_t v)
+    {
+        block[1] = (block[1] & 0x0F) | ((v & 0x0F) << 4);
+    }
+    inline void minor_version(const uint8_t v)
+    {
+        block[1] = (block[1] & 0xF0) | (v & 0x0F);
+    }
+    inline void ndef_size(const uint16_t sz)
+    {
+        block[2] = (sz > 2040) ? 0 : (sz >> 3);
+    }
+    inline void read_access(const uint8_t a)
+    {
+        block[3] = (block[3] & 0x0F) | ((a & 0x03) << 4);
+    }
+    inline void write_access(const uint8_t a)
+    {
+        block[3] = (block[3] & 0xF0) | (a & 0x03);
+    }
+};
+}  // namespace type2
+
+/*!
+  @namespace type3
+  @brief For NDEF Type3
+ */
+namespace type3 {
 /*!
   @struct AttributeBlock
   @brief For Type 3 tag (T3T)
  */
 struct AttributeBlock {
+    uint8_t block[16]{};
+
+    static constexpr uint8_t DEFAULT_VERSION{0x10};
+
     /*!
       @enum WriteFlag
       @brief Flag for fault tolerance
@@ -224,58 +347,98 @@ struct AttributeBlock {
     bool valid() const;
     uint16_t calculate_check_sum() const;
     uint16_t update_check_sum();
-
-    static constexpr uint8_t DEFAULT_VERSION{0x10};
-
-    //
-    uint8_t block[16]{};
 };
+
+}  // namespace type3
 
 /*!
-  @enum URIProtocol
-  @brief URI Identifier Code
+  @namespace type5
+  @brief For NDEF Type5
  */
-enum class URIProtocol : uint8_t {
-    NA,           //!< N/A
-    HTTP_WWW,     //!< http://www.
-    HTTPS_WWW,    //!< https://www.
-    HTTP,         //!< http://
-    HTTPS,        //!< https://
-    TEL,          //!< tel:
-    MAILTO,       //!< mailto:
-    FTP_AA,       //!< ftp://anonymous:anonymous@
-    FTP_FTP,      //!< ftp://ftp.
-    FTPS,         //!< ftps://
-    SFTP,         //!< sftp://
-    SMB,          //!< smb://
-    NFS,          //!< nfs://
-    FTP,          //!< ftp://
-    DEV,          //!< dav://
-    NEWS,         //!< news:
-    TELNET,       //!< telnet://
-    IMAP,         //!< imap:
-    RSTP,         //!< rtsp://
-    URN,          //!< urn:
-    POP,          //!< pop:
-    SIP,          //!< sip:
-    SIPS,         //!< sips:
-    TFTP,         //!< tftp:
-    BTSPP,        //!< btspp://
-    BTL2CAP,      //!< btl2cap://
-    BTGOEP,       //!< btgoep://
-    TCPOBEX,      //!< tcpobex://
-    IRDAOBEX,     //!< irdaobex://
-    FILE,         //!< file://
-    URN_EPC_ID,   //!< urn:epc:id:
-    URN_EPC_TAG,  //!< urn:epc:tag:
-    URN_EPC_PAT,  //!< urn:epc:pat:
-    URN_EPC_RAW,  //!< urn:epc:raw:
-    URN_EPC,      //!< urn:epc:
-    NFC,          //!< urn:nfc:
-};
+namespace type5 {
+/*!
+  @struct CapabilityContainer
+  @brief Capability container for Type5
+ */
+struct CapabilityContainer {
+    uint8_t block[8]{};
 
-//! @brief Get string of the URI IDC
-const char* get_uri_idc_string(const URIProtocol protocol);
+    inline bool valid() const
+    {
+        return ((block[0] == MAGIC_NO_CC4) || (block[0] == MAGIC_NO_CC8)) && (major_version() >= NDEF_MAJOR_VERSION) &&
+               ((int16_t)minor_version() >= NDEF_MINOR_VERSION) && ndef_size();
+    }
+    inline bool can_read() const
+    {
+        return read_access() == ACCESS_FREE;
+    }
+    inline bool can_write() const
+    {
+        return write_access() == ACCESS_FREE;
+    }
+    inline uint8_t size() const
+    {
+        return (block[0] == MAGIC_NO_CC4) ? 4 : ((block[0] == MAGIC_NO_CC8) ? 8 : 0);
+    }
+    // Getter
+    inline uint8_t major_version() const
+    {
+        return (block[1] >> 6) & 0x03;
+    }
+    inline uint8_t minor_version() const
+    {
+        return (block[1] >> 4) & 0x03;
+    }
+    inline uint16_t ndef_size() const
+    {
+        return (block[0] == MAGIC_NO_CC4)   ? (((uint16_t)block[2]) << 3)
+               : (block[0] == MAGIC_NO_CC8) ? (((uint16_t)block[6] << 8) | block[7])
+                                            : 0;
+    }
+    inline uint8_t read_access() const
+    {
+        return (block[1] >> 2) & 0x03;
+    }
+    inline uint8_t write_access() const
+    {
+        return block[1] & 0x03;
+    }
+    inline uint8_t addtional_feature() const
+    {
+        return block[3];
+    }
+    // Setter
+    inline void major_version(const uint8_t v)
+    {
+        block[1] = (block[1] & 0x3F) | ((v & 0x03) << 6);
+    }
+    inline void minor_version(const uint8_t v)
+    {
+        block[1] = (block[1] & 0xCF) | ((v & 0x03) << 4);
+    }
+    inline void ndef_size(const uint16_t sz)
+    {
+        if (block[0] == MAGIC_NO_CC4 && sz <= 2040) {
+            block[2] = (sz >> 3);
+        } else if (block[0] == MAGIC_NO_CC8) {
+            block[6] = (sz >> 8);
+            block[7] = sz & 0xFF;
+        }
+    }
+    inline void read_access(const uint8_t a)
+    {
+        block[1] = (block[1] & 0xF3) | ((a & 0x03) << 2);
+    }
+    inline void write_access(const uint8_t a)
+    {
+        block[1] = (block[1] & 0xFC) | (a & 0x03);
+    }
+    inline void addtional_feature(const uint8_t af)
+    {
+        block[3] = af;
+    }
+};
+}  // namespace type5
 
 }  // namespace ndef
 }  // namespace nfc

@@ -371,7 +371,7 @@ public:
       @warning Changes are irreversible and cannot be undone
       @warning If the relevant area has already been overwritten, changes may not be possible
     */
-    bool mifareUltralightChangeFormatToNTAG();
+    bool mifareUltralightChangeFormatToNDEF();
 
     /*!
       @brief Authentication for MIFARE UltralightC
@@ -429,11 +429,25 @@ public:
 protected:
     virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
     virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override;
-    virtual uint16_t firstUserBlock() const override;
-    virtual uint16_t lastUserBlock() const override;
-    inline virtual uint16_t userBlockUnitSize() const override
+    inline virtual uint16_t first_user_block() const override
     {
-        return 4u;
+        return _activePICC.firstUserBlock();
+    }
+    inline virtual uint16_t last_user_block() const override
+    {
+        return _activePICC.lastUserBlock();
+    }
+    inline virtual uint16_t user_area_size() const
+    {
+        return _activePICC.userAreaSize();
+    }
+    inline virtual uint16_t unit_size_read() const override
+    {
+        return _activePICC.supportsNFC() ? (_activePICC.isMifareUltralight() ? 16 : 4) : 16;
+    }
+    inline virtual uint16_t unit_size_write() const override
+    {
+        return (_activePICC.supportsNFC()) ? 4 : 16;
     }
 
     bool read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr);
@@ -444,9 +458,6 @@ protected:
                              const m5::nfc::a::mifare::classic::Key& key);
 
     bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
-
-    bool ntag_check_cc_valid();
-    bool ntag_check_format();
 
     bool dump_sector_structure(const m5::nfc::a::PICC& picc, const m5::nfc::a::mifare::classic::Key& key);
     bool dump_sector(const uint8_t sector);

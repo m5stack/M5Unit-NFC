@@ -513,7 +513,7 @@ bool NFCLayerF::externalAuthenticate(const uint8_t ck[16], const uint16_t ckv)
 bool NFCLayerF::ndefIsValidFormat(bool& valid)
 {
     valid = false;
-    return _activePICC.supportsNDEF() && _ndef.isValidFormat(_activePICC.nfcForumTagType(), valid);
+    return _activePICC.supportsNDEF() && _ndef.isValidFormat(valid, _activePICC.nfcForumTagType());
 }
 
 bool NFCLayerF::ndefRead(m5::nfc::ndef::TLV& msg)
@@ -797,24 +797,6 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
 bool NFCLayerF::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
 {
     return _activePICC.checkFormat(format_ndef) && write(block_t(saddr), tx, tx_len);
-}
-uint16_t NFCLayerF::firstUserBlock() const
-{
-    return _activePICC.firstUserBlock();
-}
-uint16_t NFCLayerF::lastUserBlock() const
-{
-    return _activePICC.lastUserBlock();
-}
-
-uint8_t NFCLayerF::maximumReadBlocks() const
-{
-    return _activePICC.maximumReadBlocks();
-}
-
-uint8_t NFCLayerF::maximumWriteBlocks() const
-{
-    return _activePICC.maximumWriteBlocks();
 }
 
 }  // namespace nfc

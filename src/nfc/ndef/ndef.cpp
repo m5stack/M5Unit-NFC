@@ -69,6 +69,7 @@ const char* get_uri_idc_string(const URIProtocol protocol)
 }
 
 //
+namespace type3 {
 
 bool AttributeBlock::valid() const
 {
@@ -92,6 +93,7 @@ uint16_t AttributeBlock::update_check_sum()
     block[15]    = sum & 0xFF;
     return sum;
 }
+}  // namespace type3
 
 }  // namespace ndef
 }  // namespace nfc

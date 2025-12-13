@@ -253,6 +253,7 @@ bool UnitST25R3916::nfcvSelect(const m5::nfc::v::PICC& picc)
     if (!picc.valid()) {
         return false;
     }
+
     uint8_t frame[10]{};
     make_frame(frame, address_flag | data_rate_flag, m5::stl::to_underlying(Command::Select), &picc);
 
@@ -384,19 +385,44 @@ bool UnitST25R3916::nfcv_read_single_block(uint8_t rx[32], const uint8_t req, co
         M5_LIB_LOGD("Failed to transcieve %u %02X", rx_len, rbuf[1] /* error code */);
         return false;
     }
-    memcpy(rx, rbuf + 1, rx_len);
+    memcpy(rx, rbuf + 1, rx_len - 1);
     return true;
 }
 
 bool UnitST25R3916::nfcvWriteSingleBlock(const m5::nfc::v::PICC& picc, const uint8_t block, const uint8_t* tx,
                                          const uint8_t tx_len)
 {
-    return false;
+    return nfcv_write_single_block(&picc, block, address_flag | data_rate_flag, tx, tx_len);
 }
 
 bool UnitST25R3916::nfcvWriteSingleBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len)
 {
-    return false;
+    return nfcv_write_single_block(nullptr, block, select_flag | data_rate_flag, tx, tx_len);
+}
+
+bool UnitST25R3916::nfcv_write_single_block(const m5::nfc::v::PICC* picc, const uint8_t block, const uint8_t req,
+                                            const uint8_t* tx, const uint8_t tx_len)
+{
+    if (!tx || !tx_len || tx_len > 32 || (picc ? !picc->valid() : false)) {
+        return false;
+    }
+   
+    uint8_t frame[2 + 8 + 1 + tx_len]{};
+    make_frame(frame, req, m5::stl::to_underlying(Command::WriteSingleBlock), picc);
+
+    uint32_t offset = picc ? 10 : 2;
+    frame[offset++] = block;
+    memcpy(frame + offset, tx, tx_len);
+    offset += tx_len;
+
+    uint8_t rx[8];
+    uint16_t rx_len = sizeof(rx);
+    if (!nfcvTransceive(rx, rx_len, frame, offset, TIMEOUT_WRITE_SINGLE_BLOCK) || !rx_len || rx[0] != 0x00) {
+        //m5::utility::log::dump(rx, rx_len, false);
+        M5_LIB_LOGE("Failed to transcieve (%u:%u) %02X %u %02X", block, tx_len, req, rx_len, rx[1] /* error code */);
+        return false;
+    }
+    return true;
 }
 
 }  // namespace unit

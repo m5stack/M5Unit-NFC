@@ -2028,7 +2028,7 @@ public:
       @return True if successful
       @note The specified PICC status is not required
       @warning The required size varies depending on the PICC
-      @warning The maximum is 32
+      @warning The maximum rx size is 32
      */
     bool nfcvReadSingleBlock(uint8_t rx[32], const m5::nfc::v::PICC& picc, const uint8_t block);
     /*!
@@ -2038,7 +2038,7 @@ public:
       @param block Block address
       @return True if successful
       @warning The required size varies depending on the PICC
-      @warning The maximum is 32
+      @warning The maximum rx size is 32
      */
     bool nfcvReadSingleBlock(uint8_t rx[32], const uint8_t block);
     /*!
@@ -2046,13 +2046,11 @@ public:
       @patam picc PICC
       @param block Block address
       @param tx Input buffer
-      @param tx_len Input buffer length
+      @param tx_len Input buffer length (Same as the size of one PICC block)
       @return True if successful
       @note The specified PICC status is not required
-      @note If tx_len is less than the size of one PICC block, it is padded with 0x00
-      @note If it is larger than the size of one block, it is truncated
       @warning The required tx_size varies depending on the PICC
-      @warning The maximum is 32
+      @warning The maximum tx_len is 32
      */
     bool nfcvWriteSingleBlock(const m5::nfc::v::PICC& picc, const uint8_t block, const uint8_t* tx,
                               const uint8_t tx_len);
@@ -2060,13 +2058,11 @@ public:
       @brief Write the block of the selected PICC
       @param block Block address
       @param tx Input buffer
-      @param tx_len Input buffer length
+      @param tx_len Input buffer length (Same as the size of one PICC block)
       @return True if successful
       @note The specified PICC status is not required
-      @note If tx_len is less than the size of one PICC block, it is padded with 0x00
-      @note If it is larger than the size of one block, it is truncated
       @warning The required tx_size varies depending on the PICC
-      @warning The maximum is 32
+      @warning The maximum tx_len is 32
      */
     bool nfcvWriteSingleBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len);
     ///@}
@@ -2130,6 +2126,8 @@ protected:
     bool nfcv_reset_to_ready(const m5::nfc::v::PICC* picc);
 
     bool nfcv_read_single_block(uint8_t rx[32], const uint8_t req, const m5::nfc::v::PICC* picc, const uint8_t block);
+    bool nfcv_write_single_block(const m5::nfc::v::PICC* picc, const uint8_t block, const uint8_t req,
+                                 const uint8_t* tx, const uint8_t tx_len);
 
 private:
     config_t _cfg{};

@@ -15,6 +15,27 @@ using namespace m5::nfc::v;
 
 namespace {
 
+constexpr char name_unknown[]       = "Unknown";
+constexpr char nxp_icode_sli[]      = "ICODE SLI";
+constexpr char nxp_icode_slix[]     = "ICODE SLIX";
+constexpr char nxp_icode_slix2[]    = "ICODE SLIX2";
+constexpr char nxp[]                = "NXP(Unclassified)";
+constexpr char ti_tagit_hf_i[]      = "Tag-it TI2048";
+constexpr char ti_tagit_hf_i_plus[] = "Tag-it HF-I Plus";
+constexpr char ti[]                 = "TI(Unclassified)";
+constexpr char st_lri[]             = "ST LRI";
+constexpr char st_st25v[]           = "ST25V";
+constexpr char st[]                 = "ST(Unclassified)";
+constexpr char fujitsu_fram[]       = "FRAM";
+constexpr char fujitsu[]            = "Fujitsu(Unclassified)";
+constexpr char unclassified[]       = "Unclassified";
+
+constexpr const char* name_table[] = {
+    name_unknown,  //
+    nxp_icode_sli, nxp_icode_slix, nxp_icode_slix2, nxp, ti_tagit_hf_i, ti_tagit_hf_i_plus, ti, st_lri, st_st25v, st,
+    fujitsu_fram,  fujitsu,        unclassified,
+};
+
 constexpr uint8_t FLAG_TWO_SUBCARRIERS{0x01};
 constexpr uint8_t FLAG_HIGH_DATARATE{0x02};
 constexpr uint8_t SOF_1OF4{0x21};
@@ -89,6 +110,57 @@ void encode_byte_1of256(std::vector<uint8_t>& out, const uint8_t data)
 namespace m5 {
 namespace nfc {
 namespace v {
+
+Type identify_type(const uint8_t mf, const uint8_t ic, const uint8_t ir, const uint8_t uid4)
+{
+    // mf -> See also https://en.wikipedia.org/wiki/ISO/IEC_15693
+    if (mf == 0xFF || ic == 0xFF) {
+        return Type::Unknown;
+    }
+
+    // M5_LIB_LOGE("mf:%02X ic:%02X ir:%02X op:%02X", mf, ic, ir, uid4);
+
+    // NXP
+    if (mf == 0x04) {
+        if (ic == 0x01) {
+            uint8_t type_indicator_bits = (uid4 >> 3) & 0x03;
+            switch (type_indicator_bits) {
+                case 0:
+                    return Type::NXP_ICODE_SLI;
+                case 2:
+                    return Type::NXP_ICODE_SLIX;
+                case 1:
+                    return Type::NXP_ICODE_SLIX_2;
+                default:
+                    break;
+            }
+        }
+        return Type::Unclassified;
+    }
+
+    // TI
+    if (mf == 0x07) {
+        return Type::TI;
+    }
+
+    // STMicroelectronics
+    if (mf == 0x02) {
+        switch (ir) {
+            case 0x23:
+                return Type::ST_ST25DV;  // ST25DV04K / 16K
+            case 0x02:
+                return Type::ST_LRI;  // LRI2K
+        }
+        return Type::ST;
+    }
+
+    // Fujitsu
+    if (mf == 0x47) {
+        return Type::Fujitsu;
+    }
+
+    return Type::Unclassified;
+}
 
 bool encode_VCD(std::vector<uint8_t>& out, const ModulationMode mode, const uint8_t* buffer, const uint32_t length,
                 const bool high_rate, const bool add_crc)
@@ -261,6 +333,12 @@ std::string PICC::uidAsString() const
         left += snprintf(buf + left, 3, "%02X", this->uid[i]);
     }
     return std::string(buf);
+}
+
+std::string PICC::typeAsString() const
+{
+    auto idx = m5::stl::to_underlying(this->type);
+    return std::string((idx <= m5::stl::size(name_table)) ? name_table[idx] : name_unknown);
 }
 
 }  // namespace v
