@@ -20,8 +20,9 @@ constexpr char nxp_icode_sli[]      = "ICODE SLI";
 constexpr char nxp_icode_slix[]     = "ICODE SLIX";
 constexpr char nxp_icode_slix2[]    = "ICODE SLIX2";
 constexpr char nxp[]                = "NXP(Unclassified)";
-constexpr char ti_tagit_hf_i[]      = "Tag-it TI2048";
+constexpr char ti_tagit_hf_i[]      = "Tag-it HF-I";
 constexpr char ti_tagit_hf_i_plus[] = "Tag-it HF-I Plus";
+constexpr char ti_tagit_hf_i_pro[]  = "Tag-it HF-I Pro";
 constexpr char ti[]                 = "TI(Unclassified)";
 constexpr char st_lri[]             = "ST LRI";
 constexpr char st_st25v[]           = "ST25V";
@@ -31,9 +32,10 @@ constexpr char fujitsu[]            = "Fujitsu(Unclassified)";
 constexpr char unclassified[]       = "Unclassified";
 
 constexpr const char* name_table[] = {
-    name_unknown,  //
-    nxp_icode_sli, nxp_icode_slix, nxp_icode_slix2, nxp, ti_tagit_hf_i, ti_tagit_hf_i_plus, ti, st_lri, st_st25v, st,
-    fujitsu_fram,  fujitsu,        unclassified,
+    name_unknown,                                               //
+    nxp_icode_sli, nxp_icode_slix,     nxp_icode_slix2,   nxp,  //
+    ti_tagit_hf_i, ti_tagit_hf_i_plus, ti_tagit_hf_i_pro, ti,  st_lri, st_st25v, st, fujitsu_fram,
+    fujitsu,       unclassified,
 };
 
 constexpr uint8_t FLAG_TWO_SUBCARRIERS{0x01};
@@ -140,6 +142,15 @@ Type identify_type(const uint8_t mf, const uint8_t ic, const uint8_t ir, const u
 
     // TI
     if (mf == 0x07) {
+        if (ic == 0x00 || ic == 0x01 || ic == 0x80 || ic == 0x81) {
+            return Type::TI_TAGIT_HF_I_Plus;
+        }
+        if (ic == 0xC0 || ic == 0xC1) {
+            return Type::TI_TAGIT_HF_I;
+        }
+        if (ic == 0xC4 || ic == 0xC5) {
+            return Type::TI_TAGIT_HF_I_Pro;
+        }
         return Type::TI;
     }
 
@@ -162,16 +173,20 @@ Type identify_type(const uint8_t mf, const uint8_t ic, const uint8_t ir, const u
     return Type::Unclassified;
 }
 
-bool encode_VCD(std::vector<uint8_t>& out, const ModulationMode mode, const uint8_t* buffer, const uint32_t length,
-                const bool high_rate, const bool add_crc)
+uint32_t encode_VCD(std::vector<uint8_t>& out, const ModulationMode mode, const uint8_t* buffer, const uint32_t length,
+                    const bool high_rate, const bool add_crc)
 {
     out.clear();
 
+    if (!buffer && !length) {
+        out.push_back(EOF_COMMON);
+        return 1;
+    }
     if (!buffer || !length) {
-        return false;
+        return 0;
     }
 
-    std::vector<uint8_t> frame;
+    std::vector<uint8_t> frame{};
     frame.assign(buffer, buffer + length);
 
     // Adjust flags
@@ -217,7 +232,7 @@ bool encode_VCD(std::vector<uint8_t>& out, const ModulationMode mode, const uint
     // EOF
     out.push_back(eof);
 
-    return true;
+    return out.size();
 }
 
 bool decode_VICC(std::vector<uint8_t>& out, const uint8_t* buffer, const uint32_t length, const uint32_t ignore_bits)

@@ -2047,24 +2047,26 @@ public:
       @param block Block address
       @param tx Input buffer
       @param tx_len Input buffer length (Same as the size of one PICC block)
+      @param option Using option_flag for request if true
       @return True if successful
       @note The specified PICC status is not required
       @warning The required tx_size varies depending on the PICC
       @warning The maximum tx_len is 32
      */
     bool nfcvWriteSingleBlock(const m5::nfc::v::PICC& picc, const uint8_t block, const uint8_t* tx,
-                              const uint8_t tx_len);
+                              const uint8_t tx_len, const bool option = false);
     /*!
       @brief Write the block of the selected PICC
       @param block Block address
       @param tx Input buffer
       @param tx_len Input buffer length (Same as the size of one PICC block)
+      @param option Using option_flag for request if true
       @return True if successful
       @note The specified PICC status is not required
       @warning The required tx_size varies depending on the PICC
       @warning The maximum tx_len is 32
      */
-    bool nfcvWriteSingleBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len);
+    bool nfcvWriteSingleBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len, const bool option = false);
     ///@}
 
     // For debug
@@ -2123,8 +2125,8 @@ protected:
     // NFC-V
     bool nfcv_transmit(const uint8_t* tx, const uint16_t tx_len, const m5::nfc::v::ModulationMode mode,
                        const uint32_t timeout_ms);
+    bool nfcv_receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
     bool nfcv_reset_to_ready(const m5::nfc::v::PICC* picc);
-
     bool nfcv_read_single_block(uint8_t rx[32], const uint8_t req, const m5::nfc::v::PICC* picc, const uint8_t block);
     bool nfcv_write_single_block(const m5::nfc::v::PICC* picc, const uint8_t block, const uint8_t req,
                                  const uint8_t* tx, const uint8_t tx_len);

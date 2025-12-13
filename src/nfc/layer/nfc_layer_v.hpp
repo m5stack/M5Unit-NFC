@@ -185,8 +185,8 @@ public:
 protected:
     bool dump_all();
     bool dump_block(const uint8_t block);
+    bool detect_single(m5::nfc::v::PICC& picc);
 
-protected:
     virtual uint16_t first_user_block() const override
     {
         return _activePICC.firstUserBlock();
@@ -207,7 +207,6 @@ protected:
     {
         return _activePICC.block_size;
     }
-    bool detect_single(m5::nfc::v::PICC& picc);
 
 protected:
     m5::nfc::v::PICC _activePICC{};
@@ -224,14 +223,14 @@ struct NFCLayerV::Adapter {
 
     // virtual uint16_t max_fifo_depth() = 0;
 
-    virtual bool inventory(std::vector<m5::nfc::v::PICC>& piccs)                                  = 0;
-    virtual bool stay_quiet(const m5::nfc::v::PICC& picc)                                         = 0;
-    virtual bool select(const m5::nfc::v::PICC& picc)                                             = 0;
-    virtual bool reset_to_ready(const m5::nfc::v::PICC& picc)                                     = 0;
-    virtual bool reset_to_ready()                                                                 = 0;
-    virtual bool get_system_information(m5::nfc::v::PICC& picc)                                   = 0;
-    virtual bool read_single_block(uint8_t rx[32], const uint8_t block)                           = 0;
-    virtual bool write_single_block(const uint8_t block, const uint8_t* tx, const uint8_t tx_len) = 0;
+    virtual bool inventory(std::vector<m5::nfc::v::PICC>& piccs)                                                  = 0;
+    virtual bool stay_quiet(const m5::nfc::v::PICC& picc)                                                         = 0;
+    virtual bool select(const m5::nfc::v::PICC& picc)                                                             = 0;
+    virtual bool reset_to_ready(const m5::nfc::v::PICC& picc)                                                     = 0;
+    virtual bool reset_to_ready()                                                                                 = 0;
+    virtual bool get_system_information(m5::nfc::v::PICC& picc)                                                   = 0;
+    virtual bool read_single_block(uint8_t rx[32], const uint8_t block)                                           = 0;
+    virtual bool write_single_block(const uint8_t block, const uint8_t* tx, const uint8_t tx_len, const bool opt) = 0;
 };
 ///@endcond
 

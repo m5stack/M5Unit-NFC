@@ -33,7 +33,8 @@ struct AdapterST25R3916ForV final : NFCLayerV::Adapter {
     virtual bool reset_to_ready(const m5::nfc::v::PICC& picc) override;
     virtual bool get_system_information(m5::nfc::v::PICC& picc) override;
     virtual bool read_single_block(uint8_t rx[32], const uint8_t block) override;
-    virtual bool write_single_block(const uint8_t block, const uint8_t* tx, const uint8_t tx_len) override;
+    virtual bool write_single_block(const uint8_t block, const uint8_t* tx, const uint8_t tx_len,
+                                    const bool opt) override;
 
     UnitST25R3916& _u;
 };
@@ -73,9 +74,10 @@ bool AdapterST25R3916ForV::read_single_block(uint8_t rx[32], const uint8_t block
     return _u.nfcvReadSingleBlock(rx, block);
 }
 
-bool AdapterST25R3916ForV::write_single_block(const uint8_t block, const uint8_t* tx, const uint8_t tx_len)
+bool AdapterST25R3916ForV::write_single_block(const uint8_t block, const uint8_t* tx, const uint8_t tx_len,
+                                              const bool opt)
 {
-    return _u.nfcvWriteSingleBlock(block, tx, tx_len);
+    return _u.nfcvWriteSingleBlock(block, tx, tx_len, opt);
 }
 
 //

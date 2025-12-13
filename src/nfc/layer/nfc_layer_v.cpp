@@ -137,11 +137,15 @@ bool NFCLayerV::deactivate()
 
 bool NFCLayerV::readBlock(uint8_t rx[32], const uint8_t block)
 {
-    return _impl->read_single_block(rx, block);
+    return _activePICC.valid() && _impl->read_single_block(rx, block);
 }
 
 bool NFCLayerV::read(uint8_t* rx, uint16_t& rx_len, const uint8_t sblock)
 {
+    if (!_activePICC.valid()) {
+        return false;
+    }
+
     auto rx_len_org = rx_len;
     rx_len          = 0;
 
@@ -169,7 +173,30 @@ bool NFCLayerV::read(uint8_t* rx, uint16_t& rx_len, const uint8_t sblock)
 
 bool NFCLayerV::writeBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len)
 {
-    return _impl->write_single_block(block, tx, tx_len);
+    if (!_activePICC.valid()) {
+        return false;
+    }
+    const bool need_opt = _activePICC.manufacturerCode() == 0x07;
+
+    if (_impl->write_single_block(block, tx, tx_len, need_opt)) {
+        return true;
+    }
+    /*
+      From Tag-it document 1.6
+      For reliable programming, we recommend a programming time >=10 ms before the reader
+      sends the end of frame (EOF) to request the response from the transponder.
+    */
+    if (!need_opt) {
+        return false;
+    }
+    m5::utility::delay(10);
+    uint8_t rx[32]{};
+    if (readBlock(rx, block)) {
+        return memcmp(rx, tx, tx_len) == 0;
+    } else {
+        M5_LIB_LOGE("READ ERROR");
+    }
+    return false;
 }
 
 bool NFCLayerV::write(const uint8_t sblock, const uint8_t* tx, const uint16_t tx_len)
@@ -178,7 +205,7 @@ bool NFCLayerV::write(const uint8_t sblock, const uint8_t* tx, const uint16_t tx
     const uint16_t blocks    = (tx_len + block_size - 1) / block_size;
     const uint16_t last      = std::min<uint16_t>(_activePICC.lastUserBlock(), blocks - 1);
 
-    //M5_LIB_LOGE(">>>>WRITE %u %p %u (%u-%u) ", sblock, tx, tx_len, sblock, last);
+    // M5_LIB_LOGE(">>>>WRITE %u %p %u (%u-%u) ", sblock, tx, tx_len, sblock, last);
 
     if (!_activePICC.valid() || !tx || !tx_len) {
         return false;
@@ -188,7 +215,7 @@ bool NFCLayerV::write(const uint8_t sblock, const uint8_t* tx, const uint16_t tx
     uint8_t wtmp[block_size]{};
     for (uint_fast16_t block = sblock; block <= last; ++block) {
         const uint16_t wsize = std::min<uint16_t>(tx_len - written, block_size);
-        //M5_LIB_LOGE("    write:%02X %u", block, wsize);
+        // M5_LIB_LOGE("    write:%02X %u", block, wsize);
 
         const uint8_t* wp = tx + written;
         // Adjust by block_size
@@ -207,7 +234,7 @@ bool NFCLayerV::write(const uint8_t sblock, const uint8_t* tx, const uint16_t tx
 
 bool NFCLayerV::ndefIsValidFormat(bool& valid)
 {
-    return _ndef.isValidFormat(valid, _activePICC.nfcForumTagType());
+    return _activePICC.valid() && _ndef.isValidFormat(valid, _activePICC.nfcForumTagType());
 }
 
 bool NFCLayerV::ndefRead(m5::nfc::ndef::TLV& msg)

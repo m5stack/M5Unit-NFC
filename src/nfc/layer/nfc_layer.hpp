@@ -26,7 +26,7 @@ public:
     virtual uint16_t unit_size_read() const   = 0;
     virtual uint16_t unit_size_write() const  = 0;
 
-    // For NFC-F AttributeBlock
+    // For NFC-F
     virtual uint8_t maximum_read_blocks() const
     {
         return 0;

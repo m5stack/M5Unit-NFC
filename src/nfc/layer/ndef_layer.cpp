@@ -520,8 +520,6 @@ bool NDEFLayer::write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
     bool ret{};
     const uint32_t user_size = _interface.user_area_size();
 
-    M5_LIB_LOGE(">>>>>>>>>>>>>>>>>>>>>> ");
-
     if (tlvs.empty()) {
         return false;
     }
@@ -534,10 +532,12 @@ bool NDEFLayer::write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
         }
         if (valid) {
             // Read all TLV and merge
-            if (!read_type5(tmp, tagBitsAll)) {
-                return false;
+            if (read_type5(tmp, tagBitsAll)) {
+                tmp = merge_tlv(tmp, tlvs);
+            } else {
+                // Overwrite if invalid NDEF
+                tmp = tlvs;
             }
-            tmp = merge_tlv(tmp, tlvs);
         } else {
             // Overwrite if CC is invalid
             tmp = tlvs;

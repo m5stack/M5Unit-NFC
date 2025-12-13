@@ -36,8 +36,9 @@ enum class Type : uint8_t {
     NXP_ICODE_SLIX_2,  //!< ICODE SLIX2
     NXP,               //!< NXP (Unclassified)
 
-    TI_TAGIT_HF_I,       //!< Tag-it
-    TI_TAGIT_HF_I_Plus,  //!< Tag-it Plus
+    TI_TAGIT_HF_I,       //!< Tag-it HF-I Standard
+    TI_TAGIT_HF_I_Plus,  //!< Tag-it HF-I Plus
+    TI_TAGIT_HF_I_Pro,   //!< Tag-it HF-I Pro
     TI,                  //!< TI (Unclassified)
 
     ST_LRI,     //!< ST LRI
@@ -132,11 +133,12 @@ struct PICC {
         return get_nfc_forum_tag_type(type);
     }
 
-    //! @brief Gets the first user block/page address
+    //! @brief Gets the first user block
     inline uint16_t firstUserBlock() const
     {
         return valid() ? 0 : 0xFFFF;
     }
+    //! @brief Gets the last user block
     inline uint16_t lastUserBlock() const
     {
         return valid() ? (blocks - 1) : 0xFFFF;
@@ -181,21 +183,22 @@ constexpr uint32_t TIMEOUT_SELECT{16};
 constexpr uint32_t TIMEOUT_RESET_TO_READY{16};
 constexpr uint32_t TIMEOUT_GET_SYSTEM_INFORMATION{20};
 constexpr uint32_t TIMEOUT_READ_SINGLE_BLOCK{20};
-constexpr uint32_t TIMEOUT_WRITE_SINGLE_BLOCK{40};
+constexpr uint32_t TIMEOUT_WRITE_SINGLE_BLOCK{30};
 ///@}
 
 /*!
   @brief Encode to VCD frame
   @param out Output buffer
   @param mode ModulationMode
-  @param buffer Input buffer
-  @param length Input buffer length
+  @param buffer Input buffer (allow nullptr )
+  @param length Input buffer length (allow 0)
   @param high_rate High data rate if true
   @param add_crc Append CRC16 if true
   @return True if successful
+  @note Make EOF only if buffer is nullptr and length is 0
  */
-bool encode_VCD(std::vector<uint8_t>& out, const ModulationMode mode, const uint8_t* buffer, const uint32_t length,
-                const bool high_rate = true, const bool add_crc = true);
+uint32_t encode_VCD(std::vector<uint8_t>& out, const ModulationMode mode, const uint8_t* buffer, const uint32_t length,
+                    const bool high_rate = true, const bool add_crc = true);
 
 /*!
   @brief Decode from VICC frame

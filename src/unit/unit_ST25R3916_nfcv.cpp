@@ -139,20 +139,47 @@ bool UnitST25R3916::nfcvTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t*
                                    const uint32_t timeout_ms, const ModulationMode mode)
 {
     CHECK_MODE();
-
-    const auto rx_len_org = rx_len;
-    rx_len                = 0;
-    if (!rx || !rx_len_org || !tx || !tx_len) {
-        return false;
-    }
-
     if (!nfcv_transmit(tx, tx_len, mode, timeout_ms)) {
         return false;
     }
+    return nfcv_receive(rx, rx_len, timeout_ms);
+}
 
-    // Receive
+bool UnitST25R3916::nfcv_transmit(const uint8_t* tx, const uint16_t tx_len, const ModulationMode mode,
+                                  const uint32_t timeout_ms)
+{
+    // if(tx && tx_len){
+    //  m5::utility::log::dump(tx, tx_len, false);
+    // }
+
+    // Encode
+    std::vector<uint8_t> frame{};
+    if (!encode_VCD(frame, mode, tx, tx_len)) {
+        M5_LIB_LOGE("Failed to encode");
+        return false;
+    }
+    // m5::utility::log::dump(frame.data(), frame.size(), false);
+
+    // Send
+    if (timeout_ms && !write_noresponse_timeout(timeout_ms)) {
+        return false;
+    }
+    if (!clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(frame.data(), frame.size()) ||
+        !writeNumberOfTransmittedBytes(frame.size(), 0) || !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
+        return false;
+    }
+    return true;
+}
+
+bool UnitST25R3916::nfcv_receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
+{
+    const auto rx_len_org = rx_len;
+    rx_len                = 0;
+    if (!rx || !rx_len_org) {
+        return false;
+    }
+
     uint8_t rbuf[256]{};
-
     if (!wait_for_FIFO(timeout_ms, sizeof(rbuf))) {
         return false;
     }
@@ -174,34 +201,6 @@ bool UnitST25R3916::nfcvTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t*
     // m5::utility::log::dump(frame.data(), frame.size(), false);
     rx_len = std::min<uint32_t>(frame.size(), rx_len_org);
     memcpy(rx, frame.data(), rx_len);
-    return true;
-}
-
-bool UnitST25R3916::nfcv_transmit(const uint8_t* tx, const uint16_t tx_len, const ModulationMode mode,
-                                  const uint32_t timeout_ms)
-{
-    if (!tx || !tx_len) {
-        return false;
-    }
-
-    // m5::utility::log::dump(tx, tx_len, false);
-
-    // Encode
-    std::vector<uint8_t> frame{};
-    if (!encode_VCD(frame, mode, tx, tx_len)) {
-        M5_LIB_LOGE("Failed to encode");
-        return false;
-    }
-    // m5::utility::log::dump(frame.data(), frame.size(), false);
-
-    // Send
-    if (timeout_ms && !write_noresponse_timeout(timeout_ms)) {
-        return false;
-    }
-    if (!clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(frame.data(), frame.size()) ||
-        !writeNumberOfTransmittedBytes(frame.size(), 0) || !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
-        return false;
-    }
     return true;
 }
 
@@ -382,7 +381,7 @@ bool UnitST25R3916::nfcv_read_single_block(uint8_t rx[32], const uint8_t req, co
     uint8_t rbuf[32 + 1]{};
     uint16_t rx_len = sizeof(rbuf);
     if (!nfcvTransceive(rbuf, rx_len, frame, picc ? 11 : 3, TIMEOUT_READ_SINGLE_BLOCK) || !rx_len || rbuf[0] != 0x00) {
-        M5_LIB_LOGD("Failed to transcieve %u %02X", rx_len, rbuf[1] /* error code */);
+        M5_LIB_LOGD("Failed to transcieve %02X %u %02X", req, rx_len, rbuf[1] /* error code */);
         return false;
     }
     memcpy(rx, rbuf + 1, rx_len - 1);
@@ -390,23 +389,25 @@ bool UnitST25R3916::nfcv_read_single_block(uint8_t rx[32], const uint8_t req, co
 }
 
 bool UnitST25R3916::nfcvWriteSingleBlock(const m5::nfc::v::PICC& picc, const uint8_t block, const uint8_t* tx,
-                                         const uint8_t tx_len)
+                                         const uint8_t tx_len, const bool opt)
 {
-    return nfcv_write_single_block(&picc, block, address_flag | data_rate_flag, tx, tx_len);
+    return nfcv_write_single_block(&picc, block, address_flag | data_rate_flag | (opt ? option_flag : 0), tx, tx_len);
 }
 
-bool UnitST25R3916::nfcvWriteSingleBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len)
+bool UnitST25R3916::nfcvWriteSingleBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len, const bool opt)
 {
-    return nfcv_write_single_block(nullptr, block, select_flag | data_rate_flag, tx, tx_len);
+    return nfcv_write_single_block(nullptr, block, select_flag | data_rate_flag | (opt ? option_flag : 0), tx, tx_len);
 }
 
 bool UnitST25R3916::nfcv_write_single_block(const m5::nfc::v::PICC* picc, const uint8_t block, const uint8_t req,
                                             const uint8_t* tx, const uint8_t tx_len)
 {
+    CHECK_MODE();
+
     if (!tx || !tx_len || tx_len > 32 || (picc ? !picc->valid() : false)) {
         return false;
     }
-   
+
     uint8_t frame[2 + 8 + 1 + tx_len]{};
     make_frame(frame, req, m5::stl::to_underlying(Command::WriteSingleBlock), picc);
 
@@ -415,11 +416,10 @@ bool UnitST25R3916::nfcv_write_single_block(const m5::nfc::v::PICC* picc, const 
     memcpy(frame + offset, tx, tx_len);
     offset += tx_len;
 
-    uint8_t rx[8];
+    uint8_t rx[32]{};
     uint16_t rx_len = sizeof(rx);
     if (!nfcvTransceive(rx, rx_len, frame, offset, TIMEOUT_WRITE_SINGLE_BLOCK) || !rx_len || rx[0] != 0x00) {
-        //m5::utility::log::dump(rx, rx_len, false);
-        M5_LIB_LOGE("Failed to transcieve (%u:%u) %02X %u %02X", block, tx_len, req, rx_len, rx[1] /* error code */);
+        M5_LIB_LOGD("Failed to transcieve %02X %u %02X", req, rx_len, rx[1] /* error code */);
         return false;
     }
     return true;
