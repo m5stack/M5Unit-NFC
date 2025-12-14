@@ -57,13 +57,14 @@ constexpr const char* name_table[] = {
     name_unknown,                                                                     //
     name_classic_mini, name_classic_1K, name_classic_2K, name_classic_4K,             // Classic
     name_ul,           name_ul_ev1_11,  name_ul_ev1_21,  name_ul_nano,    name_ul_c,  // Light
-    name_plus_2K,      name_plus_4K,    name_plus_se,                                 // Plus
-    name_desfire_2K,   name_desfire_4K, name_desfire_8K,                              // DESFire
     name_ntag203,      name_ntag210u,   name_ntag210,                                 // NTAG
     name_ntag212,      name_ntag213,    name_ntag215,                                 // NTAG
     name_ntag216,                                                                     // NTAG
     name_st25ta_2k,    name_st25ta_16k, name_st25ta_64k,                              // ST25A
-    name_iso14443_4,   name_iso18092,                                                 // Others
+    name_iso14443_4,                                                                  // 14443-4
+    name_plus_2K,      name_plus_4K,    name_plus_se,                                 // Plus
+    name_desfire_2K,   name_desfire_4K, name_desfire_8K,                              // DESFire
+    name_iso18092,                                                                    //
 };
 
 //
@@ -85,11 +86,12 @@ constexpr const char* name_sub_desfire_table[] = {name_sub_desfire_ev1, name_sub
 constexpr uint16_t max_block_table[] = {0,                                 // Unknown
                                         20,  64,  128, 256,                // Classic
                                         16,  20,  40,  14,  48,            // Light
-                                        128, 256, 64,                      // Plus
-                                        0,   0,   0,                       // DESFire (Not has blocks, File base system)
                                         42,  20,  16,  40,  45, 135, 231,  // NTAG
                                         0,   0,   0,                       // ST25TA
-                                        0,   0};
+                                        0,                                 // 14443-4
+                                        128, 256, 64,                      // Plus
+                                        0,   0,   0,                       // DESFire (Not has blocks, File base system)
+                                        0};
 
 // [first/last]
 constexpr uint8_t user_block_table[][2] = {
@@ -105,14 +107,6 @@ constexpr uint8_t user_block_table[][2] = {
     {4, 35},  // Exclusive 0-3 and last 5 pages
     {4, 13},  // Exclusive 0-3
     {4, 39},  // Exclusive 0-3 and last 8 pages
-    // Plus
-    {1, 126},
-    {1, 254},
-    {1, 62},
-    // DESFire
-    {0, 0},
-    {0, 0},
-    {0, 0},
     // NTAG
     {4, 39},   // 203 Exclusive 0-3 and last 2 pages
     {4, 15},   // 210u Exclusive 0-3
@@ -127,6 +121,15 @@ constexpr uint8_t user_block_table[][2] = {
     {0, 0},
     //
     {0, 0},
+    // Plus
+    {1, 126},
+    {1, 254},
+    {1, 62},
+    // DESFire
+    {0, 0},
+    {0, 0},
+    {0, 0},
+    //
     {0, 0},
 };
 
@@ -134,11 +137,12 @@ constexpr uint8_t max_sector_table[] = {
     0,                        // Unknown
     5,  16, 32, 40,           // Classic
     0,  0,  0,  0,  0,        // Light
-    32, 40, 16,               // Plus
-    0,  0,  0,                // Desfire
     0,  0,  0,  0,  0, 0, 0,  // NTAG
     0,  0,  0,                // ST25TA
-    0,  0,
+    0,                        //
+    32, 40, 16,               // Plus
+    0,  0,  0,                // Desfire
+    0,
 };
 
 constexpr uint16_t user_area_size_table[] = {
@@ -146,22 +150,24 @@ constexpr uint16_t user_area_size_table[] = {
     0,                                      // Unknown
     240,  752,  1504, 3440,                 // Classic
     48,   48,   128,  40,   144,            // Light
+    144,  48,   144,  208,  144, 504, 888,  // NTAG
+    0,                                      //
     1504, 3440, 752,                        // Plus
     0,    0,    0,                          // Desfire
-    144,  48,   144,  208,  144, 504, 888,  // NTAG
-    0,    0,
+    0,
 };
 
 constexpr NFCForumTag nfc_forum_tag_table[] = {
     NFCForumTag::None,                                                                                   //
     NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                       // Classic
     NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,  // Light
-    NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                                           // Plus
-    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                                          // DESFire
     NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                      // NTAG
     NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                                          // NTAG
     NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                                          // ST25TA
-    NFCForumTag::None,  NFCForumTag::None,                                                               //
+    NFCForumTag::None,                                                                                   //
+    NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                                           // Plus
+    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                                          // DESFire
+    NFCForumTag::None,                                                                                   //
 };
 
 struct Historical {

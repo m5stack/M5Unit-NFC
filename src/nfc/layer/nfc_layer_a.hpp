@@ -86,6 +86,8 @@ public:
       @param timeout_ms  Polling time budget in milliseconds
       @return True if detected
       @note The detected PICC is typically put into HALT during enumeration to allow discovering others
+      @note To identify the type, call NFCLayerA::identify
+      @warning The type of activated PICC is determined solely by SAK and is provisional
      */
     bool detect(m5::nfc::a::PICC& picc, const uint32_t timeout_ms = 100U);
     /*!
@@ -94,12 +96,16 @@ public:
       @param timeout_ms  Polling time budget in milliseconds
       @return True if detected
       @note The detected PICC is typically put into HALT during enumeration to allow discovering others
+      @note To identify the type, call NFCLayerA::identify
+      @warning The type of activated PICC is determined solely by SAK and is provisional
      */
     bool detect(std::vector<m5::nfc::a::PICC>& piccs, const uint32_t timeout_ms = 1000U);
     /*!
       @brief Select a PICC (anti-collision + SELECT cascade to ACTIVE)
       @param[out] picc The fully activated PICC (single- or multi-cascade)
       @return True if successful
+      @warning The type of activated PICC is determined solely by SAK and is provisional
+      @note To identify the type, call NFCLayerA::identify
       @pre A PICC is in the READY state (after REQA/WUPA)
       @post PICC transitions: READY -> ACTIVE on successful response
      */
@@ -145,6 +151,15 @@ public:
       @post PICC transitions: ACTIVE -> HALT on a successful response
      */
     bool deactivate();
+
+    /*!
+      @brief Identify the specified PICC type
+      @details Classification Based on AN10883
+      @param[in/out] picc PICC
+      @return True if successful
+      @warning Before calling, the previously active PICC is deactivated
+     */
+    bool identify(m5::nfc::a::PICC& picc);
 
     /*!
       @brief Read the 1 page
@@ -450,6 +465,8 @@ protected:
         return (_activePICC.supportsNFC()) ? 4 : 16;
     }
 
+    bool identify_picc(m5::nfc::a::PICC& picc);
+
     bool read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr);
     bool read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
                            const m5::nfc::a::mifare::classic::Key& key);
@@ -486,8 +503,9 @@ struct NFCLayerA::Adapter {
 
     virtual bool select(m5::nfc::a::PICC& picc)         = 0;
     virtual bool activate(const m5::nfc::a::PICC& picc) = 0;
-    virtual bool deactivate()                           = 0;
+    virtual bool deactivate(const bool iso14443_4)      = 0;
 
+    virtual bool nfca_request_ats(m5::nfc::a::ATS& ats)                     = 0;
     virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr)        = 0;  // READ
     virtual bool nfca_write_block(const uint8_t addr, const uint8_t tx[16]) = 0;  // WRITE_BLOCK
     virtual bool nfca_write_page(const uint8_t addr, const uint8_t tx[4])   = 0;  // WRITE_PAGE
@@ -498,6 +516,9 @@ struct NFCLayerA::Adapter {
                                             const uint32_t arg = 0)                          = 0;
     virtual bool mifare_ultralightC_authenticate1(uint8_t ek[8])                             = 0;
     virtual bool mifare_ultralightC_authenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16]) = 0;
+    virtual bool mifare_get_version_L3(uint8_t ver[8])                                       = 0;
+    virtual bool mifare_get_version_L4(uint8_t ver[8])                                       = 0;
+    virtual bool mifare_ultralightc_authenticate1(uint8_t ek[8])                             = 0;
 
     virtual bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage,
                                 const uint8_t epage) = 0;  // FAST_READ

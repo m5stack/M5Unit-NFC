@@ -248,14 +248,14 @@ void loop()
     if (clicked || held) {
         PICC picc{};
         if (nfc_a.detect(picc)) {
-            if (nfc_a.reactivate(picc)) {
+            if (nfc_a.identify(picc) && nfc_a.reactivate(picc)) {
                 M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
                               picc.userAreaSize(), picc.totalSize());
                 if (picc.supportsNFC()) {
                     if (clicked) {
                         M5.Speaker.tone(2000, 30);
                         lcd.fillScreen(TFT_BLUE);
-                        //nfc_a.dump();
+                        nfc_a.dump();
                         read_ndef();
                     } else if (held) {
                         M5.Speaker.tone(4000, 30);
@@ -265,8 +265,11 @@ void loop()
                     M5.Log.printf("Please remove the PICC from the reader\n");
 
                 } else {
+                    M5.Speaker.tone(1000, 50);
                     M5.Log.printf("Not support the NDEF\n");
                 }
+            } else {
+                M5_LOGE("Failed to identify/activate %s", picc.uidAsString().c_str());
             }
             nfc_a.deactivate();
             lcd.setCursor(0, 0);
@@ -277,23 +280,3 @@ void loop()
         }
     }
 }
-/*
-  6:19:30.599 > Page    :00 01 02 03
-16:19:30.605 > --------------------
-16:19:30.605 > [000/00]:04 49 37 F2
-16:19:30.605 > [001/01]:D2 A6 1C 90
-16:19:30.610 > [002/02]:F8 48 00 00
-16:19:30.610 > [003/03]:E1 10 12 00
-16:19:30.610 > [004/04]:03 0F D1 01
-16:19:30.616 > [005/05]:0B 54 02 65
-16:19:30.616 > [006/06]:6E 33 37 42
-16:19:30.616 > [007/07]:37 34 43 37
-16:19:30.622 > [008/08]:41 FE 00 00
-16:19:30.622 > [009/09]:00 00 00 00
-16:19:30.622 > [010/0A]:00 00 00 00
-16:19:30.627 > [011/0B]:00 00 00 00
-16:19:30.627 > [012/0C]:00 00 00 00
-16:19:30.627 > [013/0D]:00 00 00 00
-16:19:30.632 > [014/0E]:00 00 00 00
-16:19:30.632 > [015/0F]:00 00 00 00
-*/

@@ -366,7 +366,7 @@ void loop()
     if (clicked || held) {
         PICC picc{};
         if (nfc_a.detect(picc)) {
-            if (nfc_a.reactivate(picc)) {
+            if (nfc_a.identify(picc) && nfc_a.reactivate(picc)) {
                 M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
                               picc.userAreaSize(), picc.totalSize());
                 if (picc.isMifareClassic()) {
@@ -386,6 +386,8 @@ void loop()
                     M5.Log.printf("Not support the value block\n");
                 }
                 nfc_a.deactivate();
+            } else {
+                M5_LOGE("Failed to identify/activate %s", picc.uidAsString().c_str());
             }
         } else {
             M5.Log.printf("PICC NOT exists\n");

@@ -74,7 +74,7 @@ bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type2::CapabilityContaine
     }
     memcpy(cc.block, rx + ((block_size == 4) ? 0 : 12), sizeof(cc.block));
 
-    M5_LIB_LOGE("CC2:%02X %u.%u %u %02X/%02X", cc.block[0], cc.major_version(), cc.minor_version(), cc.ndef_size(),
+    M5_LIB_LOGV("CC2:%02X %u.%u %u %02X/%02X", cc.block[0], cc.major_version(), cc.minor_version(), cc.ndef_size(),
                 cc.read_access(), cc.write_access());
 
     return true;
@@ -258,7 +258,6 @@ bool NDEFLayer::read_type3(m5::nfc::ndef::TLV& tlv)
     uint16_t block      = _interface.first_user_block();
     uint16_t last_block = _interface.last_user_block();
     if (block == 0xFFFF || last_block == 0xFFFF) {
-        M5_LIB_LOGE("ERROR");
         return false;
     }
 

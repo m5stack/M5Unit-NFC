@@ -114,6 +114,8 @@ void loop()
         M5.Log.printf("%zu PICC\n", piccs.size());
         uint32_t idx{};
         for (auto&& u : piccs) {
+            // detect only performs a provisionalclassification based on sak, so further identification  is required
+            nfc_a.identify(u);
             M5.Log.printf("PICC:%s %s %u/%u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.userAreaSize(),
                           u.totalSize());
             lcd.printf("[%2u]:PICC:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());

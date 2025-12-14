@@ -267,7 +267,7 @@ void loop()
         PICC picc;
         if (nfc_a.detect(picc)) {
             lcd.fillScreen(TFT_DARKGREEN);
-            if (nfc_a.reactivate(picc)) {
+            if (nfc_a.identify(picc) && nfc_a.reactivate(picc)) {
                 M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
                               picc.userAreaSize(), picc.totalSize());
 
@@ -288,7 +288,10 @@ void loop()
                     }
                 }
                 nfc_a.deactivate();
+            } else {
+                M5_LOGE("Failed to identify/activate %s", picc.uidAsString().c_str());
             }
+
         } else {
             M5.Log.printf("PICC NOT exists\n");
         }

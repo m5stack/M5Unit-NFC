@@ -1741,6 +1741,7 @@ public:
       @param[out]  picc Selected PICC
       @param lv Cascade level (1-3)
       @return True if successful
+      @warning The type of activated PICC is determined solely by SAK and is provisional
      */
     bool nfcaSelectWithAnticollision(bool& completed, m5::nfc::a::PICC& picc, const uint8_t lv);
     /*!
@@ -1777,8 +1778,24 @@ public:
       @return True if successful
      */
     bool nfcaHlt();
+
+    /*!
+      @brief Request for answer to select (RATS)
+      @param[out] ats Answer to select (ATS)
+      @param fsdi Frame Size for PCD Integer
+      @param cid Card Identifier
+      @return True if successful
+     */
+    bool nfcaRequestATS(m5::nfc::a::ATS& ats, const uint8_t fsdi = 5, const uint8_t cid = 0);
+    /*!
+      @brief Deselect ISO/IEC 14443-4 PICC
+      @return True if successful
+      @note Call before nfcaHlt if ISO/IEC 14443-4 PICC
+     */
+    bool nfcaDeselect();
     ///@}
 
+    // ----------------------------------------------------------------------------------------------
     ///@name MIFARE
     ///@{
     /*!
@@ -1829,6 +1846,18 @@ public:
       @return True if successful
      */
     bool mifareUltralightCAuthenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16]);
+    /*!
+      @brief GetVersion (L3)
+      @param[out] ver Version information
+      @return True if successful
+     */
+    bool mifareGetVersion3(uint8_t ver[8]);
+    /*!
+      @brief GetVersion (L4)
+      @param[out] ver Version information
+      @return True if successful
+     */
+    bool mifareGetVersion4(uint8_t ver[8]);
     ///@}
 
     ///@name NTAG
@@ -1843,25 +1872,6 @@ public:
       @warning Only PICC with the FAST_READ command
      */
     bool ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
-    ///@}
-
-    ///@name ISO/IEC 14443-4
-    ///@{
-    /*!
-      @brief Request for answer to select (RATS)
-      @param[out] ats Answer to select (ATS)
-      @param fsdi Frame Size for PCD Integer
-      @param cid Card Identifier
-      @return True if successful
-     */
-    bool iso144434RequestATS(m5::nfc::a::ATS& ats, const uint8_t fsdi = 5, const uint8_t cid = 0);
-    /*!
-      @brief Deselect ISO/IEC 14443-4 PICC
-      @return True if successful
-      @note Call before nfcaHlt if ISO/IEC 14443-4 PICC
-     */
-    bool iso14434Deselect();
-
     ///@}
 
     // ----------------------------------------------------------------------------------------------
@@ -2118,9 +2128,6 @@ protected:
                                            const uint32_t timeout_ms, const bool include_crc, const bool decrypt);
     bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::PICC& picc, const uint8_t block,
                                      const m5::nfc::a::mifare::classic::Key& key);
-
-    bool mifare_get_version3(uint8_t info[8]);
-    bool mifare_get_version4(uint8_t info[8]);
 
     // NFC-V
     bool nfcv_transmit(const uint8_t* tx, const uint16_t tx_len, const m5::nfc::v::ModulationMode mode,

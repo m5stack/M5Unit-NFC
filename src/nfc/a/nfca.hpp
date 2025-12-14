@@ -42,15 +42,6 @@ enum class Type : uint8_t {
     MIFARE_Ultralight_Nano,   //!< MIFARE Ultralight Nano
     MIFARE_UltralightC,       //!< MIFARE UltralightC
 
-    MIFARE_Plus_2K,  //!< MIFARE Plus 2K
-    MIFARE_Plus_4K,  //!< MIFARE Plus 4K
-    MIFARE_Plus_SE,  //!< MIFARE Plus SE 1K
-
-    MIFARE_DESFire_2K,  //!< MIFARE DESFire 2K
-    MIFARE_DESFire_4K,  //!< MIFARE DESFire 4K
-    MIFARE_DESFire_8K,  //!< MIFARE DESFire 8K
-    // LIGHT
-
     NTAG_203,   //!< NATG 203
     NTAG_210u,  //!< NTAG 210μ
     NTAG_210,   //!< NTAG 210
@@ -64,7 +55,17 @@ enum class Type : uint8_t {
     ST25TA_64K,  //!< ST25TA64K
 
     ISO_14443_4,  //!< PICC compliant with ISO/IEC 14443-4
-    ISO_18092,    //!< PICC compliant with ISO/IEC 18092
+
+    MIFARE_Plus_2K,  //!< MIFARE Plus 2K
+    MIFARE_Plus_4K,  //!< MIFARE Plus 4K
+    MIFARE_Plus_SE,  //!< MIFARE Plus SE 1K
+
+    MIFARE_DESFire_2K,  //!< MIFARE DESFire 2K
+    MIFARE_DESFire_4K,  //!< MIFARE DESFire 4K
+    MIFARE_DESFire_8K,  //!< MIFARE DESFire 8K
+    // LIGHT
+
+    ISO_18092,  //!< PICC compliant with ISO/IEC 18092
 
     NotCompleted = 0xFF,  //!< SAK indicates UID is not complete
 };
@@ -92,12 +93,6 @@ inline bool is_mifare_classic(const Type t)
     return t >= Type::MIFARE_Classic_Mini && t <= Type::MIFARE_Classic_4K;
 }
 
-//! @brief Is type MIFARE?
-inline bool is_mifare(const Type t)
-{
-    return t >= Type::MIFARE_Classic_Mini && t <= Type::MIFARE_DESFire_8K;
-}
-
 //! @brief Is type MIFARE Ultralight series?
 inline bool is_mifare_ultralight(const Type t)
 {
@@ -114,6 +109,30 @@ inline bool is_ntag(const Type t)
 inline bool is_mifare_plus(const Type t)
 {
     return t >= Type::MIFARE_Plus_2K && t <= Type::MIFARE_Plus_SE;
+}
+
+//! @brief Is type MIFARE DESFire?
+inline bool is_mifare_desfire(const Type t)
+{
+    return t >= Type::MIFARE_DESFire_2K && t <= Type::MIFARE_DESFire_8K;
+}
+
+//! @brief Is type MIFARE?
+inline bool is_mifare(const Type t)
+{
+    return is_mifare_classic(t) || is_mifare_ultralight(t) || is_mifare_plus(t) || is_mifare_desfire(t);
+}
+
+//! @brief Is ISO 14443-4?
+inline bool is_iso14443_4(const Type t)
+{
+    return is_mifare_plus(t) || is_mifare_desfire(t) || (t == Type::ISO_14443_4);
+}
+
+//! @brief Is ISO 14443-3?
+inline bool is_iso14443_3(const Type t)
+{
+    return !is_iso14443_4(t);
 }
 
 //! @brief Does the specified type function as NFC?
@@ -262,6 +281,10 @@ struct PICC {
     {
         return valid() && is_ntag(type);
     }
+    inline bool isISO14443_4() const
+    {
+        return is_iso14443_4(type);  // Don't check valid(), as there may exist where blocks == 0
+    }
 
     //! @brief Supports NFC?
     inline bool supportsNFC() const
@@ -354,7 +377,8 @@ enum class Command : uint8_t {
     SELCT_CL3_OPT = 0x96,  //!< Select CL3 and swich bit rate to fc/64 after receive SAK
     READ          = 0x30,  //!< Read
     // ISO/IEC 14443-4
-    RATS = 0xE0,  //!< Request for Answer to Select
+    RATS     = 0xE0,  //!< Request for Answer to Select
+    DESELECT = 0xC2,  //!< DESELECT
     // MIFARE
     AUTH_WITH_KEY_A = 0x60,  //!< MIFARE Classic. Authentication with Key A
     AUTH_WITH_KEY_B = 0x61,  //!< MIFARE Classic. Authentication with Key B
@@ -397,6 +421,7 @@ constexpr uint32_t TIMEOUT_WRITE1{5};
 constexpr uint32_t TIMEOUT_WRITE2{10};
 constexpr uint32_t TIMEOUT_VALUE_BLOCK{5};  // Value block operation
 constexpr uint32_t TIMEOUT_RATS{5};
+constexpr uint32_t TIMEOUT_DESELECT{5};
 
 ///@}
 

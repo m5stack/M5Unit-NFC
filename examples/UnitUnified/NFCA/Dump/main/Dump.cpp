@@ -116,18 +116,16 @@ void loop()
 
     if (M5.BtnA.wasClicked()) {
         lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
-        std::vector<PICC> piccs;
-        if (nfc_a.detect(piccs)) {
-            // If multiple occurrences are detected, only the first one detected
-            auto& picc = piccs.front();
-            if (nfc_a.reactivate(picc)) {
+        PICC picc{};
+        if (nfc_a.detect(picc)) {
+            if (nfc_a.identify(picc) && nfc_a.reactivate(picc)) {
                 M5.Speaker.tone(3000, 20);
                 M5.Log.printf("==== Dump %s %s %u/%u ====\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
                               picc.userAreaSize(), picc.totalSize());
                 nfc_a.dump(keyA);  // Need key if MIFARE classic, Ignore key if not MIFARE classic
                 nfc_a.deactivate();
             } else {
-                M5_LOGE("Failed to activate %s", picc.uidAsString().c_str());
+                M5_LOGE("Failed to identify/activate %s", picc.uidAsString().c_str());
             }
         } else {
             M5.Log.printf("PICC NOT exists\n");

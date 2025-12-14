@@ -37,8 +37,9 @@ struct AdapterST25R3916ForA final : NFCLayerA::Adapter {
 
     virtual bool select(m5::nfc::a::PICC& picc) override;
     virtual bool activate(const m5::nfc::a::PICC& picc) override;
-    virtual bool deactivate() override;
+    virtual bool deactivate(const bool iso14443_4) override;
 
+    virtual bool nfca_request_ats(m5::nfc::a::ATS& ats) override;
     virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr) override;         // READ
     virtual bool nfca_write_block(const uint8_t addr, const uint8_t tx[16]) override;  // WRITE_BLOCK
     virtual bool nfca_write_page(const uint8_t addr, const uint8_t tx[4]) override;    // WRITE_PAGE
@@ -49,6 +50,9 @@ struct AdapterST25R3916ForA final : NFCLayerA::Adapter {
                                             const uint32_t arg = 0) override;
     virtual bool mifare_ultralightC_authenticate1(uint8_t ek[8]) override;
     virtual bool mifare_ultralightC_authenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16]) override;
+    virtual bool mifare_get_version_L3(uint8_t ver[8]) override;
+    virtual bool mifare_get_version_L4(uint8_t ver[8]) override;
+    virtual bool mifare_ultralightc_authenticate1(uint8_t ek[8]) override;
 
     virtual bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage,
                                 const uint8_t epage) override;  // FAST_READ
@@ -84,9 +88,14 @@ bool AdapterST25R3916ForA::activate(const PICC& picc)
     return _u.nfcaSelect(picc);
 }
 
-bool AdapterST25R3916ForA::deactivate()
+bool AdapterST25R3916ForA::deactivate(const bool iso14443_4)
 {
-    return _u.nfcaHlt();
+    return iso14443_4 ? _u.nfcaDeselect() : _u.nfcaHlt();
+}
+
+bool AdapterST25R3916ForA::nfca_request_ats(m5::nfc::a::ATS& ats)
+{
+    return _u.nfcaRequestATS(ats);
 }
 
 bool AdapterST25R3916ForA::nfca_read_block(uint8_t rx[16], const uint8_t addr)
@@ -97,11 +106,6 @@ bool AdapterST25R3916ForA::nfca_read_block(uint8_t rx[16], const uint8_t addr)
 bool AdapterST25R3916ForA::nfca_write_block(const uint8_t addr, const uint8_t tx[16])
 {
     return _u.nfcaWriteBlock(addr, tx);
-}
-
-bool AdapterST25R3916ForA::ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
-{
-    return _u.ntagReadPage(rx, rx_len, spage, epage);
 }
 
 bool AdapterST25R3916ForA::nfca_write_page(const uint8_t addr, const uint8_t tx[4])
@@ -129,6 +133,26 @@ bool AdapterST25R3916ForA::mifare_ultralightC_authenticate1(uint8_t ek[8])
 bool AdapterST25R3916ForA::mifare_ultralightC_authenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16])
 {
     return _u.mifareUltralightCAuthenticate2(rx_ek, tx_ek);
+}
+
+bool AdapterST25R3916ForA::mifare_get_version_L3(uint8_t ver[8])
+{
+    return _u.mifareGetVersion3(ver);
+}
+
+bool AdapterST25R3916ForA::mifare_get_version_L4(uint8_t ver[8])
+{
+    return _u.mifareGetVersion4(ver);
+}
+
+bool AdapterST25R3916ForA::mifare_ultralightc_authenticate1(uint8_t ek[8])
+{
+    return _u.mifareUltralightCAuthenticate1(ek);
+}
+
+bool AdapterST25R3916ForA::ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
+{
+    return _u.ntagReadPage(rx, rx_len, spage, epage);
 }
 
 //

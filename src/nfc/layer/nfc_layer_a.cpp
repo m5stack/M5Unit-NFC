@@ -111,13 +111,13 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
-        M5_LIB_LOGE(">>>>ATQA:%04X", picc.atqa);
+        // M5_LIB_LOGE("ATQA:%04X", picc.atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
-        M5_LIB_LOGE("Detect:%04X %s %s", picc.atqa, picc.uidAsString().c_str(), picc.typeAsString().c_str());
+        // M5_LIB_LOGE("Detect:%04X %s %s", picc.atqa, picc.uidAsString().c_str(), picc.typeAsString().c_str());
 
         // Hlt
         if (!deactivate()) {
@@ -158,8 +158,8 @@ bool NFCLayerA::reactivate(const PICC& picc)
     // If arg referrence is the same as _activePICC, it will cause an error, so it must be a separate instance (*1)
     PICC tmp = picc;
     uint16_t discard{};
-    if (tmp.valid() && deactivate()) {
-        m5::utility::delay(2);
+    if (deactivate()) {
+        //        m5::utility::delay(2); // guard time (ULC)
         return wakeup(discard) && activate(tmp);
     }
     return false;
@@ -167,8 +167,78 @@ bool NFCLayerA::reactivate(const PICC& picc)
 
 bool NFCLayerA::deactivate()
 {
+    if (_activePICC.isISO14443_4()) {
+        if (_impl->deactivate(true)) {
+            return true;
+        }
+    }
+
     _activePICC.clear();
-    return _impl->deactivate();
+    return _impl->deactivate(false);
+}
+
+bool NFCLayerA::identify(m5::nfc::a::PICC& picc)
+{
+    bool ret = identify_picc(picc);
+    deactivate();
+    return ret;
+}
+
+bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
+{
+    Type type{};
+
+    if (!reactivate(picc)) {
+        return false;
+    }
+
+    // ISO_14443_4 series
+    if (picc.type == Type::ISO_14443_4) {
+        // RATS
+        ATS ats{};
+        if (!_impl->nfca_request_ats(ats)) {
+            return false;
+        }
+
+        // GetVersion(L4)
+        uint8_t ver[8]{};
+        if (_impl->mifare_get_version_L4(ver)) {
+            type = version4_to_type(picc.sub_type, ver);
+        } else {
+            //  Check historical bytes
+            type = historical_bytes_to_type_sak20(picc.sub_type, ats.historical.data(), ats.historical_len, picc.atqa);
+        }
+        // If it's still unclassify at this stage, read more in SystemFile
+        if (type != Type::Unknown) {
+            picc.type   = type;
+            picc.blocks = get_number_of_blocks(picc.type);
+            return true;
+        }
+        M5_LIB_LOGW("NEED MORE!!");
+        return true;
+    }
+
+    if (picc.type == Type::MIFARE_Ultralight) {
+        uint8_t ver[8]{};
+        // GetVersion(L3)
+        if (_impl->mifare_get_version_L3(ver)) {
+            // UL EV, UL Nano, NTAG2xx
+            picc.type   = version3_to_type(ver);
+            picc.blocks = get_number_of_blocks(picc.type);
+            return true;
+        }
+        //  The PICC goes idle when sending an external command, so select again
+        if (!reactivate(picc)) {
+            return false;
+        }
+        // Try ULC Auth
+        uint8_t discard_ek[8]{};
+        picc.type =
+            _impl->mifare_ultralightc_authenticate1(discard_ek) ? Type::MIFARE_UltralightC : Type::MIFARE_Ultralight;
+        picc.blocks = get_number_of_blocks(picc.type);
+        return true;
+    }
+    return true;
 }
 
 bool NFCLayerA::read4(uint8_t rx[4], const uint8_t addr)
@@ -456,6 +526,7 @@ bool NFCLayerA::dump(const Key& mkey)
         }
         M5_LIB_LOGW("Not supported %s", _activePICC.typeAsString().c_str());
     }
+    M5_LIB_LOGW("Invalid PICC %s", _activePICC.typeAsString().c_str());
     return false;
 }
 

@@ -146,12 +146,7 @@ uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint
     }
 
     if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
-        M5_LIB_LOGE("Timeout");
-        /*
-        if (tx) {
-            m5::utility::log::dump(tx, tx_len, false);
-        }
-        */
+        M5_LIB_LOGD("Timeout");
         return false;
     }
 
@@ -304,11 +299,19 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
     }
 
     uint8_t sak = rbuf[0];
-    M5_LIB_LOGE(">>>> SAK:%02X (%u, %u)  %u ",  //
-                sak, is_sak_completed(sak), is_sak_completed_14443_4(sak), sak_to_type(sak));
+    // M5_LIB_LOGE(">>>> SAK:%02X (%u, %u)  %u ",  //
+    //            sak, is_sak_completed(sak), is_sak_completed_14443_4(sak), sak_to_type(sak));
 
-    // Need RATS?
     if (is_sak_completed_14443_4(sak)) {
+        picc.size = 1 + lv * 3;
+        picc.sak  = sak;
+        picc.type =
+            Type::ISO_14443_4;  // WARNING: This is a preliminary diagnosis; a more accurate diagnosis is required
+        picc.blocks = get_number_of_blocks(picc.type);
+        completed   = true;
+        return true;
+    }
+#if 0        
         ATS ats{};
         // RATS
         if (!iso144434RequestATS(ats)) {
@@ -324,8 +327,8 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
             picc.blocks = get_number_of_blocks(picc.type);
         } else {
             //  Check historical bytes
-            m5::utility::log::dump(ats.header, sizeof(ats.header), false);
-            m5::utility::log::dump(ats.historical.data(), ats.historical_len, false);
+            //m5::utility::log::dump(ats.header, sizeof(ats.header), false);
+            //m5::utility::log::dump(ats.historical.data(), ats.historical_len, false);
             picc.type =
                 historical_bytes_to_type_sak20(picc.sub_type, ats.historical.data(), ats.historical_len, picc.atqa);
             picc.blocks = get_number_of_blocks(picc.type);
@@ -338,18 +341,19 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
         }
         return true;
     }
+#endif
 
     //   Completed?
     if (is_sak_completed(sak)) {
-        completed = true;
         picc.size = 1 + lv * 3;
         picc.sak  = sak;
         picc.type =
             sak_to_type(sak);  // WARNING: This is a preliminary diagnosis; a more accurate diagnosis is required
         picc.blocks = get_number_of_blocks(picc.type);
-
+        completed   = true;
         // M5_LIB_LOGE(">>>>    tmp type %s", picc.typeAsString().c_str());
 
+#if 0        
         // More detailed type identification
         if (picc.type == Type::MIFARE_Ultralight) {
             picc.type = Type::Unknown;
@@ -379,6 +383,7 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
                 completed = nfcaWakeup(discard) && nfcaSelect(picc);
             }
         }
+#endif
     }
     // M5_LIB_LOGE(">>>> Select %02X %u %u", sak, completed, has_sak_dependent_bit(sak));
     return completed || has_sak_dependent_bit(sak);  // completed or continue
@@ -422,7 +427,7 @@ bool UnitST25R3916::nfcaSelect(const PICC& picc)
             M5_LIB_LOGE("Failed to select");
             return false;
         }
-        completed = is_sak_completed(rbuf[0]);
+        completed = is_sak_completed(rbuf[0]) || is_sak_completed_14443_4(rbuf[0]);
 
         ++lv;
     } while (!completed && lv < 4);
@@ -540,6 +545,39 @@ bool UnitST25R3916::nfcaWritePage(const uint8_t page, const uint8_t tx[4])
     }
     M5_LIB_LOGE("Failed to write page");
     return false;
+}
+
+bool UnitST25R3916::nfcaRequestATS(m5::nfc::a::ATS& ats, const uint8_t fsdi, const uint8_t cid)
+{
+    uint8_t rx[128]{};
+    uint16_t rx_len = sizeof(rx);
+    uint8_t cmd[2]  = {m5::stl::to_underlying(Command::RATS)};
+    cmd[1]          = ((fsdi & 0x0F) << 4) | (cid & 0x0F);
+
+    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_RATS) || rx_len < 7) {
+        return false;
+    }
+    // M5_LIB_LOGE(">>>>ATS %u bytes", rx_len);
+    // m5::utility::log::dump(rx, rx_len, false);
+
+    memcpy(ats.header, rx, 5);
+    if (7 < rx_len) {
+        memcpy(ats.historical.data(), rx + 5, rx_len - 7);
+    }
+    ats.historical_len = rx_len - 7;
+    return true;
+}
+
+bool UnitST25R3916::nfcaDeselect()
+{
+    uint8_t rx[1]{};
+    uint16_t rx_len = sizeof(rx);
+    uint8_t cmd[1]  = {m5::stl::to_underlying(Command::DESELECT)};
+    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_DESELECT) || !rx_len) {
+        return false;
+    }
+    // m5::utility::log::dump(rx, rx_len, false);
+    return true;
 }
 
 // -------------------------------- For MIFARE classic
@@ -824,7 +862,7 @@ bool UnitST25R3916::mifareUltralightCAuthenticate2(uint8_t rx_ek[8], const uint8
     return false;
 }
 
-bool UnitST25R3916::mifare_get_version3(uint8_t info[8])
+bool UnitST25R3916::mifareGetVersion3(uint8_t info[8])
 {
     // GetVerison (L3)
     uint8_t cmd[1]  = {m5::stl::to_underlying(Command::GET_VERSION)};
@@ -832,7 +870,7 @@ bool UnitST25R3916::mifare_get_version3(uint8_t info[8])
     return info && mifare_transceive(info, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION);
 }
 
-bool UnitST25R3916::mifare_get_version4(uint8_t info[8])
+bool UnitST25R3916::mifareGetVersion4(uint8_t info[8])
 {
     // GetVerison (L4)
     uint8_t cmd[2] = {0x02, m5::stl::to_underlying(Command::GET_VERSION)};
@@ -841,7 +879,6 @@ bool UnitST25R3916::mifare_get_version4(uint8_t info[8])
     if (info && mifare_transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION) && rx_len >= 10) {
         //        M5_LIB_LOGE(">>>> VER L4");
         // m5::utility::log::dump(rx,rx_len, false);
-
         const uint8_t* p = rx;
         uint8_t* q       = info;
         while (p < rx + rx_len && q < info + 8) {
@@ -853,33 +890,6 @@ bool UnitST25R3916::mifare_get_version4(uint8_t info[8])
         }
         return true;
     }
-    return false;
-}
-
-// -------------------------------- For ISO/IEC 14443-4
-bool UnitST25R3916::iso144434RequestATS(m5::nfc::a::ATS& ats, const uint8_t fsdi, const uint8_t cid)
-{
-    uint8_t rx[128]{};
-    uint16_t rx_len = sizeof(rx);
-    uint8_t cmd[2]  = {m5::stl::to_underlying(Command::RATS)};
-    cmd[1]          = ((fsdi & 0x0F) << 4) | (cid & 0x0F);
-
-    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_RATS) || rx_len < 7) {
-        return false;
-    }
-    // M5_LIB_LOGE(">>>>ATS %u bytes", rx_len);
-    // m5::utility::log::dump(rx, rx_len, false);
-
-    memcpy(ats.header, rx, 5);
-    if (7 < rx_len) {
-        memcpy(ats.historical.data(), rx + 5, rx_len - 7);
-    }
-    ats.historical_len = rx_len - 7;
-    return true;
-}
-
-bool UnitST25R3916::iso14434Deselect()
-{
     return false;
 }
 
