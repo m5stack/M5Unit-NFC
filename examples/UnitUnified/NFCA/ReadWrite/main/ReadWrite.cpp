@@ -275,7 +275,7 @@ void loop()
                     M5.Speaker.tone(2000, 30);
                     // Need key if MIFARE classic, Ignore key if not MIFARE classic
                     read_all_user_area(keyA);
-                    read_write(0, picc.userAreaSize() >= 120 ? long_msg : short_msg, keyA);
+                    auto ret = read_write(0, picc.userAreaSize() >= 120 ? long_msg : short_msg, keyA);
                     lcd.fillScreen(ret ? 0 : TFT_RED);
                 } else if (held) {
                     M5.Speaker.tone(4000, 30);
