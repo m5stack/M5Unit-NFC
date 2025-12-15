@@ -15,27 +15,29 @@ using namespace m5::nfc::v;
 
 namespace {
 
-constexpr char name_unknown[]       = "Unknown";
-constexpr char nxp_icode_sli[]      = "ICODE SLI";
-constexpr char nxp_icode_slix[]     = "ICODE SLIX";
-constexpr char nxp_icode_slix2[]    = "ICODE SLIX2";
-constexpr char nxp[]                = "NXP(Unclassified)";
-constexpr char ti_tagit_hf_i[]      = "Tag-it HF-I";
-constexpr char ti_tagit_hf_i_plus[] = "Tag-it HF-I Plus";
-constexpr char ti_tagit_hf_i_pro[]  = "Tag-it HF-I Pro";
-constexpr char ti[]                 = "TI(Unclassified)";
-constexpr char st_lri[]             = "ST LRI";
-constexpr char st_st25v[]           = "ST25V";
-constexpr char st[]                 = "ST(Unclassified)";
-constexpr char fujitsu_fram[]       = "FRAM";
-constexpr char fujitsu[]            = "Fujitsu(Unclassified)";
-constexpr char unclassified[]       = "Unclassified";
+constexpr char name_unknown[]      = "Unknown";
+constexpr char name_sli[]          = "ICODE SLI";
+constexpr char name_slix[]         = "ICODE SLIX";
+constexpr char name_slix2[]        = "ICODE SLIX2";
+constexpr char name_nxp[]          = "NXP(Unclassified)";
+constexpr char name_hf_i[]         = "Tag-it HF-I";
+constexpr char name_hf_i_plus[]    = "Tag-it HF-I Plus";
+constexpr char name_hf_i_pro[]     = "Tag-it HF-I Pro";
+constexpr char name_ti[]           = "TI(Unclassified)";
+constexpr char name_lri[]          = "ST LRI";
+constexpr char name_st25v[]        = "ST25V";
+constexpr char name_st[]           = "ST(Unclassified)";
+constexpr char name_fram[]         = "FRAM";
+constexpr char name_fujitsu[]      = "Fujitsu(Unclassified)";
+constexpr char name_unclassified[] = "Unclassified";
 
 constexpr const char* name_table[] = {
-    name_unknown,                                               //
-    nxp_icode_sli, nxp_icode_slix,     nxp_icode_slix2,   nxp,  //
-    ti_tagit_hf_i, ti_tagit_hf_i_plus, ti_tagit_hf_i_pro, ti,  st_lri, st_st25v, st, fujitsu_fram,
-    fujitsu,       unclassified,
+    name_unknown,                                                //
+    name_sli,          name_slix,      name_slix2,    name_nxp,  //
+    name_hf_i,         name_hf_i_plus, name_hf_i_pro, name_ti,   //
+    name_lri,          name_st25v,     name_st,                  //
+    name_fram,         name_fujitsu,                             //
+    name_unclassified,
 };
 
 constexpr uint8_t FLAG_TWO_SUBCARRIERS{0x01};

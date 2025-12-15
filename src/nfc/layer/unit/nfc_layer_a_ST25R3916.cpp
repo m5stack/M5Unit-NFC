@@ -74,7 +74,7 @@ bool AdapterST25R3916ForA::select(m5::nfc::a::PICC& picc)
 {
     uint8_t lv{1};  // Cascade level 1-3
     bool completed{};
-    picc.clear();
+    picc = PICC{};
     do {
         if (!_u.nfcaSelectWithAnticollision(completed, picc, lv)) {
             return false;

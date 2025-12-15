@@ -707,11 +707,12 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const PICC& p
 {
     CHECK_MODE();
 
-    if ((cmd != Command::AUTH_WITH_KEY_A && cmd != Command::AUTH_WITH_KEY_B) || !picc.isMifareClassic()) {
+    if ((cmd != Command::AUTH_WITH_KEY_A && cmd != Command::AUTH_WITH_KEY_B) ||
+        (!picc.isMifareClassic() && picc.isMifarePlus())) {
         return false;
     }
 
-    M5_LIB_LOGD("AUTH:%02X %u %02X:%02X:%02X:%02X:%02X:%02X", cmd, block,  //
+    M5_LIB_LOGE("AUTH:%02X %u %02X:%02X:%02X:%02X:%02X:%02X", cmd, block,  //
                 mkey[0], mkey[1], mkey[2], mkey[3], mkey[4], mkey[5]);
 
     // 3-pass mutual authentication

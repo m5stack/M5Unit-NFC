@@ -205,6 +205,10 @@ bool is_user_block(const Type t, const uint16_t block);
 //! @brief Calculate bcc8
 uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len);
 
+/*!
+  @struct ATS
+  @brief Answer to request
+ */
 struct ATS {
     union {
         uint8_t header[5]{};
@@ -237,65 +241,71 @@ struct ATS {
  */
 struct PICC {
     uint8_t _pad{};
-    Type type{};  //!< PICC type
+    Type type{};        //!< PICC type
+    uint8_t sak{};      //!< The SAK (Select acknowledge) returned from the PICC after successful selection
+    uint8_t size{};     //!<  UID size 4, 7 or 10.
+    uint8_t uid[10]{};  //!< uid (Valid up to the value of size)
+    uint16_t atqa{};    //!< ATQA
+    uint16_t blocks{};  //!< Number of the blocks or pages
     union {
         uint8_t sub_type{};               //!< uint8_t access
         SubTypePlus sub_type_plus;        //!< For Plus
         SubTypeDESFire sub_type_desfire;  //!< For DESFire
     };  //!< SubType for Plus/DESFire;
-    uint8_t sak{};             //!< The SAK (Select acknowledge) returned from the PICC after successful selection
-    uint8_t security_level{};  //!< Security level for Plus
-    uint8_t size{};            //!<  UID size 4, 7 or 10.
-    uint8_t uid[10]{};         //!< uid (Valid up to the value of size)
-    uint16_t atqa{};           //!< ATQA
-    uint16_t blocks{};         //!< Number of the blocks or pages
+    union {
+        uint8_t security_level{};  //!< Security level for Plus
+    };  //!< Optional information
 
     //! @brief Valid?
     inline bool valid() const
     {
         return (size == 4 || size == 7 || size == 10) && (type != Type::Unknown) && blocks;
     }
+    //! @brief Retrieve the last 4 bytes of UID
+    void tail4(uint8_t buf[4]) const
+    {
+        if (buf) {
+            memcpy(buf, uid + size - 4, 4);
+        }
+    }
+    std::string uidAsString() const;   //!< @brief Gets the uid string
+    std::string typeAsString() const;  //!< @brief Gets the type string
 
+    ///@name Type
+    ///@{
     //! @brief Is MIFARE?
     inline bool isMifare() const
     {
-        return valid() && is_mifare(type);
+        return is_mifare(type);
     }
     //! @brief Is MIFARE classic?
     inline bool isMifareClassic() const
     {
-        return valid() && is_mifare_classic(type);
+        return is_mifare_classic(type);
     }
     //! @brief Is MIFARE Ultralight series?
     inline bool isMifareUltralight() const
     {
-        return valid() && is_mifare_ultralight(type);
+        return is_mifare_ultralight(type);
     }
     //! @brief Is MIFARE Plus?
     inline bool isMifarePlus() const
     {
-        return valid() && is_mifare_plus(type);
+        return is_mifare_plus(type);
     }
     //! @brief Is NTAG?
     inline bool isNTAG() const
     {
-        return valid() && is_ntag(type);
+        return is_ntag(type);
     }
     inline bool isISO14443_4() const
     {
-        return is_iso14443_4(type);  // Don't check valid(), as there may exist where blocks == 0
+        return is_iso14443_4(type);
     }
+    ///@}
 
-    //! @brief Supports NFC?
-    inline bool supportsNFC() const
-    {
-        return valid() && supports_NFC(type);
-    }
-    //! @brief Can use FAST_READ command?
-    inline bool canFastRead() const
-    {
-        return valid() && has_fast_read(type);
-    }
+    ///@name Information
+    ///@{
     //! @brief Total size
     inline uint16_t totalSize() const
     {
@@ -321,31 +331,36 @@ struct PICC {
         return valid() ? is_user_block(type, block) : false;
     }
 
-    //! @brief Retrieve the last 4 bytes
-    void tail4(uint8_t buf[4]) const
-    {
-        if (buf) {
-            memcpy(buf, uid + size - 4, 4);
-        }
-    }
-
     //! @brief NFC ForumTag
     inline NFCForumTag nfcForumTagType() const
     {
         return get_nfc_forum_tag_type(type);
     }
+    ///@}
 
-    //! @brief Gets the uid string
-    std::string uidAsString() const;
-    //! @brief Gets the type string
-    std::string typeAsString() const;
-    //! @brief clear
-    void clear()
+    ///@name Capability
+    ///@{
+    //! @brief Supports NFC?
+    inline bool supportsNFC() const
     {
-        size = sak = blocks = 0;
-        type                = Type::Unknown;
-        std::memset(uid, 0x00, sizeof(uid));
+        return valid() && supports_NFC(type);
     }
+    //! @brief Can use FAST_READ command?
+    inline bool canFastRead() const
+    {
+        return valid() && has_fast_read(type);
+    }
+#if 0
+    FileSystem::Type get_file_system() const
+    {
+        return (isMifareClassic() || isMifarePlus())
+                   ? FileSystem::Type::Sector
+                   : ((isMifareUltralight() || isNTAG())
+                          ? FileSystem::Page
+                          : ((isMifareDESFire() || isST25TA()) ? FileSystem : File:FileSystem : None));
+    }
+#endif
+    ///@}
 };
 
 //! @brief Equal?
@@ -400,6 +415,16 @@ enum class Command : uint8_t {
     READ_SIG    = 0x3C,  //!< NTAG 21x Read NXP ECC signature
     WRITE_SIG   = 0xA9,  //!< NTAG 210u Write custom signature
     LOCK_SIG    = 0xAC,  //!< NTAG 210u Lock/Unlock signature
+    // ISO/IEC 7816
+    SELECT           = 0xA4, //!< Select Application or file
+    READ_BINARY           = 0xB0, //!< Read binary data 
+    UPDATE_BINARY         = 0xD6, //!< Write binary data
+    READ_RECORDS          = 0xB2, //!< Read recode data
+    APPEND_RECORD         = 0xE2, //!< pend recored data
+    GET_CHALLENGE         = 0x84,
+    INTERNAL_AUTHENTICATE = 0x88,
+    EXTERNAL_AUTHENTICATE = 0x82,
+
 };
 
 ///@name Timeout

@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 /*!
-  @file nfc_layer_f_ST25R3916.cpp
-  @brief ST25R3916 NFC-F adapter for common layer
+  @file nfc_layer_v_ST25R3916.cpp
+  @brief ST25R3916 NFC-V adapter for common layer
 */
 #include "nfc/layer/nfc_layer_v.hpp"
 #include "nfc/layer/ndef_layer.hpp"

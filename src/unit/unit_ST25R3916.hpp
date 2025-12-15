@@ -1877,6 +1877,10 @@ public:
     // ----------------------------------------------------------------------------------------------
     ///@name NFC-B
     ///@{
+    bool nfcbTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                        const uint32_t timeout_ms, const bool rx_crc);
+    bool nfcbTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms, const bool rx_crc);
+    bool nfcbReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
     ///@}
 
     // ----------------------------------------------------------------------------------------------

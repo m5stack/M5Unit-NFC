@@ -5,7 +5,7 @@
  */
 /*!
   @file nfc_layer_f.cpp
-  @brief Common layer for NFC-F related units
+  @brief Common layer for NFC-F
 */
 #include "nfc_layer_f.hpp"
 #include "nfc/ndef/ndef.hpp"

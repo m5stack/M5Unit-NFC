@@ -5,12 +5,11 @@
  */
 /*!
   @file nfc_layer_f.hpp
-  @brief Common layer for NFC-F related units
+  @brief Common layer for NFC-F
 
   @note Glossary
   - PCD: Proximity Coupling Device (reader)
   - PICC: Proximity Integrated Circuit Card (card/tag, target device)
-  - IDLE/READY/ACTIVE/HALT: ISO14443-3 state names
 
   @note In NFC Forum (NDEF) context, a PICC is often called a "Tag"
 */

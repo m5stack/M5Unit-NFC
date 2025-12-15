@@ -5,7 +5,7 @@
  */
 /*!
   @file nfc_layer_a.hpp
-  @brief Common layer for NFC-A related units
+  @brief Common layer for NFC-A
 
   @note Glossary
   - PCD: Proximity Coupling Device (reader)
@@ -441,6 +441,13 @@ public:
     bool ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs);
     ///@}
 
+
+
+    bool getVersion(uint8_t rx, uint16_t& rx_len);
+    
+
+
+    
 protected:
     virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
     virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override;

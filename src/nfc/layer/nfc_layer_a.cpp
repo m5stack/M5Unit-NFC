@@ -5,7 +5,7 @@
  */
 /*!
   @file nfc_layer_a.cpp
-  @brief Common layer for NFC-A related units
+  @brief Common layer for NFC-A
 */
 #include "nfc_layer_a.hpp"
 #include "nfc/ndef/ndef.hpp"
@@ -135,7 +135,7 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
 
 bool NFCLayerA::select(m5::nfc::a::PICC& picc)
 {
-    _activePICC.clear();
+    _activePICC = PICC{};
     if (_impl->select(picc)) {
         _activePICC = picc;
         return true;
@@ -145,7 +145,7 @@ bool NFCLayerA::select(m5::nfc::a::PICC& picc)
 
 bool NFCLayerA::activate(const PICC& picc)
 {
-    _activePICC.clear();  // (*1)
+    _activePICC = PICC{};
     if (_impl->activate(picc)) {
         _activePICC = picc;
         return true;
@@ -155,7 +155,6 @@ bool NFCLayerA::activate(const PICC& picc)
 
 bool NFCLayerA::reactivate(const PICC& picc)
 {
-    // If arg referrence is the same as _activePICC, it will cause an error, so it must be a separate instance (*1)
     PICC tmp = picc;
     uint16_t discard{};
     if (deactivate()) {
@@ -167,13 +166,12 @@ bool NFCLayerA::reactivate(const PICC& picc)
 
 bool NFCLayerA::deactivate()
 {
+    _activePICC = PICC{};
     if (_activePICC.isISO14443_4()) {
         if (_impl->deactivate(true)) {
             return true;
         }
     }
-
-    _activePICC.clear();
     return _impl->deactivate(false);
 }
 
@@ -182,6 +180,10 @@ bool NFCLayerA::identify(m5::nfc::a::PICC& picc)
     bool ret = identify_picc(picc);
     deactivate();
     return ret;
+}
+
+bool NFCLayerA::getVersion(uint8_t rx, uint16_t& rx_len)
+{
 }
 
 bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
@@ -201,11 +203,13 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         }
 
         // GetVersion(L4)
-        uint8_t ver[8]{};
+        uint8_t ver[16]{};
         if (_impl->mifare_get_version_L4(ver)) {
             type = version4_to_type(picc.sub_type, ver);
+            // m5::utility::log::dump(ver, 16, false);
         } else {
             //  Check historical bytes
+            // m5::utility::log::dump(ats.historical.data(), ats.historical_len, false);
             type = historical_bytes_to_type_sak20(picc.sub_type, ats.historical.data(), ats.historical_len, picc.atqa);
         }
         // If it's still unclassify at this stage, read more in SystemFile
@@ -519,8 +523,10 @@ bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const
 bool NFCLayerA::dump(const Key& mkey)
 {
     if (_activePICC.valid()) {
-        if (_activePICC.isMifareClassic()) {
-            return dump_sector_structure(_activePICC, mkey);
+        if (_activePICC.isMifareClassic() || _activePICC.isMifarePlus()) {
+            Key keytmp{};
+            //            return dump_sector_structure(_activePICC, mkey);
+            return dump_sector_structure(_activePICC, keytmp);
         } else if (_activePICC.supportsNFC()) {
             return dump_page_structure(_activePICC.blocks);
         }

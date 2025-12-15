@@ -115,11 +115,11 @@ constexpr uint8_t user_block_table[][2] = {
     {4, 39},   // 213 Exclusive 0-3 and last 5 pages
     {4, 129},  // 215 Exclusive 0-3 and last 5 pages
     {4, 225},  // 216 Exclusive 0-3 and last 5 pages
-    //
+    // ST25TA
     {0, 0},
     {0, 0},
     {0, 0},
-    //
+    // 14443-4
     {0, 0},
     // Plus
     {1, 126},
@@ -151,6 +151,7 @@ constexpr uint16_t user_area_size_table[] = {
     240,  752,  1504, 3440,                 // Classic
     48,   48,   128,  40,   144,            // Light
     144,  48,   144,  208,  144, 504, 888,  // NTAG
+    0,    0,    0,                          // ST25
     0,                                      //
     1504, 3440, 752,                        // Plus
     0,    0,    0,                          // Desfire
