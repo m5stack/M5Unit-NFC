@@ -17,7 +17,6 @@ using namespace m5::unit::st25r3916;
 using namespace m5::nfc::b;
 
 namespace m5 {
-namespace unit {
 namespace nfc {
 
 //
@@ -28,8 +27,8 @@ struct AdapterST25R3916ForB final : NFCLayerB::Adapter {
 
     bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
                     const bool rx_crc) override;
-    bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms, const bool rx_crc) override;
-    bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) override;
+    bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) override;
+    bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc) override;
 
     UnitST25R3916& _u;
 };
@@ -40,15 +39,15 @@ bool AdapterST25R3916ForB::transceive(uint8_t* rx, uint16_t& rx_len, const uint8
     return _u.nfcbTransceive(rx, rx_len, tx, tx_len, timeout_ms, rx_crc);
 }
 
-bool AdapterST25R3916ForB::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
-                                    const bool rx_crc)
+bool AdapterST25R3916ForB::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
+
 {
-    return _u.nfcbTransmit(tx, tx_len, timeout_ms, rx_crc);
+    return _u.nfcbTransmit(tx, tx_len, timeout_ms);
 }
 
-bool AdapterST25R3916ForB::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
+bool AdapterST25R3916ForB::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc)
 {
-    return _u.nfcbReceive(rx, rx_len, timeout_ms);
+    return _u.nfcbReceive(rx, rx_len, timeout_ms, rx_crc);
 }
 
 //
@@ -59,14 +58,14 @@ std::unique_ptr<NFCLayerB::Adapter> make_st25r3916_adapter(UnitST25R3916& u)
 }
 }  // namespace
 
-NFCLayerB::NFCLayerB(UnitST25R3916& u) : _impl(make_st25r3916_adapter(u)), _ndef{*this}
+NFCLayerB::NFCLayerB(UnitST25R3916& u) : _ndef{*this}, _isoDEP{*this}, _impl(make_st25r3916_adapter(u))
 {
 }
 
-NFCLayerB::NFCLayerB(CapST25R3916& u) : _impl(make_st25r3916_adapter(static_cast<UnitST25R3916&>(u))), _ndef{*this}
+NFCLayerB::NFCLayerB(CapST25R3916& u)
+    : _ndef{*this}, _isoDEP{*this}, _impl(make_st25r3916_adapter(static_cast<UnitST25R3916&>(u)))
 {
 }
 
 }  // namespace nfc
-}  // namespace unit
 }  // namespace m5

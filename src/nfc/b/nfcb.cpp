@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 /*!
-  @file nfcb.hpp
+  @file nfcb.cpp
   @brief NFC-B definitions
 */
 #include "nfcb.hpp"
@@ -40,6 +40,7 @@ uint16_t maximum_frame_length(const uint8_t protocol[3])
     }
     return 0;
 }
+
 
 //
 std::string PICC::pupiAsString() const

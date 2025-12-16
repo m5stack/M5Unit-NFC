@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <esp_random.h>
 
+using namespace m5::nfc;
 using namespace m5::nfc::b;
 using namespace m5::nfc::ndef;
 
@@ -45,8 +46,23 @@ constexpr uint8_t required_slots(const Require slots)
 }  // namespace
 
 namespace m5 {
-namespace unit {
 namespace nfc {
+
+bool NFCLayerB::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                           const uint32_t timeout_ms, const bool rx_crc)
+{
+    return _impl->transceive(rx, rx_len, tx, tx_len, timeout_ms, rx_crc);
+}
+
+bool NFCLayerB::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
+{
+    return _impl->transmit(tx, tx_len, timeout_ms);
+}
+
+bool NFCLayerB::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc)
+{
+    return _impl->receive(rx, rx_len, timeout_ms, rx_crc);
+}
 
 bool NFCLayerB::detect(m5::nfc::b::PICC& picc, const uint8_t afi, const uint32_t timeout_ms)
 {
@@ -101,22 +117,22 @@ bool NFCLayerB::select(m5::nfc::b::PICC& picc)
     // ATTRIB
     uint8_t cmd[1 + 4 + 1 + 1 + 1 + 1] = {m5::stl::to_underlying(Command::ATTRIB)};  // without option
     memcpy(cmd + 1, picc.pupi, 4);
-    cmd[5] = 0x00;                          // PARAM1
-    cmd[6] = picc.maximumFrmeLengthBits();  // PARAM2 | com speed
-    cmd[7] = picc.protocol[1] & 0x0F;       // PARAM 3protocol type
-    cmd[8] = 0x00;                          // PARAM 4
+    cmd[5] = 0x00;                           // PARAM1
+    cmd[6] = picc.maximumFrameLengthBits();  // PARAM2 | com speed
+    cmd[7] = picc.protocol[1] & 0x0F;        // PARAM 3protocol type
+    cmd[8] = 0x00;                           // PARAM 4
 
     std::vector<uint8_t> frame;
     frame.assign(cmd, cmd + sizeof(cmd));
 
     uint8_t rx[128]{};
     uint16_t rx_len = sizeof(rx);
-    if (!_impl->transceive(rx, rx_len, frame.data(), frame.size(), TIMEOUT_ATTRIB) || !rx_len) {
+    if (!transceive(rx, rx_len, frame.data(), frame.size(), TIMEOUT_ATTRIB) || !rx_len) {
         M5_LIB_LOGE("Failed to select");
         return false;
     }
-    //m5::utility::log::dump(rx, rx_len, false);
-    // rx[0]  MBLI(7:4) CID(3:0) 
+
+    _activePICC = picc;
     return true;
 }
 
@@ -127,7 +143,7 @@ bool NFCLayerB::hlt(const uint8_t pupi[4])
         memcpy(cmd + 1, pupi, 4);
         uint8_t rx[1]{};
         uint16_t rx_len = sizeof(rx);
-        if (!_impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_HLTB) || rx_len < 1) {
+        if (!transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_HLTB) || rx_len < 1) {
             M5_LIB_LOGE("Failed to hlt %02X%02X%02X%02X", cmd[1], cmd[2], cmd[3], cmd[4]);
             return false;
         }
@@ -146,7 +162,7 @@ bool NFCLayerB::deselect(const uint8_t pupi[4], const uint8_t cid)
     uint8_t rx[2]{};
     uint16_t rx_len = cmd_len;
 
-    if (!_impl->transceive(rx, rx_len, cmd, cmd_len, TIMEOUT_DESELECT) || rx_len < cmd_len) {
+    if (!transceive(rx, rx_len, cmd, cmd_len, TIMEOUT_DESELECT) || rx_len < cmd_len) {
         M5_LIB_LOGE("Failed to deselecte %02X:%02X", cmd[0], cmd[1]);
         return false;
     }
@@ -184,8 +200,7 @@ bool NFCLayerB::request_wakeup(uint8_t* atqb, uint16_t& atqb_len, const uint8_t 
     atqb_len              = 0;
 
     // Ignore non-responsive slots and proceed to the next one.
-    if (_impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_REQ_WUP_B, true) && rx_len == sizeof(rx) &&
-        rx[0] == 0x50) {
+    if (transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_REQ_WUP_B, true) && rx_len == sizeof(rx) && rx[0] == 0x50) {
         // Occur collision if CRC error
         const uint16_t crc = crc16.range(rx, ATQB_LENGTH + 1);
         if (crc == ((uint16_t)rx[13] << 8 | rx[12])) {
@@ -200,8 +215,8 @@ bool NFCLayerB::request_wakeup(uint8_t* atqb, uint16_t& atqb_len, const uint8_t 
         rx_len         = sizeof(rx);
         slot_marker[0] = ((uint8_t)i << 4) | 0x05;
         // Ignore non-responsive slots and proceed to the next one.
-        if (!_impl->transceive(rx, rx_len, slot_marker, sizeof(slot_marker), TIMEOUT_REQ_WUP_B, true) ||
-            rx[0] != 0x50 || rx_len < sizeof(rx)) {
+        if (!transceive(rx, rx_len, slot_marker, sizeof(slot_marker), TIMEOUT_REQ_WUP_B, true) || rx[0] != 0x50 ||
+            rx_len < sizeof(rx)) {
             continue;
         }
         // Occur collision if CRC error
@@ -216,5 +231,4 @@ bool NFCLayerB::request_wakeup(uint8_t* atqb, uint16_t& atqb_len, const uint8_t 
 }
 
 }  // namespace nfc
-}  // namespace unit
 }  // namespace m5

@@ -16,7 +16,9 @@
 #ifndef M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_B_HPP
 #define M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_B_HPP
 
+#include "nfc_layer.hpp"
 #include "nfc/b/nfcb.hpp"
+#include "nfc/isodep/isoDEP.hpp"
 #include "ndef_layer.hpp"
 #include <vector>
 #include <memory>
@@ -26,18 +28,28 @@ namespace m5 {
 namespace unit {
 class UnitST25R3916;
 class CapST25R3916;
-
+}  // namespace unit
 namespace nfc {
 
 /*!
   @class NFCLayerB
   @brief Common interface layer for each chip of the NFC-V reader
  */
-class NFCLayerB : public m5::nfc::NFCLayerInterface {
+class NFCLayerB : public NFCLayerInterface {
 public:
     struct Adapter;
-    explicit NFCLayerB(UnitST25R3916& u);
-    explicit NFCLayerB(CapST25R3916& u);
+    explicit NFCLayerB(m5::unit::UnitST25R3916& u);
+    explicit NFCLayerB(m5::unit::CapST25R3916& u);
+
+    virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                            const uint32_t timeout_ms, const bool rx_crc = false) override;
+    virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) override;
+    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc) override;
+
+    m5::nfc::isodep::IsoDEP& isoDEP()
+    {
+        return _isoDEP;
+    }
 
     /*!
       @brief Is the specified PICC currently active?
@@ -121,7 +133,7 @@ public:
         return reactivate(_activePICC);
     }
 #endif
-    
+
     ///@}
 
     ///@name For activated PICC
@@ -166,10 +178,11 @@ protected:
 
 protected:
     m5::nfc::b::PICC _activePICC{};
+    m5::nfc::ndef::NDEFLayer _ndef;
+    m5::nfc::isodep::IsoDEP _isoDEP;
 
 private:
     std::unique_ptr<Adapter> _impl;
-    m5::nfc::ndef::NDEFLayer _ndef;
 };
 
 ///@cond
@@ -178,15 +191,13 @@ struct NFCLayerB::Adapter {
     virtual ~Adapter() = default;
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                            const uint32_t timeout_ms, const bool rx_crc = false)  = 0;
-    virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
-                          const bool rx_crc = false)                               = 0;
-    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) = 0;
+                            const uint32_t timeout_ms, const bool rx_crc = false)                             = 0;
+    virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)                = 0;
+    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc = false) = 0;
 };
 ///@endcond
 
 }  // namespace nfc
-}  // namespace unit
 }  // namespace m5
 
 #endif

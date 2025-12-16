@@ -1,0 +1,565 @@
+/*
+ * SPDX-FileCopyrightText: 2025 M5Stack Technology CO LTD
+ *
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+  @file isoDEP.cpp
+  @brief ISO Data Exchange Protocol
+*/
+#include "isoDEP.hpp"
+#include "nfc/layer/nfc_layer.hpp"
+#include "nfc/apdu/apdu.hpp"
+#include <M5Utility.hpp>
+#include <cstring>
+
+using namespace m5::nfc::apdu;
+
+namespace {
+inline bool is_i_block(uint8_t pcb)
+{
+    return (pcb & 0xC0) == 0x00;
+}
+
+inline bool is_r_block(uint8_t pcb)
+{
+    return (pcb & 0xC0) == 0x80;
+}
+
+inline bool is_s_block(uint8_t pcb)
+{
+    return (pcb & 0xC0) == 0xC0;
+}
+
+inline bool i_has_more(uint8_t pcb)
+{
+    return (pcb & 0x10) != 0;
+}
+
+inline uint8_t i_bn(uint8_t pcb)
+{
+    return (pcb >> 0) & 0x01;
+}
+
+inline bool is_s_wtx(uint8_t pcb)
+{
+    return (pcb & 0xC0) == 0xC0 && (pcb & 0x30) == 0x30;  // S-Block & WTX
+}
+
+inline bool is_valid_rblock(uint8_t pcb)
+{
+    // R-Block MUST bits: b6=1, b3=0, b2=1 (mask 0x26, val 0x22), type=0x80
+    return ((pcb & 0xC0) == 0x80) && ((pcb & 0x26) == 0x22);
+}
+
+inline bool r_is_nak(uint8_t pcb)
+{
+    return (pcb & 0x10) != 0;  // bit4 distinguishes ACK/NAK (0x10)
+}
+
+inline bool r_is_ack(uint8_t pcb)
+{
+    return !r_is_nak(pcb);
+}
+
+inline uint8_t get_wtxm(uint8_t inf)
+{
+    return inf & 0x3F;
+}
+
+inline bool is_valid_wtxm(uint8_t wtxm)
+{
+    return (wtxm >= 1) && (wtxm <= 59);
+}
+
+inline uint32_t mul_clamp_u32(uint32_t a, uint32_t b, uint32_t maxv)
+{
+    if (!a || !b) {
+        return 0;
+    }
+    if (a > maxv / b) {
+        return maxv;
+    }
+    uint32_t v = a * b;
+    return (v > maxv) ? maxv : v;
+}
+
+// I-Block PCB
+inline uint8_t make_i_pcb(uint8_t bn, bool more, bool has_cid, bool has_nad)
+{
+    uint8_t pcb = 0x02;  // I-Block base (0x00/0x02?)
+    pcb &= ~0x01;
+    pcb |= (bn & 0x01);
+    pcb |= more ? 0x10 : 0x00;
+    pcb |= has_cid ? 0x08 : 0x00;
+    pcb |= has_nad ? 0x04 : 0x00;
+    return pcb;
+}
+
+// R-Block ACK
+inline uint8_t make_r_ack(uint8_t bn, bool has_cid)
+{
+    uint8_t pcb = 0xA2;  // 0xA0 or 0xA2?
+    pcb &= ~0x01;
+    pcb |= (bn & 0x01);
+    pcb |= has_cid ? 0x08 : 0x00;
+    return pcb;
+}
+
+// S-Block WTX-ACK
+inline uint8_t make_s_wtx_ack(bool has_cid)
+{
+    uint8_t pcb = 0xF2;  // S(WTX)
+    pcb |= has_cid ? 0x08 : 0x00;
+    return pcb;
+}
+
+std::vector<uint8_t> remake_with_le(std::vector<uint8_t>& org, const uint16_t new_le)
+{
+    uint32_t org_len = org.size();
+
+    if (org_len < 4) {
+        return org;
+    }
+    uint8_t cla = org[0];
+    uint8_t ins = org[1];
+    uint8_t p1  = org[2];
+    uint8_t p2  = org[3];
+    uint16_t lc{};
+    uint8_t* data{};
+
+    if (org_len == 4) {                                                      // Case 1:[CLA INS P1 P2]
+        return make_apdu_case2(cla, static_cast<INS>(ins), p1, p2, new_le);  // Change to Case 2
+    }
+
+    if (org_len == 5) {  // Case 2: [CLA INS P1 P2 Le1]
+        return make_apdu_case2(cla, static_cast<INS>(ins), p1, p2, new_le);
+    }
+    if (org_len == 7 && org[4] == 0x00) {  // Case 2: [CLA INS P1 P2 00 Le3]
+        return make_apdu_case2(cla, static_cast<INS>(ins), p1, p2, new_le);
+    }
+
+    // short Lc: org[4] != 0x00, Lc=org[4]
+    if (org_len >= 5 && org[4] != 0x00) {
+        lc                      = org[4];
+        const uint16_t data_off = 5;
+        if (org_len < data_off + lc) {
+            return org;
+        }
+        data                = (lc ? (org.data() + data_off) : nullptr);
+        const uint16_t rest = org_len - (data_off + lc);
+        if (rest == 0) {  // Case 3: [CLA INS P1 P2 Lc1 Data]
+            return make_apdu_case4(cla, static_cast<INS>(ins), p1, p2, data, lc, new_le);
+        }
+        if (rest == 1) {  // Case 4: [CLA INS P1 P2 Lc1 Data] Le]
+            return make_apdu_case4(cla, static_cast<INS>(ins), p1, p2, data, lc, new_le);
+        }
+        return org;
+    }
+
+    // extended Lc cases: [CLA INS P1 P2 00 LcHi LcLo ...]
+    if (org_len >= 7 && org[4] == 0x00) {
+        lc                      = (uint16_t)((org[5] << 8) | org[6]);
+        const uint16_t data_off = 7;
+        if (org_len < data_off + lc) {
+            return org;
+        }
+        data                = lc ? (org.data() + data_off) : nullptr;
+        const uint16_t rest = (uint16_t)(org_len - (data_off + lc));
+        if (rest == 0) {  // Case 3: [CLA INS P1 P2 Lc3 Data]
+            return make_apdu_case4(cla, static_cast<INS>(ins), p1, p2, data, lc, new_le);
+        }
+        if (rest == 3) {  // Case 4: [CLA INS P1 P2 Lc3 Data] Le]
+            return make_apdu_case4(cla, static_cast<INS>(ins), p1, p2, data, lc, new_le);
+        }
+        return {};
+    }
+    return org;
+}
+
+}  // namespace
+
+namespace m5 {
+namespace nfc {
+namespace isodep {
+
+uint32_t fwi_to_ms(const uint8_t fwi, const float fc)
+{
+    if (fwi >= 15) {
+        return 0;
+    }
+    const uint8_t fwi_eff = (fwi == 0) ? 1 : fwi;
+    const float base_us   = (4096.0f / fc) * 1e6f;
+    const double fwt_us   = base_us * static_cast<float>(1u << fwi_eff);
+    uint32_t fwt_ms       = static_cast<uint32_t>(fwt_us / 1000.0);
+    return (fwt_ms != 0) ? fwt_ms : 1;
+}
+
+bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t* tx_inf, const uint16_t tx_inf_len,
+                           RxInfo* pinfo)
+{
+    RxInfo infoTmp{};
+    RxInfo* info = pinfo ? pinfo : &infoTmp;
+    *info        = {};
+
+    // Calculate the maximum amount of INF that can fit within the frame
+    const uint16_t overhead          = 1 + (_cfg.use_cid ? 1 : 0) + (_cfg.use_nad ? 1 : 0);
+    const uint16_t tx_frame_cap      = (_cfg.pcd_max_frame_tx > overhead) ? (_cfg.pcd_max_frame_tx - overhead) : 0;
+    const uint16_t max_inf_per_frame = (tx_frame_cap < _cfg.fsc) ? tx_frame_cap : _cfg.fsc;
+
+    const uint16_t rx_overhead_min = overhead;
+
+    uint8_t tx_buf[_cfg.pcd_max_frame_tx]{};
+    uint8_t rx_buf[_cfg.pcd_max_frame_rx]{};
+
+    uint16_t tx_off{};
+    uint16_t rx_written{};
+
+    // helper: TX then RX
+    auto exchange = [&](const uint8_t* tx, const uint16_t tx_len, uint8_t* rx, uint16_t& rx_len,
+                        const uint32_t timeout_ms, const bool rx_crc) -> bool {
+        if (!_tr.transmit(tx, tx_len, timeout_ms)) {
+            return false;
+        }
+        return _tr.receive(rx, rx_len, timeout_ms, rx_crc);
+    };
+
+    // Transmit chaining
+    while (tx_off < tx_inf_len) {
+        const uint16_t remain = tx_inf_len - tx_off;
+        const uint16_t chunk  = (remain > max_inf_per_frame) ? max_inf_per_frame : remain;
+        const bool more       = (tx_off + chunk) < tx_inf_len;
+
+        // Build I-Block
+        uint16_t tpos  = 0;
+        tx_buf[tpos++] = make_i_pcb(_block_num, more, _cfg.use_cid, _cfg.use_nad);
+        if (_cfg.use_cid) {
+            tx_buf[tpos++] = (uint8_t)(_cfg.cid & 0x0F);
+        }
+        if (_cfg.use_nad) {
+            tx_buf[tpos++] = _cfg.nad;
+        }
+        memcpy(tx_buf + tpos, tx_inf + tx_off, chunk);
+        tpos += chunk;
+
+        bool chunk_done = false;
+        uint8_t retries = 0;
+
+        while (!chunk_done) {
+            uint16_t rlen       = sizeof(rx_buf);
+            uint32_t timeout_ms = _cfg.fwt_ms;
+
+            // Send I-Block and receive first frame
+            if (!_tr.transceive(rx_buf, rlen, tx_buf, tpos, timeout_ms, _cfg.rx_crc)) {
+                if (retries++ < _cfg.max_retries) continue;
+                return false;
+            }
+
+            // Parse loop: WTX can replace rx_buf/rlen and we continue parsing without re-sending I-Block.
+            for (;;) {
+                if (rlen < 1) {
+                    if (retries++ < _cfg.max_retries) {
+                        // resend I-Block
+                        break;
+                    }
+                    return false;
+                }
+                if (_cfg.rx_crc && rlen >= 3) {
+                    rlen -= 2;
+                }
+
+                // (5) Minimum header check
+                if (rlen < rx_overhead_min) {
+                    if (retries++ < _cfg.max_retries) {
+                        // resend I-Block
+                        break;
+                    }
+                    return false;
+                }
+
+                const uint8_t pcb = rx_buf[0];
+
+                // --- S-Block (WTX) ---
+                if (is_s_wtx(pcb)) {
+                    info->wtx_seen = true;
+
+                    if (rlen < (uint16_t)(rx_overhead_min + 1)) {
+                        if (retries++ < _cfg.max_retries) {
+                            break;  // resend I-Block
+                        }
+                        return false;
+                    }
+
+                    const uint8_t wtxm = get_wtxm(rx_buf[rx_overhead_min]);
+                    if (!is_valid_wtxm(wtxm)) {
+                        return false;
+                    }
+
+                    uint8_t s_ack[3]{};
+                    uint16_t sp = 0;
+                    s_ack[sp++] = make_s_wtx_ack(_cfg.use_cid);
+                    if (_cfg.use_cid) s_ack[sp++] = (uint8_t)(_cfg.cid & 0x0F);
+                    s_ack[sp++] = wtxm;  // echo
+
+                    const uint32_t wtx_timeout = mul_clamp_u32(_cfg.fwt_ms, (uint32_t)wtxm, _cfg.wtx_max_ms);
+
+                    // Receive next frame after WTX-ACK (do NOT resend I-Block)
+                    rlen = sizeof(rx_buf);
+                    if (!exchange(s_ack, sp, rx_buf, rlen, wtx_timeout, _cfg.rx_crc)) {
+                        if (retries++ < _cfg.max_retries) {
+                            break;  // resend I-Block
+                        }
+                        return false;
+                    }
+                    // Parse the newly received frame in the same loop
+                    continue;
+                }
+
+                // --- other S-Block (not supported) ---
+                if (is_s_block(pcb)) {
+                    if (retries++ < _cfg.max_retries) {
+                        break;  // resend I-Block
+                    }
+                    return false;
+                }
+
+                // --- R-Block ---
+                if (is_r_block(pcb)) {
+                    if (!is_valid_rblock(pcb)) {
+                        if (retries++ < _cfg.max_retries) {
+                            break;  // resend I-Block
+                        }
+                        return false;
+                    }
+
+                    if (r_is_nak(pcb)) {
+                        if (retries++ < _cfg.max_retries) {
+                            break;  // resend I-Block
+                        }
+                        return false;
+                    }
+
+                    // ACK (chaining) -> next chunk
+                    if (r_is_ack(pcb) && more) {
+                        chunk_done = true;
+                        break;
+                    }
+
+                    // ACK but more==false: resend I-Block conservatively
+                    if (retries++ < _cfg.max_retries) {
+                        break;
+                    }
+                    return false;
+                }
+
+                // --- I-Block ---
+                if (is_i_block(pcb)) {
+                    uint16_t idx = 1;
+                    if (_cfg.use_cid) idx++;
+                    if (_cfg.use_nad) idx++;
+                    if (rlen < idx) {
+                        return false;
+                    }
+
+                    const uint16_t inf_len = (uint16_t)(rlen - idx);
+                    if (rx_written + inf_len > rx_inf_len) {
+                        return false;
+                    }
+
+                    memcpy(rx_inf + rx_written, rx_buf + idx, inf_len);
+                    rx_written = (uint16_t)(rx_written + inf_len);
+
+                    bool resp_more = i_has_more(pcb);
+                    info->more     = resp_more;
+
+                    // Response chaining: send R-ACK and receive next I-Block (WTX may appear)
+                    while (resp_more) {
+                        uint8_t r_ack[2]{};
+                        uint16_t rp = 0;
+                        r_ack[rp++] = make_r_ack(i_bn(pcb), _cfg.use_cid);
+                        if (_cfg.use_cid) r_ack[rp++] = (uint8_t)(_cfg.cid & 0x0F);
+
+                        uint16_t rlen2 = sizeof(rx_buf);
+                        if (!exchange(r_ack, rp, rx_buf, rlen2, _cfg.fwt_ms, _cfg.rx_crc)) {
+                            return false;
+                        }
+
+                        for (;;) {
+                            if (_cfg.rx_crc && rlen2 >= 3) rlen2 -= 2;
+                            if (rlen2 < rx_overhead_min) return false;
+
+                            const uint8_t pcb2 = rx_buf[0];
+
+                            // If any S-Block other than WTX exists within the chain,
+                            // it shall be treated as unsupported and result in failure.
+                            if (is_s_block(pcb2) && !is_s_wtx(pcb2)) {
+                                return false;
+                            }
+
+                            if (is_s_wtx(pcb2)) {
+                                info->wtx_seen = true;
+
+                                if (rlen2 < (uint16_t)(rx_overhead_min + 1)) return false;
+                                const uint8_t wtxm = get_wtxm(rx_buf[rx_overhead_min]);
+                                if (!is_valid_wtxm(wtxm)) return false;
+
+                                uint8_t s_ack[3]{};
+                                uint16_t sp = 0;
+                                s_ack[sp++] = make_s_wtx_ack(_cfg.use_cid);
+                                if (_cfg.use_cid) s_ack[sp++] = (uint8_t)(_cfg.cid & 0x0F);
+                                s_ack[sp++] = wtxm;
+
+                                const uint32_t wtx_timeout =
+                                    mul_clamp_u32(_cfg.fwt_ms, (uint32_t)wtxm, _cfg.wtx_max_ms);
+
+                                rlen2 = sizeof(rx_buf);
+                                if (!exchange(s_ack, sp, rx_buf, rlen2, wtx_timeout, _cfg.rx_crc)) {
+                                    return false;
+                                }
+                                continue;
+                            }
+
+                            if (is_r_block(pcb2)) {
+                                if (!is_valid_rblock(pcb2)) return false;
+                                if (r_is_nak(pcb2)) return false;
+
+                                // ACK: receive again
+                                rlen2 = sizeof(rx_buf);
+                                if (!_tr.receive(rx_buf, rlen2, _cfg.fwt_ms, _cfg.rx_crc)) {
+                                    return false;
+                                }
+                                continue;
+                            }
+
+                            if (!is_i_block(pcb2)) return false;
+
+                            uint16_t idx2 = 1 + (_cfg.use_cid ? 1 : 0) + (_cfg.use_nad ? 1 : 0);
+                            if (rlen2 < idx2) return false;
+
+                            const uint16_t inf_len2 = (uint16_t)(rlen2 - idx2);
+                            if (rx_written + inf_len2 > rx_inf_len) return false;
+
+                            memcpy(rx_inf + rx_written, rx_buf + idx2, inf_len2);
+                            rx_written = (uint16_t)(rx_written + inf_len2);
+
+                            resp_more = i_has_more(pcb2);
+                            break;
+                        }
+                    }
+
+                    // This chunk is completed
+                    chunk_done = true;
+                    break;
+                }
+
+                // Unknown frame type
+                if (retries++ < _cfg.max_retries) {
+                    break;  // resend I-Block
+                }
+                return false;
+            }  // for (;;) parse loop
+        }  // while (!chunk_done)
+
+        // next chunk
+        tx_off = (uint16_t)(tx_off + chunk);
+        _block_num ^= 1;
+    }
+
+    rx_inf_len = rx_written;
+    return true;
+}
+
+bool IsoDEP::transceiveAPDU(uint8_t* rx, uint16_t& rx_len, const uint8_t* cmd, const uint16_t cmd_len)
+{
+    if (!rx || rx_len < 2 || !cmd || cmd_len < 4) {
+        return false;
+    }
+
+    M5_LIB_LOGE(">>>> APDU");
+    m5::utility::log::dump(cmd, cmd_len, false);
+
+    // Save original command
+    const uint8_t* orig_cmd = cmd;
+    // const uint16_t orig_cmd_len = cmd_len;
+
+    // Cmd buffer
+    std::vector<uint8_t> cur_cmd(cmd, cmd + cmd_len);
+
+    // buffer for 0x61
+    std::vector<uint8_t> acc{};
+    acc.reserve(256);
+
+    constexpr uint8_t MAX_FOLLOW_61{8};
+    constexpr uint8_t MAX_RETRY_6C{2};
+    uint8_t follow61{}, retry6c{};
+    uint8_t sw1{}, sw2{};
+
+    for (;;) {
+        std::vector<uint8_t> tmp;
+        tmp.resize(rx_len);
+        uint16_t tmp_len = tmp.size();
+
+        if (!transceiveINF(tmp.data(), tmp_len, cur_cmd.data(), cur_cmd.size(), nullptr)) {
+            return false;
+        }
+        tmp.resize(tmp_len);
+        if (tmp.size() < 2) {
+            return false;
+        }
+        acc.insert(acc.end(), tmp.begin(), tmp.end() - 2 /* SW*/);
+
+        sw1 = tmp[tmp.size() - 2];
+        sw2 = tmp[tmp.size() - 1];
+
+        // 6Cxx: Wrong Le
+        if (sw1 == 0x6C) {
+            if (retry6c++ >= MAX_RETRY_6C) {
+                break;
+            }
+
+            const uint16_t new_le = (sw2 == 0x00) ? 256 : sw2;
+            auto cmd2             = remake_with_le(cur_cmd, new_le);
+            if (cmd2.empty()) {
+                return false;
+            }
+            // Purge acc
+            acc.clear();
+            cur_cmd = std::move(cmd2);
+            continue;
+        }
+
+        // 61xx: More data
+        if (sw1 == 0x61) {
+            if (follow61++ >= MAX_FOLLOW_61) {
+                break;
+            }
+
+            const uint16_t le = (sw2 == 0x00) ? 256 : sw2;
+            auto cmd2         = make_apdu_command(orig_cmd[0], INS::GET_RESPONSE, 0x00, 0x00, nullptr, 0, le);
+            if (cmd2.empty()) {
+                return false;
+            }
+            // Keep acc
+            cur_cmd = std::move(cmd2);
+            continue;
+        }
+
+        // OK or error
+        break;
+    }
+    const uint16_t need = acc.size() + 2 /*SW*/;
+    if (need > rx_len) {
+        return false;
+    }
+    if (!acc.empty()) {
+        std::memcpy(rx, acc.data(), acc.size());
+    }
+    rx[acc.size() + 0] = sw1;
+    rx[acc.size() + 1] = sw2;
+    rx_len             = need;
+    return true;
+}
+
+}  // namespace isodep
+}  // namespace nfc
+}  // namespace m5

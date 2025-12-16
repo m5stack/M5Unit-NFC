@@ -74,8 +74,25 @@ void rotate_byte_left(uint8_t out[8], const uint8_t in[8])
 }  // namespace
 
 namespace m5 {
-namespace unit {
 namespace nfc {
+
+bool NFCLayerA::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                           const uint32_t timeout_ms, const bool rx_crc)
+{
+    return _impl->transceive(rx, rx_len, tx, tx_len, timeout_ms, rx_crc);
+}
+
+bool NFCLayerA::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
+{
+    //    return _impl->transmit(tx, tx_len, timeout_ms);
+    return false;
+}
+
+bool NFCLayerA::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc)
+{
+    return false;
+    //    return _impl->receive(rx, rx_len, timeout_ms, rx_crc);
+}
 
 bool NFCLayerA::request(uint16_t& atqa)
 {
@@ -102,6 +119,7 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
     piccs.clear();
 
     auto timeout_at = m5::utility::millis() + timeout_ms;
+    M5_LIB_LOGE("======================>");
 
     do {
         PICC picc{};
@@ -111,17 +129,19 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
-        // M5_LIB_LOGE("ATQA:%04X", picc.atqa);
+        M5_LIB_LOGE("ATQA:%04X", picc.atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
-        // M5_LIB_LOGE("Detect:%04X %s %s", picc.atqa, picc.uidAsString().c_str(), picc.typeAsString().c_str());
+        M5_LIB_LOGE("Detect:ATQA:%04X SAK:%02X %s %s", picc.atqa, picc.sak, picc.uidAsString().c_str(),
+                    picc.typeAsString().c_str());
 
         // Hlt
         if (!deactivate()) {
-            M5_LIB_LOGD("Failed to deactivate");
+            M5_LIB_LOGE("Failed to deactivate");
+            M5_LIB_LOGE("======================>");
             return false;
         }
 
@@ -129,6 +149,7 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
         push_back_picc(piccs, picc);
 
     } while (m5::utility::millis() <= timeout_at);
+    M5_LIB_LOGE("======================>");
 
     return !piccs.empty();
 }
@@ -137,6 +158,12 @@ bool NFCLayerA::select(m5::nfc::a::PICC& picc)
 {
     _activePICC = PICC{};
     if (_impl->select(picc)) {
+        if (picc.isISO14443_4()) {
+            M5_LIB_LOGE(">>> ISO4");
+            if (!_impl->nfca_request_ats(picc.ats)) {
+                return false;
+            }
+        }
         _activePICC = picc;
         return true;
     }
@@ -147,9 +174,18 @@ bool NFCLayerA::activate(const PICC& picc)
 {
     _activePICC = PICC{};
     if (_impl->activate(picc)) {
+        if (picc.isISO14443_4()) {
+            ATS discard{};
+            if (!_impl->nfca_request_ats(discard)) {
+                M5_LIB_LOGE("Failed to RATS");
+                return false;
+            }
+        }
         _activePICC = picc;
+        M5_LIB_LOGE("ACTIVATED %u", _activePICC.isISO14443_4());
         return true;
     }
+    M5_LIB_LOGE("Failed to select");
     return false;
 }
 
@@ -158,18 +194,30 @@ bool NFCLayerA::reactivate(const PICC& picc)
     PICC tmp = picc;
     uint16_t discard{};
     if (deactivate()) {
-        //        m5::utility::delay(2); // guard time (ULC)
-        return wakeup(discard) && activate(tmp);
+        // m5::utility::delay(2);  // guard time (ULC)
+        //  return wakeup(discard) && activate(tmp);
+        if (!wakeup(discard)) {
+            M5_LIB_LOGE("Failed to wakeup");
+            return false;
+        }
+        if (!activate(tmp)) {
+            M5_LIB_LOGE("Failed to activate");
+            return false;
+        }
+        return true;
     }
+    M5_LIB_LOGE("Failed to deactivate");
     return false;
 }
 
 bool NFCLayerA::deactivate()
 {
+    auto tmp    = _activePICC;
     _activePICC = PICC{};
-    if (_activePICC.isISO14443_4()) {
-        if (_impl->deactivate(true)) {
-            return true;
+
+    if (tmp.isISO14443_4()) {
+        if (!_impl->deactivate(true)) {
+            return false;
         }
     }
     return _impl->deactivate(false);
@@ -182,26 +230,17 @@ bool NFCLayerA::identify(m5::nfc::a::PICC& picc)
     return ret;
 }
 
-bool NFCLayerA::getVersion(uint8_t rx, uint16_t& rx_len)
-{
-}
-
 bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
 {
     Type type{};
 
     if (!reactivate(picc)) {
+        M5_LIB_LOGE("ERR1");
         return false;
     }
 
     // ISO_14443_4 series
-    if (picc.type == Type::ISO_14443_4) {
-        // RATS
-        ATS ats{};
-        if (!_impl->nfca_request_ats(ats)) {
-            return false;
-        }
-
+    if (picc.isISO14443_4()) {
         // GetVersion(L4)
         uint8_t ver[16]{};
         if (_impl->mifare_get_version_L4(ver)) {
@@ -210,7 +249,8 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         } else {
             //  Check historical bytes
             // m5::utility::log::dump(ats.historical.data(), ats.historical_len, false);
-            type = historical_bytes_to_type_sak20(picc.sub_type, ats.historical.data(), ats.historical_len, picc.atqa);
+            type = historical_bytes_to_type_sak20(picc.sub_type, picc.ats.historical.data(), picc.ats.historical_len,
+                                                  picc.atqa);
         }
         // If it's still unclassify at this stage, read more in SystemFile
         if (type != Type::Unknown) {
@@ -218,7 +258,7 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
             picc.blocks = get_number_of_blocks(picc.type);
             return true;
         }
-        M5_LIB_LOGW("NEED MORE!!");
+        M5_LIB_LOGW("NEED MORE!! %u", _activePICC.isISO14443_4());
         return true;
     }
 
@@ -233,6 +273,7 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         }
         //  The PICC goes idle when sending an external command, so select again
         if (!reactivate(picc)) {
+            M5_LIB_LOGE("ERR3");
             return false;
         }
         // Try ULC Auth
@@ -242,6 +283,7 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         picc.blocks = get_number_of_blocks(picc.type);
         return true;
     }
+    // Not changed
     return true;
 }
 
@@ -524,11 +566,11 @@ bool NFCLayerA::dump(const Key& mkey)
 {
     if (_activePICC.valid()) {
         if (_activePICC.isMifareClassic() || _activePICC.isMifarePlus()) {
-            Key keytmp{};
-            //            return dump_sector_structure(_activePICC, mkey);
-            return dump_sector_structure(_activePICC, keytmp);
+            return dump_sector_structure(_activePICC, mkey);
         } else if (_activePICC.supportsNFC()) {
             return dump_page_structure(_activePICC.blocks);
+        } else if (_activePICC.isISO14443_4()) {
+            return dump_iso_dep();
         }
         M5_LIB_LOGW("Not supported %s", _activePICC.typeAsString().c_str());
     }
@@ -876,6 +918,7 @@ bool NFCLayerA::dump_sector_structure(const PICC& picc, const Key& key)
         "Sec[Blk]:00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F [Access]\n"
         "-----------------------------------------------------------------");
 
+    bool ret{true};
     for (int_fast8_t sector = 0; sector < sectors; ++sector) {
         auto sblock = get_sector_trailer_block_from_sector(sector);
         if (mifareClassicAuthenticateA(sblock, key)) {
@@ -884,11 +927,11 @@ bool NFCLayerA::dump_sector_structure(const PICC& picc, const Key& key)
                 return false;
             }
         } else {
-            M5_LIB_LOGE("Failed to AUTH %u", sblock);
+            M5_LIB_LOGD("Failed to AUTH %u", sblock);
             return false;
         }
     }
-    return true;
+    return ret;
 }
 
 bool NFCLayerA::dump_sector(const uint8_t sector)
@@ -975,6 +1018,13 @@ bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)
     return false;
 }
 
+bool NFCLayerA::dump_iso_dep()
+{
+    M5_LIB_LOGE("=========== NOT YET");
+
+    return true;
+}
+
 bool NFCLayerA::push_back_picc(std::vector<m5::nfc::a::PICC>& v, const m5::nfc::a::PICC& picc)
 {
     // Keep unique valid PICC
@@ -1018,5 +1068,4 @@ bool NFCLayerA::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_
 }
 
 }  // namespace nfc
-}  // namespace unit
 }  // namespace m5

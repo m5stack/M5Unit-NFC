@@ -19,7 +19,6 @@ using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
 namespace m5 {
-namespace unit {
 namespace nfc {
 //
 struct AdapterST25R3916ForA final : NFCLayerA::Adapter {
@@ -31,6 +30,9 @@ struct AdapterST25R3916ForA final : NFCLayerA::Adapter {
     {
         return m5::unit::st25r3916::MAX_FIFO_DEPTH;
     }
+
+    virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                            const uint32_t timeout_ms, const bool rx_crc = false) override;
 
     virtual bool request(uint16_t& atqa) override;
     virtual bool wakeup(uint16_t& atqa) override;
@@ -60,6 +62,13 @@ struct AdapterST25R3916ForA final : NFCLayerA::Adapter {
     UnitST25R3916& _u;
 };
 
+bool AdapterST25R3916ForA::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                                      const uint32_t timeout_ms, const bool rx_crc)
+{
+    //    return _u.nfcaTransceive(rx, rx_len, tx, tx_len, timeout_ms, rx_crc);
+    return _u.nfcaTransceive(rx, rx_len, tx, tx_len, timeout_ms);
+}
+
 bool AdapterST25R3916ForA::request(uint16_t& atqa)
 {
     return _u.nfcaRequest(atqa);
@@ -74,7 +83,9 @@ bool AdapterST25R3916ForA::select(m5::nfc::a::PICC& picc)
 {
     uint8_t lv{1};  // Cascade level 1-3
     bool completed{};
-    picc = PICC{};
+    auto atqa = picc.atqa;
+    picc      = PICC{};
+    picc.atqa = atqa;
     do {
         if (!_u.nfcaSelectWithAnticollision(completed, picc, lv)) {
             return false;
@@ -163,14 +174,14 @@ std::unique_ptr<NFCLayerA::Adapter> make_st25r3916_adapter(UnitST25R3916& u)
 }
 }  // namespace
 
-NFCLayerA::NFCLayerA(UnitST25R3916& u) : _impl(make_st25r3916_adapter(u)), _ndef{*this}
+NFCLayerA::NFCLayerA(UnitST25R3916& u) : _ndef{*this}, _isoDEP{*this}, _impl(make_st25r3916_adapter(u))
 {
 }
 
-NFCLayerA::NFCLayerA(CapST25R3916& u) : _impl(make_st25r3916_adapter(static_cast<UnitST25R3916&>(u))), _ndef{*this}
+NFCLayerA::NFCLayerA(CapST25R3916& u)
+    : _ndef{*this}, _isoDEP(*this), _impl(make_st25r3916_adapter(static_cast<UnitST25R3916&>(u)))
 {
 }
 
 }  // namespace nfc
-}  // namespace unit
 }  // namespace m5

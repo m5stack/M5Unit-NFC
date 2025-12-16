@@ -26,6 +26,9 @@
 #include "nfc/layer/nfc_layer_f.hpp"
 #include "nfc/layer/nfc_layer_v.hpp"
 
+#include "nfc/isodep/nfc_b_file_system.hpp"
+#include "nfc/isodep/desfire_file_system.hpp"
+
 /*!
   @namespace m5
   @brief Top level namespace of M5stack

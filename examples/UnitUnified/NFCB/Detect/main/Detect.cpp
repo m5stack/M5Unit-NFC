@@ -39,7 +39,7 @@ m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
 #else
 #error Choose unit please!
 #endif
-m5::unit::nfc::NFCLayerB nfc_b{unit};
+m5::nfc::NFCLayerB nfc_b{unit};
 }  // namespace
 
 void setup()

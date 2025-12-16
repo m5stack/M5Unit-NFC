@@ -48,7 +48,6 @@ constexpr char dump_line[] =
 }  // namespace
 
 namespace m5 {
-namespace unit {
 namespace nfc {
 
 bool NFCLayerV::detect(PICC& picc, const uint32_t timeout_ms)
@@ -306,5 +305,4 @@ bool NFCLayerV::dump_block(const uint8_t block)
 }
 
 }  // namespace nfc
-}  // namespace unit
 }  // namespace m5

@@ -17,7 +17,6 @@ using namespace m5::unit::st25r3916;
 using namespace m5::nfc::f;
 
 namespace m5 {
-namespace unit {
 namespace nfc {
 
 //
@@ -97,5 +96,4 @@ NFCLayerV::NFCLayerV(CapST25R3916& u) : _impl(make_st25r3916_adapter(static_cast
 }
 
 }  // namespace nfc
-}  // namespace unit
 }  // namespace m5

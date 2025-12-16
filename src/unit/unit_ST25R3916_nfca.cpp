@@ -194,6 +194,7 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
             return true;
         }
     }
+    M5_LIB_LOGE("NO RXE");
     return is_irq32_collision(irq);
 }
 
@@ -553,8 +554,12 @@ bool UnitST25R3916::nfcaRequestATS(m5::nfc::a::ATS& ats, const uint8_t fsdi, con
     uint16_t rx_len = sizeof(rx);
     uint8_t cmd[2]  = {m5::stl::to_underlying(Command::RATS)};
     cmd[1]          = ((fsdi & 0x0F) << 4) | (cid & 0x0F);
+    cmd[1]          = 0x80;
 
     if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_RATS) || rx_len < 7) {
+        //       if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), 300) || rx_len < 7) {
+        M5_LIB_LOGE("Failed to RATS %u", rx_len);
+        M5_DUMPE(cmd, sizeof(cmd));
         return false;
     }
     // M5_LIB_LOGE(">>>>ATS %u bytes", rx_len);
@@ -712,7 +717,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const PICC& p
         return false;
     }
 
-    M5_LIB_LOGE("AUTH:%02X %u %02X:%02X:%02X:%02X:%02X:%02X", cmd, block,  //
+    M5_LIB_LOGV("AUTH:%02X %u %02X:%02X:%02X:%02X:%02X:%02X", cmd, block,  //
                 mkey[0], mkey[1], mkey[2], mkey[3], mkey[4], mkey[5]);
 
     // 3-pass mutual authentication

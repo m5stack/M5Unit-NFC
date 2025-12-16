@@ -16,28 +16,28 @@
 #ifndef M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_V_HPP
 #define M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_V_HPP
 
+#include "nfc_layer.hpp"
 #include "nfc/v/nfcv.hpp"
 #include "ndef_layer.hpp"
 #include <vector>
 #include <memory>
 
 namespace m5 {
-
 namespace unit {
 class UnitST25R3916;
 class CapST25R3916;
-
+}  // namespace unit
 namespace nfc {
 
 /*!
   @class NFCLayerV
   @brief Common interface layer for each chip of the NFC-V reader
  */
-class NFCLayerV : public m5::nfc::NFCLayerInterface {
+class NFCLayerV : public NFCLayerInterface {
 public:
     struct Adapter;
-    explicit NFCLayerV(UnitST25R3916& u);
-    explicit NFCLayerV(CapST25R3916& u);
+    explicit NFCLayerV(m5::unit::UnitST25R3916& u);
+    explicit NFCLayerV(m5::unit::CapST25R3916& u);
 
     /*!
       @brief Is the specified PICC currently active?
@@ -234,6 +234,5 @@ struct NFCLayerV::Adapter {
 ///@endcond
 
 }  // namespace nfc
-}  // namespace unit
 }  // namespace m5
 #endif

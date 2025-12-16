@@ -40,7 +40,7 @@ m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
 #else
 #error Choose unit please!
 #endif
-m5::unit::nfc::NFCLayerV nfc_v{unit};
+m5::nfc::NFCLayerV nfc_v{unit};
 
 // PNG image binary
 constexpr uint8_t poji_64_png[] = {

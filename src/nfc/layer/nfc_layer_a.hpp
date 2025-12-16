@@ -17,7 +17,9 @@
 #ifndef M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_A_HPP
 #define M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_A_HPP
 
+#include "nfc_layer.hpp"
 #include "nfc/a/nfca.hpp"
+#include "nfc/isodep/isoDEP.hpp"
 #include "ndef_layer.hpp"
 #include <vector>
 #include <memory>
@@ -29,6 +31,7 @@ class UnitMFRC522;  // M5Unit-RFID
 class UnitWS1850S;  // M5Unit-RFID
 class UnitST25R3916;
 class CapST25R3916;
+}  // namespace unit
 
 namespace nfc {
 
@@ -39,10 +42,15 @@ namespace nfc {
 class NFCLayerA : public m5::nfc::NFCLayerInterface {
 public:
     struct Adapter;
-    explicit NFCLayerA(UnitMFRC522& u);  //  The implementation of this function is located in M5Unit-RFID
-    explicit NFCLayerA(UnitWS1850S& u);  // The implementation of this function is located in M5Unit-RFID
-    explicit NFCLayerA(UnitST25R3916& u);
-    explicit NFCLayerA(CapST25R3916& u);
+    explicit NFCLayerA(m5::unit::UnitMFRC522& u);  //  The implementation of this function is located in M5Unit-RFID
+    explicit NFCLayerA(m5::unit::UnitWS1850S& u);  // The implementation of this function is located in M5Unit-RFID
+    explicit NFCLayerA(m5::unit::UnitST25R3916& u);
+    explicit NFCLayerA(m5::unit::CapST25R3916& u);
+
+    virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                            const uint32_t timeout_ms, const bool rx_crc = false) override;
+    virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) override;
+    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc) override;
 
     /*!
       @brief Is the specified PICC currently active?
@@ -441,13 +449,6 @@ public:
     bool ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs);
     ///@}
 
-
-
-    bool getVersion(uint8_t rx, uint16_t& rx_len);
-    
-
-
-    
 protected:
     virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
     virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override;
@@ -487,15 +488,17 @@ protected:
     bool dump_sector(const uint8_t sector);
     bool dump_page_structure(const uint16_t maxPage);
     bool dump_page(const uint8_t page, const uint16_t maxPage);
+    bool dump_iso_dep();
 
     static bool push_back_picc(std::vector<m5::nfc::a::PICC>& v, const m5::nfc::a::PICC& picc);
 
 protected:
     m5::nfc::a::PICC _activePICC{};
+    m5::nfc::ndef::NDEFLayer _ndef;
+    m5::nfc::isodep::IsoDEP _isoDEP;
 
 private:
     std::unique_ptr<Adapter> _impl;
-    m5::nfc::ndef::NDEFLayer _ndef;
 };
 
 ///@cond
@@ -504,6 +507,9 @@ struct NFCLayerA::Adapter {
     virtual ~Adapter() = default;
 
     virtual uint16_t max_fifo_depth() = 0;
+
+    virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                            const uint32_t timeout_ms, const bool rx_crc = false) = 0;
 
     virtual bool request(uint16_t& atqa) = 0;
     virtual bool wakeup(uint16_t& atqa)  = 0;
@@ -533,7 +539,6 @@ struct NFCLayerA::Adapter {
 ///@endcond
 
 }  // namespace nfc
-}  // namespace unit
 }  // namespace m5
 
 #endif

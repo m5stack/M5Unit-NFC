@@ -247,6 +247,7 @@ struct PICC {
     uint8_t uid[10]{};  //!< uid (Valid up to the value of size)
     uint16_t atqa{};    //!< ATQA
     uint16_t blocks{};  //!< Number of the blocks or pages
+    ATS ats{};          //!< RATS for ISO 14443-4
     union {
         uint8_t sub_type{};               //!< uint8_t access
         SubTypePlus sub_type_plus;        //!< For Plus
@@ -259,7 +260,7 @@ struct PICC {
     //! @brief Valid?
     inline bool valid() const
     {
-        return (size == 4 || size == 7 || size == 10) && (type != Type::Unknown) && blocks;
+        return (size == 4 || size == 7 || size == 10) && (type != Type::Unknown) && (isISO14443_4() || blocks);
     }
     //! @brief Retrieve the last 4 bytes of UID
     void tail4(uint8_t buf[4]) const
@@ -415,15 +416,6 @@ enum class Command : uint8_t {
     READ_SIG    = 0x3C,  //!< NTAG 21x Read NXP ECC signature
     WRITE_SIG   = 0xA9,  //!< NTAG 210u Write custom signature
     LOCK_SIG    = 0xAC,  //!< NTAG 210u Lock/Unlock signature
-    // ISO/IEC 7816
-    SELECT           = 0xA4, //!< Select Application or file
-    READ_BINARY           = 0xB0, //!< Read binary data 
-    UPDATE_BINARY         = 0xD6, //!< Write binary data
-    READ_RECORDS          = 0xB2, //!< Read recode data
-    APPEND_RECORD         = 0xE2, //!< pend recored data
-    GET_CHALLENGE         = 0x84,
-    INTERNAL_AUTHENTICATE = 0x88,
-    EXTERNAL_AUTHENTICATE = 0x82,
 
 };
 

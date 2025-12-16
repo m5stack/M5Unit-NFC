@@ -64,6 +64,8 @@ const uint8_t FRAME_OPTION_NAD{0x02};
 const uint8_t FRAME_OPTION_CID{0x01};
 ///@}
 
+///@name ATQB protocol
+///@{
 //! @breif Get maxumum frame length from protocl bytes
 uint16_t maximum_frame_length(const uint8_t protocol[3]);
 
@@ -83,6 +85,12 @@ inline uint8_t get_frame_option(const uint8_t protocol[3])
 {
     return protocol ? (protocol[2] & 0x03) : 0x00;
 }
+//! @brief Gets the FWI
+inline uint8_t get_fwi(const uint8_t protocol[3])
+{
+    return protocol ? ((protocol[2] >> 4) & 0x0F) : 0x0F /*RFU*/;
+}
+///@}
 
 /*!
   @struct PICC
@@ -131,17 +139,21 @@ struct PICC {
     {
         return get_frame_option(protocol) & FRAME_OPTION_CID;
     }
-    inline uint16_t maximumFrmeLength() const
+    inline uint16_t maximumFrameLength() const
     {
         return maximum_frame_length(protocol);
     }
-    inline uint8_t maximumFrmeLengthBits() const
+    inline uint8_t maximumFrameLengthBits() const
     {
         return maximum_frame_length_bits(protocol);
     }
     inline uint8_t communicationSpeed() const
     {
         return protocol[0];
+    }
+    inline uint8_t fwi() const
+    {
+        return get_fwi(protocol);
     }
     ///@}
 };

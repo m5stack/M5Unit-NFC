@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <esp_random.h>
 
+using namespace m5::nfc;
 using namespace m5::nfc::f;
 using namespace m5::nfc::ndef;
 
@@ -64,7 +65,6 @@ const uint8_t* make_rc(uint8_t rc[16])
 }  // namespace
 
 namespace m5 {
-namespace unit {
 namespace nfc {
 
 bool NFCLayerF::polling(m5::nfc::f::PICC& picc, const uint16_t system_code, const m5::nfc::f::RequestCode request_code,
@@ -800,5 +800,4 @@ bool NFCLayerF::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_
 }
 
 }  // namespace nfc
-}  // namespace unit
 }  // namespace m5

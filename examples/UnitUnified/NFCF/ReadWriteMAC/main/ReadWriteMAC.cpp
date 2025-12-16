@@ -47,7 +47,7 @@ m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
 #else
 #error Choose unit please!
 #endif
-m5::unit::nfc::NFCLayerF nfc_f{unit};
+m5::nfc::NFCLayerF nfc_f{unit};
 
 // The master key used for create CK
 // For the sake of this example, it's written as source code, but it should actually outside externally (SD, Cloud...)
