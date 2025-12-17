@@ -24,8 +24,8 @@ bool FileSystem::selectFile(const uint8_t* aid, const uint8_t aid_len, const uin
         return false;
     }
 
-    auto cmd =
-        make_apdu_case4(0x00, INS::SELECT_FILE, param1, param2, aid, aid_len, need_select_file_le(param2) ? 256 : 0);
+    auto cmd = make_apdu_case4(0x00, m5::stl::to_underlying(INS::SELECT_FILE), param1, param2, aid, aid_len,
+                               need_select_file_le(param2) ? 256 : 0);
 
     uint8_t rx[256]{};
     uint16_t rx_len = sizeof(rx);
@@ -53,7 +53,7 @@ bool FileSystem::selectFile(const uint16_t fid, const uint8_t param1, const uint
         static_cast<uint8_t>(fid & 0xFF),
     };
 
-    auto cmd = make_apdu_case4(0x00, INS::SELECT_FILE, param1, param2, file_id, sizeof(file_id),
+    auto cmd = make_apdu_case4(0x00, m5::stl::to_underlying(INS::SELECT_FILE), param1, param2, file_id, sizeof(file_id),
                                (need_select_file_le(param2) && fid != 0x3F00) ? 256 : 0);
 
     uint8_t rx[256]{};
@@ -81,7 +81,7 @@ bool FileSystem::verify(const uint8_t* password, const uint16_t pass_len, const 
         return false;
     }
 
-    auto cmd = make_apdu_case3(0x00, INS::VERIFY, 0x00, param2, password, pass_len);
+    auto cmd = make_apdu_case3(0x00, m5::stl::to_underlying(INS::VERIFY), 0x00, param2, password, pass_len);
 
     uint8_t rx[2]{};
     uint16_t rx_len = sizeof(rx);
@@ -102,7 +102,6 @@ bool FileSystem::readBinary(std::vector<uint8_t>& out, const uint16_t offset,
 {
     out.clear();
 
-    // Le=0 は「Leなし」になってしまうので禁止（必要なら 256 を渡す）
     if (le == 0) {
         return false;
     }
@@ -110,7 +109,7 @@ bool FileSystem::readBinary(std::vector<uint8_t>& out, const uint16_t offset,
     const uint8_t p1 = static_cast<uint8_t>((offset >> 8) & 0xFF);
     const uint8_t p2 = static_cast<uint8_t>(offset & 0xFF);
 
-    auto cmd = make_apdu_case2(0x00, INS::READ_BINARY, p1, p2, le);
+    auto cmd = make_apdu_case2(0x00, m5::stl::to_underlying(INS::READ_BINARY), p1, p2, le);
 
     std::vector<uint8_t> rx;
     rx.resize(le + 2 + 16);

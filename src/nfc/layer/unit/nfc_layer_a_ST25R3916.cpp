@@ -32,7 +32,7 @@ struct AdapterST25R3916ForA final : NFCLayerA::Adapter {
     }
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                            const uint32_t timeout_ms, const bool rx_crc = false) override;
+                            const uint32_t timeout_ms) override;
 
     virtual bool request(uint16_t& atqa) override;
     virtual bool wakeup(uint16_t& atqa) override;
@@ -63,9 +63,8 @@ struct AdapterST25R3916ForA final : NFCLayerA::Adapter {
 };
 
 bool AdapterST25R3916ForA::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                      const uint32_t timeout_ms, const bool rx_crc)
+                                      const uint32_t timeout_ms)
 {
-    //    return _u.nfcaTransceive(rx, rx_len, tx, tx_len, timeout_ms, rx_crc);
     return _u.nfcaTransceive(rx, rx_len, tx, tx_len, timeout_ms);
 }
 

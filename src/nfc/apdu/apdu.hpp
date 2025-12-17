@@ -87,6 +87,10 @@ enum class INS : uint8_t {
     CHANGE_KEY        = 0x32,
     ERASE_ALL_RECORDS = 0x06,
     GET_VERSION       = 0x60,
+
+    // DESFire
+    DF_SELECT_APPLICATION  = 0x5A,
+    DF_GET_APPLICATION_IDS = 0x6A,
 };
 
 ///@}
@@ -126,32 +130,32 @@ void dump_tlv(const std::vector<TLV>& tlvs, const uint8_t depth = 0);
   @param rx_len Expected bytes to receive
   @return Constructed command data
  */
-std::vector<uint8_t> make_apdu_command(const uint8_t cla, const INS ins, const uint8_t param1 = 0x00,
+std::vector<uint8_t> make_apdu_command(const uint8_t cla, const uint8_t ins, const uint8_t param1 = 0x00,
                                        const uint8_t param2 = 0x00, const uint8_t* data = nullptr,
                                        const uint16_t data_len = 0, const uint16_t rx_len = 0);
 
 //!  @brief Make APDU case1 command [CLA | INS | P1 | P2]
-inline std::vector<uint8_t> make_apdu_case1(const uint8_t cla, const INS ins, const uint8_t p1, const uint8_t p2)
+inline std::vector<uint8_t> make_apdu_case1(const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2)
 {
     return make_apdu_command(cla, ins, p1, p2, nullptr, 0, 0);
 }
 
 //!  @brief Make APDU case2 command [CLA | INS | P1 | P2 | Le]
-inline std::vector<uint8_t> make_apdu_case2(const uint8_t cla, const INS ins, const uint8_t p1, const uint8_t p2,
+inline std::vector<uint8_t> make_apdu_case2(const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2,
                                             const uint16_t le)
 {
     return make_apdu_command(cla, ins, p1, p2, nullptr, 0, le);
 }
 
 //!  @brief Make APDU case3 command [CLA | INS | P1 | P2 | Lc | C-Data]
-inline std::vector<uint8_t> make_apdu_case3(const uint8_t cla, const INS ins, const uint8_t p1, const uint8_t p2,
+inline std::vector<uint8_t> make_apdu_case3(const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2,
                                             const uint8_t* data, const uint16_t data_len)
 {
     return make_apdu_command(cla, ins, p1, p2, data, data_len, 0);
 }
 
 //!  @brief Make APDU case4 command [CLA | INS | P1 | P2 | Lc | C-Data | Le]
-inline std::vector<uint8_t> make_apdu_case4(const uint8_t cla, const INS ins, const uint8_t p1, const uint8_t p2,
+inline std::vector<uint8_t> make_apdu_case4(const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2,
                                             const uint8_t* data, const uint16_t data_len, const uint16_t le)
 {
     return make_apdu_command(cla, ins, p1, p2, data, data_len, le);

@@ -48,9 +48,14 @@ public:
     explicit NFCLayerA(m5::unit::CapST25R3916& u);
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                            const uint32_t timeout_ms, const bool rx_crc = false) override;
+                            const uint32_t timeout_ms) override;
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) override;
-    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc) override;
+    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) override;
+
+    m5::nfc::isodep::IsoDEP& isoDEP()
+    {
+        return _isoDEP;
+    }
 
     /*!
       @brief Is the specified PICC currently active?
@@ -484,6 +489,8 @@ protected:
 
     bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
 
+    bool mifare_get_version_L4(uint8_t* ver, uint16_t& ver_len);
+
     bool dump_sector_structure(const m5::nfc::a::PICC& picc, const m5::nfc::a::mifare::classic::Key& key);
     bool dump_sector(const uint8_t sector);
     bool dump_page_structure(const uint16_t maxPage);
@@ -509,7 +516,7 @@ struct NFCLayerA::Adapter {
     virtual uint16_t max_fifo_depth() = 0;
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                            const uint32_t timeout_ms, const bool rx_crc = false) = 0;
+                            const uint32_t timeout_ms) = 0;
 
     virtual bool request(uint16_t& atqa) = 0;
     virtual bool wakeup(uint16_t& atqa)  = 0;

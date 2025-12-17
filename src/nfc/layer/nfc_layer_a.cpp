@@ -10,14 +10,17 @@
 #include "nfc_layer_a.hpp"
 #include "nfc/ndef/ndef.hpp"
 #include "nfc/ndef/ndef_tlv.hpp"
+#include "nfc/isodep/desfire_file_system.hpp"
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
 #include <esp_random.h>
 
+using namespace m5::nfc;
 using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
+using namespace m5::nfc::a::mifare::desfire;
 using namespace m5::nfc::ndef;
 
 namespace {
@@ -77,9 +80,9 @@ namespace m5 {
 namespace nfc {
 
 bool NFCLayerA::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                           const uint32_t timeout_ms, const bool rx_crc)
+                           const uint32_t timeout_ms)
 {
-    return _impl->transceive(rx, rx_len, tx, tx_len, timeout_ms, rx_crc);
+    return _impl->transceive(rx, rx_len, tx, tx_len, timeout_ms);
 }
 
 bool NFCLayerA::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
@@ -88,7 +91,7 @@ bool NFCLayerA::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_
     return false;
 }
 
-bool NFCLayerA::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc)
+bool NFCLayerA::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
 {
     return false;
     //    return _impl->receive(rx, rx_len, timeout_ms, rx_crc);
@@ -119,7 +122,6 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
     piccs.clear();
 
     auto timeout_at = m5::utility::millis() + timeout_ms;
-    M5_LIB_LOGE("======================>");
 
     do {
         PICC picc{};
@@ -129,19 +131,18 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
-        M5_LIB_LOGE("ATQA:%04X", picc.atqa);
+        M5_LIB_LOGV("ATQA:%04X", picc.atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
-        M5_LIB_LOGE("Detect:ATQA:%04X SAK:%02X %s %s", picc.atqa, picc.sak, picc.uidAsString().c_str(),
+        M5_LIB_LOGV("Detect:ATQA:%04X SAK:%02X %s %s", picc.atqa, picc.sak, picc.uidAsString().c_str(),
                     picc.typeAsString().c_str());
 
         // Hlt
         if (!deactivate()) {
-            M5_LIB_LOGE("Failed to deactivate");
-            M5_LIB_LOGE("======================>");
+            M5_LIB_LOGD("Failed to deactivate");
             return false;
         }
 
@@ -149,7 +150,6 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
         push_back_picc(piccs, picc);
 
     } while (m5::utility::millis() <= timeout_at);
-    M5_LIB_LOGE("======================>");
 
     return !piccs.empty();
 }
@@ -159,7 +159,6 @@ bool NFCLayerA::select(m5::nfc::a::PICC& picc)
     _activePICC = PICC{};
     if (_impl->select(picc)) {
         if (picc.isISO14443_4()) {
-            M5_LIB_LOGE(">>> ISO4");
             if (!_impl->nfca_request_ats(picc.ats)) {
                 return false;
             }
@@ -177,15 +176,15 @@ bool NFCLayerA::activate(const PICC& picc)
         if (picc.isISO14443_4()) {
             ATS discard{};
             if (!_impl->nfca_request_ats(discard)) {
-                M5_LIB_LOGE("Failed to RATS");
+                M5_LIB_LOGD("Failed to RATS");
                 return false;
             }
         }
         _activePICC = picc;
-        M5_LIB_LOGE("ACTIVATED %u", _activePICC.isISO14443_4());
+        M5_LIB_LOGV("ACTIVATED %s %u", _activePICC.uidAsString().c_str(), _activePICC.isISO14443_4());
         return true;
     }
-    M5_LIB_LOGE("Failed to select");
+    M5_LIB_LOGD("Failed to activate");
     return false;
 }
 
@@ -195,7 +194,8 @@ bool NFCLayerA::reactivate(const PICC& picc)
     uint16_t discard{};
     if (deactivate()) {
         // m5::utility::delay(2);  // guard time (ULC)
-        //  return wakeup(discard) && activate(tmp);
+        return wakeup(discard) && activate(tmp);
+#if 0
         if (!wakeup(discard)) {
             M5_LIB_LOGE("Failed to wakeup");
             return false;
@@ -205,8 +205,9 @@ bool NFCLayerA::reactivate(const PICC& picc)
             return false;
         }
         return true;
+#endif
     }
-    M5_LIB_LOGE("Failed to deactivate");
+    M5_LIB_LOGD("Failed to deactivate");
     return false;
 }
 
@@ -242,12 +243,15 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
     // ISO_14443_4 series
     if (picc.isISO14443_4()) {
         // GetVersion(L4)
-        uint8_t ver[16]{};
-        if (_impl->mifare_get_version_L4(ver)) {
+        uint8_t ver[64]{};
+        uint16_t ver_len = sizeof(ver);
+        if (mifare_get_version_L4(ver, ver_len)) {
+            // M5_LIB_LOGE(">>>> GetVerionL4 OK");
+            // m5::utility::log::dump(ver, ver_len, false);
             type = version4_to_type(picc.sub_type, ver);
-            // m5::utility::log::dump(ver, 16, false);
         } else {
             //  Check historical bytes
+            // M5_LIB_LOGE(">>>> Check historical bytes");
             // m5::utility::log::dump(ats.historical.data(), ats.historical_len, false);
             type = historical_bytes_to_type_sak20(picc.sub_type, picc.ats.historical.data(), picc.ats.historical_len,
                                                   picc.atqa);
@@ -258,7 +262,7 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
             picc.blocks = get_number_of_blocks(picc.type);
             return true;
         }
-        M5_LIB_LOGW("NEED MORE!! %u", _activePICC.isISO14443_4());
+        M5_LIB_LOGW(">>>> NEED MORE!! %u", _activePICC.isISO14443_4());
         return true;
     }
 
@@ -1020,8 +1024,26 @@ bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)
 
 bool NFCLayerA::dump_iso_dep()
 {
-    M5_LIB_LOGE("=========== NOT YET");
+    DESFireFileSystem fs(*this);
+    std::vector<desfire_aid_t> aids{};
 
+    uint8_t ver[256]{};
+    uint16_t ver_len = sizeof(ver);
+    if (!fs.selectApplication(0u)) {
+        return false;
+    }
+    if (!fs.getApplicationIDs(aids)) {
+        return false;
+    }
+    if (!aids.empty()) {
+        uint32_t idx{};
+        for (auto& a : aids) {
+            M5_LIB_LOGE("  AID[%2u]:%02X:%02X:%02X", idx, a.aid[0], a.aid[1], a.aid[2]);
+            ++idx;
+        }
+    } else {
+        puts("No applications");
+    }
     return true;
 }
 
@@ -1067,5 +1089,67 @@ bool NFCLayerA::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_
                                      : write_using_write16(saddr, tx, tx_len, DEFAULT_KEY);
 }
 
+bool NFCLayerA::mifare_get_version_L4(uint8_t* ver, uint16_t& ver_len)
+{
+    auto org_ver_len = ver_len;
+    ver_len          = 0;
+
+    if (!ver || org_ver_len < 8) {
+        return false;
+    }
+
+    // GetVerison (L4) Native wrappe command style like APDU
+    uint8_t cmd[] = {0x90, m5::stl::to_underlying(Command::GET_VERSION), 0x00, 0x00, 0x00};
+    uint8_t rx[128]{};
+    uint16_t rx_len = sizeof(rx);
+
+    auto cfg         = _isoDEP.config();
+    const auto saved = cfg.fwt_ms;
+    cfg.fwt_ms       = TIMEOUT_GET_VERSION;
+    cfg.rx_crc       = true;
+    _isoDEP.config(cfg);
+
+    std::vector<uint8_t> acc{};
+    acc.reserve(org_ver_len);
+
+    if (!_isoDEP.transceiveINF(rx, rx_len, cmd, sizeof(cmd)) || (rx_len < 2)) {
+        M5_LIB_LOGE("Failed to GetVersionL4 %u", rx_len);
+        cfg.fwt_ms = saved;
+        _isoDEP.config(cfg);
+        return false;
+    }
+    acc.insert(acc.end(), rx, rx + rx_len);
+
+    // M5_LIB_LOGE(">>>> 1st");
+    // m5::utility::log::dump(rx, rx_len, false);
+
+    constexpr uint8_t MAX_AF_FOLLOW{32};
+    constexpr uint8_t cmd_af[] = {0x90, 0xAF, 0x00, 0x00, 0x00};
+    uint8_t af_follow{};
+    while (rx[rx_len - 2] == 0x91 && rx[rx_len - 1] == 0xAF) {
+        if (++af_follow > MAX_AF_FOLLOW) {
+            break;
+        }
+        // More response please!
+        rx_len = sizeof(rx);
+        if (!_isoDEP.transceiveINF(rx, rx_len, cmd_af, sizeof(cmd_af)) || (rx_len < 2)) {
+            break;
+        }
+
+        acc.insert(acc.end(), rx, rx + rx_len);
+        if (acc.size() > org_ver_len) {
+            break;
+        }
+    }
+    cfg.fwt_ms = saved;
+    _isoDEP.config(cfg);
+
+    if (rx[rx_len - 2] == 0x91 && rx[rx_len - 1] == 0x00) {
+        ver_len = std::min<uint16_t>(org_ver_len, acc.size());
+        std::memcpy(ver, acc.data(), ver_len);
+        return true;
+    }
+    return false;
+}
 }  // namespace nfc
 }  // namespace m5

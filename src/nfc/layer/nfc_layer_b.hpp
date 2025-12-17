@@ -42,9 +42,9 @@ public:
     explicit NFCLayerB(m5::unit::CapST25R3916& u);
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                            const uint32_t timeout_ms, const bool rx_crc = false) override;
+                            const uint32_t timeout_ms) override;
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) override;
-    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc) override;
+    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) override;
 
     m5::nfc::isodep::IsoDEP& isoDEP()
     {
@@ -116,11 +116,13 @@ public:
       @brief Detect idle PICCs
       @param[out] piccs Detected PICC PICCs (one per activated PICC candidate)
       @param afi Application Family Identifier (0x00 all)
+      @param max_picc How many to detect
       @param timeout_ms  Polling time budget in milliseconds
       @return True if detected
       @note The detected PICC is typically put into HALT during enumeration to allow discovering others
      */
-    bool detect(std::vector<m5::nfc::b::PICC>& piccs, const uint8_t afi = 0x00, const uint32_t timeout_ms = 1000U);
+    bool detect(std::vector<m5::nfc::b::PICC>& piccs, const uint8_t afi = 0x00, const uint8_t max_piccs = 4,
+                const uint32_t timeout_ms = 1000U);
 
     /*!
      */
@@ -191,9 +193,9 @@ struct NFCLayerB::Adapter {
     virtual ~Adapter() = default;
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                            const uint32_t timeout_ms, const bool rx_crc = false)                             = 0;
-    virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)                = 0;
-    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc = false) = 0;
+                            const uint32_t timeout_ms)                                         = 0;
+    virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) = 0;
+    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)             = 0;
 };
 ///@endcond
 

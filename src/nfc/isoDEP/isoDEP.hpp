@@ -44,12 +44,12 @@ struct config_t {
     uint8_t nad{};
 
     uint8_t max_retries{2};
-    bool rx_crc{};  // Response with CRC if true
+    bool rx_crc{true};  // Remove CRC if true in INF
 };
 
 struct RxInfo {
-    bool more     = false;  // chaining 継続（I-Block M-bit）
-    bool wtx_seen = false;  // WTXが来たか
+    bool more{};      // Continue chaining?
+    bool wtx_seen{};  // WTX?
 };
 
 class IsoDEP {
@@ -67,16 +67,18 @@ public:
     }
     inline void config(const config_t& cfg)
     {
-        _cfg      = cfg;
+        _cfg       = cfg;
         _block_num = 0;
     }
 
+    //@brief Transceive INF
     bool transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t* tx_inf, const uint16_t tx_inf_len,
                        RxInfo* info = nullptr);
-
+    //@brief Transceive APDU
     bool transceiveAPDU(uint8_t* rx, uint16_t& rx_len, const uint8_t* cmd, const uint16_t cmd_len);
+    //@brief Transceive normal
+    bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
 
-    
 private:
     NFCLayerInterface& _tr;
     config_t _cfg{};

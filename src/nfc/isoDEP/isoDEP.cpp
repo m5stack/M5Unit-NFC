@@ -128,15 +128,15 @@ std::vector<uint8_t> remake_with_le(std::vector<uint8_t>& org, const uint16_t ne
     uint16_t lc{};
     uint8_t* data{};
 
-    if (org_len == 4) {                                                      // Case 1:[CLA INS P1 P2]
-        return make_apdu_case2(cla, static_cast<INS>(ins), p1, p2, new_le);  // Change to Case 2
+    if (org_len == 4) {                                    // Case 1:[CLA INS P1 P2]
+        return make_apdu_case2(cla, ins, p1, p2, new_le);  // Change to Case 2
     }
 
     if (org_len == 5) {  // Case 2: [CLA INS P1 P2 Le1]
-        return make_apdu_case2(cla, static_cast<INS>(ins), p1, p2, new_le);
+        return make_apdu_case2(cla, ins, p1, p2, new_le);
     }
     if (org_len == 7 && org[4] == 0x00) {  // Case 2: [CLA INS P1 P2 00 Le3]
-        return make_apdu_case2(cla, static_cast<INS>(ins), p1, p2, new_le);
+        return make_apdu_case2(cla, ins, p1, p2, new_le);
     }
 
     // short Lc: org[4] != 0x00, Lc=org[4]
@@ -149,10 +149,10 @@ std::vector<uint8_t> remake_with_le(std::vector<uint8_t>& org, const uint16_t ne
         data                = (lc ? (org.data() + data_off) : nullptr);
         const uint16_t rest = org_len - (data_off + lc);
         if (rest == 0) {  // Case 3: [CLA INS P1 P2 Lc1 Data]
-            return make_apdu_case4(cla, static_cast<INS>(ins), p1, p2, data, lc, new_le);
+            return make_apdu_case4(cla, ins, p1, p2, data, lc, new_le);
         }
         if (rest == 1) {  // Case 4: [CLA INS P1 P2 Lc1 Data] Le]
-            return make_apdu_case4(cla, static_cast<INS>(ins), p1, p2, data, lc, new_le);
+            return make_apdu_case4(cla, ins, p1, p2, data, lc, new_le);
         }
         return org;
     }
@@ -167,10 +167,10 @@ std::vector<uint8_t> remake_with_le(std::vector<uint8_t>& org, const uint16_t ne
         data                = lc ? (org.data() + data_off) : nullptr;
         const uint16_t rest = (uint16_t)(org_len - (data_off + lc));
         if (rest == 0) {  // Case 3: [CLA INS P1 P2 Lc3 Data]
-            return make_apdu_case4(cla, static_cast<INS>(ins), p1, p2, data, lc, new_le);
+            return make_apdu_case4(cla, ins, p1, p2, data, lc, new_le);
         }
         if (rest == 3) {  // Case 4: [CLA INS P1 P2 Lc3 Data] Le]
-            return make_apdu_case4(cla, static_cast<INS>(ins), p1, p2, data, lc, new_le);
+            return make_apdu_case4(cla, ins, p1, p2, data, lc, new_le);
         }
         return {};
     }
@@ -217,11 +217,11 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
 
     // helper: TX then RX
     auto exchange = [&](const uint8_t* tx, const uint16_t tx_len, uint8_t* rx, uint16_t& rx_len,
-                        const uint32_t timeout_ms, const bool rx_crc) -> bool {
+                        const uint32_t timeout_ms) -> bool {
         if (!_tr.transmit(tx, tx_len, timeout_ms)) {
             return false;
         }
-        return _tr.receive(rx, rx_len, timeout_ms, rx_crc);
+        return _tr.receive(rx, rx_len, timeout_ms);
     };
 
     // Transmit chaining
@@ -250,7 +250,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
             uint32_t timeout_ms = _cfg.fwt_ms;
 
             // Send I-Block and receive first frame
-            if (!_tr.transceive(rx_buf, rlen, tx_buf, tpos, timeout_ms, _cfg.rx_crc)) {
+            if (!_tr.transceive(rx_buf, rlen, tx_buf, tpos, timeout_ms)) {
                 if (retries++ < _cfg.max_retries) continue;
                 return false;
             }
@@ -305,7 +305,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
 
                     // Receive next frame after WTX-ACK (do NOT resend I-Block)
                     rlen = sizeof(rx_buf);
-                    if (!exchange(s_ack, sp, rx_buf, rlen, wtx_timeout, _cfg.rx_crc)) {
+                    if (!exchange(s_ack, sp, rx_buf, rlen, wtx_timeout)) {
                         if (retries++ < _cfg.max_retries) {
                             break;  // resend I-Block
                         }
@@ -380,7 +380,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                         if (_cfg.use_cid) r_ack[rp++] = (uint8_t)(_cfg.cid & 0x0F);
 
                         uint16_t rlen2 = sizeof(rx_buf);
-                        if (!exchange(r_ack, rp, rx_buf, rlen2, _cfg.fwt_ms, _cfg.rx_crc)) {
+                        if (!exchange(r_ack, rp, rx_buf, rlen2, _cfg.fwt_ms)) {
                             return false;
                         }
 
@@ -413,7 +413,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                                     mul_clamp_u32(_cfg.fwt_ms, (uint32_t)wtxm, _cfg.wtx_max_ms);
 
                                 rlen2 = sizeof(rx_buf);
-                                if (!exchange(s_ack, sp, rx_buf, rlen2, wtx_timeout, _cfg.rx_crc)) {
+                                if (!exchange(s_ack, sp, rx_buf, rlen2, wtx_timeout)) {
                                     return false;
                                 }
                                 continue;
@@ -425,7 +425,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
 
                                 // ACK: receive again
                                 rlen2 = sizeof(rx_buf);
-                                if (!_tr.receive(rx_buf, rlen2, _cfg.fwt_ms, _cfg.rx_crc)) {
+                                if (!_tr.receive(rx_buf, rlen2, _cfg.fwt_ms)) {
                                     return false;
                                 }
                                 continue;
@@ -475,8 +475,8 @@ bool IsoDEP::transceiveAPDU(uint8_t* rx, uint16_t& rx_len, const uint8_t* cmd, c
         return false;
     }
 
-    M5_LIB_LOGE(">>>> APDU");
-    m5::utility::log::dump(cmd, cmd_len, false);
+    // M5_LIB_LOGE(">>>> APDU");
+    // m5::utility::log::dump(cmd, cmd_len, false);
 
     // Save original command
     const uint8_t* orig_cmd = cmd;
@@ -535,7 +535,8 @@ bool IsoDEP::transceiveAPDU(uint8_t* rx, uint16_t& rx_len, const uint8_t* cmd, c
             }
 
             const uint16_t le = (sw2 == 0x00) ? 256 : sw2;
-            auto cmd2         = make_apdu_command(orig_cmd[0], INS::GET_RESPONSE, 0x00, 0x00, nullptr, 0, le);
+            auto cmd2 =
+                make_apdu_command(orig_cmd[0], m5::stl::to_underlying(INS::GET_RESPONSE), 0x00, 0x00, nullptr, 0, le);
             if (cmd2.empty()) {
                 return false;
             }
@@ -558,6 +559,12 @@ bool IsoDEP::transceiveAPDU(uint8_t* rx, uint16_t& rx_len, const uint8_t* cmd, c
     rx[acc.size() + 1] = sw2;
     rx_len             = need;
     return true;
+}
+
+bool IsoDEP::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                        const uint32_t timeout_ms)
+{
+    return _tr.transceive(rx, rx_len, tx, tx_len, timeout_ms);
 }
 
 }  // namespace isodep

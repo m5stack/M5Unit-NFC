@@ -49,9 +49,9 @@ namespace m5 {
 namespace nfc {
 
 bool NFCLayerB::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                           const uint32_t timeout_ms, const bool rx_crc)
+                           const uint32_t timeout_ms)
 {
-    return _impl->transceive(rx, rx_len, tx, tx_len, timeout_ms, rx_crc);
+    return _impl->transceive(rx, rx_len, tx, tx_len, timeout_ms);
 }
 
 bool NFCLayerB::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
@@ -59,46 +59,43 @@ bool NFCLayerB::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_
     return _impl->transmit(tx, tx_len, timeout_ms);
 }
 
-bool NFCLayerB::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc)
+bool NFCLayerB::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
 {
-    return _impl->receive(rx, rx_len, timeout_ms, rx_crc);
+    return _impl->receive(rx, rx_len, timeout_ms);
 }
 
 bool NFCLayerB::detect(m5::nfc::b::PICC& picc, const uint8_t afi, const uint32_t timeout_ms)
 {
     std::vector<PICC> piccs{};
-    if (detect(piccs, afi, timeout_ms)) {
+    if (detect(piccs, afi, 1, timeout_ms)) {
         picc = piccs.front();
         return true;
     }
     return false;
 }
 
-bool NFCLayerB::detect(std::vector<m5::nfc::b::PICC>& piccs, const uint8_t afi, const uint32_t timeout_ms)
+bool NFCLayerB::detect(std::vector<m5::nfc::b::PICC>& piccs, const uint8_t afi, const uint8_t max_piccs,
+                       const uint32_t timeout_ms)
 {
     piccs.clear();
 
     auto timeout_at = m5::utility::millis() + timeout_ms;
     do {
-        uint8_t rx[ATQB_LENGTH * 16]{};
+        uint8_t rx[ATQB_LENGTH]{};
         uint16_t rx_len = sizeof(rx);
         if (!request(rx, rx_len, afi, Require::Slot1)) {
             continue;
         }
+                hlt(rx);  // If you don't perform hlt, it will be detected again
+        PICC picc{};
+        memcpy(picc.atqb, rx, ATQB_LENGTH);
 
-        uint8_t picc_num = rx_len / ATQB_LENGTH;
-        for (uint_fast8_t i = 0; i < picc_num; ++i) {
-            PICC picc{};
-            memcpy(picc.atqb, rx + i * ATQB_LENGTH, ATQB_LENGTH);
-
-            M5_LIB_LOGV("Detected: %s", picc.pupiAsString().c_str());
-            if (!exists_picc(piccs, picc)) {
-                hlt(picc.pupi);  // If you don't perform hlt, it will be detected again
-                picc.type = Type::Unclassified;
-                piccs.emplace_back(picc);
-            }
+        M5_LIB_LOGE("Detected: %s", picc.pupiAsString().c_str());
+        if (!exists_picc(piccs, picc)) {
+            picc.type = Type::Unclassified;
+            piccs.emplace_back(picc);
         }
-        if (piccs.size() >= 16) {
+        if (piccs.size() >= max_piccs) {
             break;
         }
     } while (m5::utility::millis() <= timeout_at);
@@ -200,14 +197,14 @@ bool NFCLayerB::request_wakeup(uint8_t* atqb, uint16_t& atqb_len, const uint8_t 
     atqb_len              = 0;
 
     // Ignore non-responsive slots and proceed to the next one.
-    if (transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_REQ_WUP_B, true) && rx_len == sizeof(rx) && rx[0] == 0x50) {
+    if (transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_REQ_WUP_B) && rx_len == sizeof(rx) && rx[0] == 0x50) {
         // Occur collision if CRC error
         const uint16_t crc = crc16.range(rx, ATQB_LENGTH + 1);
         if (crc == ((uint16_t)rx[13] << 8 | rx[12])) {
             memcpy(atqb, rx + 1, ATQB_LENGTH);
             atqb_len += ATQB_LENGTH;
         }
-        //        hlt(rx + 1);  // If you don't perform hlt, it will be detected again
+        //             hlt(rx + 1);  // If you don't perform hlt, it will be detected again
     }
 
     uint8_t slot_marker[1]{};
@@ -215,7 +212,7 @@ bool NFCLayerB::request_wakeup(uint8_t* atqb, uint16_t& atqb_len, const uint8_t 
         rx_len         = sizeof(rx);
         slot_marker[0] = ((uint8_t)i << 4) | 0x05;
         // Ignore non-responsive slots and proceed to the next one.
-        if (!transceive(rx, rx_len, slot_marker, sizeof(slot_marker), TIMEOUT_REQ_WUP_B, true) || rx[0] != 0x50 ||
+        if (!transceive(rx, rx_len, slot_marker, sizeof(slot_marker), TIMEOUT_REQ_WUP_B) || rx[0] != 0x50 ||
             rx_len < sizeof(rx)) {
             continue;
         }
@@ -225,7 +222,7 @@ bool NFCLayerB::request_wakeup(uint8_t* atqb, uint16_t& atqb_len, const uint8_t 
             memcpy(atqb + atqb_len, rx + 1, ATQB_LENGTH);
             atqb_len += ATQB_LENGTH;
         }
-        //        hlt(rx + 1);  // If you don't perform hlt, it will be detected again
+        //                hlt(rx + 1);  // If you don't perform hlt, it will be detected again
     }
     return atqb_len > 0;
 }

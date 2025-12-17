@@ -60,10 +60,12 @@ enum class Type : uint8_t {
     MIFARE_Plus_4K,  //!< MIFARE Plus 4K
     MIFARE_Plus_SE,  //!< MIFARE Plus SE 1K
 
-    MIFARE_DESFire_2K,  //!< MIFARE DESFire 2K
-    MIFARE_DESFire_4K,  //!< MIFARE DESFire 4K
-    MIFARE_DESFire_8K,  //!< MIFARE DESFire 8K
-    // LIGHT
+    MIFARE_DESFire_2K,     //!< MIFARE DESFire 2K
+    MIFARE_DESFire_4K,     //!< MIFARE DESFire 4K
+    MIFARE_DESFire_8K,     //!< MIFARE DESFire 8K
+    MIFARE_DESFire_Light,  //!< MIFARE DESFire Light
+
+    NTAG_4XX,  //!< NTAG 4XX
 
     ISO_18092,  //!< PICC compliant with ISO/IEC 18092
 
@@ -79,6 +81,7 @@ enum class SubTypePlus : uint8_t {
 };
 
 enum SubTypeDESFire : uint8_t {
+    None,
     EV1,
     EV2,
     EV3,
@@ -114,7 +117,7 @@ inline bool is_mifare_plus(const Type t)
 //! @brief Is type MIFARE DESFire?
 inline bool is_mifare_desfire(const Type t)
 {
-    return t >= Type::MIFARE_DESFire_2K && t <= Type::MIFARE_DESFire_8K;
+    return t >= Type::MIFARE_DESFire_2K && t <= Type::MIFARE_DESFire_Light;
 }
 
 //! @brief Is type MIFARE?
@@ -293,6 +296,11 @@ struct PICC {
     inline bool isMifarePlus() const
     {
         return is_mifare_plus(type);
+    }
+    //! @brief Is MIFARE DESFire?
+    inline bool isMifareDESFire() const
+    {
+        return is_mifare_desfire(type);
     }
     //! @brief Is NTAG?
     inline bool isNTAG() const

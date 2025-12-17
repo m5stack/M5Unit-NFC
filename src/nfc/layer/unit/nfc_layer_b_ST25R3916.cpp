@@ -25,18 +25,18 @@ struct AdapterST25R3916ForB final : NFCLayerB::Adapter {
     {
     }
 
-    bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
-                    const bool rx_crc) override;
+    bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                    const uint32_t timeout_ms) override;
     bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) override;
-    bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc) override;
+    bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) override;
 
     UnitST25R3916& _u;
 };
 
 bool AdapterST25R3916ForB::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                      const uint32_t timeout_ms, const bool rx_crc)
+                                      const uint32_t timeout_ms)
 {
-    return _u.nfcbTransceive(rx, rx_len, tx, tx_len, timeout_ms, rx_crc);
+    return _u.nfcbTransceive(rx, rx_len, tx, tx_len, timeout_ms);
 }
 
 bool AdapterST25R3916ForB::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
@@ -45,9 +45,9 @@ bool AdapterST25R3916ForB::transmit(const uint8_t* tx, const uint16_t tx_len, co
     return _u.nfcbTransmit(tx, tx_len, timeout_ms);
 }
 
-bool AdapterST25R3916ForB::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const bool rx_crc)
+bool AdapterST25R3916ForB::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
 {
-    return _u.nfcbReceive(rx, rx_len, timeout_ms, rx_crc);
+    return _u.nfcbReceive(rx, rx_len, timeout_ms);
 }
 
 //

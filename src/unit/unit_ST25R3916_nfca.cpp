@@ -136,6 +136,7 @@ uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint
     if (!rx || !rx_len_org || !tx || !tx_len) {
         return false;
     }
+    // m5::utility::log::dump(tx, tx_len, false);
 
     if ((timeout_ms ? !write_noresponse_timeout(timeout_ms) : false) ||                //
         !writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||  //
@@ -146,14 +147,14 @@ uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint
     }
 
     if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
-        M5_LIB_LOGD("Timeout");
+        M5_LIB_LOGE("Timeout");
         return false;
     }
 
     uint16_t actual{};
     auto bb = readFIFO(actual, rx, rx_len_org);
     if (bb) {
-        // M5_LIB_LOGE("readFIFO %u/%u %u/%u %02X", actual, rx_len_org, bb >> 16, bb & 0xFFFF, rx[0]);
+        M5_LIB_LOGV("readFIFO %u/%u %u/%u %02X", actual, rx_len_org, bb >> 16, bb & 0xFFFF, rx[0]);
         rx_len = actual;
         return bb;
     }
@@ -168,7 +169,7 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
     _encrypted = false;
     atqa       = 0;
 
-    // REQA or WUPA
+    // REQA or WUPA (Receive without CRC)
     if (!write_noresponse_timeout(TIMEOUT_REQ_WUP) ||  //
         !writeSettingsISO14443A(antcl) || !writeAuxiliaryDefinition(no_crc_rx) ||
         //        writeMaskMainInterrupt(mask) && writeMaskTimerAndNFCInterrupt(~I_nre) &&//
@@ -194,7 +195,6 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
             return true;
         }
     }
-    M5_LIB_LOGE("NO RXE");
     return is_irq32_collision(irq);
 }
 
@@ -552,7 +552,7 @@ bool UnitST25R3916::nfcaRequestATS(m5::nfc::a::ATS& ats, const uint8_t fsdi, con
 {
     uint8_t rx[128]{};
     uint16_t rx_len = sizeof(rx);
-    uint8_t cmd[2]  = {m5::stl::to_underlying(Command::RATS)};
+    uint8_t cmd[]   = {m5::stl::to_underlying(Command::RATS), 0x00};
     cmd[1]          = ((fsdi & 0x0F) << 4) | (cid & 0x0F);
     cmd[1]          = 0x80;
 
@@ -871,7 +871,7 @@ bool UnitST25R3916::mifareUltralightCAuthenticate2(uint8_t rx_ek[8], const uint8
 bool UnitST25R3916::mifareGetVersion3(uint8_t info[8])
 {
     // GetVerison (L3)
-    uint8_t cmd[1]  = {m5::stl::to_underlying(Command::GET_VERSION)};
+    uint8_t cmd[]   = {m5::stl::to_underlying(Command::GET_VERSION)};
     uint16_t rx_len = 8;
     return info && mifare_transceive(info, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION);
 }
@@ -879,12 +879,27 @@ bool UnitST25R3916::mifareGetVersion3(uint8_t info[8])
 bool UnitST25R3916::mifareGetVersion4(uint8_t info[8])
 {
     // GetVerison (L4)
-    uint8_t cmd[2] = {0x02, m5::stl::to_underlying(Command::GET_VERSION)};
+    //    uint8_t cmd[] = {0x90, m5::stl::to_underlying(Command::GET_VERSION), 0x00, 0x00, 0x00};
+    //    uint8_t cmd[] = {0x02, m5::stl::to_underlying(Command::GET_VERSION)};
+    uint8_t cmd[] = {m5::stl::to_underlying(Command::GET_VERSION)};
     uint8_t rx[128]{};
     uint16_t rx_len = 128;
-    if (info && mifare_transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION) && rx_len >= 10) {
-        //        M5_LIB_LOGE(">>>> VER L4");
-        // m5::utility::log::dump(rx,rx_len, false);
+
+    if (info && nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION)) {
+        M5_LIB_LOGE(">>>> VER L4");
+        m5::utility::log::dump(rx, rx_len, false);
+        return true;
+    }
+    M5_LIB_LOGE(">>>> ERROR VER L4");
+    return false;
+}
+
+#if 0   
+    // TODO AF 対応!!
+    if (info && nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION) && rx_len >= 10) {
+        M5_LIB_LOGE(">>>> VER L4");
+        m5::utility::log::dump(rx, rx_len, false);
+
         const uint8_t* p = rx;
         uint8_t* q       = info;
         while (p < rx + rx_len && q < info + 8) {
@@ -896,8 +911,10 @@ bool UnitST25R3916::mifareGetVersion4(uint8_t info[8])
         }
         return true;
     }
+
     return false;
 }
+#endif
 
 // -------------------------------- For NTAG
 bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)

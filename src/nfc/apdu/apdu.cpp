@@ -18,7 +18,7 @@ namespace m5 {
 namespace nfc {
 namespace apdu {
 
-std::vector<uint8_t> make_apdu_command(const uint8_t cla, const INS ins, const uint8_t param1, const uint8_t param2,
+std::vector<uint8_t> make_apdu_command(const uint8_t cla, const uint8_t ins, const uint8_t param1, const uint8_t param2,
                                        const uint8_t* data, const uint16_t data_len, const uint16_t rx_len)
 {
     if (data_len != 0 && data == nullptr) {
@@ -35,7 +35,7 @@ std::vector<uint8_t> make_apdu_command(const uint8_t cla, const INS ins, const u
 
     // ---- Header
     cmd[offset++] = cla;
-    cmd[offset++] = m5::stl::to_underlying(ins);
+    cmd[offset++] = ins;
     cmd[offset++] = param1;
     cmd[offset++] = param2;
 

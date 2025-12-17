@@ -18,26 +18,18 @@ using namespace m5::nfc::a::mifare::classic;
 namespace {
 
 constexpr char name_unknown[] = "Unknown";
-// Classic 4
+// Classic
 constexpr char name_classic_mini[] = "MIFARE Classic Mini";
 constexpr char name_classic_1K[]   = "MIFARE Classsic1K";
 constexpr char name_classic_2K[]   = "MIFARE Classsic2K";
 constexpr char name_classic_4K[]   = "MIFARE Classsic4K";
-// Light 5
+// Light
 constexpr char name_ul[]        = "MIFARE Ultralight";
 constexpr char name_ul_ev1_11[] = "MIFARE Ultralight EV1 11";
 constexpr char name_ul_ev1_21[] = "MIFARE Ultralight EV1 21";
 constexpr char name_ul_nano[]   = "MIFARE Ultralight Nano";
 constexpr char name_ul_c[]      = "MIFARE UltralightC";
-// Plus 11
-constexpr char name_plus_2K[] = "MIFARE Plus 2K";
-constexpr char name_plus_4K[] = "MIFARE Plus 4K";
-constexpr char name_plus_se[] = "MIFARE Plus SE";
-// DesFire 3
-constexpr char name_desfire_2K[] = "MIFARE DESFire 2K";
-constexpr char name_desfire_4K[] = "MIFARE DESFire 4K";
-constexpr char name_desfire_8K[] = "MIFARE DESFire 8K";
-// NTAG 7
+// NTAG 2xx
 constexpr char name_ntag203[]  = "NTAG 203";
 constexpr char name_ntag210u[] = "NTAG 210u";
 constexpr char name_ntag210[]  = "NTAG 210";
@@ -51,20 +43,33 @@ constexpr char name_st25ta_16k[] = "ST25TA 16K";
 constexpr char name_st25ta_64k[] = "ST25TA 64K";
 //
 constexpr char name_iso14443_4[] = "ISO14443-4";
-constexpr char name_iso18092[]   = "ISO18092";
+// Plus
+constexpr char name_plus_2K[] = "MIFARE Plus 2K";
+constexpr char name_plus_4K[] = "MIFARE Plus 4K";
+constexpr char name_plus_se[] = "MIFARE Plus SE";
+// DesFire
+constexpr char name_desfire_2K[]    = "MIFARE DESFire 2K";
+constexpr char name_desfire_4K[]    = "MIFARE DESFire 4K";
+constexpr char name_desfire_8K[]    = "MIFARE DESFire 8K";
+constexpr char name_desfire_light[] = "MIFARE DESFire Light";
+// NTAG 4xx
+constexpr char name_ntag_4xx[] = "NTAG 4XX";
+//
+constexpr char name_iso18092[] = "ISO18092";
 
 constexpr const char* name_table[] = {
-    name_unknown,                                                                     //
-    name_classic_mini, name_classic_1K, name_classic_2K, name_classic_4K,             // Classic
-    name_ul,           name_ul_ev1_11,  name_ul_ev1_21,  name_ul_nano,    name_ul_c,  // Light
-    name_ntag203,      name_ntag210u,   name_ntag210,                                 // NTAG
-    name_ntag212,      name_ntag213,    name_ntag215,                                 // NTAG
-    name_ntag216,                                                                     // NTAG
-    name_st25ta_2k,    name_st25ta_16k, name_st25ta_64k,                              // ST25A
-    name_iso14443_4,                                                                  // 14443-4
-    name_plus_2K,      name_plus_4K,    name_plus_se,                                 // Plus
-    name_desfire_2K,   name_desfire_4K, name_desfire_8K,                              // DESFire
-    name_iso18092,                                                                    //
+    name_unknown,                                                                        //
+    name_classic_mini, name_classic_1K, name_classic_2K, name_classic_4K,                // Classic
+    name_ul,           name_ul_ev1_11,  name_ul_ev1_21,  name_ul_nano,       name_ul_c,  // Light
+    name_ntag203,      name_ntag210u,   name_ntag210,                                    // NTAG 2xx
+    name_ntag212,      name_ntag213,    name_ntag215,                                    // NTAG 2xx
+    name_ntag216,                                                                        // NTAG 2xx
+    name_st25ta_2k,    name_st25ta_16k, name_st25ta_64k,                                 // ST25A
+    name_iso14443_4,                                                                     // 14443-4
+    name_plus_2K,      name_plus_4K,    name_plus_se,                                    // Plus
+    name_desfire_2K,   name_desfire_4K, name_desfire_8K, name_desfire_light,             // DESFire
+    name_ntag_4xx,                                                                       // NTAG 4xx
+    name_iso18092,                                                                       //
 };
 
 //
@@ -75,22 +80,24 @@ constexpr char name_sub_plus_s[]            = "S";
 constexpr char name_sub_plus_x[]            = "X";
 constexpr const char* name_sub_plus_table[] = {name_sub_plus_none, name_sub_plus_ev1, name_sub_plus_ev2,
                                                name_sub_plus_s, name_sub_plus_x};
-
 //
+constexpr char name_sub_desfire_none[]         = "";
 constexpr char name_sub_desfire_ev1[]          = "EV1";
 constexpr char name_sub_desfire_ev2[]          = "EV2";
 constexpr char name_sub_desfire_ev3[]          = "EV3";
-constexpr const char* name_sub_desfire_table[] = {name_sub_desfire_ev1, name_sub_desfire_ev2, name_sub_desfire_ev3};
+constexpr const char* name_sub_desfire_table[] = {name_sub_desfire_none, name_sub_desfire_ev1, name_sub_desfire_ev2,
+                                                  name_sub_desfire_ev3};
 
 // included system area
 constexpr uint16_t max_block_table[] = {0,                                 // Unknown
                                         20,  64,  128, 256,                // Classic
                                         16,  20,  40,  14,  48,            // Light
-                                        42,  20,  16,  40,  45, 135, 231,  // NTAG
+                                        42,  20,  16,  40,  45, 135, 231,  // NTAG 2xx
                                         0,   0,   0,                       // ST25TA
                                         0,                                 // 14443-4
                                         128, 256, 64,                      // Plus
-                                        0,   0,   0,                       // DESFire (Not has blocks, File base system)
+                                        0,   0,   0,   0,                  // DESFire (Not has blocks, File base system)
+                                        0,                                 // NTAG 4xx
                                         0};
 
 // [first/last]
@@ -107,7 +114,7 @@ constexpr uint8_t user_block_table[][2] = {
     {4, 35},  // Exclusive 0-3 and last 5 pages
     {4, 13},  // Exclusive 0-3
     {4, 39},  // Exclusive 0-3 and last 8 pages
-    // NTAG
+    // NTAG 2xx
     {4, 39},   // 203 Exclusive 0-3 and last 2 pages
     {4, 15},   // 210u Exclusive 0-3
     {4, 15},   // 210 Exclusive 0-3 and last 4 page
@@ -129,6 +136,9 @@ constexpr uint8_t user_block_table[][2] = {
     {0, 0},
     {0, 0},
     {0, 0},
+    {0, 0},
+    // NTAG 4xx
+    {0, 0},
     //
     {0, 0},
 };
@@ -141,7 +151,8 @@ constexpr uint8_t max_sector_table[] = {
     0,  0,  0,                // ST25TA
     0,                        //
     32, 40, 16,               // Plus
-    0,  0,  0,                // Desfire
+    0,  0,  0,  0,            // Desfire
+    0,                        // NTAG 4xx
     0,
 };
 
@@ -154,7 +165,8 @@ constexpr uint16_t user_area_size_table[] = {
     0,    0,    0,                          // ST25
     0,                                      //
     1504, 3440, 752,                        // Plus
-    0,    0,    0,                          // Desfire
+    0,    0,    0,    0,                    // Desfire
+    0,                                      // NTAG 4xx
     0,
 };
 
@@ -162,12 +174,13 @@ constexpr NFCForumTag nfc_forum_tag_table[] = {
     NFCForumTag::None,                                                                                   //
     NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                       // Classic
     NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,  // Light
-    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                      // NTAG
-    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                                          // NTAG
+    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                      // NTAG 2xx
+    NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                                          // NTAG 2xx
     NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                                          // ST25TA
     NFCForumTag::None,                                                                                   //
     NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                                           // Plus
-    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                                          // DESFire
+    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                      // DESFire
+    NFCForumTag::Type4,                                                                                  // NTAG 4xx
     NFCForumTag::None,                                                                                   //
 };
 
@@ -302,19 +315,19 @@ Type sak_to_type(const uint8_t sak)
     return Type::MIFARE_Ultralight;  // or UltralightC or NTAG (Need GetVersionL3)
 }
 
-Type version3_to_type(const uint8_t info[8])
+Type version3_to_type(const uint8_t ver[8])
 {
-    if (!info) {
+    if (!ver) {
         return Type::Unknown;
     }
 
-    const uint8_t hw_type    = info[2];
-    const uint8_t hw_version = info[4];
-    const uint8_t size       = info[6];
+    const uint8_t hw_type    = ver[2];
+    const uint8_t hw_version = ver[4];
+    const uint8_t size       = ver[6];
 
-    // m5::utility::log::dump(info,10,false);
+    // m5::utility::log::dump(ver,10,false);
 
-    if (info[0] != 0x00 || info[1] != 0x04 /*NXP*/ || info[7] != 0x03 /* ISO14443-A*/) {
+    if (ver[0] != 0x00 || ver[1] != 0x04 /*NXP*/ || ver[7] != 0x03 /* ISO14443-A*/) {
         return Type::Unknown;
     }
     if (hw_type == 0x04 /* NTAG */) {
@@ -325,7 +338,7 @@ Type version3_to_type(const uint8_t info[8])
                : (size == 0x0B) ? ((hw_version == 0x02) ? Type::NTAG_210u : Type::NTAG_210)
                                 : Type::Unknown;
     }
-    if (info[2] == 0x03 /*Ultralight */) {
+    if (ver[2] == 0x03 /*Ultralight */) {
         // Ultralight EV1 or Nano
         return (hw_version == 0x01)   ? (size == 0x0B ? Type::MIFARE_Ultralight_EV1_1
                                                       : (size == 0x0E ? Type::MIFARE_Ultralight_EV1_2 : Type::Unknown))
@@ -335,21 +348,21 @@ Type version3_to_type(const uint8_t info[8])
     return Type::Unknown;
 }
 
-Type version4_to_type(uint8_t& sub, const uint8_t info[8])
+Type version4_to_type(uint8_t& sub, const uint8_t ver[8])
 {
     Type type = Type::Unknown;
     sub       = 0;
 
-    if (!info) {
+    if (!ver) {
         return type;
     }
 
-    const uint8_t hw_type    = info[2];
-    const uint8_t hw_version = info[4];
-    const uint8_t size       = info[6];
+    const uint8_t hw_type    = ver[1];
+    const uint8_t hw_version = ver[3];
+    const uint8_t size       = ver[5];
+    M5_LIB_LOGV("hw_type:%02X hw_ver:%02X size:%02X", hw_type, hw_version, size);
 
-    // M5_LIB_LOGE(">>>> hw_type:%02X hw_ver:%02X size:%02X", hw_type, hw_version, size);
-
+    // Plus
     if (hw_type == 0x02 || hw_type == 0x82) {
         switch (hw_version) {
             case 0x11:  // EV1
@@ -373,41 +386,50 @@ Type version4_to_type(uint8_t& sub, const uint8_t info[8])
         }
         return type;
     }
-#if 0
+
+    // DESFire
     if (hw_type == 0x01 || hw_type == 0x81) {
-        switch (hw_verison & 0x0F) {
+        switch (hw_version & 0x0F) {
             case 0x01:  // EV1
+                sub = m5::stl::to_underlying(SubTypeDESFire::EV1);
+                break;
             case 0x02:  // EV2
+                sub = m5::stl::to_underlying(SubTypeDESFire::EV2);
+                break;
             case 0x03:  // EV3
-                switch (size) {
-                    case 0x10:
-                        return Tupe::MIFARE_DESFire_256B;
-                    case 0x16:
-                        return Tupe::MIFARE_DESFire_2K;
-                    case 0x18:
-                        return Tupe::MIFARE_DESFire_4K;
-                    case 0x1A:
-                        return Tupe::MIFARE_DESFire_8K;
-                    case 0x1C:
-                        return Tupe::MIFARE_DESFire_16K;
-                    case 0x1E:
-                        return Tupe::MIFARE_DESFire_32K;
-                    default:
-                        break;
-                }
+                sub = m5::stl::to_underlying(SubTypeDESFire::EV3);
                 break;
             default:
                 break;
         }
+        switch (size) {
+            // case 0x10:
+            //     return Type::MIFARE_DESFire_256B;
+            case 0x16:
+                type = Type::MIFARE_DESFire_2K;
+                break;
+            case 0x18:
+                type = Type::MIFARE_DESFire_4K;
+                break;
+            case 0x1A:
+                type = Type::MIFARE_DESFire_8K;
+                break;
+                // case 0x1C:
+                //  return Tupe::MIFARE_DESFire_16K;
+                // case 0x1E:
+                // return Tupe::MIFARE_DESFire_32K;
+            default:
+                break;
+        }
     }
-
     if (hw_type == 0x08) {
         return Type::MIFARE_DESFire_Light;
     }
+
+    // NTAG4xx
     if (hw_type == 0x04) {
         return Type::NTAG_4XX;
     }
-#endif
     return type;
 }
 
@@ -469,6 +491,15 @@ std::string PICC::typeAsString() const
         idx = m5::stl::to_underlying(sub_type_plus);
         auto ss =
             std::string((this->size && idx <= m5::stl::size(name_sub_plus_table)) ? name_sub_plus_table[idx] : "");
+        if (ss[0]) {
+            s += " ";
+            s += ss;
+        }
+    }
+    if (isMifareDESFire()) {
+        idx     = m5::stl::to_underlying(sub_type_desfire);
+        auto ss = std::string((this->size && idx <= m5::stl::size(name_sub_desfire_table)) ? name_sub_desfire_table[idx]
+                                                                                           : "");
         if (ss[0]) {
             s += " ";
             s += ss;

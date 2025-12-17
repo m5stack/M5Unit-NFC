@@ -96,7 +96,9 @@ bool UnitST25R3916::configure_nfc_v()
 #if 1
     uint8_t reg = 0x00;
     for (auto&& v : val_table) {
-        if(reg < 2){continue; }
+        //        if (reg < 2) {
+        //            continue;
+        //        }
         write_register8(reg, v);
         ++reg;
     }
@@ -148,9 +150,11 @@ bool UnitST25R3916::nfcvTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t*
 bool UnitST25R3916::nfcv_transmit(const uint8_t* tx, const uint16_t tx_len, const ModulationMode mode,
                                   const uint32_t timeout_ms)
 {
-    // if(tx && tx_len){
-    //  m5::utility::log::dump(tx, tx_len, false);
-    // }
+    if (!tx || !tx_len) {
+        return false;
+    }
+
+    //m5::utility::log::dump(tx, tx_len, false);
 
     // Encode
     std::vector<uint8_t> frame{};
@@ -158,7 +162,7 @@ bool UnitST25R3916::nfcv_transmit(const uint8_t* tx, const uint16_t tx_len, cons
         M5_LIB_LOGE("Failed to encode");
         return false;
     }
-    // m5::utility::log::dump(frame.data(), frame.size(), false);
+    //m5::utility::log::dump(frame.data(), frame.size(), false);
 
     // Send
     if (timeout_ms && !write_noresponse_timeout(timeout_ms)) {
@@ -214,6 +218,7 @@ bool UnitST25R3916::nfcvInventry(std::vector<m5::nfc::v::PICC>& piccs, const boo
     uint8_t rx[160]{};
     uint16_t rx_len = sizeof(rx);
     if (!nfcvTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_INVENTORY) || !rx_len || rx[0] != 0x00) {
+        //M5_LIB_LOGE("Failed to Inventory %u", rx_len);
         return false;
     }
 
