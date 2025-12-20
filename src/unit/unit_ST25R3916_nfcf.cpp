@@ -56,7 +56,7 @@ namespace unit {
 bool UnitST25R3916::configure_nfc_f()
 {
     if (!writeInitiatorOperationMode(InitiatorOperationMode::FeliCa, tr_am) ||  //
-        !writeBitrate(Bitrate::FC64_212Kbits, Bitrate::FC64_212Kbits)) {
+        !writeBitrate(Bitrate::Bps212K, Bitrate::Bps212K)) {
         return false;
     }
 
@@ -92,6 +92,11 @@ bool UnitST25R3916::configure_nfc_f()
     }
     return true;
 #endif
+}
+
+bool UnitST25R3916::configure_emulation_f()
+{
+    return false;
 }
 
 bool UnitST25R3916::nfcfTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,

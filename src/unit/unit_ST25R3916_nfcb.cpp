@@ -103,7 +103,7 @@ bool UnitST25R3916::nfcbTransmit(const uint8_t* tx, const uint16_t tx_len, const
         return false;
     }
 
-    if (!modify_bit_register8(REG_AUXILIARY_DEFINITION, 0x00, no_crc_rx) ||  //
+    if (!clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||  //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||
         !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
         return false;
@@ -122,6 +122,7 @@ bool UnitST25R3916::nfcbReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
         return false;
     }
 
+#if 0    
     uint8_t rbuf[256]{};
     if (!wait_for_FIFO(timeout_ms, sizeof(rbuf))) {
         M5_LIB_LOGD("Timeout");
@@ -135,6 +136,22 @@ bool UnitST25R3916::nfcbReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
     }
     rx_len = std::min<uint16_t>(actual, rx_len_org);
     memcpy(rx, rbuf, rx_len);
+#else
+    if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
+        M5_LIB_LOGE("Timeout");
+        return false;
+    }
+
+    uint16_t actual{};
+    auto bb = readFIFO(actual, rx, rx_len_org);
+    if (bb) {
+        M5_LIB_LOGV("readFIFO %u/%u %u/%u %02X", actual, rx_len_org, bb >> 16, bb & 0xFFFF, rx[0]);
+        rx_len = actual;
+        return bb;
+    }
+    M5_LIB_LOGD("Failed to readFIFO %u/%u", actual, rx_len_org);
+    return false;
+#endif
     return true;
 }
 

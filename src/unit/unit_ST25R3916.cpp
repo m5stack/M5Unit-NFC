@@ -63,8 +63,8 @@ inline uint16_t to_write_reg(const uint16_t regB)
 }
 
 constexpr uint16_t io_config12_i2c{io_drv_lvl};
-constexpr uint16_t io_config12_spi{miso_pd1 | miso_pd2};
-// constexpr uint16_t io_config12_spi{miso_pd1 | miso_pd2 | io_drv_lvl};
+// constexpr uint16_t io_config12_spi{miso_pd1 | miso_pd2};
+constexpr uint16_t io_config12_spi{miso_pd1 | miso_pd2 | io_drv_lvl};
 
 constexpr uint16_t get_i2c_thd_bits16(const uint32_t clk)
 {
@@ -78,34 +78,6 @@ float regulated_voltages(const uint8_t regulator_display_reg_value, const bool v
         return 3.6f + 0.1f * rv;
     }
     return (rv < 5) ? std::numeric_limits<float>::quiet_NaN() : 2.4f + (0.1f * (rv - 5));
-}
-
-// For noresoponse timer
-uint16_t calculate_nrt(const uint32_t ms, const bool nrt_step)
-{
-    auto step_sec      = (nrt_step ? 4096 : 64) / 13560000.f;
-    uint32_t nrt       = (uint32_t)std::round((ms / 1000.f) / step_sec);
-    const uint32_t max = nrt_step ? 0xFFFF : 0xF857;
-    if (nrt > max) {
-        nrt = max;
-    }
-    // M5_LIB_LOGE(">>>> %ums fc4096:%u => %04X", ms, nrt_step, nrt);
-    return nrt;
-}
-
-// For mask receiver timer and squelch timer (MRT, SRT)
-uint8_t calculate_mrt(const uint32_t us, const bool mrt_step)
-{
-    constexpr float fc  = 13.56e6f;  // 13.56 MHz
-    const uint32_t step = mrt_step ? 512 : 64;
-
-    float mrt_f  = (us * fc) / (1e6f * step);
-    uint32_t mrt = static_cast<uint32_t>(std::round(mrt_f));
-
-    mrt = std::max(std::min(mrt, 255u), 4u);  // clamp 4...255
-    // auto actual = mrt * (step / fc) * 1e6f;
-    // M5_LIB_LOGE("MRT: %u us -> reg=%02X (%0.2f us)", us, mrt, actual);
-    return static_cast<uint8_t>(mrt);
 }
 
 // Octal coded binary for bit representation
@@ -131,6 +103,11 @@ void IRAM_ATTR UnitST25R3916::on_irq(void* arg)
 {
     UnitST25R3916* u       = static_cast<UnitST25R3916*>(arg);
     u->_interrupt_occurred = true;
+    /*
+    uint32_t v{};
+    (void)u->readInterrupts(v);
+    u->_stored_irq |= v;
+    */
 }
 
 bool UnitST25R3916::begin()
@@ -138,7 +115,8 @@ bool UnitST25R3916::begin()
     // Attach interrupt
     if (_cfg.using_irq) {
         M5_LIB_LOGE("Using IRQ:%u", _cfg.irq);
-        pinMode(_cfg.irq, INPUT_PULLDOWN);
+        //        pinMode(_cfg.irq, INPUT_PULLDOWN);
+        pinMode(_cfg.irq, INPUT);
         attachInterruptArg(digitalPinToInterrupt(_cfg.irq), &UnitST25R3916::on_irq, this, RISING);
         _using_irq = true;
     }
@@ -162,7 +140,7 @@ bool UnitST25R3916::begin()
         M5_LIB_LOGE("Failed to send protection command");
         return false;
     }
-    // 3) I/O settings
+    // 3) Settings
     uint16_t params{};
     if (adapter()->type() == Adapter::Type::I2C) {
         // I2C settings
@@ -180,42 +158,10 @@ bool UnitST25R3916::begin()
         return false;
     }
 
-#if 0
-    {
-        uint8_t io1{}, io2{};
-        readIOConfiguration1(io1);
-        readIOConfiguration2(io2);
-        M5_LIB_LOGE(">>>>> IO1:%02X IO2:%02X", io1, io2);
-    }
-#endif
-
-    // 4) The internal voltage regulators have to be configuration
-    // It is recommended to use direct command Adjust regulators to improve the system PSRR.
-    if (!writeMaskInterrupts(0xFFFF00FF) && clearInterrupts()) {  // Mask all interrupts exclusive error
-        M5_LIB_LOGE("Failed to writeMaskInterrupt");
-        return false;
-    }
-
-    // Adjust regulators
-    if (!writeOperationControl(en)) {
-        M5_LIB_LOGE("Failed to writeOperationControl");
-        return false;
-    }
-    if (!writeDirectCommand(CMD_ADJUST_REGULATORS)) {
-        M5_LIB_LOGE("Failed to CMD_ADJUST_REGULATORS");
-        return false;
-    }
-    m5::utility::delay(5);  // Need wait
-
-    // Check vdd voltage
-    uint8_t value{};
-    if (readRegulatorDisplay(value)) {
-        M5_LIB_LOGD("Regulated voltages:%02X:%1.1fV", value, regulated_voltages(value, _cfg.vdd_voltage_5V));
-    }
-
     // Antenna Settings
     uint8_t txd{};
-    if (!readTXDriver(txd) || !writeTXDriver((txd & 0x0F) | ((_cfg.tx_am_modulation & 0x0F) << 4))) {
+    //    if (!readTXDriver(txd) || !writeTXDriver((txd & 0x0F) | ((_cfg.tx_am_modulation & 0x0F) << 4))) {
+    if (!writeTXDriver((_cfg.tx_am_modulation & 0x0F) << 4)) {  // d_rat, Use automatically, man slow
         M5_LIB_LOGE("Failed to TXDriver");
         return false;
     }
@@ -235,25 +181,64 @@ bool UnitST25R3916::begin()
     M5_LIB_LOGE("====== MRT:%02X SQT:%02X", mrt, sqt);
 #endif
 
-    return configureNFCMode(_cfg.mode);
+    //
+    modify_bit_register8(REG_IO_CONFIGURATION_1, 0x07, 0x07);      // MCU_CLK disabled,No LF clock on MCU_CLK
+    writeResistiveAMModulation(0x80);                              // Use minimum non-overlap
+    set_bit_register8(REG_IO_CONFIGURATION_2, aat_en);             // Enable AAT D/A
+    writeResistiveAMModulation(0x00);                              // Use normal non-overlap
+    writeExternalFieldDetectorActivationThreshold(0x10 | 0x03);    // trg 106, rfe 202
+    writeExternalFieldDetectorDeactivationThreshold(0x00 | 0x02);  // trg 75, rfe 150
+    // clear_register_bit8(REG_AUXILIARY_MODULATION_SETTING, 0x20);   // External load modulation disabled
+    modify_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, 0x05 << 4, 0xF0);  // FDT
+    writePassiveTargetModulation(0x5F);                                            // ptm 17.1, pt HighZ
+    writeEMDSuppressionConfiguration(0x40);  // start on the first four bits of the frame
+    writeAntennaTuningControl1(0x82);
+    writeAntennaTuningControl2(0x82);
+
+    //
+    set_bit_register8(REG_OPERATION_CONTROL, 0x03);  // 11: Enable external field detector automatically
+    writeDirectCommand(CMD_CLEAR_FIFO);
+
+    // 4) The internal voltage regulators have to be configuration
+    // It is recommended to use direct command Adjust regulators to improve the system PSRR.
+    if (!writeMaskInterrupts(0xFFFF00FF) && clearInterrupts()) {  // Mask all interrupts exclusive error
+        M5_LIB_LOGE("Failed to writeMaskInterrupt");
+        return false;
+    }
+    // Adjust regulators
+    if (!enable_osc()) {
+        M5_LIB_LOGE("Failed to enable_osc");
+        return false;
+    }
+    writeMaskInterrupts(0);
+
+    if (!writeDirectCommand(CMD_ADJUST_REGULATORS)) {
+        M5_LIB_LOGE("Failed to CMD_ADJUST_REGULATORS");
+        return false;
+    }
+    m5::utility::delay(5);  // Need wait
+
+    // Check vdd voltage
+    uint8_t value{};
+    if (readRegulatorDisplay(value)) {
+        M5_LIB_LOGE("Regulated voltages:%02X:%1.1fV", value, regulated_voltages(value, _cfg.vdd_voltage_5V));
+    }
+
+    return !_cfg.emulation ? configureNFCMode(_cfg.mode) : configureEmulationMode(_cfg.mode);
 }
 
 void UnitST25R3916::update(const bool /*force*/)
 {
-    /*
-    if (_interrupt_occurred) {
-        _interrupt_occurred = false;
+    if (!_using_irq) {
         uint32_t v{};
-        if (readInterrupts(v)) {
-            _irq_flags |= v;
-        }
+        (void)readInterrupts(v);
+        _stored_irq |= (v & _mask_irq);
     }
-    */
 }
 
 bool UnitST25R3916::configureNFCMode(const m5::nfc::NFC mode)
 {
-    if (mode == NFC::None) {
+    if (_cfg.emulation || mode == NFC::None) {
         return false;
     }
     if (NFCMode() == mode) {
@@ -280,7 +265,7 @@ bool UnitST25R3916::configureNFCMode(const m5::nfc::NFC mode)
             ok = configure_nfc_v();
             break;
         default:
-            return false;
+            break;
     }
 
     /*
@@ -289,7 +274,39 @@ bool UnitST25R3916::configureNFCMode(const m5::nfc::NFC mode)
     write_squelch_timer(default_sqt_for(mode));
     */
     if (ok) {
-        M5_LIB_LOGD("Change mode to %u", mode);
+        M5_LIB_LOGV("Change NFC mode to %u", mode);
+        _nfcMode = mode;
+    }
+    return ok;
+}
+
+bool UnitST25R3916::configureEmulationMode(const m5::nfc::NFC mode)
+{
+    if (!_cfg.emulation || mode == NFC::None) {
+        return false;
+    }
+    if (NFCMode() == mode) {
+        return true;
+    }
+    if (!writeDirectCommand(CMD_STOP_ALL_ACTIVITIES) ||            //
+        !modify_bit_register8(REG_OPERATION_CONTROL, 0x00, wu)) {  // Disable wakeup mode
+        return false;
+    }
+
+    bool ok{};
+    switch (mode) {
+        case m5::nfc::NFC::A:
+            ok = configure_emulation_a();
+            break;
+        case m5::nfc::NFC::F:
+            ok = configure_emulation_f();
+            break;
+        default:
+            M5_LIB_LOGE("Not supported");
+            break;
+    }
+    if (ok) {
+        M5_LIB_LOGV("Change emulation mode to %u", mode);
         _nfcMode = mode;
     }
     return ok;
@@ -376,6 +393,7 @@ bool UnitST25R3916::readInterrupts(uint32_t& value)
 
 bool UnitST25R3916::clearInterrupts()
 {
+    _stored_irq = 0;
     uint32_t discard{};
     return read_register32(st25r3916::command::REG_MAIN_INTERRUPT, discard);
 }
@@ -394,7 +412,7 @@ bool UnitST25R3916::writeTargetOperationMode(const TargetOperationMode mode, con
     return writeModeDefinition(value);
 }
 
-bool UnitST25R3916::writeBitrate(const st25r3916::Bitrate tx, const st25r3916::Bitrate rx)
+bool UnitST25R3916::writeBitrate(const m5::nfc::Bitrate tx, const m5::nfc::Bitrate rx)
 {
     uint8_t value = (m5::stl ::to_underlying(tx) << 4) | m5::stl::to_underlying(rx);
     return writeBitrateDefinition(value);
@@ -555,34 +573,7 @@ bool UnitST25R3916::write_register32(const uint16_t reg, const uint32_t v)
     return writeRegister32BE(to_write_reg(reg), v, true /*I2C, SPI not used*/);
 }
 
-bool UnitST25R3916::modify_bit_register8(const uint8_t reg, const uint8_t set_mask, const uint8_t clear_mask)
-{
-    uint8_t v{};
-    if (read_register8(reg, v)) {
-        const uint8_t w = (v & ~clear_mask) | set_mask;
-        // M5_LIB_LOGE("[%2u]:%02X %02X/%02X => %02X %08o", reg, v, set_mask, clear_mask, w, OCB(w));
-        if (w == v) {
-            return true;
-        }
-        return write_register8(reg, w);
-    }
-    return false;
-}
-
-bool UnitST25R3916::modify_bit_register8(const uint16_t reg, const uint8_t set_mask, const uint8_t clear_mask)
-{
-    uint8_t v{};
-    if (read_register8(reg, v)) {
-        const uint8_t w = (v & ~clear_mask) | set_mask;
-        // M5_LIB_LOGE("[%2u]:%02X %02X/%02X => %02X %08o", reg, v, set_mask, clear_mask, w, OCB(w));
-        if (w == v) {
-            return true;
-        }
-        return write_register8(reg, w);
-    }
-    return false;
-}
-
+#if 0
 uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms)
 {
     auto timeout_at = m5::utility::millis() + timeout_ms;
@@ -602,6 +593,28 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t ti
     } while (m5::utility::millis() <= timeout_at);
     return flags | I_nre32;  // Timeout
 }
+#else
+uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms)
+{
+    auto timeout_at = m5::utility::millis() + timeout_ms;
+    uint32_t flags{};
+    do {
+        if (!_using_irq || _interrupt_occurred) {
+            _interrupt_occurred = false;
+            uint32_t v{};
+            if (readInterrupts(v)) {
+                _stored_irq |= v;
+            }
+        }
+        if (_stored_irq & irq) {
+            return _stored_irq;
+        }
+        std::this_thread::yield();
+    } while (m5::utility::millis() <= timeout_at);
+    return _stored_irq | I_nre32;  // Timeout
+}
+
+#endif
 
 bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size)
 {

@@ -94,6 +94,23 @@ void append_parity(uint8_t* out, const uint32_t out_len, const uint8_t* in, cons
         ++bitpos;
     }
 }
+
+constexpr uint8_t val_table[] = {
+
+    0x07, 0x3C, 0x03, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x5C, 0x00, 0x00, 0x08, 0x2D, 0xD8, 0x00, 0x02,
+    0x00, 0x00, 0x08, 0x00, 0x00, 0x80, 0x5F, 0xE6, 0x0F, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0xC5, 0x00, 0xFF, 0x70, 0x5F, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+};
+
+inline uint32_t OCB(const uint8_t c)
+{
+    // printf("%08o", OCB(0x2d)); => 00101101
+    return (c & 1) | (c & 2) << 2 | (c & 4) << 4 | (c & 8) << 6 | (c & 16) << 8 | (c & 32) << 10 | (c & 64) << 12 |
+           (c & 128) << 14;
+}
+
 }  // namespace
 
 namespace m5 {
@@ -108,12 +125,12 @@ bool UnitST25R3916::configure_nfc_a()
     // ISO14443A
     // M5_LIB_LOGE(">>>>>> try ISO14443A REQA");
     writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, 0x01 /* nfc_ar01 */);
-    writeBitrate(Bitrate::FC128_106Kbits, Bitrate::FC128_106Kbits);
+    writeBitrate(Bitrate::Bps106K, Bitrate::FC128_106Kbits);
     writeSettingsISO14443A(0x0);
 #endif
 
     if (!writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, nfc_ar8_auto) ||  //
-        !writeBitrate(Bitrate::FC128_106Kbits, Bitrate::FC128_106Kbits) ||                //
+        !writeBitrate(Bitrate::Bps106K, Bitrate::Bps106K) ||                              //
         !writeSettingsISO14443A(0x00)) {
         return false;
     }
@@ -126,9 +143,63 @@ bool UnitST25R3916::configure_nfc_a()
            nfc_initial_field_on();
 }
 
+bool UnitST25R3916::configure_emulation_a()
+{
+    _encrypted = false;
+
+    writeModeDefinition(0xC8);                 // target, NFC-A, Bit rate detection mode
+    writeNFCIP1PassiveTargetDefinition(0x5C);  // fdel[7:4], disable d_ac_ap2p.d_214/424_1r, enable d_106_ac
+    writeMaskPassiveTargetInterrupt(0x02);     // mask I_wu_ax
+    writeTimerAndEMVControl(0x08);             // mrt_setp 512
+
+#if 0
+    uint8_t reg = 0x00;
+    for (auto&& v : val_table) {
+        uint8_t rv{};
+        read_register8(reg, rv);
+        if(rv != v){
+            M5_LIB_LOGE("[%02X]:%02X/%02X %08o/%08o", reg, rv,v, OCB(rv), OCB(v));
+            write_register8(reg, v);
+        }
+        ++reg;
+    }
+
+    {
+        uint16_t r{};
+        r = 0x05;
+        writeRegister8(r, 0x40);
+        r = 0x06;
+        writeRegister8(r, 0x00);
+        r = 0x0B;
+        writeRegister8(r, 0x0C);
+        r = 0x0C;
+        writeRegister8(r, 0x93);
+        r = 0x0D;
+        writeRegister8(r, 0x00);
+        r = 0x0F;
+        writeRegister8(r, 0x00);
+        r = 0x15;
+        writeRegister8(r, 0x33);
+        r = 0x28;
+        writeRegister8(r, 0x10);
+        r = 0x29;
+        writeRegister8(r, 0x7C);
+        r = 0x2A;
+        writeRegister8(r, 0x80);
+        r = 0x2B;
+        writeRegister8(r, 0x04);
+        r = 0x2C;
+        writeRegister8(r, 0xB0);
+    }
+#endif
+
+    return true;
+}
+
 uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                        const uint32_t timeout_ms)
 {
+#if 0    
     CHECK_MODE();
 
     const auto rx_len_org = rx_len;
@@ -143,6 +214,53 @@ uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint
         //        !writeMaskMainInterrupt(~I_rxe) || !writeMaskTimerAndNFCInterrupt(~I_nre) ||//
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||
         !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
+        return false;
+    }
+
+    if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
+        M5_LIB_LOGE("Timeout");
+        return false;
+    }
+
+    uint16_t actual{};
+    auto bb = readFIFO(actual, rx, rx_len_org);
+    if (bb) {
+        M5_LIB_LOGV("readFIFO %u/%u %u/%u %02X", actual, rx_len_org, bb >> 16, bb & 0xFFFF, rx[0]);
+        rx_len = actual;
+        return bb;
+    }
+    M5_LIB_LOGD("Failed to readFIFO %u/%u", actual, rx_len_org);
+    return false;
+#else
+    return nfcaTransmit(tx, tx_len, timeout_ms) && nfcaReceive(rx, rx_len, timeout_ms);
+
+#endif
+}
+
+bool UnitST25R3916::nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
+{
+    CHECK_MODE();
+
+    if (!tx || !tx_len) {
+        return false;
+    }
+
+    if ((timeout_ms ? !write_noresponse_timeout(timeout_ms) : false) ||                //
+        !writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||  //
+        !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||
+        !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
+        return false;
+    }
+    return true;
+}
+
+bool UnitST25R3916::nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
+{
+    CHECK_MODE();
+
+    const auto rx_len_org = rx_len;
+    rx_len                = 0;
+    if (!rx || !rx_len_org) {
         return false;
     }
 
@@ -179,23 +297,43 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
         return false;
     }
 
-    auto irq = wait_for_interrupt(I_rxe32 | I_col32, TIMEOUT_REQ_WUP);
+    auto irq = wait_for_interrupt(I_rxe32 | I_rxs | I_col32, TIMEOUT_REQ_WUP);
     // M5_LIB_LOGE("IRQ:%08X", irq);
+
+    if (!is_irq32_rxe(irq) && is_irq32_rxs(irq)) {
+        auto timeout_at = m5::utility::millis() + TIMEOUT_REQ_WUP;
+        uint16_t bytes{};
+        uint8_t bits{};
+        do {
+            if (readFIFOSize(bytes, bits) && bytes >= 2) {
+                break;
+            }
+            std::this_thread::yield();
+        } while (m5::utility::millis() <= timeout_at);
+        readFIFOSize(bytes, bits);
+        irq |= bytes ? I_rxe32 : 0u;
+    }
 
     if (is_irq32_rxe(irq)) {
         // ATQA
         uint8_t rbuf[2]{};
         uint16_t actual{};
-        if (readFIFO(actual, rbuf, sizeof(rbuf)) && actual) {
-            if (actual == 2) {
-                atqa = ((uint16_t)rbuf[1] << 8) | (uint16_t)rbuf[0];
-            }
+        if (readFIFO(actual, rbuf, sizeof(rbuf)) && actual == 2) {
+            atqa = ((uint16_t)rbuf[1] << 8) | (uint16_t)rbuf[0];
             // M5_LIB_LOGE("ATQA:%04X %u", atqa, actual);
             //  When ocuur collisions, the ATQA value is inaccurate
             return true;
         }
+        return false;
+    }
+
+    // M5_LIB_LOGE("Error: %08X", irq);
+    return false;
+#if 0
+    if (has_irq32_error(irq)) {
     }
     return is_irq32_collision(irq);
+#endif
 }
 
 bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)

@@ -50,17 +50,13 @@ enum class TargetOperationMode : uint8_t {
     //    BothBitrate = 0x0D << 3, //!< Felica and ISO14443A bit rate detection mode
 };
 
-/*!
-  @enum Bitrate
-  @brief Bit rate for TX/RX
-  @details For Bit rate definition
- */
-enum class Bitrate : uint8_t {
-    FC128_106Kbits,  //!< -106kbit/s
-    FC64_212Kbits,   //!< -212 kbit/s
-    FC32_424Kbits,   //!< -424 kbit/s
-    FC16_848Kbits,   //!< -848 kbit/s
-};
+///@name PT_MEMORY
+///@{
+constexpr uint32_t PT_MEMORY_A_LENGTH{15};    //!< A-config length
+constexpr uint32_t PT_MEMORY_F_LENGTH{21};    //!< F-config length
+constexpr uint32_t PT_MEMORY_TSN_LENGTH{12};  //!< TSN data length
+constexpr uint32_t PT_MEMORY_LENGTH{PT_MEMORY_A_LENGTH + PT_MEMORY_F_LENGTH + PT_MEMORY_TSN_LENGTH};  //!< all length
+///@}
 
 namespace command {
 ///@cond
@@ -76,7 +72,7 @@ constexpr uint8_t REG_BITRATE_DEFINITION{0x04};
 constexpr uint8_t REG_ISO14443A_SETTINGS{0x05};
 constexpr uint8_t REG_ISO14443B_SETTINGS{0x06};
 constexpr uint8_t REG_FELICA_SETTINGS{0x07};
-constexpr uint8_t REG_NFCIP_1_DEFINITION{0x08};
+constexpr uint8_t REG_NFCIP_1_PASSIVE_TARGET_DEFINITION{0x08};
 constexpr uint8_t REG_STREAM_MODE_DEFINITION{0x09};
 constexpr uint8_t REG_AUXILIARY_DEFINITION{0x0A};
 // Receiver configuration
@@ -202,7 +198,7 @@ constexpr uint8_t CMD_MEASURE_POWER_SUPPLY{0xDF};         //
 constexpr uint8_t CMD_START_GENERAL_PURPOSE_TIMER{0xE0};  //
 constexpr uint8_t CMD_START_WAKEUP_TIMER{0xE1};           //
 constexpr uint8_t CMD_START_MASK_RECEIVE_TIMER{0xE2};     // Starts the mask-receive timer and squelch operation
-constexpr uint8_t CMD_Start_No_response_timer{0xE3};      //
+constexpr uint8_t CMD_Start_NO_RESPONSE_TIMER{0xE3};      //
 constexpr uint8_t CMD_START_PPON2_TIMER{0xE4};            //
 constexpr uint8_t CMD_STOP_NO_RESPONSE_TIMER{0xE5};       //
 constexpr uint8_t CMD_REGISTER_SPACEB_ACCESS{0xFB};       // Enables R/W access to register Space-B
@@ -222,7 +218,7 @@ constexpr uint8_t OP_LOAD_FIFO{0x80};                // 10000000b
 constexpr uint8_t OP_LOAD_PT_MEMORY_A_CONFIG{0xA0};  // 10100000b
 constexpr uint8_t OP_LOAD_PT_MEMORY_F_CONFIG{0xA8};  // 10101000b
 constexpr uint8_t OP_LOAD_PT_MEMORY_TSN_DATA{0xAC};  // 10101100b
-constexpr uint8_t OP_LOAD_PT_MEMORY{0xBF};           // 10111111b
+constexpr uint8_t OP_READ_PT_MEMORY{0xBF};           // 10111111b
 constexpr uint8_t OP_READ_FIFO{0x9F};                // 10011111b
 constexpr uint8_t OP_DIRECT_COMMAND{0xC0};           // 11xxxxxxb;
 
@@ -241,6 +237,7 @@ constexpr uint16_t i2c_thd016{0x1000};
 
 // 0x01 IO configuration register 2
 constexpr uint8_t sup3v{0x80};
+constexpr uint8_t aat_en{0x20};
 constexpr uint8_t io_drv_lvl{0x04};
 constexpr uint8_t miso_pd1{0x08};
 constexpr uint8_t miso_pd2{0x10};
@@ -273,7 +270,13 @@ constexpr uint8_t nfc_ar8_RFI{0x03};
 // 0x05 ISO14443A and NFC 106kb/s settings register
 constexpr uint8_t no_tx_par{0x80};
 constexpr uint8_t no_rx_par{0x40};
+constexpr uint8_t nfc_f0{0x20};
 constexpr uint8_t antcl{0x01};
+
+// 0x08 NFCIP-1 passive target definition register
+constexpr uint8_t d_ac_ap2p{0x08};
+constexpr uint8_t d_212_424_1r{0x04};
+constexpr uint8_t d_106_ac_a{0x01};
 
 // 0x0A Auxiliary definition register
 constexpr uint8_t no_crc_rx{0x80};
@@ -283,35 +286,95 @@ constexpr uint8_t nfc_n0{0x01};
 constexpr uint8_t nfc_n_mask{0x03};
 
 // 0x12 Timer and EMV control register
-constexpr uint8_t mrt_step{0x08};  // Mask receive timer step size
-constexpr uint8_t nrt_step{0x01};  // No-response timer step size
+constexpr uint8_t mrt_step{0x08};  // Mask receive timer step size 0:64/fc, 1:5126/fc
+constexpr uint8_t nrt_nfc{0x01};   // No-response timer start condition in AP2P initiator and target mode.
+constexpr uint8_t nrt_emv{0x01};   // 1: No-response timer EMV mode
+constexpr uint8_t nrt_step{0x01};  // No-response timer step size 0:64/fc, 1:4096/fc
 
 // 0x1A Main interrupt register
-constexpr uint8_t I_wl{0x40};   // IRQ due to FIFO water level
-constexpr uint8_t I_rxs{0x20};  // IRQ due to start of receive
-constexpr uint8_t I_rxe{0x10};  // IRQ due to end of receive
-constexpr uint8_t I_txe{0x08};  // IRQ due to end of transmission
-constexpr uint8_t I_col{0x04};  // IRQ due to bit collision
+constexpr uint8_t I_osc{0x80};      // IRQ when oscillator frequency is stable
+constexpr uint8_t I_wl{0x40};       // IRQ due to FIFO water level
+constexpr uint8_t I_rxs{0x20};      // IRQ due to start of receive
+constexpr uint8_t I_rxe{0x10};      // IRQ due to end of receive
+constexpr uint8_t I_txe{0x08};      // IRQ due to end of transmission
+constexpr uint8_t I_col{0x04};      // IRQ due to bit collision
+constexpr uint8_t I_rx_rest{0x02};  // 1: Mask IRQ due to automatic reception restart
+
+constexpr uint32_t I_osc32     = ((uint32_t)I_osc << 24);
+constexpr uint32_t I_wl32      = ((uint32_t)I_wl << 24);
+constexpr uint32_t I_rxs32     = ((uint32_t)I_rxs << 24);
+constexpr uint32_t I_rxe32     = ((uint32_t)I_rxe << 24);
+constexpr uint32_t I_txe32     = ((uint32_t)I_txe << 24);
+constexpr uint32_t I_col32     = ((uint32_t)I_col << 24);
+constexpr uint32_t I_rx_rest32 = ((uint32_t)I_rx_rest << 24);
 
 // 0x1B Timer and NFC interrupt register
-constexpr uint8_t I_nre{0x40};  // IRQ due to No-response timer expire
-constexpr uint8_t I_cac{0x04};  // IRQ due to detection of collision during RF collision avoidance
-constexpr uint8_t I_cat{0x02};  // IRQ after minimum guard time expire
+constexpr uint8_t I_dct{0x80};   // IRQ due to termination of direct command
+constexpr uint8_t I_nre{0x40};   // IRQ due to No-response timer expire
+constexpr uint8_t I_gpe{0x20};   // IRQ due to general purpose timer expire
+constexpr uint8_t I_eon{0x10};   // IRQ due to detection of external field
+constexpr uint8_t I_eof{0x08};   // IRQ due to detection of external field drop
+constexpr uint8_t I_cac{0x04};   // IRQ due to detection of collision during RF collision avoidance
+constexpr uint8_t I_cat{0x02};   // IRQ after minimum guard time expire
+constexpr uint8_t I_nfct{0x01};  // IRQ when in target mode the initiator bit rate was recognized
+
+constexpr uint32_t I_nre32  = ((uint32_t)I_nre << 16);
+constexpr uint32_t I_eon32  = ((uint32_t)I_eon << 16);
+constexpr uint32_t I_eof32  = ((uint32_t)I_eof << 16);
+constexpr uint32_t I_cac32  = ((uint32_t)I_cac << 16);
+constexpr uint32_t I_cat32  = ((uint32_t)I_cat << 16);
+constexpr uint32_t I_nfct32 = ((uint32_t)I_nfct << 16);
+
+// 0x1C Error and wake-up interrupt register
+constexpr uint8_t I_crc{0x80};
+constexpr uint8_t I_par{0x40};
+constexpr uint8_t I_err2{0x20};
+constexpr uint8_t I_err1{0x10};
+constexpr uint8_t I_wt{0x08};
+constexpr uint8_t I_wam{0x04};
+constexpr uint8_t I_wph{0x02};
+constexpr uint8_t I_wcap{0x01};
+
+constexpr uint32_t I_crc32  = ((uint32_t)I_crc << 8);
+constexpr uint32_t I_par32  = ((uint32_t)I_par << 8);
+constexpr uint32_t I_err232 = ((uint32_t)I_err2 << 8);
+constexpr uint32_t I_err132 = ((uint32_t)I_err1 << 8);
 
 // 0x1D Passive target interrupt register
-constexpr uint8_t I_apon{0x20};  // IRQ due to active P2P field on event
+constexpr uint8_t I_ppon2{0x80};    // PPON2 field on waiting timer interrupt
+constexpr uint8_t I_sl_wl{0x40};    // IRQ for passive target slot number water level
+constexpr uint8_t I_apon{0x20};     // IRQ due to active P2P field on event
+constexpr uint8_t I_rxe_pta{0x10};  // IRQ due to end of receive
+constexpr uint8_t I_wu_f{0x08};     // NFC 212/424kb/s passive target Active interrupt
+constexpr uint8_t I_wu_ax{0x02};    // Passive target Active* interrupt
+constexpr uint8_t I_wu_a{0x01};     // Passive target Active interrupt
 
-constexpr uint32_t I_wl32  = ((uint32_t)I_wl << 24);
-constexpr uint32_t I_rxs32 = ((uint32_t)I_rxs << 24);
-constexpr uint32_t I_rxe32 = ((uint32_t)I_rxe << 24);
-constexpr uint32_t I_txe32 = ((uint32_t)I_txe << 24);
-constexpr uint32_t I_col32 = ((uint32_t)I_col << 24);
+constexpr uint32_t I_apon32    = I_apon;
+constexpr uint32_t I_rxe_pta32 = I_rxe_pta;
+constexpr uint32_t I_wu_f32    = I_wu_f;
+constexpr uint32_t I_wu_ax32   = I_wu_ax;
+constexpr uint32_t I_wu_a32    = I_wu_a;
 
-constexpr uint32_t I_nre32 = ((uint32_t)I_nre << 16);
-constexpr uint32_t I_cac32 = ((uint32_t)I_cac << 16);
-constexpr uint32_t I_cat32 = ((uint32_t)I_cat << 16);
+// 0x21 Passive target display register
+constexpr uint8_t pta_state_power_off{0x00};
+constexpr uint8_t pta_state_idle{0x01};
+constexpr uint8_t pta_state_ready_l1{0x02};
+constexpr uint8_t pta_state_ready_l2{0x03};
+constexpr uint8_t pta_state_active{0x05};
+constexpr uint8_t pta_state_halt{0x09};
+constexpr uint8_t pta_state_ready_l1_x{0x0A};
+constexpr uint8_t pta_state_ready_l2_x{0x0B};
+constexpr uint8_t pta_state_active_x{0x0D};
 
-constexpr uint32_t I_apon32 = I_apon;
+// 0x31 Auxiliary display register
+constexpr uint8_t a_cha{0x80};
+constexpr uint8_t efd_o{0x40};
+constexpr uint8_t tx_on{0x20};
+constexpr uint8_t osc_ok{0x10};
+constexpr uint8_t rx_on{0x08};
+constexpr uint8_t rx_act{0x40};
+constexpr uint8_t en_peer{0x02};
+constexpr uint8_t en_ac{0x01};
 
 ///@endcond
 }  // namespace regval
@@ -345,6 +408,9 @@ inline bool is_irq32_collision(const uint32_t irq32)
 {
     return irq32 & regval::I_col32;
 }
+
+uint8_t calculate_mrt(const uint32_t us, const bool mrt_step /* false:64, true:512*/);
+uint16_t calculate_nrt(const uint32_t ms, const bool nrt_step /* false:64, true:4096*/);
 
 }  // namespace st25r3916
 

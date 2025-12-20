@@ -21,6 +21,9 @@
 #include "nfc/v/nfcv.hpp"
 
 namespace m5 {
+namespace nfc {
+struct ListenerST25R3916ForA;
+}
 namespace unit {
 
 namespace nfc {
@@ -51,11 +54,12 @@ public:
       @brief Settings for begin
      */
     struct config_t {
-        m5::nfc::NFC mode{m5::nfc::NFC::A};  //!< Initial Operation Mode
+        m5::nfc::NFC mode{m5::nfc::NFC::A};  //!< Initial target for Poll/Listen
         bool vdd_voltage_5V{false};          //!< VDD voltage true:5V false:3.3V
         uint8_t tx_am_modulation{13};        //!< 0-15 See also 4.5.48 TX driver register
         bool using_irq{};                    //!< Exists IRQ PIN?
         uint8_t irq{};                       //!< IRQ PIN
+        bool emulation{};                    //!< Emulation mode?
     };
 
     ///@name Settings for begin
@@ -83,6 +87,12 @@ public:
       @return True if successful
      */
     bool configureNFCMode(const m5::nfc::NFC mode);
+    /*!
+      @brief Configure NFC mode for emulation
+      @param mode NFC mode
+      @return True if successful
+     */
+    bool configureEmulationMode(const m5::nfc::NFC mode);
 
     /*!
       @brief Is the current operating mode the one specified?
@@ -131,7 +141,7 @@ public:
      */
     bool writeTargetOperationMode(const st25r3916::TargetOperationMode mode, const uint8_t optional = 0);
 
-    bool writeBitrate(const st25r3916::Bitrate tx, const st25r3916::Bitrate rx);
+    bool writeBitrate(const m5::nfc::Bitrate tx, const m5::nfc::Bitrate rx);
     ///@}
 
     ///@name FIFO
@@ -339,18 +349,18 @@ public:
       @param[out] value Value
       @return True if successful
      */
-    inline bool readNFCIP1Definition(uint8_t& value)
+    inline bool readNFCIP1PassiveTargetDefinition(uint8_t& value)
     {
-        return read_register8(st25r3916::command::REG_NFCIP_1_DEFINITION, value);
+        return read_register8(st25r3916::command::REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, value);
     }
     /*!
       Write the NFCIP-1 passive target definition
       @param[out] value Value
       @return True if successful
      */
-    inline bool writeFCIP1Definition(const uint8_t value)
+    inline bool writeNFCIP1PassiveTargetDefinition(const uint8_t value)
     {
-        return write_register8(st25r3916::command::REG_NFCIP_1_DEFINITION, value);
+        return write_register8(st25r3916::command::REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, value);
     }
     /*!
       @brief Read the stream mode definition
@@ -1167,7 +1177,7 @@ public:
       @param value Value
       @return True if successful
      */
-    inline bool wrtePassiveTargetModulation(const uint8_t value)
+    inline bool writePassiveTargetModulation(const uint8_t value)
     {
         return write_register8(st25r3916::command::REG_PASSIVE_TARGET_MODULATION, value);
     }
@@ -1717,6 +1727,9 @@ public:
      */
     uint32_t nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms);
+    bool nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
+    bool nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
+
     /*!
       @brief Request for idle PICC
       @param[out atqa ATQA
@@ -2083,19 +2096,26 @@ public:
     bool nfcvWriteSingleBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len, const bool option = false);
     ///@}
 
+    ///@name PT_MEMORY
+    ///@{
+    bool writePtMemoryA(const uint8_t* tx, const uint32_t tx_len);
+    bool writePtMemoryF(const uint8_t* tx, const uint32_t tx_len);
+    bool writePtMemoryTSN(const uint8_t* tx, const uint32_t tx_len);
+    bool readPtMemory(uint8_t* rx, const uint32_t rx_len);
+    ///@}
+
     // For debug
     void dumpRegister();
 
 protected:
+    friend struct m5::nfc::ListenerST25R3916ForA;
+
     static void IRAM_ATTR on_irq(void* arg);
 
     bool read_register8(const uint8_t reg, uint8_t& v);
     bool read_register8(const uint16_t reg, uint8_t& v);
     bool write_register8(const uint8_t reg, const uint8_t v);
     bool write_register8(const uint16_t reg, const uint8_t v);
-    bool modify_bit_register8(const uint8_t reg, const uint8_t set_mask, const uint8_t clear_mask);
-    bool modify_bit_register8(const uint16_t reg, const uint8_t set_mask, const uint8_t clear_mask);
-
     bool read_register16(const uint8_t reg, uint16_t& v);
     bool read_register16(const uint16_t reg, uint16_t& v);
     bool write_register16(const uint8_t reg, const uint16_t v);
@@ -2114,11 +2134,39 @@ protected:
     bool wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size = 0);
     bool read_FIFO(std::vector<uint8_t>& out);
 
+    // Mode confifuration
     bool configure_nfc_a();
     bool configure_nfc_b();
     bool configure_nfc_f();
     bool configure_nfc_v();
     bool nfc_initial_field_on();
+
+    bool configure_emulation_a();
+    bool configure_emulation_f();
+
+    // Utility
+    bool modify_bit_register8(const uint8_t reg, const uint8_t set_mask, const uint8_t clear_mask);
+    bool modify_bit_register8(const uint16_t reg, const uint8_t set_mask, const uint8_t clear_mask);
+    bool set_bit_register8(const uint8_t reg, const uint8_t bits);
+    bool set_bit_register8(const uint16_t reg, const uint8_t bits);
+    bool clear_bit_register8(const uint8_t reg, const uint8_t bits);
+    bool clear_bit_register8(const uint16_t reg, const uint8_t bits);
+    inline bool change_bit_register8(const uint8_t reg, const uint8_t bits, const uint8_t mask)
+    {
+        return modify_bit_register8(reg, mask & bits, mask);
+    }
+    inline bool change_bit_register8(const uint16_t reg, const uint8_t bits, const uint8_t mask)
+    {
+        return modify_bit_register8(reg, mask & bits, mask);
+    }
+    bool change_test_bit_register8(const uint8_t reg, const uint8_t bits, const uint8_t mask);
+    bool change_test_bit_register8(const uint16_t reg, const uint8_t bits, const uint8_t mask);
+
+    bool enable_interrupts(const uint32_t mask);
+    bool disable_interrupts(const uint32_t mask);
+
+    bool enable_osc();
+    bool disable_field();
 
     // NFC-A
     bool nfca_request_wakeup(uint16_t& atqa, const bool req);
@@ -2144,11 +2192,13 @@ protected:
 
 private:
     config_t _cfg{};
+    volatile uint32_t _stored_irq{};
+    uint32_t _mask_irq{0xFFFFFFFF};  // for !_using_irq
     m5::nfc::NFC _nfcMode{};
-    m5::nfc::a::mifare::classic::Crypto1 _crypto1{};
     bool _encrypted{};
     bool _using_irq{};
     volatile bool _interrupt_occurred{};
+    m5::nfc::a::mifare::classic::Crypto1 _crypto1{};
 };
 
 /*!

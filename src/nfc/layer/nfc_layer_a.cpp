@@ -131,13 +131,13 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
-        M5_LIB_LOGV("ATQA:%04X", picc.atqa);
+        M5_LIB_LOGE("ATQA:%04X", picc.atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
-        M5_LIB_LOGV("Detect:ATQA:%04X SAK:%02X %s %s", picc.atqa, picc.sak, picc.uidAsString().c_str(),
+        M5_LIB_LOGE("Detect:ATQA:%04X SAK:%02X %s %s", picc.atqa, picc.sak, picc.uidAsString().c_str(),
                     picc.typeAsString().c_str());
 
         // Hlt
@@ -194,8 +194,9 @@ bool NFCLayerA::reactivate(const PICC& picc)
     uint16_t discard{};
     if (deactivate()) {
         // m5::utility::delay(2);  // guard time (ULC)
-        return wakeup(discard) && activate(tmp);
 #if 0
+        //        return wakeup(discard) && activate(tmp);
+#else
         if (!wakeup(discard)) {
             M5_LIB_LOGE("Failed to wakeup");
             return false;
@@ -236,7 +237,6 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
     Type type{};
 
     if (!reactivate(picc)) {
-        M5_LIB_LOGE("ERR1");
         return false;
     }
 

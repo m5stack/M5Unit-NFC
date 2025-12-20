@@ -184,6 +184,24 @@ constexpr NFCForumTag nfc_forum_tag_table[] = {
     NFCForumTag::None,                                                                                   //
 };
 
+struct EmulationSetting {
+    uint16_t atqa;
+    uint8_t sak;
+};
+constexpr EmulationSetting emulation_settings[] = {
+    {0, 0},                                                                          //
+    {0x0004, 0x09}, {0x0004, 0x08}, {0x0002, 0x19}, {0x0002, 0x18},                  // Classic
+    {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00},  // Light
+    {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00},                  // NTAG 2xx
+    {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00},                                  // NTAG 2xx
+    {0x0000, 0x00}, {0x0000, 0x00}, {0x0000, 0x00},                                  // ST25TA
+    {0x0000, 0x20},                                                                  //
+    {0x0000, 0x20}, {0x0000, 0x20}, {0x0000, 0x20},                                  // Plus
+    {0x0344, 0x20}, {0x0344, 0x20}, {0x0344, 0x20}, {0x0344, 0x20},                  // DESFire
+    {0x0000, 0x20},                                                                  //
+    {0x0000, 0x00},                                                                  //
+};
+
 struct Historical {
     const std::array<uint8_t, 7>& h;
     const Type t;
@@ -464,6 +482,18 @@ Type historical_bytes_to_type_sak20(uint8_t& sub, const uint8_t* bytes, const ui
     return t;
 }
 
+uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len)
+{
+    uint8_t bcc{};
+    if (data && len) {
+        for (uint32_t i = 0; i < len; ++i) {
+            bcc ^= data[i];
+        }
+    }
+    return bcc;
+}
+
+//
 m5::nfc::NFCForumTag get_nfc_forum_tag_type(const Type t)
 {
     uint8_t idx = m5::stl::to_underlying(t);
@@ -508,16 +538,23 @@ std::string PICC::typeAsString() const
     return s;
 }
 
-uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len)
+bool PICC::emulate(const Type t, const uint8_t* uid, const uint8_t uid_len)
 {
-    uint8_t bcc{};
-    if (data && len) {
-        for (uint32_t i = 0; i < len; ++i) {
-            bcc ^= data[i];
-        }
+    if (t == Type::Unknown || !uid || !(uid_len == 4 || uid_len == 7 || uid_len == 10)) {
+        return false;
     }
-    return bcc;
+
+    this->type = t;
+    this->size = uid_len;
+    std::memset(this->uid, 0x00, sizeof(this->uid));
+    std::memcpy(this->uid, uid, uid_len);
+    this->atqa  = emulation_settings[m5::stl::to_underlying(t)].atqa;
+    this->sak   = emulation_settings[m5::stl::to_underlying(t)].sak;
+    this->blocks = get_number_of_blocks(t);
+
+    return valid();
 }
+
 }  // namespace a
 }  // namespace nfc
 }  // namespace m5

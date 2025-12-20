@@ -275,6 +275,15 @@ struct PICC {
     std::string uidAsString() const;   //!< @brief Gets the uid string
     std::string typeAsString() const;  //!< @brief Gets the type string
 
+    /*!
+      @brief Emulation settings
+      @param t Type
+      @param uid UID
+      @param uid_len UID length (4,7,10)
+      @return True if successful
+     */
+    bool emulate(const Type t, const uint8_t* uid, const uint8_t uid_len);
+
     ///@name Type
     ///@{
     //! @brief Is MIFARE?
@@ -325,6 +334,12 @@ struct PICC {
     {
         return valid() ? get_user_area_size(type) : 0;
     }
+    //! @brief Read/Write unit size
+    inline uint16_t unitSize() const
+    {
+        return valid() ? get_unit_size(type) : 0;
+    }
+
     //! @brief Gets the first user block/page address
     inline uint16_t firstUserBlock() const
     {
@@ -359,16 +374,6 @@ struct PICC {
     {
         return valid() && has_fast_read(type);
     }
-#if 0
-    FileSystem::Type get_file_system() const
-    {
-        return (isMifareClassic() || isMifarePlus())
-                   ? FileSystem::Type::Sector
-                   : ((isMifareUltralight() || isNTAG())
-                          ? FileSystem::Page
-                          : ((isMifareDESFire() || isST25TA()) ? FileSystem : File:FileSystem : None));
-    }
-#endif
     ///@}
 };
 
@@ -429,11 +434,11 @@ enum class Command : uint8_t {
 
 ///@name Timeout
 ///@{
-constexpr uint32_t TIMEOUT_REQ_WUP{4};
-constexpr uint32_t TIMEOUT_SELECT{4};
-constexpr uint32_t TIMEOUT_ANTICOLL{8};
+constexpr uint32_t TIMEOUT_REQ_WUP{4};   // 4
+constexpr uint32_t TIMEOUT_SELECT{4};    // 4
+constexpr uint32_t TIMEOUT_ANTICOLL{8};  // 8
 constexpr uint32_t TIMEOUT_HALT{2};
-constexpr uint32_t TIMEOUT_GET_VERSION{5};
+constexpr uint32_t TIMEOUT_GET_VERSION{5};  // 5
 constexpr uint32_t TIMEOUT_3DES{10};
 constexpr uint32_t TIMEOUT_AUTH1{2};
 constexpr uint32_t TIMEOUT_AUTH2{10};

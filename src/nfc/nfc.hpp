@@ -44,6 +44,14 @@ enum class NFCForumTag : uint8_t {
     Type5,  //!< Type 5 ISO/IEC 15693
 };
 
+enum class Bitrate : uint8_t {
+    Bps106K,
+    Bps212K,
+    Bps424K,
+    Bps848K,
+    Invalid = 0xFF,
+};
+
 }  // namespace nfc
 }  // namespace m5
 

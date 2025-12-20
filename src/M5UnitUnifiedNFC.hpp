@@ -22,6 +22,7 @@
 #include "unit/unit_ST25R3916.hpp"
 
 #include "nfc/layer/nfc_layer_a.hpp"
+#include "nfc/layer/a/emulation_layer_a.hpp"
 #include "nfc/layer/nfc_layer_b.hpp"
 #include "nfc/layer/nfc_layer_f.hpp"
 #include "nfc/layer/nfc_layer_v.hpp"
