@@ -101,6 +101,7 @@ void read_ndef()
     // Read NDEF message TLV
     if (!nfc_a.ndefRead(msg)) {
         M5_LOGE("Failed to read");
+        lcd.fillScreen(TFT_RED);
         return;
     }
 
@@ -139,6 +140,7 @@ void write_ndef()
     if (nfc_a.activatedPICC().isMifareUltralight()) {
         if (!nfc_a.mifareUltralightChangeFormatToNDEF()) {
             M5_LOGE("Failed to mifareUltralightChangeFormatToNTAG");
+            lcd.fillScreen(TFT_RED);
             return;
         }
     }
@@ -150,12 +152,12 @@ void write_ndef()
     r[0].setURIPayload("m5stack.com/", URIProtocol::HTTPS);
 
     // Text record with langage type
-    const char* en_data = "Hello M5Stack";
-    r[1].setTextPayload(en_data, "en");
-    const char* ja_data = "こんにちは M5Stack";
-    r[2].setTextPayload(ja_data, "ja");
     const char* zh_data = "你好 M5Stack";
-    r[3].setTextPayload(zh_data, "zh");
+    r[1].setTextPayload(zh_data, "zh");
+    const char* en_data = "Hello M5Stack";
+    r[2].setTextPayload(en_data, "en");
+    const char* ja_data = "こんにちは M5Stack";
+    r[3].setTextPayload(ja_data, "ja");
 
     // MIME record
     Record png{TNF::MIMEMedia};
@@ -174,6 +176,7 @@ void write_ndef()
 
     if (!nfc_a.ndefWrite(msg)) {
         M5_LOGE("Failed to write");
+        lcd.fillScreen(TFT_RED);
         return;
     }
     nfc_a.dump();

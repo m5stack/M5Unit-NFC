@@ -107,19 +107,27 @@ void loop()
 
     std::vector<PICC> piccs;
     if (nfc_a.detect(piccs)) {
-        M5.Speaker.tone(3000, 10);
         lcd.fillScreen(0);
         lcd.setCursor(0, 0);
-        lcd.printf("%zu PICC\n", piccs.size());
-        M5.Log.printf("%zu PICC\n", piccs.size());
         uint32_t idx{};
         for (auto&& u : piccs) {
-            // detect only performs a provisionalclassification based on sak, so further identification  is required
-            nfc_a.identify(u);
-            M5.Log.printf("PICC:%s %s %u/%u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.userAreaSize(),
-                          u.totalSize());
-            lcd.printf("[%2u]:PICC:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
-            ++idx;
+            // detect only performs a provisional classification based on sak, so further identification  is required
+            M5.Speaker.tone(6000, 5);
+
+            if (nfc_a.identify(u)) {
+                M5.Log.printf("PICC:%s %s %04X/%02X %u/%u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.atqa,
+                              u.sak, u.userAreaSize(), u.totalSize());
+                lcd.printf("[%2u]:PICC:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
+                ++idx;
+            } else {
+                M5_LOGW("Failed to identify %s %s %04X/%02X %u/%u", u.uidAsString().c_str(), u.typeAsString().c_str(),
+                        u.atqa, u.sak, u.userAreaSize(), u.totalSize());
+            }
+        }
+        if (idx) {
+            M5.Speaker.tone(3000, 10);
+            lcd.printf("==> %u PICC\n", idx);
+            M5.Log.printf("==> %u PICC\n", idx);
         }
         nfc_a.deactivate();
     }

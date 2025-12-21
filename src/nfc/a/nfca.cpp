@@ -223,6 +223,30 @@ constexpr Historical historical_table_sak20[] = {
     {historical_bytes_mifare_plus_se2, Type::MIFARE_Plus_SE, SubTypePlus::None},  // SE
 };
 
+// GetVersionL3 response for emulation
+constexpr uint8_t ver3_ul_ev11[8]   = {0x00, 0x04, 0x03, 0x01, 0x01, 0x00, 0x0B, 0x03};
+constexpr uint8_t ver3_ul_ev21[8]   = {0x00, 0x04, 0x03, 0x01, 0x01, 0x00, 0x0E, 0x03};
+constexpr uint8_t ver3_ul_nano[8]   = {0x00, 0x04, 0x03, 0x01, 0x02, 0x00, 0x0B, 0x03};
+constexpr uint8_t ver3_ntag_210[8]  = {0x00, 0x04, 0x04, 0x01, 0x01, 0x00, 0x0B, 0x03};
+constexpr uint8_t ver3_ntag_210u[8] = {0x00, 0x04, 0x04, 0x01, 0x02, 0x00, 0x0B, 0x03};
+constexpr uint8_t ver3_ntag_212[8]  = {0x00, 0x04, 0x04, 0x01, 0x01, 0x00, 0x0E, 0x03};
+constexpr uint8_t ver3_ntag_213[8]  = {0x00, 0x04, 0x04, 0x02, 0x01, 0x00, 0x0F, 0x03};
+constexpr uint8_t ver3_ntag_215[8]  = {0x00, 0x04, 0x04, 0x02, 0x01, 0x00, 0x11, 0x03};
+constexpr uint8_t ver3_ntag_216[8]  = {0x00, 0x04, 0x04, 0x02, 0x01, 0x00, 0x13, 0x03};
+
+constexpr const uint8_t* emu_ver3_table[] = {
+    nullptr,                                                                                             //
+    nullptr, nullptr,        nullptr,       nullptr,                                                     // Classic
+    nullptr, ver3_ul_ev11,   ver3_ul_ev21,  ver3_ul_nano,  nullptr,                                      // Light
+    nullptr, ver3_ntag_210u, ver3_ntag_210, ver3_ntag_212, ver3_ntag_213, ver3_ntag_215, ver3_ntag_216,  // NTAG2xx
+    nullptr, nullptr,        nullptr,                                                                    // ST25TA
+    nullptr,                                                                                             //
+    nullptr, nullptr,        nullptr,                                                                    // Plus
+    nullptr, nullptr,        nullptr,       nullptr,                                                     // DESFire
+    nullptr,                                                                                             //
+    nullptr,                                                                                             //
+};
+
 }  // namespace
 
 namespace m5 {
@@ -343,7 +367,7 @@ Type version3_to_type(const uint8_t ver[8])
     const uint8_t hw_version = ver[4];
     const uint8_t size       = ver[6];
 
-    // m5::utility::log::dump(ver,10,false);
+    // m5::utility::log::dump(ver,8,false);
 
     if (ver[0] != 0x00 || ver[1] != 0x04 /*NXP*/ || ver[7] != 0x03 /* ISO14443-A*/) {
         return Type::Unknown;
@@ -482,6 +506,11 @@ Type historical_bytes_to_type_sak20(uint8_t& sub, const uint8_t* bytes, const ui
     return t;
 }
 
+const uint8_t* get_version3_response(const Type t)
+{
+    return emu_ver3_table[m5::stl::to_underlying(t)];
+}
+
 uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len)
 {
     uint8_t bcc{};
@@ -548,8 +577,8 @@ bool PICC::emulate(const Type t, const uint8_t* uid, const uint8_t uid_len)
     this->size = uid_len;
     std::memset(this->uid, 0x00, sizeof(this->uid));
     std::memcpy(this->uid, uid, uid_len);
-    this->atqa  = emulation_settings[m5::stl::to_underlying(t)].atqa;
-    this->sak   = emulation_settings[m5::stl::to_underlying(t)].sak;
+    this->atqa   = emulation_settings[m5::stl::to_underlying(t)].atqa;
+    this->sak    = emulation_settings[m5::stl::to_underlying(t)].sak;
     this->blocks = get_number_of_blocks(t);
 
     return valid();

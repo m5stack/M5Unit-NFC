@@ -8,7 +8,7 @@
   @brief Emulation layer for NFC-A
 */
 #include "emulation_layer_a.hpp"
-// #include "nfc/a/nfca.hpp"
+#include "nfc/a/nfca.hpp"
 #include <M5Utility.hpp>
 
 using namespace m5::nfc;
@@ -17,7 +17,8 @@ using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
 namespace {
-}
+
+}  // namespace
 
 namespace m5 {
 namespace nfc {
@@ -117,19 +118,48 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
         return State::Idle;
     }
     // m5::utility::log::dump(rx, rx_len, false);
-    M5_LIB_LOGE("cmd:%02X", rx[0]);
+    M5_LIB_LOGE("cmd:%02X %u", rx[0], rx_len);
 
     State ret{State::Idle};
     switch (static_cast<Command>(rx[0])) {
         case Command::HLTA:
             ret = (rx_len == 2 && rx[1] == 0x00) ? State::Halt : State::Idle;
             break;
-        case Command::READ:
+        case Command::READ:  // 16 bytes read
             ret = (rx_len == 2) && _impl->transmit(_memory + _picc.unitSize() * rx[1], 16, 4) ? State::Active
                                                                                               : State::Idle;
             break;
         case Command::FAST_READ:
+            if (rx_len == 3) {
+                const uint32_t from = rx[1];
+                const uint32_t to   = rx[2];
+                const uint32_t cnt  = to - from + 1;
+                if (from <= to && from + 4 <= _memory_size && to + 4 <= _memory_size) {
+                    ret = _impl->transmit(_memory + 4 * from, 4 * cnt, cnt) ? State::Active : State::Idle;
+                }
+            }
             break;
+        case Command::GET_VERSION:
+            if (rx_len == 1) {
+                const auto res = get_version3_response(_picc.type);  // fiexd 8 bytes
+                if (res) {
+                    ret = _impl->transmit(res, 8, 2) ? State::Active : State::Idle;
+                }
+            }
+            break;
+        case Command::WRITE_BLOCK:
+            // 2 step!
+            break;
+        case Command::WRITE_PAGE: {
+            if (rx_len == 6) {
+                const uint32_t offset = 4 * rx[1];
+                if (offset + 4 <= _memory_size) {
+                    memcpy(_memory + offset, rx + 2, 4);
+                    ret = _impl->transmit(&ACK_NIBBLE, 1, 1) ? State::Active : State::Idle;  // Return ACK
+                }
+            }
+        } break;
+
         default:
             break;
     }

@@ -391,7 +391,7 @@ bool NDEFLayer::write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
     uint32_t encoded_size =
         std::accumulate(tmp.begin(), tmp.end(), 0U, [](uint32_t acc, const TLV& m) { return acc + m.required(); });
 
-    M5_LIB_LOGD("Encoded size:%u", encoded_size);
+    M5_LIB_LOGV("Encoded size:%u", encoded_size);
     if (encoded_size > user_size) {
         M5_LIB_LOGE("Not enough area %u/%u", encoded_size, user_size);
         return false;
@@ -408,7 +408,7 @@ bool NDEFLayer::write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
     uint32_t idx{};
     for (auto&& m : tmp) {
         const auto esz = m.encode(buf + offset, encoded_size - offset);
-        M5_LIB_LOGD("   [%3u] Tag:%02X %u %u", idx, m.tag(), esz, m.required());
+        M5_LIB_LOGV("   [%3u] Tag:%02X %u %u", idx, m.tag(), esz, m.required());
         if (!esz) {
             M5_LIB_LOGE("encode failed %u %02X", idx, m.tag());
             goto skip;

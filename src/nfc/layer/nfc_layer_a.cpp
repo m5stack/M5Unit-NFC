@@ -131,13 +131,13 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
-        M5_LIB_LOGE("ATQA:%04X", picc.atqa);
+        M5_LIB_LOGV("ATQA:%04X", picc.atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
-        M5_LIB_LOGE("Detect:ATQA:%04X SAK:%02X %s %s", picc.atqa, picc.sak, picc.uidAsString().c_str(),
+        M5_LIB_LOGV("Detect:ATQA:%04X SAK:%02X %s (%s)", picc.atqa, picc.sak, picc.uidAsString().c_str(),
                     picc.typeAsString().c_str());
 
         // Hlt
@@ -262,7 +262,7 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
             picc.blocks = get_number_of_blocks(picc.type);
             return true;
         }
-        M5_LIB_LOGW(">>>> NEED MORE!! %u", _activePICC.isISO14443_4());
+        M5_LIB_LOGW("NEED MORE CHECK!! %u", _activePICC.isISO14443_4());
         return true;
     }
 
@@ -270,14 +270,13 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         uint8_t ver[8]{};
         // GetVersion(L3)
         if (_impl->mifare_get_version_L3(ver)) {
-            // UL EV, UL Nano, NTAG2xx
+            // ULEV, UL Nano, NTAG2xx
             picc.type   = version3_to_type(ver);
             picc.blocks = get_number_of_blocks(picc.type);
             return true;
         }
         //  The PICC goes idle when sending an external command, so select again
         if (!reactivate(picc)) {
-            M5_LIB_LOGE("ERR3");
             return false;
         }
         // Try ULC Auth

@@ -208,6 +208,9 @@ bool is_user_block(const Type t, const uint16_t block);
 //! @brief Calculate bcc8
 uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len);
 
+//! @brief Gets the GET_VERSION(L3) response for emulation
+const uint8_t* get_version3_response(const Type t);
+
 /*!
   @struct ATS
   @brief Answer to request
@@ -414,13 +417,14 @@ enum class Command : uint8_t {
     AUTHENTICATE_1  = 0x1A,  //!< MIFARE UltralightC. Authentication 1st
     AUTHENTICATE_2  = 0xAF,  //!< MIFARE UltralightC. Authentication 2nd
     WRITE_BLOCK     = 0xA0,  //!< MIFARE Classic. write
-    WRITE_PAGE      = 0xA2,  //!< MIFARE Ultralight/C and NTAG write
     DECREMENT       = 0xC0,  //!< MIFARE Classic. decrement value block
     INCREMENT       = 0xC1,  //!< MIFARE Classic. increment value block
     RESTORE         = 0xC2,  //!< MIFARE Classic. reads the contents of a value block into the internal Transfer Buffer
     TRANSFER        = 0xB0,  //!< MIFARE Classic. writes the contents of the internal Transfer Buffer to a block
     PERSONALIZE_UID_USAGE = 0x40,  //!< MIFARE Classic Personalize UID Usage
     SET_MOD_TYPE          = 0x43,  //!< MIFARE Classic SET_MOD_TYPE
+    // MIFARE,NTAG
+    WRITE_PAGE = 0xA2,  //!< MIFARE Ultralight/C and NTAG write
     // NTAG
     GET_VERSION = 0x60,  //!< NTAG 21x/UL EV1,Nano Gets the version information
     FAST_READ   = 0x3A,  //!< NTAG 21x. excluding 210u. Read multiple pages
@@ -429,7 +433,6 @@ enum class Command : uint8_t {
     READ_SIG    = 0x3C,  //!< NTAG 21x Read NXP ECC signature
     WRITE_SIG   = 0xA9,  //!< NTAG 210u Write custom signature
     LOCK_SIG    = 0xAC,  //!< NTAG 210u Lock/Unlock signature
-
 };
 
 ///@name Timeout

@@ -1025,35 +1025,14 @@ bool UnitST25R3916::mifareGetVersion4(uint8_t info[8])
     uint16_t rx_len = 128;
 
     if (info && nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION)) {
-        M5_LIB_LOGE(">>>> VER L4");
-        m5::utility::log::dump(rx, rx_len, false);
+        //M5_LIB_LOGE(">>>> VER L4");
+        //m5::utility::log::dump(rx, rx_len, false);
         return true;
     }
     M5_LIB_LOGE(">>>> ERROR VER L4");
     return false;
 }
 
-#if 0   
-    // TODO AF 対応!!
-    if (info && nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION) && rx_len >= 10) {
-        M5_LIB_LOGE(">>>> VER L4");
-        m5::utility::log::dump(rx, rx_len, false);
-
-        const uint8_t* p = rx;
-        uint8_t* q       = info;
-        while (p < rx + rx_len && q < info + 8) {
-            if (*p == 0xAF) {
-                ++p;
-                continue;
-            }
-            *q++ = *p++;
-        }
-        return true;
-    }
-
-    return false;
-}
-#endif
 
 // -------------------------------- For NTAG
 bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
