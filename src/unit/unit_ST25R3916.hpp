@@ -825,7 +825,11 @@ public:
      */
     inline bool writeMaskMainInterrupt(const uint8_t value)
     {
-        return write_register8(st25r3916::command::REG_MASK_MAIN_INTERRUPT, value);
+        if (write_register8(st25r3916::command::REG_MASK_MAIN_INTERRUPT, value)) {
+            _mask_irq = (_mask_irq & 0x00FFFFFF) | ((uint32_t)~value << 24);
+            return true;
+        }
+        return false;
     }
     /*!
       @brief Read the mask timer and NFC interrupt
@@ -843,7 +847,11 @@ public:
      */
     inline bool writeMaskTimerAndNFCInterrupt(const uint8_t value)
     {
-        return write_register8(st25r3916::command::REG_MASK_TIMER_AND_NFC_INTERRUPT, value);
+        if (write_register8(st25r3916::command::REG_MASK_TIMER_AND_NFC_INTERRUPT, value)) {
+            _mask_irq = (_mask_irq & 0xFF00FFFF) | ((uint32_t)~value << 16);
+            return true;
+        }
+        return false;
     }
     /*!
       @brief Read the mask error and wake-up interrupt
@@ -861,7 +869,11 @@ public:
      */
     inline bool writeMaskErrorAndWakeupInterrupt(const uint8_t value)
     {
-        return write_register8(st25r3916::command::REG_MASK_ERROR_AND_WAKEUP_INTERRUPT, value);
+        if (write_register8(st25r3916::command::REG_MASK_ERROR_AND_WAKEUP_INTERRUPT, value)) {
+            _mask_irq = (_mask_irq & 0xFFFF00FF) | ((uint32_t)~value << 8);
+            return true;
+        }
+        return false;
     }
     /*!
       @brief Read the mask passive target interrupt
@@ -879,7 +891,11 @@ public:
      */
     inline bool writeMaskPassiveTargetInterrupt(const uint8_t value)
     {
-        return write_register8(st25r3916::command::REG_MASK_PASSIVE_TARGET_INTERRUPT, value);
+        if (write_register8(st25r3916::command::REG_MASK_PASSIVE_TARGET_INTERRUPT, value)) {
+            _mask_irq = (_mask_irq & 0xFFFFFF00) | (uint32_t)~value;
+            return true;
+        }
+        return false;
     }
     /*!
       @brief Read the all mask
@@ -897,7 +913,11 @@ public:
      */
     inline bool writeMaskInterrupts(const uint32_t value)
     {
-        return write_register32(st25r3916::command::REG_MASK_MAIN_INTERRUPT, value);
+        if (write_register32(st25r3916::command::REG_MASK_MAIN_INTERRUPT, value)) {
+            _mask_irq = ~value;
+            return true;
+        }
+        return false;
     }
 
     /*!
@@ -2162,8 +2182,31 @@ protected:
     bool change_test_bit_register8(const uint8_t reg, const uint8_t bits, const uint8_t mask);
     bool change_test_bit_register8(const uint16_t reg, const uint8_t bits, const uint8_t mask);
 
-    bool enable_interrupts(const uint32_t mask);
-    bool disable_interrupts(const uint32_t mask);
+    bool modify_interrupts(const uint32_t clr, const uint32_t set);
+    inline bool enable_interrupts(const uint32_t mask)
+    {
+#if 0
+        if (writeMaskInterrupts(~mask)) {
+            _mask_irq |= mask;
+            return true;
+        }
+        return false;
+#else
+        return modify_interrupts(mask, 0);
+#endif
+    }
+    inline bool disable_interrupts(const uint32_t mask)
+    {
+#if 0
+        if (writeMaskInterrupts(mask)) {
+            _mask_irq &= ~mask;
+            return true;
+        }
+        return false;
+#else
+        return modify_interrupts(0, mask);
+#endif
+    }
 
     bool enable_osc();
     bool disable_field();

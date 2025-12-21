@@ -147,19 +147,16 @@ bool UnitST25R3916::clear_bit_register8(const uint16_t reg, const uint8_t bits)
     return false;
 }
 
-bool UnitST25R3916::enable_interrupts(const uint32_t mask)
+bool UnitST25R3916::modify_interrupts(const uint32_t clr, const uint32_t set)
 {
-    if (writeMaskInterrupts(~mask)) {
-        _mask_irq |= mask;
-        return true;
+    uint32_t pv{};
+    if (!readMaskInterrupts(pv)) {
+        return false;
     }
-    return false;
-}
 
-bool UnitST25R3916::disable_interrupts(const uint32_t mask)
-{
-    if (writeMaskInterrupts(mask)) {
-        _mask_irq &= ~mask;
+    uint32_t nv = (pv & ~clr) | set;
+    if (pv == nv || writeMaskInterrupts(nv)) {
+        //M5_LIB_LOGE("%08X -> %08X/%08X -> %08X", pv, clr, set, nv);
         return true;
     }
     return false;
@@ -169,19 +166,16 @@ bool UnitST25R3916::enable_osc()
 {
     uint8_t v{};
     if (!readOperationControl(v)) {
-        M5_LIB_LOGE(">>>> ERR1");
         return false;
     }
     if ((v & en) == 0) {
         if (!modify_bit_register8(REG_MASK_MAIN_INTERRUPT, 0x00, I_osc) || !clearInterrupts()) {
-            M5_LIB_LOGE(">>>> ERR2");
             return false;
         }
         set_bit_register8(REG_OPERATION_CONTROL, en);
         auto irq32 = wait_for_interrupt(I_osc, 10);  // about 700us
         modify_bit_register8(REG_MASK_MAIN_INTERRUPT, I_osc, 0x00);
         if ((irq32 & I_osc32) == 0) {
-            M5_LIB_LOGE("IRQ:%08X", irq32);
             return false;
         }
     }

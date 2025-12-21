@@ -37,7 +37,7 @@ inline uint32_t OCB(const uint8_t c)
 
 constexpr uint8_t mode_mask{0xFB};  // targ,om0123,ar01
 constexpr uint8_t mode_bitrate_detection = targ | (0x09u << 3);
-constexpr uint8_t mode_a{};
+constexpr uint8_t mode_listen_nfc_a      = targ | (0x01 << 3);
 
 constexpr uint32_t mode_irq    = I_wu_a32 | I_wu_ax32 | I_rxe_pta32;
 constexpr uint32_t default_irq = I_nfct32 | I_rxs32 | I_eon32 | I_eof32 | I_crc32 | I_err132 | I_err232 | I_par32;
@@ -147,7 +147,7 @@ bool ListenerST25R3916ForA::start_emulation(const m5::nfc::a::PICC& picc)
         m5::utility::log::dump(rbuf, PT_MEMORY_LENGTH, false);
     }
 
-    // Auto response (0: Enable automatic anti-collision in NFC-A)
+    // Auto response  only NFC-A
     _u.change_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_ac_ap2p | d_212_424_1r,
                             d_ac_ap2p | d_212_424_1r | d_106_ac_a);
 
@@ -155,7 +155,7 @@ bool ListenerST25R3916ForA::start_emulation(const m5::nfc::a::PICC& picc)
     _u.change_bit_register8(REG_TIMER_AND_EMV_CONTROL, 0x00, 0xE0);
     // 512/fc steps
     _u.set_bit_register8(REG_TIMER_AND_EMV_CONTROL, mrt_step);
-    _u.write_register8(REG_MASK_RECEIVER_TIMER, calculate_mrt(100, true)); // 100us
+    _u.write_register8(REG_MASK_RECEIVER_TIMER, calculate_mrt(100, true));  // 100us
     // 14443-A enable parity , disable NFCIP-1
     _u.clear_bit_register8(REG_ISO14443A_SETTINGS, no_tx_par | no_rx_par | nfc_f0);
 
@@ -187,6 +187,22 @@ bool ListenerST25R3916ForA::transmit(const uint8_t* tx, const uint16_t tx_len, c
     return _u.nfcaTransmit(tx, tx_len, timeout_ms);
 }
 
+#if 0
+            puts("SetMode RFAL_MODE_LISTEN_NFCA");
+            /* Disable wake up mode, if set */
+            st25r3916ClrRegisterBits(ST25R3916_REG_OP_CONTROL, ST25R3916_REG_OP_CONTROL_wu);
+
+            /* Enable Passive Target NFC-A mode, disable any Collision Avoidance */
+            st25r3916WriteRegister(ST25R3916_REG_MODE, (ST25R3916_REG_MODE_targ | ST25R3916_REG_MODE_om_targ_nfca |
+                                                        ST25R3916_REG_MODE_nfc_ar_off));
+
+            /* Set Analog configurations for this mode */
+            rfalSetAnalogConfig((RFAL_ANALOG_CONFIG_LISTEN | RFAL_ANALOG_CONFIG_TECH_NFCA |
+                                 RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_TX));
+            rfalSetAnalogConfig((RFAL_ANALOG_CONFIG_LISTEN | RFAL_ANALOG_CONFIG_TECH_NFCA |
+                                 RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_RX));
+#endif
+
 // ------------------------------------------------------------
 EmulationLayerA::State ListenerST25R3916ForA::goto_state(const EmulationLayerA::State s)
 {
@@ -217,7 +233,7 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_off()
     _u.writeDirectCommand(CMD_STOP_ALL_ACTIVITIES);
     _u.set_bit_register8(REG_OPERATION_CONTROL, rx_en);
 
-    _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);
+    _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Enable auto response for NFC-A
     _u.writeDirectCommand(CMD_GO_TO_SENSE);
     _u.clear_bit_register8(REG_ISO14443A_SETTINGS, nfc_f0);
 
@@ -230,17 +246,10 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_off()
                          mode_irq);
 
     if (is_extra_field()) {
-        M5_LIB_LOGE(" -> skip off");
         return goto_idle();
     } else {
         _u.clear_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en | en);
     }
-
-    /*
-                    st25r3916ClrRegisterBits(ST25R3916_REG_OP_CONTROL,
-                                             (ST25R3916_REG_OP_CONTROL_tx_en | ST25R3916_REG_OP_CONTROL_rx_en |
-                                              ST25R3916_REG_OP_CONTROL_en));
-    */
 
     return EmulationLayerA::State::Off;
 }
@@ -253,23 +262,30 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_idle()
     if (_u.readOperationControl(v) && ((v & en) == 0)) {
         _u.set_bit_register8(REG_OPERATION_CONTROL, (en | rx_en));
         if (_u.readAuxiliaryDisplay(aux) && ((aux & osc_ok) == 0)) {
-            (void)_u.wait_for_interrupt(I_osc32, 10);
+            if ((_u.wait_for_interrupt(I_osc32, 1000) & I_osc32) == 0) {
+                M5_LIB_LOGE("Oscillator not ready");
+                return goto_off();
+            }
         }
     } else {
         (void)get_irq(I_osc32);
     }
-    _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);
-    _u.writeDirectCommand(CMD_GO_TO_SENSE);
+
+    if (_layer.state() == EmulationLayerA::State::Active && !_wakeup) {
+        M5_LIB_LOGE("   >> Active to idle");
+        _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Enable auto response for NFC-A
+        _u.writeDirectCommand(CMD_GO_TO_SENSE);
+    }
 
     _u.writeDirectCommand(CMD_CLEAR_FIFO);
     _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
     //       rfalCheckEnableObsModeRx();
 
-    /*
     uint32_t m32{};
     _u.readMaskInterrupts(m32);
-    M5_LIB_LOGE("M:%08X", m32);
-    */
+    M5_LIB_LOGE("  M:%08X", m32);  //  M:5FE60FE8
+    _u.readNFCIP1PassiveTargetDefinition(v);
+    M5_LIB_LOGE("  PT:%08X", v);
 
     _wakeup = false;
     return EmulationLayerA::State::Idle;
@@ -281,15 +297,20 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_ready()
     if (get_irq(I_eof32)) {
         return goto_off();
     }
+
+    _u.clear_bit_register8(REG_OPERATION_CONTROL, wu);  // Disable wakeup mode
+    _u.writeModeDefinition(mode_listen_nfc_a);          // Disable birrate detection and collision
     _u.writeBitrate(_bitrate, _bitrate);
+
     return EmulationLayerA::State::Ready;
 }
 
 EmulationLayerA::State ListenerST25R3916ForA::goto_active()
 {
     _data_flag = false;
-    _u.set_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);
+    _u.set_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Disable auto response for NFC-A
     (void)get_irq(I_par32 | I_crc32 | I_err232 | I_err132);
+
     _u.enable_interrupts(I_rxe32);
 
     /*
@@ -304,7 +325,7 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_active()
 EmulationLayerA::State ListenerST25R3916ForA::goto_halt()
 {
     _data_flag = false;
-    _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);
+    _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Enable auto response for NFC-A
     _u.writeDirectCommand(CMD_GO_TO_SLEEP);
 
     _u.change_bit_register8(REG_MODE_DEFINITION, mode_bitrate_detection, mode_mask);
@@ -349,11 +370,8 @@ EmulationLayerA::State ListenerST25R3916ForA::update_idle()
         _bitrate = static_cast<Bitrate>(br);
     }
 
-    if (is_eof(irq32)) {
-        M5_LIB_LOGE("   -> EOF df %u", _data_flag);
-    }
-
     if (is_eof(irq32) && !_data_flag) {
+        M5_LIB_LOGE("OFF");
         return goto_off();
     }
     if ((irq32 & I_rxe32) && _bitrate != Bitrate::Invalid) {
@@ -396,9 +414,11 @@ EmulationLayerA::State ListenerST25R3916ForA::update_idle()
     }
     if ((irq32 & I_rxe_pta32) && _bitrate == Bitrate::Bps106K) {
         uint8_t pta{};
-        if (_u.readPassiveTargetDisplay(pta) && ((pta & 0x0F) > pta_state_power_off)) {
+        if (_u.readPassiveTargetDisplay(pta) && ((pta & 0x0F) > pta_state_idle)) {
+            M5_LIB_LOGE("PTA:%02X", pta);
             return goto_ready();
         }
+        M5_LIB_LOGE("PTA:%02X", pta);
     }
 
     /*
@@ -415,18 +435,10 @@ EmulationLayerA::State ListenerST25R3916ForA::update_ready()
 {
     uint32_t irq32 = get_irq(I_eof32 | (_wakeup ? I_wu_ax32 : I_wu_a32));
     if (!irq32) {
-        /*
-        if (!is_extra_field()) {
-            M5_LIB_LOGE("NO EF R");
-            return goto_off();
-        }
-        */
         return EmulationLayerA::State::Ready;
     }
-    //    M5_LIB_LOGE("%08X", irq32);
 
     if (is_eof(irq32)) {
-        M5_LIB_LOGE("EOF R");
         return goto_off();
     }
     if (irq32 & (I_wu_a32 | I_wu_ax32)) {
@@ -438,7 +450,8 @@ EmulationLayerA::State ListenerST25R3916ForA::update_ready()
 
 EmulationLayerA::State ListenerST25R3916ForA::update_active()
 {
-    uint32_t irq32 = get_irq(I_eof32 | I_rxe32 | I_par32 | I_crc32 | I_err232 | I_err132);
+    // uint32_t irq32 = get_irq(I_eof32 | I_rxe32 | I_par32 | I_crc32 | I_err232 | I_err132);
+    uint32_t irq32 = get_irq(I_eof32 | I_rxe32);
     if (!irq32) {
         return EmulationLayerA::State::Active;
     }
@@ -451,12 +464,17 @@ EmulationLayerA::State ListenerST25R3916ForA::update_active()
     uint16_t rx_len{}, actual{};
     uint8_t rx[64]{};
     if (irq32 & I_rxe32) {
+        irq32 |= get_irq(I_par32 | I_crc32 | I_err232 | I_err132);
         _u.readFIFOSize(bytes, bits);
         rx_len = bytes;
 
         if (irq32 & (I_par32 | I_crc32 | I_err132 | I_err232) || rx_len <= 2) {
+            _u.readFIFO(actual, rx, rx_len);
+            M5_LIB_LOGE("A ERR %08X %u %u %02X", irq32, _wakeup, rx_len, rx[0]);
+
             _u.writeDirectCommand(CMD_CLEAR_FIFO);
             _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
+            // return EmulationLayerA::State::Active;
             return _wakeup ? goto_halt() : goto_idle();
         }
 
@@ -467,7 +485,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_active()
 
             auto state = _layer.receive_callback(rx, rx_len);
             if (state != EmulationLayerA::State::Active) {
-                if (_wakeup && state == EmulationLayerA::State::Idle) {
+                if (state == EmulationLayerA::State::Idle && _wakeup) {
                     state = EmulationLayerA::State::Halt;
                 }
                 _u.disable_interrupts(I_rxe32);
@@ -514,7 +532,6 @@ EmulationLayerA::State ListenerST25R3916ForA::update_halt()
             _wakeup = true;
             return goto_ready();
         }
-        //        M5_LIB_LOGE("pta:%02X", pta);
     }
     return EmulationLayerA::State::Halt;
 }
