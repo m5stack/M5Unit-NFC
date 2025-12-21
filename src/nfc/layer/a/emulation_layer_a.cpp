@@ -17,6 +17,7 @@ using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
 namespace {
+constexpr uint8_t dummy_signature[32] = {};
 
 }  // namespace
 
@@ -159,6 +160,14 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
                 }
             }
         } break;
+        case Command::READ_SIG:
+            if (_picc.isNTAG() || _picc.type == Type::MIFARE_Ultralight_EV1_1 ||
+                _picc.type == Type::MIFARE_Ultralight_EV1_2 || _picc.type == Type::MIFARE_Ultralight_Nano) {
+                if (rx_len == 2 && rx[1] == 0x00 /*RFU*/) {
+                    ret = _impl->transmit(dummy_signature, sizeof(dummy_signature), 4) ? State::Active : State::None;
+                }
+            }
+            break;
 
         default:
             break;
