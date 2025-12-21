@@ -250,7 +250,6 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_off()
     } else {
         _u.clear_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en | en);
     }
-
     return EmulationLayerA::State::Off;
 }
 
@@ -280,12 +279,6 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_idle()
     _u.writeDirectCommand(CMD_CLEAR_FIFO);
     _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
     //       rfalCheckEnableObsModeRx();
-
-    uint32_t m32{};
-    _u.readMaskInterrupts(m32);
-    M5_LIB_LOGE("  M:%08X", m32);  //  M:5FE60FE8
-    _u.readNFCIP1PassiveTargetDefinition(v);
-    M5_LIB_LOGE("  PT:%08X", v);
 
     _wakeup = false;
     return EmulationLayerA::State::Idle;
@@ -415,18 +408,11 @@ EmulationLayerA::State ListenerST25R3916ForA::update_idle()
     if ((irq32 & I_rxe_pta32) && _bitrate == Bitrate::Bps106K) {
         uint8_t pta{};
         if (_u.readPassiveTargetDisplay(pta) && ((pta & 0x0F) > pta_state_idle)) {
-            M5_LIB_LOGE("PTA:%02X", pta);
+            // M5_LIB_LOGE("PTA:%02X", pta);
             return goto_ready();
         }
-        M5_LIB_LOGE("PTA:%02X", pta);
+        // M5_LIB_LOGE("PTA:%02X", pta);
     }
-
-    /*
-    if (!is_extra_field()) {
-        M5_LIB_LOGE("NO EF I");
-        return goto_off();
-    }
-    */
 
     return EmulationLayerA::State::Idle;
 }

@@ -210,8 +210,7 @@ uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint
     // m5::utility::log::dump(tx, tx_len, false);
 
     if ((timeout_ms ? !write_noresponse_timeout(timeout_ms) : false) ||                //
-        !writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||  //
-        //        !writeMaskMainInterrupt(~I_rxe) || !writeMaskTimerAndNFCInterrupt(~I_nre) ||//
+        !writeSettingsISO14443A(0x00 /*standard*/) || !clear_bit_register8(REG_AUXILIARY_DEFINITION,no_crc_rx) ||  //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||
         !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
         return false;
@@ -245,9 +244,9 @@ bool UnitST25R3916::nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const
         return false;
     }
 
-    if ((timeout_ms ? !write_noresponse_timeout(timeout_ms) : false) ||                //
-        !writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||  //
-        !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||
+    if ((timeout_ms ? !write_noresponse_timeout(timeout_ms) : false) ||                                             //
+        !writeSettingsISO14443A(0x00 /*standard*/) || !clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||  //
+        !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||                      //
         !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
         return false;
     }
@@ -289,7 +288,7 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
 
     // REQA or WUPA (Receive without CRC)
     if (!write_noresponse_timeout(TIMEOUT_REQ_WUP) ||  //
-        !writeSettingsISO14443A(antcl) || !writeAuxiliaryDefinition(no_crc_rx) ||
+        !writeSettingsISO14443A(antcl) || !set_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||
         //        writeMaskMainInterrupt(mask) && writeMaskTimerAndNFCInterrupt(~I_nre) &&//
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||
         !writeDirectCommand(request ? CMD_TRANSMIT_REQA : CMD_TRANSMIT_WUPA)) {
@@ -344,7 +343,7 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
 
     // ANTICOLL/SEL
     if (!write_noresponse_timeout(TIMEOUT_ANTICOLL) ||  //
-        !writeSettingsISO14443A(antcl) || !writeAuxiliaryDefinition(0)) {
+        !writeSettingsISO14443A(antcl) || !!clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx)) {
         return false;
     }
 
@@ -542,7 +541,7 @@ bool UnitST25R3916::nfcaSelect(const PICC& picc)
     uint8_t lv{1};
     uint8_t offset{};
 
-    if (!writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0)) {
+    if (!writeSettingsISO14443A(0x00 /*standard*/) || !!clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx)) {
         M5_LIB_LOGE("Failed to settings");
         return false;
     }
@@ -588,8 +587,9 @@ bool UnitST25R3916::nfcaHlt()
             return false;
         }
     } else {
-        if (!write_noresponse_timeout(TIMEOUT_HALT) ||                                                           //
-            !writeSettingsISO14443A(0x00 /*standard*/) || !writeAuxiliaryDefinition(0) ||                        //
+        if (!write_noresponse_timeout(TIMEOUT_HALT) ||  //
+            !writeSettingsISO14443A(0x00 /*standard*/) ||
+            !clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||                                         //
             !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
             !writeFIFO(hlt_frame, sizeof(hlt_frame)) || !writeNumberOfTransmittedBytes(sizeof(hlt_frame), 0) ||  //
             !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
@@ -785,7 +785,8 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
     }
 
     // Send
-    if (!writeAuxiliaryDefinition(include_crc ? no_crc_rx : 0) || !mifare_classic_send_encrypt(tx, tx_len)) {
+    if (!set_bit_register8(REG_AUXILIARY_DEFINITION, (include_crc ? no_crc_rx : 0)) ||
+        !mifare_classic_send_encrypt(tx, tx_len)) {
         M5_LIB_LOGE("SNED ERROR");
         return false;
     }
@@ -908,7 +909,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const PICC& p
     writeDirectCommand(CMD_RESET_RX_GAIN);
 
     if (!write_noresponse_timeout(TIMEOUT_AUTH2) ||                                                          //
-        !writeSettingsISO14443A(no_tx_par) || !writeAuxiliaryDefinition(no_crc_rx) ||                        //
+        !writeSettingsISO14443A(no_tx_par) || !set_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||     //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
         !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sizeof(bitstream), 0) ||  //
         !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
@@ -969,7 +970,7 @@ bool UnitST25R3916::mifareClassicValueBlock(const m5::nfc::a::Command cmd, const
     arg8[1] = arg >> 8;
     arg8[2] = arg >> 16;
     arg8[3] = arg >> 24;
-    if (!writeAuxiliaryDefinition(0) || !mifare_classic_send_encrypt(arg8, sizeof(arg8))) {
+    if (!clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) || !mifare_classic_send_encrypt(arg8, sizeof(arg8))) {
         M5_LIB_LOGE("Failed to send");
         return false;
     }

@@ -116,7 +116,8 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
     if (!rx || !rx_len) {
         return State::Idle;
     }
-    m5::utility::log::dump(rx, rx_len, false);
+    // m5::utility::log::dump(rx, rx_len, false);
+    M5_LIB_LOGE("cmd:%02X", rx[0]);
 
     State ret{State::Idle};
     switch (static_cast<Command>(rx[0])) {
