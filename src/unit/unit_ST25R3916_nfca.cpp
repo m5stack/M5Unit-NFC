@@ -343,7 +343,7 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
 
     // ANTICOLL/SEL
     if (!write_noresponse_timeout(TIMEOUT_ANTICOLL) ||  //
-        !writeSettingsISO14443A(antcl) || !!clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx)) {
+        !writeSettingsISO14443A(antcl) || !clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx)) {
         return false;
     }
 
@@ -541,7 +541,7 @@ bool UnitST25R3916::nfcaSelect(const PICC& picc)
     uint8_t lv{1};
     uint8_t offset{};
 
-    if (!writeSettingsISO14443A(0x00 /*standard*/) || !!clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx)) {
+    if (!writeSettingsISO14443A(0x00 /*standard*/) || !clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx)) {
         M5_LIB_LOGE("Failed to settings");
         return false;
     }
