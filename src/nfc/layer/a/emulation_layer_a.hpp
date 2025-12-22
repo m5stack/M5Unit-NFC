@@ -51,16 +51,25 @@ public:
     {
         return _picc;
     }
+    inline uint32_t expiredTime() const
+    {
+        return _expired_ms;
+    }
+    void setExpiredTime(const uint32_t ms)
+    {
+        _expired_ms = ms;
+    }
 
     bool begin(const m5::nfc::a::PICC& picc, uint8_t* ptr, const uint32_t size);
     bool end();
     void update();
 
-    State receive_callback(const uint8_t* rx, const uint32_t rx_len);
+    virtual State receive_callback(const uint8_t* rx, const uint32_t rx_len);
 
 protected:
-    bool load_config();
+    void update_expired();
 
+private:
     void update_off();
     void update_idle();
     void update_ready();
@@ -73,7 +82,7 @@ protected:
 
 private:
     State _state{}, _prev{};
-    uint32_t _expired_ms{10*1000};
+    uint32_t _expired_ms{60 * 1000u};
     unsigned int _expired_at{};
     std::unique_ptr<Adapter> _impl;
     m5::nfc::a::PICC _picc{};
@@ -84,9 +93,6 @@ private:
 struct EmulationLayerA::Adapter {
     virtual ~Adapter() = default;
 
-    //    virtual uint16_t max_fifo_depth() = 0;
-
-    virtual bool load_config(const m5::nfc::a::PICC& picc)                                     = 0;
     virtual bool start_emulation(const m5::nfc::a::PICC& picc)                                 = 0;
     virtual bool stop_emulation()                                                              = 0;
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) = 0;

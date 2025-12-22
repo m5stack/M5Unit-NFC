@@ -31,6 +31,11 @@ bool EmulationLayerA::begin(const m5::nfc::a::PICC& picc, uint8_t* ptr, const ui
         return false;
     }
 
+    if (!(picc.isNTAG() || picc.type == Type::MIFARE_Ultralight)) {
+        M5_LIB_LOGE("Not support %u %s", picc.type, picc.typeAsString().c_str());
+        return false;
+    }
+
     _picc        = picc;
     _memory      = ptr;
     _memory_size = size;
@@ -43,6 +48,8 @@ bool EmulationLayerA::begin(const m5::nfc::a::PICC& picc, uint8_t* ptr, const ui
 
     _state = _impl->start_emulation(_picc) ? State::Off : State::None;
     _prev  = State::None;
+
+    _expired_at = m5::utility::millis() + _expired_ms;
     return (_state != State::None);
 }
 
@@ -58,28 +65,31 @@ bool EmulationLayerA::end()
 void EmulationLayerA::update()
 {
     auto save = _state;
+    //    if (_state != _prev) {
+    //        _expired_at = m5::utility::millis() + _expired_ms; // IRQ byGT ???
+    //    }
 
     switch (_state) {
         case State::None:
             break;
         case State::Off:
-            if (_state != _prev) M5_LIB_LOGE("==OFF");
+            //                        if (_state != _prev) M5_LIB_LOGE("==OFF");
             update_off();
             break;
         case State::Idle:
-            if (_state != _prev) M5_LIB_LOGE("==IDLE");
+            //                        if (_state != _prev) M5_LIB_LOGE("==IDLE");
             update_idle();
             break;
         case State::Ready:
-            if (_state != _prev) M5_LIB_LOGE("==READY");
+            //                        if (_state != _prev) M5_LIB_LOGE("==READY");
             update_ready();
             break;
         case State::Active:
-            if (_state != _prev) M5_LIB_LOGE("==ACTIVE");
+            //                        if (_state != _prev) M5_LIB_LOGE("==ACTIVE");
             update_active();
             break;
         case State::Halt:
-            if (_state != _prev) M5_LIB_LOGE("==HALT");
+            //                        if (_state != _prev) M5_LIB_LOGE("==HALT");
             update_halt();
             break;
         default:
@@ -119,7 +129,6 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
         return State::Idle;
     }
     // m5::utility::log::dump(rx, rx_len, false);
-    M5_LIB_LOGE("cmd:%02X %u", rx[0], rx_len);
 
     State ret{State::Idle};
     switch (static_cast<Command>(rx[0])) {
@@ -127,6 +136,8 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
             ret = (rx_len == 2 && rx[1] == 0x00) ? State::Halt : State::Idle;
             break;
         case Command::READ:  // 16 bytes read
+            // M5_LIB_LOGE("  R:%u", rx[1]);
+
             ret = (rx_len == 2) && _impl->transmit(_memory + _picc.unitSize() * rx[1], 16, 4) ? State::Active
                                                                                               : State::Idle;
             break;
@@ -156,6 +167,7 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
                 const uint32_t offset = 4 * rx[1];
                 if (offset + 4 <= _memory_size) {
                     memcpy(_memory + offset, rx + 2, 4);
+                    //                    ret = _impl->send_ack() ? State::Active : State::Idle;  // Return ACK
                     ret = _impl->transmit(&ACK_NIBBLE, 1, 1) ? State::Active : State::Idle;  // Return ACK
                 }
             }
@@ -170,6 +182,7 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
             break;
 
         default:
+            M5_LIB_LOGE("cmd:%02X %u", rx[0], rx_len);
             break;
     }
     // M5_LIB_LOGE(" --> %u", ret);

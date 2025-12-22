@@ -277,6 +277,7 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         }
         //  The PICC goes idle when sending an external command, so select again
         if (!reactivate(picc)) {
+            M5_LIB_LOGE(">>>> ERR3");
             return false;
         }
         // Try ULC Auth
@@ -981,12 +982,11 @@ bool NFCLayerA::dump_page_structure(const uint16_t maxPage)
         "Page    :00 01 02 03\n"
         "--------------------");
 
+    bool ret{true};
     for (uint_fast8_t page = 0; page < maxPage; page += 4) {
-        if (!dump_page(page, maxPage)) {
-            return false;
-        }
+        ret &= dump_page(page, maxPage);
     }
-    return true;
+    return ret;
 }
 
 bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)

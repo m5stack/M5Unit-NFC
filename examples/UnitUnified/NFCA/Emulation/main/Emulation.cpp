@@ -43,18 +43,21 @@ m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
 #endif
 m5::nfc::EmulationLayerA emu_a{unit};
 
-// KeyA that can authenticate all blocks
-// If it's a different key value, change it
-constexpr Key keyA = DEFAULT_KEY;  // Default as 0xFFFFFFFFFFFF
+// constexpr Key keyA = DEFAULT_KEY;  // Default as 0xFFFFFFFFFFFF
+// constexpr Key keyB = DEFAULT_KEY;  // Default as 0xFFFFFFFFFFFF
 
 PICC picc{};
 
-//#define EMU_MIFARE_ULTRALIGHT
- #define EMU_NTAG213
+#define EMU_MIFARE_ULTRALIGHT
+// HackerCap : iPhone, NFC tools, NFC Taginfo. NFC Tap
+// Basic+I2C : iPhone, NFC Tap
+//             NG -> NFC tools, NFC Taginfo
 
-#if defined(EMU_MIFARE_CLASSIC_1K)
+// #define EMU_NTAG213
+//  HackerCap : iPhone, NFC tools, NFC Taginfo. NFC Tap
+//  Basic+I2C : iPhone, NFC tools, NFC Taginfo. NFC Tap
 
-#elif defined(EMU_MIFARE_ULTRALIGHT)
+#if defined(EMU_MIFARE_ULTRALIGHT)
 constexpr Type type{Type::MIFARE_Ultralight};
 constexpr uint8_t uid[] = {0x04, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE};
 uint8_t picc_memory[]   = {
@@ -186,7 +189,7 @@ void setup()
     M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
     Wire.end();
     Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
-
+    // Wire.begin(pin_num_sda, pin_num_scl, 1000 * 1000u);
     if (!Units.add(unit, Wire) || !Units.begin()) {
         M5_LOGE("Failed to begin");
         lcd.clear(TFT_RED);
@@ -221,38 +224,25 @@ void setup()
     lcd.setFont(&fonts::Font2);
 
     //
-    picc.emulate(type, uid, sizeof(uid));  // PICC information to emulate
-    if (picc.isMifareUltralight() || picc.isNTAG()) {
+    lcd.startWrite();
+    lcd.fillScreen(TFT_RED);
+    if (picc.emulate(type, uid, sizeof(uid))) {
         embed_uid(picc_memory, uid);
-    }
-    if (emu_a.begin(picc, picc_memory, sizeof(picc_memory))) {
-        lcd.fillScreen(TFT_DARKGREEN);
-        lcd.setCursor(0, 16);
-        const auto& e_picc = emu_a.emulatePICC();
-        M5.Log.printf("Emulation:%s %s ATQA:%04X SAK:%u\n", e_picc.typeAsString().c_str(), e_picc.uidAsString().c_str(),
-                      e_picc.atqa, e_picc.sak);
-        lcd.printf("%s\n%s\nATQA:%04X SAK:%u", e_picc.typeAsString().c_str(), e_picc.uidAsString().c_str(), e_picc.atqa,
-                   e_picc.sak);
-    } else {
-        lcd.fillScreen(TFT_RED);
+        if (emu_a.begin(picc, picc_memory, sizeof(picc_memory))) {
+            lcd.fillScreen(TFT_DARKGREEN);
+            lcd.setCursor(0, 16);
+            const auto& e_picc = emu_a.emulatePICC();
+            M5.Log.printf("Emulation:%s %s ATQA:%04X SAK:%u\n", e_picc.typeAsString().c_str(),
+                          e_picc.uidAsString().c_str(), e_picc.atqa, e_picc.sak);
+            lcd.printf("%s\n%s\nATQA:%04X SAK:%u", e_picc.typeAsString().c_str(), e_picc.uidAsString().c_str(),
+                       e_picc.atqa, e_picc.sak);
+        }
     }
     lcd.fillRect(0, 0, 32, 16, color_table[0]);
     lcd.drawString(state_table[0], 0, 0);
+    lcd.endWrite();
 }
 
-/*
-  17:31:54.797 > PICC:04C90EC2DA1C94 NTAG 213 144/180
-17:31:54.828 > Page    :00 01 02 03
-17:31:54.832 > --------------------
-17:31:54.834 > [000/00]:04 C9 0E 4B
-17:31:54.840 > [001/01]:C2 DA 1C 94
-17:31:54.840 > [002/02]:90 48 00 00
-
-
-17:34:34.767 > [000/00]:04 C9 0E 4B
-17:34:34.767 > [001/01]:C2 DA 1C 94
-17:34:34.767 > [002/02]:18 A3 00 00
-*/
 void loop()
 {
     M5.update();

@@ -245,6 +245,8 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_off()
     _u.enable_interrupts(I_nfct32 | I_rxs32 | I_crc32 | I_err132 | I_osc32 | I_err232 | I_par32 | I_eon32 | I_eof32 |
                          mode_irq);
 
+    _u.set_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx);
+
     if (is_extra_field()) {
         return goto_idle();
     } else {
@@ -270,8 +272,9 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_idle()
         (void)get_irq(I_osc32);
     }
 
+    _u.set_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx);
+
     if (_layer.state() == EmulationLayerA::State::Active && !_wakeup) {
-        M5_LIB_LOGE("   >> Active to idle");
         _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Enable auto response for NFC-A
         _u.writeDirectCommand(CMD_GO_TO_SENSE);
     }
@@ -291,6 +294,9 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_ready()
         return goto_off();
     }
 
+    _u.clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx);
+
+    
     _u.clear_bit_register8(REG_OPERATION_CONTROL, wu);  // Disable wakeup mode
     _u.writeModeDefinition(mode_listen_nfc_a);          // Disable birrate detection and collision
     _u.writeBitrate(_bitrate, _bitrate);
@@ -364,7 +370,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_idle()
     }
 
     if (is_eof(irq32) && !_data_flag) {
-        M5_LIB_LOGE("OFF");
+        //M5_LIB_LOGE("OFF");
         return goto_off();
     }
     if ((irq32 & I_rxe32) && _bitrate != Bitrate::Invalid) {
