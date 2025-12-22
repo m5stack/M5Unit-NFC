@@ -49,13 +49,7 @@ m5::nfc::EmulationLayerA emu_a{unit};
 PICC picc{};
 
 #define EMU_MIFARE_ULTRALIGHT
-// HackerCap : iPhone, NFC tools, NFC Taginfo. NFC Tap
-// Basic+I2C : iPhone, NFC Tap
-//             NG -> NFC tools, NFC Taginfo
-
 // #define EMU_NTAG213
-//  HackerCap : iPhone, NFC tools, NFC Taginfo. NFC Tap
-//  Basic+I2C : iPhone, NFC tools, NFC Taginfo. NFC Tap
 
 #if defined(EMU_MIFARE_ULTRALIGHT)
 constexpr Type type{Type::MIFARE_Ultralight};

@@ -241,13 +241,6 @@ void setup()
     M5.Log.printf("Please put the PICC and click/hold BtnA\n");
 }
 
-///////////////////////////////////////
-// NRT 計算が正しいか確認 RFAL 比較
-//  S3:PICC Hacker:NDEF で通すことを目標?
-// PCD からくる? FRT とかはのうタイミングは?
-// ISR での IRQ取得のトランザクションは?
-// no_crc 除去? RFAL は?
-
 void loop()
 {
     M5.update();

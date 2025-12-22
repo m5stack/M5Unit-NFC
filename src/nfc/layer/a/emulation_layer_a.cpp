@@ -53,6 +53,7 @@ bool EmulationLayerA::begin(const m5::nfc::a::PICC& picc, uint8_t* ptr, const ui
     return (_state != State::None);
 }
 
+
 bool EmulationLayerA::end()
 {
     if (_state == State::None) {

@@ -95,7 +95,7 @@ struct ListenerST25R3916ForA final : EmulationLayerA::Adapter {
 
 uint32_t ListenerST25R3916ForA::get_irq(const uint32_t bits)
 {
-    if (!_u._using_irq || _u._interrupt_occurred) {
+    if (_u._interrupt_occurred) {  // In I2C, Unit::update acquires IRQ each time.
         _u._interrupt_occurred = false;
         uint32_t v{};
         (void)_u.readInterrupts(v);
@@ -296,7 +296,6 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_ready()
 
     _u.clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx);
 
-    
     _u.clear_bit_register8(REG_OPERATION_CONTROL, wu);  // Disable wakeup mode
     _u.writeModeDefinition(mode_listen_nfc_a);          // Disable birrate detection and collision
     _u.writeBitrate(_bitrate, _bitrate);
@@ -370,7 +369,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_idle()
     }
 
     if (is_eof(irq32) && !_data_flag) {
-        //M5_LIB_LOGE("OFF");
+        // M5_LIB_LOGE("OFF");
         return goto_off();
     }
     if ((irq32 & I_rxe32) && _bitrate != Bitrate::Invalid) {
