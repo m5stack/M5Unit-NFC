@@ -57,7 +57,7 @@ uint16_t calculate_nrt(const uint32_t ms, const bool nrt_step)
 
     uint64_t us  = (uint64_t)ms * 1000u;
     uint64_t nrt = (us * FC_HZ + step_num - 1) / step_num;
-    return static_cast<uint16_t>(std::max<uint64_t>(std::min<uint64_t>(nrt, 0xFFFFu), 1u));
+    return static_cast<uint16_t>(std::max<uint64_t>(std::min<uint64_t>(nrt, 0xFFFFu), 1u));  // 1-0xFFFF
 }
 
 uint8_t calculate_mrt(const uint32_t us, const bool mrt_step /* false:64, true:512*/)
@@ -68,8 +68,16 @@ uint8_t calculate_mrt(const uint32_t us, const bool mrt_step /* false:64, true:5
     const uint32_t step_num = mrt_step ? STEP512_NUM : STEP64_NUM;
     // mrt = ceil(us / step)
     uint32_t mrt = (us * FC_HZ + step_num - 1) / step_num;
-    return static_cast<uint8_t>(std::max<uint32_t>(std::min<uint32_t>(mrt, 0xFFu), 4u));
+    return static_cast<uint8_t>(std::max<uint32_t>(std::min<uint32_t>(mrt, 0xFFu), 4u));  // 4-0xFF
 }
+
+inline uint8_t calculate_fdt(const uint32_t us)
+{
+    constexpr uint32_t FC_HZ{13560000};
+    uint32_t ticks = (us * FC_HZ + 8000000 - 1) / 8000000;
+    return static_cast<uint16_t>(std::max<uint32_t>(std::min<uint32_t>(ticks, 0xFFFFu), 1u));  // 1-0xFFFF
+}
+
 }  // namespace st25r3916
 
 bool UnitST25R3916::modify_bit_register8(const uint8_t reg, const uint8_t set_mask, const uint8_t clear_mask)
@@ -156,7 +164,7 @@ bool UnitST25R3916::modify_interrupts(const uint32_t clr, const uint32_t set)
 
     uint32_t nv = (pv & ~clr) | set;
     if (pv == nv || writeMaskInterrupts(nv)) {
-        //M5_LIB_LOGE("%08X -> %08X/%08X -> %08X", pv, clr, set, nv);
+        // M5_LIB_LOGE("%08X -> %08X/%08X -> %08X", pv, clr, set, nv);
         return true;
     }
     return false;

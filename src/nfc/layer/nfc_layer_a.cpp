@@ -193,20 +193,18 @@ bool NFCLayerA::reactivate(const PICC& picc)
     PICC tmp = picc;
     uint16_t discard{};
     if (deactivate()) {
-        // m5::utility::delay(2);  // guard time (ULC)
-#if 0
-        //        return wakeup(discard) && activate(tmp);
-#else
+        m5::utility::delay(2);  // FDT
         if (!wakeup(discard)) {
             M5_LIB_LOGE("Failed to wakeup");
             return false;
         }
+        m5::utility::delay(2);  // FDT
         if (!activate(tmp)) {
             M5_LIB_LOGE("Failed to activate");
             return false;
         }
+        // m5::utility::delay(1);  // FDT
         return true;
-#endif
     }
     M5_LIB_LOGD("Failed to deactivate");
     return false;
@@ -277,7 +275,6 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         }
         //  The PICC goes idle when sending an external command, so select again
         if (!reactivate(picc)) {
-            M5_LIB_LOGE(">>>> ERR3");
             return false;
         }
         // Try ULC Auth

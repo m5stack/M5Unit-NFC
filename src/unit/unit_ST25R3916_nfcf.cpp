@@ -111,7 +111,7 @@ bool UnitST25R3916::nfcfTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t*
         return false;
     }
 
-    if (timeout_ms && !write_noresponse_timeout(timeout_ms)) {
+    if (timeout_ms && !write_fwt_timer(timeout_ms)) {
         return false;
     }
 

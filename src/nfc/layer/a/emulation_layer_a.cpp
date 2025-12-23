@@ -53,7 +53,6 @@ bool EmulationLayerA::begin(const m5::nfc::a::PICC& picc, uint8_t* ptr, const ui
     return (_state != State::None);
 }
 
-
 bool EmulationLayerA::end()
 {
     if (_state == State::None) {
@@ -74,23 +73,23 @@ void EmulationLayerA::update()
         case State::None:
             break;
         case State::Off:
-            //                        if (_state != _prev) M5_LIB_LOGE("==OFF");
+            if (_state != _prev) M5_LIB_LOGE("==OFF");
             update_off();
             break;
         case State::Idle:
-            //                        if (_state != _prev) M5_LIB_LOGE("==IDLE");
+            if (_state != _prev) M5_LIB_LOGE("==IDLE");
             update_idle();
             break;
         case State::Ready:
-            //                        if (_state != _prev) M5_LIB_LOGE("==READY");
+            if (_state != _prev) M5_LIB_LOGE("==READY");
             update_ready();
             break;
         case State::Active:
-            //                        if (_state != _prev) M5_LIB_LOGE("==ACTIVE");
+            if (_state != _prev) M5_LIB_LOGE("==ACTIVE");
             update_active();
             break;
         case State::Halt:
-            //                        if (_state != _prev) M5_LIB_LOGE("==HALT");
+            if (_state != _prev) M5_LIB_LOGE("==HALT");
             update_halt();
             break;
         default:
@@ -183,7 +182,7 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
             break;
 
         default:
-            M5_LIB_LOGE("cmd:%02X %u", rx[0], rx_len);
+            M5_LIB_LOGE("CMD:%02X %u", rx[0], rx_len);
             break;
     }
     // M5_LIB_LOGE(" --> %u", ret);

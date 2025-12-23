@@ -280,16 +280,36 @@ constexpr uint8_t d_106_ac_a{0x01};
 
 // 0x0A Auxiliary definition register
 constexpr uint8_t no_crc_rx{0x80};
+constexpr uint8_t dis_corr{0x04};
 constexpr uint8_t nfc_n1{0x02};
 constexpr uint8_t nfc_n0{0x01};
 
 constexpr uint8_t nfc_n_mask{0x03};
+
+// 0x0B Receiver configuration register 1
+constexpr uint8_t ch_sel{0x80};
+constexpr uint8_t z_600k{0x08};
+constexpr uint8_t h200{0x04};
+constexpr uint8_t h80{0x02};
+constexpr uint8_t z12k{0x01};
+
+// 0x0C Receiver configuration register 2
+constexpr uint8_t sqm_dyn{0x20};  // Automatic squelch activation after end of TX
+constexpr uint8_t puz_61{0x10};   // Select squelch trigger level.
+constexpr uint8_t agc_en{0x08};   // AGC enabled
+constexpr uint8_t agc_m{0x04};    // AGC operates during complete receive period
+constexpr uint8_t agc6_3{0x01};   // AGC ratio 0:3 1:6
 
 // 0x12 Timer and EMV control register
 constexpr uint8_t mrt_step{0x08};  // Mask receive timer step size 0:64/fc, 1:5126/fc
 constexpr uint8_t nrt_nfc{0x01};   // No-response timer start condition in AP2P initiator and target mode.
 constexpr uint8_t nrt_emv{0x01};   // 1: No-response timer EMV mode
 constexpr uint8_t nrt_step{0x01};  // No-response timer step size 0:64/fc, 1:4096/fc
+
+constexpr uint8_t nrt_gptc_none{0x00};
+constexpr uint8_t nrt_gptc_erx{0x01 << 5};  // Additionally starts at End of RX (after EOF)
+constexpr uint8_t nrt_gptc_srx{0x02 << 5};  // Additionally starts at Start of RX
+constexpr uint8_t nrt_gptc_etx{0x03 << 5};  // Additionally starts at End of TX
 
 // 0x1A Main interrupt register
 constexpr uint8_t I_osc{0x80};      // IRQ when oscillator frequency is stable
@@ -299,6 +319,7 @@ constexpr uint8_t I_rxe{0x10};      // IRQ due to end of receive
 constexpr uint8_t I_txe{0x08};      // IRQ due to end of transmission
 constexpr uint8_t I_col{0x04};      // IRQ due to bit collision
 constexpr uint8_t I_rx_rest{0x02};  // 1: Mask IRQ due to automatic reception restart
+// 0x00 RFU
 
 constexpr uint32_t I_osc32     = ((uint32_t)I_osc << 24);
 constexpr uint32_t I_wl32      = ((uint32_t)I_wl << 24);
@@ -411,6 +432,8 @@ inline bool is_irq32_collision(const uint32_t irq32)
 
 uint8_t calculate_mrt(const uint32_t us, const bool mrt_step /* false:64, true:512*/);
 uint16_t calculate_nrt(const uint32_t ms, const bool nrt_step /* false:64, true:4096*/);
+inline uint8_t calculate_fdt(const uint32_t us);
+
 
 }  // namespace st25r3916
 

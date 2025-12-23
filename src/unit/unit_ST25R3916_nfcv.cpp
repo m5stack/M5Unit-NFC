@@ -165,7 +165,7 @@ bool UnitST25R3916::nfcv_transmit(const uint8_t* tx, const uint16_t tx_len, cons
     //m5::utility::log::dump(frame.data(), frame.size(), false);
 
     // Send
-    if (timeout_ms && !write_noresponse_timeout(timeout_ms)) {
+    if (timeout_ms && !write_fwt_timer(timeout_ms)) {
         return false;
     }
     if (!clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(frame.data(), frame.size()) ||

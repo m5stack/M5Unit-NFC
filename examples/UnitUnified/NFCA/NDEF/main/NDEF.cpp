@@ -266,7 +266,6 @@ void loop()
                         write_ndef();
                     }
                     M5.Log.printf("Please remove the PICC from the reader\n");
-
                 } else {
                     M5.Speaker.tone(1000, 50);
                     M5.Log.printf("Not support the NDEF\n");

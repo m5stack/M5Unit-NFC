@@ -18,6 +18,8 @@ using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
+#pragma GCC optimize ("O3")
+
 namespace m5 {
 namespace nfc {
 //

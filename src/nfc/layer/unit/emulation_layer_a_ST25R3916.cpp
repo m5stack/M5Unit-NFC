@@ -22,6 +22,8 @@ using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
+#pragma GCC optimize("O3")
+
 namespace {
 inline bool is_eof(const uint32_t irq)
 {
@@ -275,6 +277,7 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_idle()
     _u.set_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx);
 
     if (_layer.state() == EmulationLayerA::State::Active && !_wakeup) {
+        // M5_LIB_LOGE("A->I");
         _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Enable auto response for NFC-A
         _u.writeDirectCommand(CMD_GO_TO_SENSE);
     }
@@ -284,6 +287,9 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_idle()
     //       rfalCheckEnableObsModeRx();
 
     _wakeup = false;
+
+    _u.update();
+    return update_idle();
     return EmulationLayerA::State::Idle;
 }
 
@@ -295,11 +301,12 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_ready()
     }
 
     _u.clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx);
-
     _u.clear_bit_register8(REG_OPERATION_CONTROL, wu);  // Disable wakeup mode
     _u.writeModeDefinition(mode_listen_nfc_a);          // Disable birrate detection and collision
     _u.writeBitrate(_bitrate, _bitrate);
 
+    _u.update();
+    return update_ready();
     return EmulationLayerA::State::Ready;
 }
 
@@ -311,32 +318,29 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_active()
 
     _u.enable_interrupts(I_rxe32);
 
-    /*
-    uint32_t m32{};
-    _u.readMaskInterrupts(m32);
-    M5_LIB_LOGE("M:%08X", m32);
-    */
-
+    _u.update();
+    return update_active();
     return EmulationLayerA::State::Active;
 }
 
 EmulationLayerA::State ListenerST25R3916ForA::goto_halt()
 {
     _data_flag = false;
+
     _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Enable auto response for NFC-A
     _u.writeDirectCommand(CMD_GO_TO_SLEEP);
-
     _u.change_bit_register8(REG_MODE_DEFINITION, mode_bitrate_detection, mode_mask);
+
     _u.clear_bit_register8(REG_ISO14443A_SETTINGS, nfc_f0);
-
-    //_u.writeDirectCommand(CMD_CLEAR_FIFO);
     _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
-
     _u.enable_interrupts(I_nfct32 | I_rxs32 | I_crc32 | I_err132 | I_err232 | I_par32 | I_eon32 | I_eof32 | mode_irq);
 
     if (!is_extra_field()) {
         return goto_off();
     }
+
+    _u.update();
+    return update_halt();
     return EmulationLayerA::State::Halt;
 }
 
@@ -413,7 +417,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_idle()
     if ((irq32 & I_rxe_pta32) && _bitrate == Bitrate::Bps106K) {
         uint8_t pta{};
         if (_u.readPassiveTargetDisplay(pta) && ((pta & 0x0F) > pta_state_idle)) {
-            // M5_LIB_LOGE("PTA:%02X", pta);
+            // M5_LIB_LOGE("  I PTA:%02X", pta);
             return goto_ready();
         }
         // M5_LIB_LOGE("PTA:%02X", pta);
@@ -494,13 +498,9 @@ EmulationLayerA::State ListenerST25R3916ForA::update_halt()
         return EmulationLayerA::State::Halt;
     }
 
-    static uint32_t latest = 0;
-    if (latest != irq32) {
-        latest = irq32;
-    }
-
     // initiator bit rate was recognized
     if ((irq32 & I_nfct32) && _bitrate == Bitrate::Invalid) {
+        // M5_LIB_LOGE("  >> BR");
         uint8_t br{};
         _u.readBitrateDetectionDisplay(br);
         br = (br >> 4) & 0x03;  // 0:106 1:212 2:424 3:848
@@ -510,9 +510,11 @@ EmulationLayerA::State ListenerST25R3916ForA::update_halt()
         _bitrate = static_cast<Bitrate>(br);
     }
     if (is_eof(irq32)) {
+        // M5_LIB_LOGE("  >> OFF");
         return goto_off();
     }
     if ((irq32 & I_rxe32) && _bitrate != Bitrate::Invalid) {
+        // M5_LIB_LOGE("  >> RX");
         _u.writeDirectCommand(CMD_CLEAR_FIFO);
         _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
         return EmulationLayerA::State::Halt;
@@ -520,6 +522,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_halt()
     if ((irq32 & I_rxe_pta32) && _bitrate == Bitrate::Bps106K) {
         uint8_t pta{};
         if (_u.readPassiveTargetDisplay(pta) && ((pta & 0x0F) > pta_state_halt)) {
+            // M5_LIB_LOGE("  H PTA:%02X", pta);
             _wakeup = true;
             return goto_ready();
         }

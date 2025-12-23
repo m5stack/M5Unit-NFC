@@ -23,6 +23,8 @@ using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
+#pragma GCC optimize("O3")
+
 namespace {
 // HackerCap <-> CardputerADV pin configurations (EXT 2.54-14P)
 constexpr int PIN_SCK{40};           // G40
@@ -364,7 +366,8 @@ bool UnitST25R3916::nfc_initial_field_on()
 
     clearInterrupts();
     mask &= ~(I_cac32 | I_cat32 | I_apon32);
-    writeMaskInterrupts(mask);
+    //    writeMaskInterrupts(mask);
+    disable_interrupts(mask);
 
     return ret && modify_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en, 0x00);
 #endif
@@ -594,10 +597,9 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t ti
     return flags | I_nre32;  // Timeout
 }
 #else
-uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms)
+uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t bits, const uint32_t timeout_ms)
 {
     auto timeout_at = m5::utility::millis() + timeout_ms;
-    uint32_t flags{};
     do {
         if (!_using_irq || _interrupt_occurred) {
             _interrupt_occurred = false;
@@ -606,14 +608,15 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t ti
                 _stored_irq |= v;
             }
         }
-        if (_stored_irq & irq) {
-            return _stored_irq;
+        uint32_t irq32 = _stored_irq & bits;
+        if (irq32) {
+            _stored_irq &= ~irq32;
+            return irq32;
         }
         std::this_thread::yield();
     } while (m5::utility::millis() <= timeout_at);
     return _stored_irq | I_nre32;  // Timeout
 }
-
 #endif
 
 bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size)
@@ -648,7 +651,7 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     return false;
 }
 
-bool UnitST25R3916::write_noresponse_timeout(const uint32_t ms)
+bool UnitST25R3916::write_fwt_timer(const uint32_t ms)
 {
     uint8_t timer_ctrl{};
     if (readTimerAndEMVControl(timer_ctrl)) {

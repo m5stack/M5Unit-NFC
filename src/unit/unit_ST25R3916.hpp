@@ -2145,7 +2145,7 @@ protected:
     bool write_register32(const uint8_t reg, const uint32_t v);
     bool write_register32(const uint16_t reg, const uint32_t v);
 
-    bool write_noresponse_timeout(const uint32_t ms);
+    bool write_fwt_timer(const uint32_t ms);
     bool write_mask_receiver_timer(const uint32_t us);
     bool write_squelch_timer(const uint32_t us);
 
@@ -2235,12 +2235,15 @@ protected:
 
 private:
     config_t _cfg{};
+
     volatile uint32_t _stored_irq{};
     uint32_t _mask_irq{0xFFFFFFFF};  // for !_using_irq
+
+    volatile bool _interrupt_occurred{};
     m5::nfc::NFC _nfcMode{};
     bool _encrypted{};
     bool _using_irq{};
-    volatile bool _interrupt_occurred{};
+
     m5::nfc::a::mifare::classic::Crypto1 _crypto1{};
 };
 

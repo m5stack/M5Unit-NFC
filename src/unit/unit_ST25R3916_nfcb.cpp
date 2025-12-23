@@ -99,7 +99,7 @@ bool UnitST25R3916::nfcbTransmit(const uint8_t* tx, const uint16_t tx_len, const
     if (!tx || !tx_len) {
         return false;
     }
-    if (timeout_ms && !write_noresponse_timeout(timeout_ms)) {
+    if (timeout_ms && !write_fwt_timer(timeout_ms)) {
         return false;
     }
 

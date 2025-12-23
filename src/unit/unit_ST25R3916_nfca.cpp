@@ -21,6 +21,8 @@ using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
+#pragma GCC optimize("O3")
+
 #define CHECK_MODE()                                   \
     do {                                               \
         if (!isNFCMode(NFC::A)) {                      \
@@ -120,26 +122,42 @@ bool UnitST25R3916::configure_nfc_a()
 {
     _encrypted = false;
 
-#if 0    
-    //
-    // ISO14443A
-    // M5_LIB_LOGE(">>>>>> try ISO14443A REQA");
-    writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, 0x01 /* nfc_ar01 */);
-    writeBitrate(Bitrate::Bps106K, Bitrate::FC128_106Kbits);
-    writeSettingsISO14443A(0x0);
-#endif
-
-    if (!writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, nfc_ar8_auto) ||  //
-        !writeBitrate(Bitrate::Bps106K, Bitrate::Bps106K) ||                              //
+    if (!writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, nfc_ar8_auto /* 0x01 */) ||  //
+        !writeBitrate(Bitrate::Bps106K, Bitrate::Bps106K) ||                                         //
         !writeSettingsISO14443A(0x00)) {
         return false;
     }
 
-    return writeReceiverConfiguration1(0x08) &&  // z600k
-           writeReceiverConfiguration2(0x2D) &&  // sqm_dyn , agc_en, agc_m, agc6_3,
-           writeReceiverConfiguration3(0x00) &&  //
-           writeReceiverConfiguration4(0x00) &&  //
-           writeMaskInterrupts(0) &&             //
+    clear_bit_register8(REG_AUXILIARY_DEFINITION, dis_corr);
+    writeOvershootProtectionConfiguration1(0x40);
+    writeOvershootProtectionConfiguration2(0x03);
+    writeUndershootProtectionConfiguration1(0x40);
+    writeUndershootProtectionConfiguration2(0x03);
+
+    writeCorrelatorConfiguration1(0x47);
+    writeCorrelatorConfiguration2(0x00);
+
+#if 1
+    // Sensitivity Priority
+    constexpr uint8_t recv_3{0x00};
+    constexpr uint8_t recv_4{0x00};
+#else
+    // Stability-focused
+    constexpr uint8_t recv_3{0xD8};
+    constexpr uint8_t recv_4{0x22};
+    // Intermediate Settings
+    constexpr uint8_t recv_3{0x80};
+    constexpr uint8_t recv_4{0x11};
+#endif
+
+    enable_interrupts(I_wl32 | I_txe32 | I_rxs32 | I_rxe32 | I_par32 | I_crc32 | I_err132 | I_err232 | I_nre32 |
+                      I_col32);
+
+    return writeReceiverConfiguration1(z_600k) &&                              // z600k
+           writeReceiverConfiguration2(sqm_dyn | agc_en | agc_m | agc6_3) &&   //
+           writeReceiverConfiguration3(recv_3) &&                              // rx gain
+           writeReceiverConfiguration4(recv_4) &&                              // rx gain
+           writeDirectCommand(CMD_RESET_RX_GAIN) && writeMaskInterrupts(0) &&  //
            nfc_initial_field_on();
 }
 
@@ -209,7 +227,7 @@ uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint
     }
     // m5::utility::log::dump(tx, tx_len, false);
 
-    if ((timeout_ms ? !write_noresponse_timeout(timeout_ms) : false) ||                //
+    if ((timeout_ms ? !write_fwt_timer(timeout_ms) : false) ||                //
         !writeSettingsISO14443A(0x00 /*standard*/) || !clear_bit_register8(REG_AUXILIARY_DEFINITION,no_crc_rx) ||  //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||
         !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
@@ -244,7 +262,7 @@ bool UnitST25R3916::nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const
         return false;
     }
 
-    if ((timeout_ms ? !write_noresponse_timeout(timeout_ms) : false) ||                                             //
+    if ((timeout_ms ? !write_fwt_timer(timeout_ms) : false) ||                                                      //
         !writeSettingsISO14443A(0x00 /*standard*/) || !clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||  //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||                      //
         !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
@@ -264,7 +282,7 @@ bool UnitST25R3916::nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
     }
 
     if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
-        M5_LIB_LOGE("Timeout");
+        M5_LIB_LOGD("Timeout");
         return false;
     }
 
@@ -287,16 +305,15 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
     atqa       = 0;
 
     // REQA or WUPA (Receive without CRC)
-    if (!write_noresponse_timeout(TIMEOUT_REQ_WUP) ||  //
+    if (!write_fwt_timer(TIMEOUT_REQ_WUP) ||  //
         !writeSettingsISO14443A(antcl) || !set_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||
-        //        writeMaskMainInterrupt(mask) && writeMaskTimerAndNFCInterrupt(~I_nre) &&//
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||
         !writeDirectCommand(request ? CMD_TRANSMIT_REQA : CMD_TRANSMIT_WUPA)) {
         M5_LIB_LOGE("Failed to %s", request ? "REQA" : "WUPA");
         return false;
     }
 
-    auto irq = wait_for_interrupt(I_rxe32 | I_rxs | I_col32, TIMEOUT_REQ_WUP);
+    auto irq = wait_for_interrupt(I_rxe32 | I_rxs32 | I_col32, TIMEOUT_REQ_WUP);
     // M5_LIB_LOGE("IRQ:%08X", irq);
 
     if (!is_irq32_rxe(irq) && is_irq32_rxs(irq)) {
@@ -342,7 +359,7 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
     }
 
     // ANTICOLL/SEL
-    if (!write_noresponse_timeout(TIMEOUT_ANTICOLL) ||  //
+    if (!write_fwt_timer(TIMEOUT_ANTICOLL) ||  //
         !writeSettingsISO14443A(antcl) || !clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx)) {
         return false;
     }
@@ -440,6 +457,7 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
     // M5_LIB_LOGE(">>>> SAK:%02X (%u, %u)  %u ",  //
     //            sak, is_sak_completed(sak), is_sak_completed_14443_4(sak), sak_to_type(sak));
 
+    //   Completed?
     if (is_sak_completed_14443_4(sak)) {
         picc.size = 1 + lv * 3;
         picc.sak  = sak;
@@ -449,39 +467,7 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
         completed   = true;
         return true;
     }
-#if 0        
-        ATS ats{};
-        // RATS
-        if (!iso144434RequestATS(ats)) {
-            return false;
-        }
-        picc.size = 1 + lv * 3;
-        picc.sak  = sak;
 
-        // GetVersion(L4)
-        uint8_t ver[8]{};
-        if (mifare_get_version4(ver)) {
-            picc.type   = version4_to_type(picc.sub_type, ver);
-            picc.blocks = get_number_of_blocks(picc.type);
-        } else {
-            //  Check historical bytes
-            //m5::utility::log::dump(ats.header, sizeof(ats.header), false);
-            //m5::utility::log::dump(ats.historical.data(), ats.historical_len, false);
-            picc.type =
-                historical_bytes_to_type_sak20(picc.sub_type, ats.historical.data(), ats.historical_len, picc.atqa);
-            picc.blocks = get_number_of_blocks(picc.type);
-            completed   = (picc.type != Type::Unknown);
-        }
-        if (!completed) {
-            picc.type = Type::ISO_14443_4;
-            // Need more CCile,SystemFile
-            completed = true;
-        }
-        return true;
-    }
-#endif
-
-    //   Completed?
     if (is_sak_completed(sak)) {
         picc.size = 1 + lv * 3;
         picc.sak  = sak;
@@ -489,39 +475,6 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
             sak_to_type(sak);  // WARNING: This is a preliminary diagnosis; a more accurate diagnosis is required
         picc.blocks = get_number_of_blocks(picc.type);
         completed   = true;
-        // M5_LIB_LOGE(">>>>    tmp type %s", picc.typeAsString().c_str());
-
-#if 0        
-        // More detailed type identification
-        if (picc.type == Type::MIFARE_Ultralight) {
-            picc.type = Type::Unknown;
-            uint8_t ver[8]{};
-            uint16_t discard{};
-            // GetVersion(L3)
-            if (mifare_get_version3(ver)) {
-                picc.type = version3_to_type(ver);
-            } else {
-                //  PICC is IDLE... so need reactivate
-                completed = nfcaWakeup(discard) && nfcaSelect(picc);
-            }
-            if (picc.type == Type::Unknown) {
-                uint8_t discard_ek[8]{};
-                if (mifareUltralightCAuthenticate1(discard_ek)) {
-                    // ULC has AUTH
-                    picc.type = Type::MIFARE_UltralightC;
-                    // Throw an Hlt to transition to IDLE
-                    // Otherwise, subsequent commands become invalid in an incomplete state, causing unexpected IDLE
-                    nfcaHlt();
-                } else {
-                    //   really UL
-                    picc.type = Type::MIFARE_Ultralight;
-                }
-                picc.blocks = get_number_of_blocks(picc.type);
-                // PICC is IDLE... so need reactivate
-                completed = nfcaWakeup(discard) && nfcaSelect(picc);
-            }
-        }
-#endif
     }
     // M5_LIB_LOGE(">>>> Select %02X %u %u", sak, completed, has_sak_dependent_bit(sak));
     return completed || has_sak_dependent_bit(sak);  // completed or continue
@@ -583,11 +536,11 @@ bool UnitST25R3916::nfcaHlt()
     const uint8_t hlt_frame[2] = {m5::stl::to_underlying(Command::HLTA), 0x00};
 
     if (_encrypted) {
-        if (!write_noresponse_timeout(TIMEOUT_HALT) || !mifare_classic_send_encrypt(hlt_frame, sizeof(hlt_frame))) {
+        if (!write_fwt_timer(TIMEOUT_HALT) || !mifare_classic_send_encrypt(hlt_frame, sizeof(hlt_frame))) {
             return false;
         }
     } else {
-        if (!write_noresponse_timeout(TIMEOUT_HALT) ||  //
+        if (!write_fwt_timer(TIMEOUT_HALT) ||  //
             !writeSettingsISO14443A(0x00 /*standard*/) ||
             !clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||                                         //
             !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
@@ -908,7 +861,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const PICC& p
 
     writeDirectCommand(CMD_RESET_RX_GAIN);
 
-    if (!write_noresponse_timeout(TIMEOUT_AUTH2) ||                                                          //
+    if (!write_fwt_timer(TIMEOUT_AUTH2) ||                                                                   //
         !writeSettingsISO14443A(no_tx_par) || !set_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||     //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
         !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sizeof(bitstream), 0) ||  //
@@ -1025,14 +978,13 @@ bool UnitST25R3916::mifareGetVersion4(uint8_t info[8])
     uint16_t rx_len = 128;
 
     if (info && nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION)) {
-        //M5_LIB_LOGE(">>>> VER L4");
-        //m5::utility::log::dump(rx, rx_len, false);
+        // M5_LIB_LOGE(">>>> VER L4");
+        // m5::utility::log::dump(rx, rx_len, false);
         return true;
     }
     M5_LIB_LOGE(">>>> ERROR VER L4");
     return false;
 }
-
 
 // -------------------------------- For NTAG
 bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
