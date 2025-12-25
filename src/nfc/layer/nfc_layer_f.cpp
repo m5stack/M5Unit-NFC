@@ -88,6 +88,8 @@ bool NFCLayerF::detect(m5::nfc::f::PICC& picc, const uint32_t timeout_ms)
 bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* private_code, const uint8_t pc_size,
                        m5::nfc::f::TimeSlot time_slot, const uint32_t timeout_ms)
 {
+    constexpr uint32_t FDT{1};
+
     uint8_t slots = timeslot_to_slot(time_slot);
 
     _authenticated = false;
@@ -106,12 +108,14 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
         if (!polling(picc1, system_code_wildcard, RequestCode::None, time_slot)) {
             break;
         }
+        m5::utility::delay(FDT);
+
         // Already exists?
         if (exists_picc(piccs, picc1)) {
             continue;
         }
 
-        M5_LIB_LOGE("detect %s", picc1.idmAsString().c_str());
+        M5_LIB_LOGV("Detect %s", picc1.idmAsString().c_str());
 
         _activePICC = picc1;
 
@@ -138,10 +142,10 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
                     if (!is_same_idm_and_pmm(picc1, picc2)) {
                         continue;
                     }
-                    M5_LIB_LOGE("  private");
                     format |= format_private;
                 }
             }
+            m5::utility::delay(FDT);
             // When private code is specified, PICC that do not meet the conditions are invalid
             if ((format & format_private) == 0) {
                 continue;
@@ -153,27 +157,27 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
-            M5_LIB_LOGE("  ndef");
             format |= format_ndef;
         }
+        m5::utility::delay(FDT);
 
         // 5. Check shared area
         if (polling(picc2, system_code_shared, RequestCode::None, time_slot)) {
             if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
-            M5_LIB_LOGE("  shared");
             format |= format_shared;
         }
+        m5::utility::delay(FDT);
 
         // 6. Check Lite/S
         if (polling(picc2, system_code_lite, RequestCode::None, time_slot)) {
             if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
-            M5_LIB_LOGE("  lite");
             format |= format_lite;
         }
+        m5::utility::delay(FDT);
 
         // 7. Check secure
         if (polling(picc2, system_code_felica_secure_id, RequestCode::None, time_slot)) {
@@ -182,6 +186,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             }
             format |= format_secure;
         }
+        m5::utility::delay(FDT);
 
         // Type identification
         if (polling(picc2, system_code_felica_plug, RequestCode::None, time_slot)) {
@@ -200,9 +205,10 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
                 picc1.dfc_format = ((uint16_t)rbuf[8] << 8) | rbuf[9];
             }
         }
+        m5::utility::delay(FDT);
 
         if (type == Type::Unknown) {
-            M5_LIB_LOGE("Unknown: %x", format);
+            M5_LIB_LOGD("Unknown: %x", format);
             if (format) {
                 type = Type::FeliCaStandard;
             } else {
@@ -216,7 +222,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             PICC tmp = picc1;
             tmp.type = Type::FeliCaStandard;
             if (!_impl->requestResponse(mode, tmp)) {
-                M5_LIB_LOGE("Failed to read mode");
+                M5_LIB_LOGD("Failed to read mode");
                 continue;
             }
         }
