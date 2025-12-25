@@ -36,7 +36,7 @@ namespace nfc {
  */
 class EmulationLayerF {
 public:
-    enum class State { None, Off, Idle, Ready, Halt };
+    enum class State { None, Off, Communicated, Selected };
 
     struct Adapter;
     explicit EmulationLayerF(m5::unit::UnitST25R3916& u);
@@ -70,9 +70,8 @@ protected:
 
 private:
     void update_off();
-    void update_idle();
-    void update_ready();
-    void update_halt();
+    void update_communicated();
+    void update_selected();
 
 protected:
     uint8_t* _memory{};
@@ -95,10 +94,9 @@ struct EmulationLayerF::Adapter {
     virtual bool stop_emulation()                                                              = 0;
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) = 0;
 
-    virtual EmulationLayerF::State update_off()   = 0;
-    virtual EmulationLayerF::State update_idle()  = 0;
-    virtual EmulationLayerF::State update_ready() = 0;
-    virtual EmulationLayerF::State update_halt()  = 0;
+    virtual EmulationLayerF::State update_off()          = 0;
+    virtual EmulationLayerF::State update_communicated() = 0;
+    virtual EmulationLayerF::State update_selected()     = 0;
 };
 ///@endcond
 

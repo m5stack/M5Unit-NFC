@@ -86,7 +86,7 @@ constexpr uint16_t system_code_wildcard{0xFFFF};          //!< Wildcard
 constexpr uint16_t system_code_ndef{0x12FC};              //!< NDEF
 constexpr uint16_t system_code_felica_secure_id{0x957A};  //!< FeliCa secure ID
 constexpr uint16_t system_code_shared{0xFE00};            //!< Shared area
-constexpr uint16_t system_code_lite{0x88B4};               //!< Lite, Lite-S
+constexpr uint16_t system_code_lite{0x88B4};              //!< Lite, Lite-S
 constexpr uint16_t system_code_felica_plug{0xFEE1};       //!< FeliCa Plug
 ///@}
 
@@ -352,6 +352,15 @@ inline bool is_user_block(const Type t, const uint16_t block)
 uint8_t get_maxumum_read_blocks(const Type t);
 //! @brief Maximum number of blocks that can be write simultaneously
 uint8_t get_maxumum_write_blocks(const Type t);
+
+//! @breif Is read only block (Permissions are not considered)
+bool is_read_only_lite(const block_t block);
+//! @breif Is read only block (Permissions are not considered)
+bool is_read_only_lite_s(const block_t block);
+//! @brief Can the value of the specified block be read? (Permissions are not considered)
+bool can_read_lite(const block_t block);
+//! @brief Can the value of the specified block be read? (Permissions are not considered)
+bool can_read_lite_s(const block_t block);
 
 ///@name RequestService
 ///@{

@@ -184,6 +184,28 @@ bool generate_mac(uint8_t mac[8], const uint8_t* plain, uint32_t plain_len, cons
     return true;
 }
 
+bool is_read_only_lite(const block_t block)
+{
+    return block == lite::MAC || block == lite::SYS_C;
+}
+
+bool is_read_only_lite_s(const block_t block)
+{
+    return block == lite_s::MAC || block == lite_s::D_ID || block == lite_s::SYS_C || block == lite_s::WCNT ||
+           block == lite_s::CRC_CHECK;
+}
+
+bool can_read_lite(const block_t block){
+    return !(block == lite_s::RC || block == lite_s::CK);
+}
+
+bool can_read_lite_s(const block_t block){
+    return !(block == lite_s::RC || block == lite_s::CK);
+}
+
+
+
+
 //
 bool PICC::valid() const
 {

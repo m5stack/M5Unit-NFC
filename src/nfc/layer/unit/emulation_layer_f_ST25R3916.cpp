@@ -81,16 +81,14 @@ struct ListenerST25R3916ForF final : EmulationLayerF::Adapter {
 
     //
     virtual EmulationLayerF::State update_off() override;
-    virtual EmulationLayerF::State update_idle() override;
-    virtual EmulationLayerF::State update_ready() override;
-    virtual EmulationLayerF::State update_halt() override;
+    virtual EmulationLayerF::State update_communicated() override;
+    virtual EmulationLayerF::State update_selected() override;
 
     //
     EmulationLayerF::State goto_state(const EmulationLayerF::State s);
     EmulationLayerF::State goto_off();
-    EmulationLayerF::State goto_idle();
-    EmulationLayerF::State goto_ready();
-    EmulationLayerF::State goto_halt();
+    EmulationLayerF::State goto_communicated();
+    EmulationLayerF::State goto_selected();
 
     bool load_config(const m5::nfc::f::PICC& picc);
 
@@ -99,11 +97,8 @@ struct ListenerST25R3916ForF final : EmulationLayerF::Adapter {
 
     bool is_extra_field();
 
-    //    enum State{ None, Off, Idle, Ready, Active, Halt };
     Bitrate _bitrate{Bitrate::Invalid};
-    uint32_t _receive_bits{};
     bool _data_flag{};
-    bool _wakeup{};
 
     EmulationLayerF& _layer;
     UnitST25R3916& _u;
@@ -227,12 +222,10 @@ EmulationLayerF::State ListenerST25R3916ForF::goto_state(const EmulationLayerF::
     switch (s) {
         case EmulationLayerF::State::Off:
             return goto_off();
-        case EmulationLayerF::State::Idle:
-            return goto_idle();
-        case EmulationLayerF::State::Ready:
-            return goto_ready();
-        case EmulationLayerF::State::Halt:
-            return goto_halt();
+        case EmulationLayerF::State::Communicated:
+            return goto_communicated();
+        case EmulationLayerF::State::Selected:
+            return goto_selected();
         default:
             break;
     }
@@ -241,10 +234,8 @@ EmulationLayerF::State ListenerST25R3916ForF::goto_state(const EmulationLayerF::
 
 EmulationLayerF::State ListenerST25R3916ForF::goto_off()
 {
-    _data_flag    = false;
-    _bitrate      = Bitrate::Invalid;
-    _receive_bits = 0;
-    _wakeup       = false;
+    _data_flag = false;
+    _bitrate   = Bitrate::Invalid;
 
     _u.writeDirectCommand(CMD_STOP_ALL_ACTIVITIES);
     _u.set_bit_register8(REG_OPERATION_CONTROL, rx_en);
@@ -262,15 +253,15 @@ EmulationLayerF::State ListenerST25R3916ForF::goto_off()
     _u.change_bit_register8(REG_MODE_DEFINITION, mode_bitrate_detection, 0x78);
 
     if (is_extra_field()) {
-        M5_LIB_LOGE("off->idle");
-        return goto_idle();
+        // M5_LIB_LOGE("off->idle");
+        return goto_communicated();
     } else {
         _u.clear_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en | en);
     }
     return EmulationLayerF::State::Off;
 }
 
-EmulationLayerF::State ListenerST25R3916ForF::goto_idle()
+EmulationLayerF::State ListenerST25R3916ForF::goto_communicated()
 {
     uint8_t v{}, aux{};
 
@@ -293,14 +284,12 @@ EmulationLayerF::State ListenerST25R3916ForF::goto_idle()
     _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
     //       rfalCheckEnableObsModeRx();
 
-    _wakeup = false;
-
     _u.update();
-    return update_idle();
-    return EmulationLayerF::State::Idle;
+    return update_communicated();
+    return EmulationLayerF::State::Communicated;
 }
 
-EmulationLayerF::State ListenerST25R3916ForF::goto_ready()
+EmulationLayerF::State ListenerST25R3916ForF::goto_selected()
 {
     _data_flag = false;
 
@@ -315,29 +304,8 @@ EmulationLayerF::State ListenerST25R3916ForF::goto_ready()
     _u.enable_interrupts(I_rxe32);
 
     _u.update();
-    return update_ready();
-    return EmulationLayerF::State::Ready;
-}
-
-EmulationLayerF::State ListenerST25R3916ForF::goto_halt()
-{
-    _data_flag = false;
-
-    _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Enable auto response for NFC-A
-    _u.writeDirectCommand(CMD_GO_TO_SLEEP);
-    _u.change_bit_register8(REG_MODE_DEFINITION, mode_bitrate_detection, mode_mask);
-
-    _u.clear_bit_register8(REG_ISO14443A_SETTINGS, nfc_f0);
-    _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
-    _u.enable_interrupts(I_nfct32 | I_rxs32 | I_crc32 | I_err132 | I_err232 | I_par32 | I_eon32 | I_eof32 | mode_irq);
-
-    if (!is_extra_field()) {
-        return goto_off();
-    }
-
-    _u.update();
-    return update_halt();
-    return EmulationLayerF::State::Halt;
+    return update_selected();
+    return EmulationLayerF::State::Selected;
 }
 
 // ------------------------------------------------------------
@@ -345,17 +313,17 @@ EmulationLayerF::State ListenerST25R3916ForF::update_off()
 {
     // IRQ due to detection of external field
     if ((get_irq(I_eon32) & I_eon32)) {
-        return goto_idle();
+        return goto_communicated();
     }
     return EmulationLayerF::State::Off;
 }
 
-EmulationLayerF::State ListenerST25R3916ForF::update_idle()
+EmulationLayerF::State ListenerST25R3916ForF::update_communicated()
 {
     uint32_t irq32 = get_irq(I_nfct32 | I_rxe32 | I_eof32 | I_wu_f32);
 
     if (!irq32) {
-        return EmulationLayerF::State::Idle;
+        return EmulationLayerF::State::Communicated;
     }
 
     // initiator bit rate was recognized
@@ -374,7 +342,7 @@ EmulationLayerF::State ListenerST25R3916ForF::update_idle()
     }
 
     if ((irq32 & I_wu_f32) && _bitrate != Bitrate::Invalid) {
-        return goto_ready();
+        return goto_selected();
     }
 
     if ((irq32 & I_rxe32) && _bitrate != Bitrate::Invalid) {
@@ -383,7 +351,7 @@ EmulationLayerF::State ListenerST25R3916ForF::update_idle()
             _u.writeDirectCommand(CMD_CLEAR_FIFO);
             _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
             _u.clear_bit_register8(REG_OPERATION_CONTROL, tx_en);
-            return EmulationLayerF::State::Idle;
+            return EmulationLayerF::State::Communicated;
         }
         uint16_t bytes{};
         uint8_t bits{};
@@ -394,21 +362,21 @@ EmulationLayerF::State ListenerST25R3916ForF::update_idle()
         _u.readFIFO(actual, rx, rx_len);
         _data_flag = true;
         if (actual) {
-            auto state = _layer.receive_callback(EmulationLayerF::State::Idle, rx, rx[0]);
-            if (state != EmulationLayerF::State::Idle) {
+            auto state = _layer.receive_callback(EmulationLayerF::State::Communicated, rx, rx[0]);
+            if (state != EmulationLayerF::State::Communicated) {
                 return goto_state(state);
             }
-            return goto_ready();
+            return goto_selected();
         }
     }
-    return EmulationLayerF::State::Idle;
+    return EmulationLayerF::State::Communicated;
 }
 
-EmulationLayerF::State ListenerST25R3916ForF::update_ready()
+EmulationLayerF::State ListenerST25R3916ForF::update_selected()
 {
     uint32_t irq32 = get_irq(I_eof32 | I_wu_f32 | I_rxe32);  // Clear I_wu_f32, Not use
     if (!irq32) {
-        return EmulationLayerF::State::Ready;
+        return EmulationLayerF::State::Selected;
     }
 
     if (is_eof(irq32)) {
@@ -419,7 +387,7 @@ EmulationLayerF::State ListenerST25R3916ForF::update_ready()
         if (irq32 & (I_crc32 | I_err132)) {
             _u.writeDirectCommand(CMD_CLEAR_FIFO);
             _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
-            return EmulationLayerF::State::Ready;
+            return EmulationLayerF::State::Selected;
         }
         uint16_t bytes{};
         uint8_t bits{};
@@ -430,49 +398,13 @@ EmulationLayerF::State ListenerST25R3916ForF::update_ready()
         _u.readFIFO(actual, rx, rx_len);
         _data_flag = true;
         if (actual) {
-            auto state = _layer.receive_callback(EmulationLayerF::State::Idle, rx, rx[0]);
-            if (state != EmulationLayerF::State::Ready) {
+            auto state = _layer.receive_callback(EmulationLayerF::State::Communicated, rx, rx[0]);
+            if (state != EmulationLayerF::State::Selected) {
                 return goto_state(state);
             }
         }
     }
-
-    return EmulationLayerF::State::Ready;
-}
-
-EmulationLayerF::State ListenerST25R3916ForF::update_halt()
-{
-    auto irq32 = get_irq(I_nfct32 | I_rxe32 | I_eof32 | I_wu_f32);
-    if (!irq32) {
-        return EmulationLayerF::State::Halt;
-    }
-
-    // initiator bit rate was recognized
-    if ((irq32 & I_nfct32) && _bitrate == Bitrate::Invalid) {
-        // M5_LIB_LOGE("  >> BR");
-        uint8_t br{};
-        _u.readBitrateDetectionDisplay(br);
-        br = (br >> 4) & 0x03;  // 0:106 1:212 2:424 3:848
-        if (br > 2) {
-            br = 2;
-        }
-        _bitrate = static_cast<Bitrate>(br);
-    }
-    if (is_eof(irq32)) {
-        // M5_LIB_LOGE("  >> OFF");
-        return goto_off();
-    }
-    if (irq32 & I_wu_f32) {
-        return goto_ready();
-    }
-
-    if ((irq32 & I_rxe32) && _bitrate != Bitrate::Invalid) {
-        // M5_LIB_LOGE("  >> RX");
-        _u.writeDirectCommand(CMD_CLEAR_FIFO);
-        _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
-        return EmulationLayerF::State::Halt;
-    }
-    return EmulationLayerF::State::Halt;
+    return EmulationLayerF::State::Selected;
 }
 
 bool ListenerST25R3916ForF::is_extra_field()

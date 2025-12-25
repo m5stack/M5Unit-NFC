@@ -21,6 +21,7 @@ namespace {
 constexpr uint32_t rc_offset       = 16u * (lite_s::REG.number + 1);
 constexpr uint32_t wcnt_offset     = rc_offset + 16u * 9;
 constexpr uint32_t crc_ceck_offset = wcnt_offset + 16u * 3;
+constexpr uint8_t null_data[16]{};
 
 uint8_t* block_to_address(uint8_t* mem, const uint32_t mem_size, const uint16_t block)
 {
@@ -115,20 +116,16 @@ void EmulationLayerF::update()
         case State::None:
             break;
         case State::Off:
-            if (_state != _prev) M5_LIB_LOGE("==OFF");
+            //            if (_state != _prev) M5_LIB_LOGE("==OFF");
             update_off();
             break;
-        case State::Idle:
-            if (_state != _prev) M5_LIB_LOGE("==IDLE");
-            update_idle();
+        case State::Communicated:
+            //            if (_state != _prev) M5_LIB_LOGE("==COMM");
+            update_communicated();
             break;
-        case State::Ready:
-            if (_state != _prev) M5_LIB_LOGE("==READY");
-            update_ready();
-            break;
-        case State::Halt:
-            if (_state != _prev) M5_LIB_LOGE("==HALT");
-            update_halt();
+        case State::Selected:
+            //            if (_state != _prev) M5_LIB_LOGE("==SEL");
+            update_selected();
             break;
         default:
             break;
@@ -141,85 +138,137 @@ void EmulationLayerF::update_off()
     _state = _impl->update_off();
 }
 
-void EmulationLayerF::update_idle()
+void EmulationLayerF::update_communicated()
 {
-    _state = _impl->update_idle();
+    _state = _impl->update_communicated();
 }
 
-void EmulationLayerF::update_ready()
+void EmulationLayerF::update_selected()
 {
-    _state = _impl->update_ready();
-}
-
-void EmulationLayerF::update_halt()
-{
-    _state = _impl->update_halt();
+    _state = _impl->update_selected();
 }
 
 EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const uint8_t* rx, const uint32_t rx_len)
 {
     if (!rx || rx_len < 2) {
-        return State::Idle;
+        return State::Communicated;
     }
 
     State ret = s;
     switch (static_cast<CommandCode>(rx[1])) {
         case CommandCode::Polling:
-            //             m5::utility::log::dump(rx, rx_len, false);
-            //            M5_LIB_LOGE("  PO:%u,%u,%u", is_system_code_lite(rx + 2), is_system_code_ndef(rx + 2),
-            //                        is_system_code_wildcard(rx + 2));
+            // M5_LIB_LOGE(" SREQ:%02X%02X %u %u", rx[2], rx[3], rx[4], rx[5]);
             if (rx_len == 6 &&
                 (is_system_code_lite(rx + 2) || is_system_code_ndef(rx + 2) || is_system_code_wildcard(rx + 2))) {
-                uint8_t SENS_RES_NDEF[1 + 8 + 8] = {m5::stl::to_underlying(ResponseCode::Polling)};
-                memcpy(SENS_RES_NDEF + 1, _picc.m, 16);
+                uint8_t SENSF_RES[1 + 8 + 8 + 2] = {m5::stl::to_underlying(ResponseCode::Polling)};
+                memcpy(SENSF_RES + 1, _picc.m, 16);
+
+                // Request code
+                bool req = (rx[4] == 1 || rx[4] == 2);
+                if (rx[4] == 1) {  // request system code
+                    SENSF_RES[17] = rx[2];
+                    SENSF_RES[18] = rx[3];
+                }
+                if (rx[4] == 2) {  // request communication performance
+                    SENSF_RES[17] = 0x00;
+                    SENSF_RES[18] = 0x83;  // Auto detect, 424, 212
+                }
                 if (is_system_code_ndef(rx + 2)) {
                     auto ptr = block_to_address(_memory, _memory_size, lite_s::MC.number);
                     if (!ptr || ptr[3] == 0x00) {  // SYS_OP is not support NDEF
-                        //                        M5_LIB_LOGE("   NOT NDEF");
                         break;
                     }
                 }
-                M5_LIB_LOGE(" SRES:%02X%02X", rx[2], rx[3]);
-                ret = _impl->transmit(SENS_RES_NDEF, sizeof(SENS_RES_NDEF), 2) ? State::Ready : s;
+                // M5_LIB_LOGE(" SRES:%u", sizeof(SENSF_RES) - (2 * !req));
+
+                // Timeslot
+                if (rx[5]) {
+                    const uint8_t slot_count = 1 << rx[5];
+                    const uint8_t slot       = (_picc.idm[7] ^ _picc.idm[6]) & (slot_count - 1);
+                    m5::utility::delayMicroseconds(2417 + slot * 1208);
+                }
+
+                // ret = _impl->transmit(SENSF_RES, sizeof(SENSF_RES), 1) ? State::Selected : s;
+                _impl->transmit(SENSF_RES, sizeof(SENSF_RES) - (2 * !req), 1);
+                if (s == State::Communicated) {
+                    ret = State::Selected;
+                }
             }
             break;
-        case CommandCode::ReadWithoutEncryption: {
-            M5_LIB_LOGE("RD:");
-            //           m5::utility::log::dump(rx, rx_len, false);
-            // 10 06 02 FE 56 78 9A BC DE F0 01 0B 00 01 80 A0
+
+        case CommandCode::ReadWithoutEncryption:
+            // M5_LIB_LOGE("RD:");
+            // m5::utility::log::dump(rx, rx_len, false);
             if (rx_len >= 15 && memcmp(_picc.idm, rx + 2, sizeof(_picc.idm)) == 0) {
+                uint16_t sc = rx[11] | (uint16_t)rx[12];
+
                 std::vector<uint8_t> tx{};
                 tx.resize(1 + 1 + 8 + 2 + 1 + 16 * rx[13]);
 
                 uint32_t offset{};
                 tx[offset++] = m5::stl::to_underlying(ResponseCode::ReadWithoutEncryption);  // Response code
-                memcpy(tx.data() + 2, _picc.idm, 8);                                         // IDm
+                memcpy(tx.data() + 1, _picc.idm, 8);                                         // IDm
                 offset += 8;
                 tx[offset++]          = 0;  // Status 1
                 tx[offset++]          = 0;  // Status 2
                 tx[offset++]          = 0;  // Number of blocks
                 uint32_t block_offset = 14;
+                bool error{};
                 for (uint_fast8_t i = 0; i < rx[13]; ++i) {
                     block_t b = block_t::from(rx + block_offset);
                     block_offset += 2 + b.is_3byte();
-                    auto ptr = block_to_address(_memory, _memory_size, b.block());
-                    if (!ptr) {
+                    auto ptr = can_read_lite_s(b) ? block_to_address(_memory, _memory_size, b.block()) : null_data;
+                    if (!ptr || !(sc == service_random_read || sc == service_random_read_write)) {
                         tx[9]  = 1U << i;  // Error block bit
                         tx[10] = 0xA8;     // Invalid block
                         tx.resize(1 + 8 + 2);
+                        error = true;
                         break;
                     }
                     memcpy(tx.data() + offset, ptr, 16);
                     offset += 16;
                 }
-                if (!tx[0]) {
+                if (!error) {
                     tx[11] = rx[13];
                 }
-                // m5::utility::log::dump(tx.data(), tx.size(), false);
-                ret = _impl->transmit(tx.data(), tx.size(), tx.size() * 2) ? State::Ready : s;
+                ret = _impl->transmit(tx.data(), tx.size(), tx.size() * 2) ? State::Selected : s;
             }
-        } break;
+            break;
+
+        case CommandCode::WriteWithoutEncryption:
+            // M5_LIB_LOGE("WT:%u", rx_len);
+            if (rx_len >= 32 && memcmp(_picc.idm, rx + 2, sizeof(_picc.idm)) == 0 && rx[10] == 1) {
+                uint16_t sc = rx[11] | (uint16_t)rx[12];
+
+                uint8_t res[1 + 8 + 2] = {m5::stl::to_underlying(ResponseCode::WriteWithoutEncryption)};
+                memcpy(res + 1, _picc.idm, 8);
+
+                // TODO check permission, REG register, RC
+
+                uint32_t block_offset = 14;
+                for (uint_fast8_t i = 0; i < rx[13]; ++i) {
+                    block_t b = block_t::from(rx + block_offset);
+                    block_offset += 2 + b.is_3byte();
+                    auto ptr = block_to_address(_memory, _memory_size, b.block());
+                    if (!ptr || sc != service_random_read_write || rx[13] > 2 || is_read_only_lite_s(b)) {
+                        res[9]  = 1U << i;
+                        res[10] = 0xA8;
+                        break;
+                    }
+                    if (b != lite_s::ID) {
+                        memcpy(ptr, rx + rx_len - rx[13] * 16 + i * 16, 16);
+                    } else {
+                        // ID can write lower 8 bytes
+                        memcpy(ptr + 8, rx + rx_len - rx[13] * 16 + i * 16 + 8, 8);
+                    }
+                }
+                // m5::utility::log::dump(res, sizeof(res), false);
+                ret = _impl->transmit(res, sizeof(res), 8) ? State::Selected : s;
+            }
+            break;
+
         default:
+            M5_LIB_LOGE(" CMD:%02X %u", rx[1], rx_len);
             break;
     }
     // M5_LIB_LOGE(" --> %u", ret);
