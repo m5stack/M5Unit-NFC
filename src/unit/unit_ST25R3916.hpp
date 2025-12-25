@@ -23,7 +23,8 @@
 namespace m5 {
 namespace nfc {
 struct ListenerST25R3916ForA;
-}
+struct ListenerST25R3916ForF;
+}  // namespace nfc
 namespace unit {
 
 namespace nfc {
@@ -826,7 +827,7 @@ public:
     inline bool writeMaskMainInterrupt(const uint8_t value)
     {
         if (write_register8(st25r3916::command::REG_MASK_MAIN_INTERRUPT, value)) {
-            _mask_irq = (_mask_irq & 0x00FFFFFF) | ((uint32_t)~value << 24);
+            _enabled_irq = (_enabled_irq & 0x00FFFFFF) | ((uint32_t)~value << 24);
             return true;
         }
         return false;
@@ -848,7 +849,7 @@ public:
     inline bool writeMaskTimerAndNFCInterrupt(const uint8_t value)
     {
         if (write_register8(st25r3916::command::REG_MASK_TIMER_AND_NFC_INTERRUPT, value)) {
-            _mask_irq = (_mask_irq & 0xFF00FFFF) | ((uint32_t)~value << 16);
+            _enabled_irq = (_enabled_irq & 0xFF00FFFF) | ((uint32_t)~value << 16);
             return true;
         }
         return false;
@@ -870,7 +871,7 @@ public:
     inline bool writeMaskErrorAndWakeupInterrupt(const uint8_t value)
     {
         if (write_register8(st25r3916::command::REG_MASK_ERROR_AND_WAKEUP_INTERRUPT, value)) {
-            _mask_irq = (_mask_irq & 0xFFFF00FF) | ((uint32_t)~value << 8);
+            _enabled_irq = (_enabled_irq & 0xFFFF00FF) | ((uint32_t)~value << 8);
             return true;
         }
         return false;
@@ -892,7 +893,7 @@ public:
     inline bool writeMaskPassiveTargetInterrupt(const uint8_t value)
     {
         if (write_register8(st25r3916::command::REG_MASK_PASSIVE_TARGET_INTERRUPT, value)) {
-            _mask_irq = (_mask_irq & 0xFFFFFF00) | (uint32_t)~value;
+            _enabled_irq = (_enabled_irq & 0xFFFFFF00) | (uint32_t)~value;
             return true;
         }
         return false;
@@ -914,7 +915,7 @@ public:
     inline bool writeMaskInterrupts(const uint32_t value)
     {
         if (write_register32(st25r3916::command::REG_MASK_MAIN_INTERRUPT, value)) {
-            _mask_irq = ~value;
+            _enabled_irq = ~value;
             return true;
         }
         return false;
@@ -1930,6 +1931,9 @@ public:
      */
     bool nfcfTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                         const uint32_t timeout_ms);
+    bool nfcfTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
+    bool nfcfReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
+
     /*!
       @brief Polling
       @param[out] PICC detected PICC
@@ -2129,6 +2133,7 @@ public:
 
 protected:
     friend struct m5::nfc::ListenerST25R3916ForA;
+    friend struct m5::nfc::ListenerST25R3916ForF;
 
     static void IRAM_ATTR on_irq(void* arg);
 
@@ -2187,7 +2192,7 @@ protected:
     {
 #if 0
         if (writeMaskInterrupts(~mask)) {
-            _mask_irq |= mask;
+            _enabled_irq |= mask;
             return true;
         }
         return false;
@@ -2199,7 +2204,7 @@ protected:
     {
 #if 0
         if (writeMaskInterrupts(mask)) {
-            _mask_irq &= ~mask;
+            _enabled_irq &= ~mask;
             return true;
         }
         return false;
@@ -2237,7 +2242,7 @@ private:
     config_t _cfg{};
 
     volatile uint32_t _stored_irq{};
-    uint32_t _mask_irq{0xFFFFFFFF};  // for !_using_irq
+    uint32_t _enabled_irq{};  // for !_using_irq
 
     volatile bool _interrupt_occurred{};
     m5::nfc::NFC _nfcMode{};

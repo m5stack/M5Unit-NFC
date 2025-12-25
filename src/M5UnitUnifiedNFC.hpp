@@ -25,6 +25,7 @@
 #include "nfc/layer/a/emulation_layer_a.hpp"
 #include "nfc/layer/nfc_layer_b.hpp"
 #include "nfc/layer/nfc_layer_f.hpp"
+#include "nfc/layer/f/emulation_layer_f.hpp"
 #include "nfc/layer/nfc_layer_v.hpp"
 
 #include "nfc/isodep/nfc_b_file_system.hpp"

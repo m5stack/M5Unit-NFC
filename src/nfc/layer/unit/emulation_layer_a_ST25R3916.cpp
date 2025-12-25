@@ -1,7 +1,7 @@
 /*
  * SPDX-FileCopyrightText: 2025 M5Stack Technology CO LTD
  *
- * SPDX-License-Identifier: MIT
+s * SPDX-License-Identifier: MIT
  */
 /*!
   @file emulation_layer_a_ST25R3916.cpp
@@ -43,7 +43,6 @@ constexpr uint8_t mode_listen_nfc_a      = targ | (0x01 << 3);
 
 constexpr uint32_t mode_irq    = I_wu_a32 | I_wu_ax32 | I_rxe_pta32;
 constexpr uint32_t default_irq = I_nfct32 | I_rxs32 | I_eon32 | I_eof32 | I_crc32 | I_err132 | I_err232 | I_par32;
-
 }  // namespace
 
 namespace m5 {
@@ -149,7 +148,7 @@ bool ListenerST25R3916ForA::start_emulation(const m5::nfc::a::PICC& picc)
         m5::utility::log::dump(rbuf, PT_MEMORY_LENGTH, false);
     }
 
-    // Auto response  only NFC-A
+    // Auto response only NFC-A
     _u.change_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_ac_ap2p | d_212_424_1r,
                             d_ac_ap2p | d_212_424_1r | d_106_ac_a);
 
@@ -158,6 +157,7 @@ bool ListenerST25R3916ForA::start_emulation(const m5::nfc::a::PICC& picc)
     // 512/fc steps
     _u.set_bit_register8(REG_TIMER_AND_EMV_CONTROL, mrt_step);
     _u.write_register8(REG_MASK_RECEIVER_TIMER, calculate_mrt(100, true));  // 100us
+
     // 14443-A enable parity , disable NFCIP-1
     _u.clear_bit_register8(REG_ISO14443A_SETTINGS, no_tx_par | no_rx_par | nfc_f0);
 
@@ -188,22 +188,6 @@ bool ListenerST25R3916ForA::transmit(const uint8_t* tx, const uint16_t tx_len, c
 {
     return _u.nfcaTransmit(tx, tx_len, timeout_ms);
 }
-
-#if 0
-            puts("SetMode RFAL_MODE_LISTEN_NFCA");
-            /* Disable wake up mode, if set */
-            st25r3916ClrRegisterBits(ST25R3916_REG_OP_CONTROL, ST25R3916_REG_OP_CONTROL_wu);
-
-            /* Enable Passive Target NFC-A mode, disable any Collision Avoidance */
-            st25r3916WriteRegister(ST25R3916_REG_MODE, (ST25R3916_REG_MODE_targ | ST25R3916_REG_MODE_om_targ_nfca |
-                                                        ST25R3916_REG_MODE_nfc_ar_off));
-
-            /* Set Analog configurations for this mode */
-            rfalSetAnalogConfig((RFAL_ANALOG_CONFIG_LISTEN | RFAL_ANALOG_CONFIG_TECH_NFCA |
-                                 RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_TX));
-            rfalSetAnalogConfig((RFAL_ANALOG_CONFIG_LISTEN | RFAL_ANALOG_CONFIG_TECH_NFCA |
-                                 RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_RX));
-#endif
 
 // ------------------------------------------------------------
 EmulationLayerA::State ListenerST25R3916ForA::goto_state(const EmulationLayerA::State s)
@@ -239,15 +223,14 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_off()
     _u.writeDirectCommand(CMD_GO_TO_SENSE);
     _u.clear_bit_register8(REG_ISO14443A_SETTINGS, nfc_f0);
 
-    // Set mode: om -> ISO14443A + bti detection moed
-    _u.change_bit_register8(REG_MODE_DEFINITION, targ | (0x09 << 3), 0x78);
-
     _u.writeMaskInterrupts(0xFFFFFFFF);
     _u.clearInterrupts();
-    _u.enable_interrupts(I_nfct32 | I_rxs32 | I_crc32 | I_err132 | I_osc32 | I_err232 | I_par32 | I_eon32 | I_eof32 |
-                         mode_irq);
+    _u.enable_interrupts(I_osc32 | default_irq | mode_irq);
 
     _u.set_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx);
+
+    // Set mode: om -> ISO14443A + bit rate detection mode
+    _u.change_bit_register8(REG_MODE_DEFINITION, mode_bitrate_detection, 0x78);
 
     if (is_extra_field()) {
         return goto_idle();
@@ -301,9 +284,13 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_ready()
     }
 
     _u.clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx);
-    _u.clear_bit_register8(REG_OPERATION_CONTROL, wu);  // Disable wakeup mode
-    _u.writeModeDefinition(mode_listen_nfc_a);          // Disable birrate detection and collision
+
     _u.writeBitrate(_bitrate, _bitrate);
+
+    _u.clear_bit_register8(REG_OPERATION_CONTROL, wu);  // Disable wakeup mode
+    _u.writeModeDefinition(mode_listen_nfc_a);          // Disable bitrate detection and collision
+
+    _u.set_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Disable auto response for NFC-A
 
     _u.update();
     return update_ready();
@@ -356,7 +343,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_off()
 
 EmulationLayerA::State ListenerST25R3916ForA::update_idle()
 {
-    uint32_t irq32 = get_irq(I_nfct32 | I_rxe32 | I_eof32 | I_rxe_pta);
+    uint32_t irq32 = get_irq(I_nfct32 | I_rxe32 | I_eof32 | I_rxe_pta32);
     if (!irq32) {
         return EmulationLayerA::State::Idle;
     }

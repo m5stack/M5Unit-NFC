@@ -23,9 +23,6 @@ namespace nfc {
  */
 namespace f {
 
-using IDm = std::array<uint8_t, 8>;  //!< Manufacture ID
-using PMm = std::array<uint8_t, 8>;  //!< Manufacture Parameter
-
 /*!
   @enum Type
   @brief Type of the PICC
@@ -49,7 +46,7 @@ inline m5::nfc::NFCForumTag get_nfc_forum_tag_type(const Type t)
 ///@{
 using Format = uint8_t;
 constexpr Format format_nfcip1{0x0001};       //!< Support ISO/IEC18092
-constexpr Format format_dfc{0x0002};          //!< Has DFC
+constexpr Format format_lite{0x0002};         //!< Lite or Lite-S
 constexpr Format format_private{0x0004};      //!< Has private area
 constexpr Format format_ndef{0x0008};         //!< Support NDEF
 constexpr Format format_shared{0x0010};       //!< Has shared area
@@ -89,7 +86,7 @@ constexpr uint16_t system_code_wildcard{0xFFFF};          //!< Wildcard
 constexpr uint16_t system_code_ndef{0x12FC};              //!< NDEF
 constexpr uint16_t system_code_felica_secure_id{0x957A};  //!< FeliCa secure ID
 constexpr uint16_t system_code_shared{0xFE00};            //!< Shared area
-constexpr uint16_t system_code_dfc{0x88B4};               //!< Lite, Lite-S
+constexpr uint16_t system_code_lite{0x88B4};               //!< Lite, Lite-S
 constexpr uint16_t system_code_felica_plug{0xFEE1};       //!< FeliCa Plug
 ///@}
 
@@ -155,11 +152,26 @@ struct block_t {
     inline constexpr block_t() : block_t(0)
     {
     }
+
     // Allow implicit type conversion
     inline constexpr block_t(const uint16_t num, const uint8_t access = 0, const uint8_t order = 0)
         : header{(uint8_t)(((num > 0xFF) ? 0x00 : 0x80) | ((access & 0x07) << 4) | (order & 0x0F))}, number{num}
     {
     }
+
+    static block_t from(const uint8_t v[3])
+    {
+        block_t b{0xFFFFu};
+        if (v) {
+            b.header = v[0];
+            b.number = v[1];
+            if (b.is_3byte()) {
+                b.number |= (uint16_t)v[2] << 8;
+            }
+        }
+        return b;
+    }
+
     inline constexpr bool is_2byte() const
     {
         return (header & 0x80) != 0;
@@ -352,20 +364,25 @@ constexpr uint16_t KEY_VERIOSN_NONE{0xFFFF};  //!< No key version exists
   @brief PICC information for NFC-F
  */
 struct PICC {
-    IDm idm{};                   //!< Manufacture ID
-    PMm pmm{};                   //!< Manufacture Parameter
+    union {
+        uint8_t m[16]{};
+        struct {
+            uint8_t idm[8];  //!< Manufacture ID
+            uint8_t pmm[8];  //!< Manufacture Parameter
+        };
+    };
     uint16_t request_data{};     //!< Any request data if exists
     RequestCode request_code{};  //!< Tyepe of the request_data
     Type type{};                 //!< PICC Type
     Format format{};             //!< Format type group bits
-    uint8_t _pad{};
-    uint16_t dfc_format{};  //!< DFC format (ID[8],ID[9] LE) if format include DFC
+    uint8_t _pad{};              // padding
+    uint16_t dfc_format{};       //!< DFC format ID:0x82[8,9] BE if format include DFC
+    uint16_t emulation_sc{};     //!< System code for emulation
 
-    //! @brief Valid?
-    inline bool valid() const
-    {
-        return type != Type::Unknown;
-    }
+    //! @brief Valid for detection?
+    bool valid() const;
+    //! @brief Valid for emulation?
+    bool validEmulation() const;
 
     //! @brief Total user area size
     inline uint16_t userAreaSize() const
@@ -416,6 +433,16 @@ struct PICC {
         return get_nfc_forum_tag_type(type);
     }
 
+    /*!
+      @brief Emulation settings
+      @param t Type
+      @param idm IDm
+      @param pmm OMm
+      @param sc Sysetem code
+      @return True if successful
+     */
+    bool emulate(const Type t, const uint8_t idm[8], const uint8_t pmm[8], const uint16_t sc = 0);
+
     //! @brief Gets the IDm string
     std::string idmAsString() const;
     //! @brief Gets the PMm string
@@ -437,7 +464,8 @@ inline bool operator!=(const PICC& a, const PICC& b)
 
 ///@name Timeout
 ///@{
-constexpr uint32_t TIMEOUT_POLLING{3};
+// constexpr uint32_t TIMEOUT_POLLING{3};
+constexpr uint32_t TIMEOUT_POLLING{5};
 constexpr uint32_t TIMEOUT_POLLING_PICC{2};  // 2 ms per PICC
 
 /*!

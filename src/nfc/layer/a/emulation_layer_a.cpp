@@ -16,6 +16,8 @@ using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
+#pragma GCC optimize("O3")
+
 namespace {
 constexpr uint8_t dummy_signature[32] = {};
 
@@ -136,8 +138,6 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
             ret = (rx_len == 2 && rx[1] == 0x00) ? State::Halt : State::Idle;
             break;
         case Command::READ:  // 16 bytes read
-            // M5_LIB_LOGE("  R:%u", rx[1]);
-
             ret = (rx_len == 2) && _impl->transmit(_memory + _picc.unitSize() * rx[1], 16, 4) ? State::Active
                                                                                               : State::Idle;
             break;

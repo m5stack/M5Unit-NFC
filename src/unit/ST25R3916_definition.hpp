@@ -319,7 +319,7 @@ constexpr uint8_t I_rxe{0x10};      // IRQ due to end of receive
 constexpr uint8_t I_txe{0x08};      // IRQ due to end of transmission
 constexpr uint8_t I_col{0x04};      // IRQ due to bit collision
 constexpr uint8_t I_rx_rest{0x02};  // 1: Mask IRQ due to automatic reception restart
-// 0x00 RFU
+constexpr uint8_t I_RFU1{0x01};     // RFU
 
 constexpr uint32_t I_osc32     = ((uint32_t)I_osc << 24);
 constexpr uint32_t I_wl32      = ((uint32_t)I_wl << 24);
@@ -367,6 +367,7 @@ constexpr uint8_t I_sl_wl{0x40};    // IRQ for passive target slot number water 
 constexpr uint8_t I_apon{0x20};     // IRQ due to active P2P field on event
 constexpr uint8_t I_rxe_pta{0x10};  // IRQ due to end of receive
 constexpr uint8_t I_wu_f{0x08};     // NFC 212/424kb/s passive target Active interrupt
+constexpr uint8_t I_RFU4{0x04};     // RFU
 constexpr uint8_t I_wu_ax{0x02};    // Passive target Active* interrupt
 constexpr uint8_t I_wu_a{0x01};     // Passive target Active interrupt
 
@@ -433,7 +434,6 @@ inline bool is_irq32_collision(const uint32_t irq32)
 uint8_t calculate_mrt(const uint32_t us, const bool mrt_step /* false:64, true:512*/);
 uint16_t calculate_nrt(const uint32_t ms, const bool nrt_step /* false:64, true:4096*/);
 inline uint8_t calculate_fdt(const uint32_t us);
-
 
 }  // namespace st25r3916
 

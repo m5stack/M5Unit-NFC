@@ -31,6 +31,9 @@ constexpr uint16_t max_write_block_table[] = {0, 1, 1, 1, 1};
 // [first/last]
 constexpr uint8_t user_block_table[][2] = {{0XFF, 0XFF}, {0XFF, 0XFF}, {0x00, 0x0D}, {0x00, 0x0D}, {0XFF, 0XFF}};
 
+constexpr uint8_t zero_all[8]{};
+constexpr uint8_t ff_all[8]{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
 std::string to_string(const uint8_t* p, const uint8_t size)
 {
     char buf[2 * size + 1]{};
@@ -182,20 +185,50 @@ bool generate_mac(uint8_t mac[8], const uint8_t* plain, uint32_t plain_len, cons
 }
 
 //
+bool PICC::valid() const
+{
+    return type != Type::Unknown &&  //
+           memcmp(idm, zero_all, 8) && memcmp(idm, ff_all, 8) && memcmp(pmm, zero_all, 8) && memcmp(pmm, ff_all, 8) &&
+           ((type == Type::FeliCaLite || type == Type::FeliCaLiteS) ? get_user_area_size(type) : true) && format;
+}
+
+bool PICC::validEmulation() const
+{
+    // Currently only Lite-S
+    return (type == Type::FeliCaLiteS) && valid() && emulation_sc == 0x88B4;
+}
+
 std::string PICC::idmAsString() const
 {
-    return to_string(this->idm.data(), this->idm.size());
+    return to_string(idm, sizeof(idm));
 }
 
 std::string PICC::pmmAsString() const
 {
-    return to_string(this->pmm.data(), this->pmm.size());
+    return to_string(pmm, sizeof(pmm));
 }
 
 std::string PICC::typeAsString() const
 {
     const auto idx = m5::stl::to_underlying(this->type);
     return std::string((idx <= m5::stl::size(name_table)) ? name_table[idx] : name_unknown);
+}
+
+bool PICC::emulate(const Type t, const uint8_t idm[8], const uint8_t pmm[8],
+                   const uint16_t sc /*Options for the future*/)
+{
+    (void)sc;
+    if (t != Type::FeliCaLiteS || !idm || !pmm) {
+        return false;
+    }
+
+    this->type = t;
+    memcpy(this->idm, idm, sizeof(this->idm));
+    memcpy(this->pmm, pmm, sizeof(this->pmm));
+    this->emulation_sc = 0x88B4;  // Base system code
+    this->format       = format_lite;
+
+    return validEmulation();
 }
 
 }  // namespace f

@@ -22,7 +22,7 @@ using namespace m5::nfc::ndef;
 namespace {
 
 constexpr uint16_t known_system_code_table[] = {system_code_wildcard, system_code_ndef, system_code_felica_secure_id,
-                                                system_code_shared,   system_code_dfc,  system_code_felica_plug};
+                                                system_code_shared,   system_code_lite, system_code_felica_plug};
 
 inline bool exists_known_system_code(const uint16_t code)
 {
@@ -51,7 +51,7 @@ void print_block(const uint8_t buf[16], const int16_t block)
 
 inline bool is_same_idm_and_pmm(const PICC& a, const PICC& b)
 {
-    return a.idm == b.idm && a.pmm == b.pmm;
+    return memcmp(a.m, b.m, 16) == 0;
 }
 
 const uint8_t* make_rc(uint8_t rc[16])
@@ -119,7 +119,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
         if (picc1.idm[0] == 0x01 && picc1.idm[1] == 0xFE) {
             format |= format_nfcip1;
         } else if (picc1.idm[0] == 0x03 && picc1.idm[1] == 0xFE) {
-            format |= format_dfc;
+            format |= format_lite;  // plug or Lite-S
         }
 
         if ((picc1.idm[0] & 0x0F) == 0x04 && picc1.idm[1] == 0xFE) {
@@ -138,6 +138,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
                     if (!is_same_idm_and_pmm(picc1, picc2)) {
                         continue;
                     }
+                    M5_LIB_LOGE("  private");
                     format |= format_private;
                 }
             }
@@ -152,6 +153,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
+            M5_LIB_LOGE("  ndef");
             format |= format_ndef;
         }
 
@@ -160,15 +162,17 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
+            M5_LIB_LOGE("  shared");
             format |= format_shared;
         }
 
-        // 6. Check DFC
-        if (polling(picc2, system_code_dfc, RequestCode::None, time_slot)) {
+        // 6. Check Lite/S
+        if (polling(picc2, system_code_lite, RequestCode::None, time_slot)) {
             if (!is_same_idm_and_pmm(picc1, picc2)) {
                 continue;
             }
-            format |= format_dfc;
+            M5_LIB_LOGE("  lite");
+            format |= format_lite;
         }
 
         // 7. Check secure
@@ -187,17 +191,16 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             type = Type::FeliCaPlug;
         } else {
             // Lite or LiteS?
-            if (format & format_dfc) {
+            if (format & format_lite) {
                 uint8_t rbuf[16]{};
-                type = read_16(rbuf, 0xA0 /* CRC_CHECK */, false) ? Type::FeliCaLiteS : Type::FeliCaLite;
-                if (!read_16(rbuf, 0x82, false)) {  // Read ID(DFC format)
+                type = read_16(rbuf, lite_s::CRC_CHECK, false) ? Type::FeliCaLiteS : Type::FeliCaLite;
+                if (!read_16(rbuf, lite::ID, false)) {  // ID(Get DFC format)
                     continue;
                 }
-                picc1.dfc_format = rbuf[8] | ((uint16_t)rbuf[9] << 8);
+                picc1.dfc_format = ((uint16_t)rbuf[8] << 8) | rbuf[9];
             }
         }
 
-        //
         if (type == Type::Unknown) {
             M5_LIB_LOGE("Unknown: %x", format);
             if (format) {
@@ -213,7 +216,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             PICC tmp = picc1;
             tmp.type = Type::FeliCaStandard;
             if (!_impl->requestResponse(mode, tmp)) {
-                M5_LIB_LOGE("mode error");
+                M5_LIB_LOGE("Failed to read mode");
                 continue;
             }
         }
@@ -483,9 +486,6 @@ bool NFCLayerF::writeWithMAC16(const m5::nfc::f::block_t block, const uint8_t tx
     std::memcpy(wbuf + 16, mac_host, 8);
     std::memcpy(wbuf + 24, wcnt, 4);
     block_t block_list[2] = {block, mac_block};
-
-    m5::utility::log::dump(wbuf, 32);
-    return false;
 
     return write_32(block_list, wbuf);
 }

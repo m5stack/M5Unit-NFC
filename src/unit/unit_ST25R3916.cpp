@@ -184,12 +184,14 @@ bool UnitST25R3916::begin()
 #endif
 
     //
-    modify_bit_register8(REG_IO_CONFIGURATION_1, 0x07, 0x07);      // MCU_CLK disabled,No LF clock on MCU_CLK
-    writeResistiveAMModulation(0x80);                              // Use minimum non-overlap
-    set_bit_register8(REG_IO_CONFIGURATION_2, aat_en);             // Enable AAT D/A
-    writeResistiveAMModulation(0x00);                              // Use normal non-overlap
-    writeExternalFieldDetectorActivationThreshold(0x10 | 0x03);    // trg 106, rfe 202
+    modify_bit_register8(REG_IO_CONFIGURATION_1, 0x07, 0x07);  // MCU_CLK disabled,No LF clock on MCU_CLK
+    writeResistiveAMModulation(0x80);                          // Use minimum non-overlap
+    set_bit_register8(REG_IO_CONFIGURATION_2, aat_en);         // Enable AAT D/A
+    writeResistiveAMModulation(0x00);                          // Use normal non-overlap
+
+    writeExternalFieldDetectorActivationThreshold(0x10 | 0x03);    // trg 105, rfe 205
     writeExternalFieldDetectorDeactivationThreshold(0x00 | 0x02);  // trg 75, rfe 150
+
     // clear_register_bit8(REG_AUXILIARY_MODULATION_SETTING, 0x20);   // External load modulation disabled
     modify_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, 0x05 << 4, 0xF0);  // FDT
     writePassiveTargetModulation(0x5F);                                            // ptm 17.1, pt HighZ
@@ -231,10 +233,11 @@ bool UnitST25R3916::begin()
 
 void UnitST25R3916::update(const bool /*force*/)
 {
+    // For I2C
     if (!_using_irq) {
         uint32_t v{};
         (void)readInterrupts(v);
-        _stored_irq |= (v & _mask_irq);
+        _stored_irq |= (v & _enabled_irq);
     }
 }
 
