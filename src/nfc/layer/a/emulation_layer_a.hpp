@@ -18,7 +18,6 @@
 #define M5_UNIT_NFC_NFC_LAYER_A_EMULATION_LAYER_A_HPP
 
 #include "nfc/a/nfca.hpp"
-// #include "nfc/layer/ndef_layer.hpp"
 #include <vector>
 #include <memory>
 

@@ -17,4 +17,3 @@
 // #define USING_HACKER_CAP
 #endif
 #include "main/Emulation.cpp"
-

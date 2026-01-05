@@ -16,9 +16,9 @@
 #ifndef M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_F_HPP
 #define M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_F_HPP
 
-#include "nfc_layer.hpp"
+#include "nfc/layer/nfc_layer.hpp"
 #include "nfc/f/nfcf.hpp"
-#include "ndef_layer.hpp"
+#include "nfc/layer/ndef_layer.hpp"
 #include <vector>
 #include <memory>
 

@@ -1970,7 +1970,6 @@ public:
       @return True if successful
      */
     bool nfcfReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
-
     ///@}
 
     // ----------------------------------------------------------------------------------------------
@@ -1990,11 +1989,24 @@ public:
     bool nfcvTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_bytes,
                         const uint32_t timeout_ms,
                         const m5::nfc::v::ModulationMode mode = m5::nfc::v::ModulationMode::OneOf4);
-
+    /*!
+      @param Transmit to NFC-V PICC
+      @param tx Send buffer
+      @param tx_len Size of send buffer
+      @param timeout_ms Timeout(ms)
+      @param mode ModulationMode
+      @return True if successful
+     */
     bool nfcvTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
                       const m5::nfc::v::ModulationMode mode = m5::nfc::v::ModulationMode::OneOf4);
+    /*!
+      @param Receive from NFC-F PICC
+      @param[out] rx Receive buffer
+      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param timeout_ms Timeout(ms)
+      @return True if successful
+     */
     bool nfcvReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
-
     ///@}
 
     ///@name PT_MEMORY

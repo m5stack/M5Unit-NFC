@@ -86,7 +86,9 @@ bool NFCLayerB::detect(std::vector<m5::nfc::b::PICC>& piccs, const uint8_t afi, 
         if (!request(rx, rx_len, afi, Require::Slot1)) {
             continue;
         }
-                hlt(rx);  // If you don't perform hlt, it will be detected again
+
+        hlt(rx);  // If you don't perform hlt, it will be detected again
+
         PICC picc{};
         memcpy(picc.atqb, rx, ATQB_LENGTH);
 

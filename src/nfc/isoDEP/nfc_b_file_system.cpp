@@ -8,7 +8,7 @@
   @brief File system base using isoDEP for NFC-B
 */
 #include "nfc_b_file_system.hpp"
-#include "nfc/layer/nfc_layer_b.hpp"
+#include "nfc/layer/b/nfc_layer_b.hpp"
 #include "nfc/isodep/isoDEP.hpp"
 #include "nfc/apdu/apdu.hpp"
 #include <M5Utility.hpp>

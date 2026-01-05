@@ -254,14 +254,16 @@ struct PICC {
     uint16_t atqa{};    //!< ATQA
     uint16_t blocks{};  //!< Number of the blocks or pages
     ATS ats{};          //!< RATS for ISO 14443-4
+    //! SubType for Plus/DESFire;
     union {
         uint8_t sub_type{};               //!< uint8_t access
         SubTypePlus sub_type_plus;        //!< For Plus
         SubTypeDESFire sub_type_desfire;  //!< For DESFire
-    };  //!< SubType for Plus/DESFire;
+    };
+    //! Optional information
     union {
         uint8_t security_level{};  //!< Security level for Plus
-    };  //!< Optional information
+    };
 
     //! @brief Valid?
     inline bool valid() const

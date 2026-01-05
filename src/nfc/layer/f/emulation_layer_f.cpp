@@ -14,7 +14,9 @@
 using namespace m5::nfc;
 using namespace m5::nfc::f;
 
+// clang-format off
 #pragma GCC optimize("O3")
+// clang-format on
 
 namespace {
 

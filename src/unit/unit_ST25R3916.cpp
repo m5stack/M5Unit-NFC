@@ -23,7 +23,9 @@ using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
+// clang-format off
 #pragma GCC optimize("O3")
+// clang-format on
 
 namespace {
 // HackerCap <-> CardputerADV pin configurations (EXT 2.54-14P)

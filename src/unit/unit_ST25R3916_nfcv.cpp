@@ -16,9 +16,13 @@ using namespace m5::unit::types;
 using namespace m5::unit::st25r3916;
 using namespace m5::unit::st25r3916::regval;
 using namespace m5::unit::st25r3916::command;
-
 using namespace m5::nfc;
 using namespace m5::nfc::v;
+
+// clang-format off
+#pragma GCC optimize("O3")
+// clang-format on
+
 
 #define CHECK_MODE()                                   \
     do {                                               \

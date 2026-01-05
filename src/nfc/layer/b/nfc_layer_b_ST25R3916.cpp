@@ -7,7 +7,7 @@
   @file nfc_layer_b_ST25R3916.cpp
   @brief ST25R3916 NFC-B adapter for common layer
 */
-#include "nfc/layer/nfc_layer_b.hpp"
+#include "nfc/layer/b/nfc_layer_b.hpp"
 #include "nfc/layer/ndef_layer.hpp"
 #include "unit/unit_ST25R3916.hpp"
 #include <M5Utility.hpp>

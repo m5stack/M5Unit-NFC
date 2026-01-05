@@ -8,7 +8,7 @@
   @brief File system base using isoDEP for MIFARE DESFire
 */
 #include "desfire_file_system.hpp"
-#include "nfc/layer/nfc_layer_a.hpp"
+#include "nfc/layer/a/nfc_layer_a.hpp"
 #include "nfc/isodep/isoDEP.hpp"
 #include "nfc/apdu/apdu.hpp"
 #include <cstring>

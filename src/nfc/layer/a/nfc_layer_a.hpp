@@ -17,10 +17,10 @@
 #ifndef M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_A_HPP
 #define M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_A_HPP
 
-#include "nfc_layer.hpp"
+#include "nfc/layer/nfc_layer.hpp"
 #include "nfc/a/nfca.hpp"
 #include "nfc/isodep/isoDEP.hpp"
-#include "ndef_layer.hpp"
+#include "nfc/layer/ndef_layer.hpp"
 #include <vector>
 #include <memory>
 

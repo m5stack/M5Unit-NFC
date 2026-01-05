@@ -16,7 +16,9 @@ using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
+// clang-format off
 #pragma GCC optimize("O3")
+// clang-format on
 
 namespace {
 constexpr uint8_t dummy_signature[32] = {};

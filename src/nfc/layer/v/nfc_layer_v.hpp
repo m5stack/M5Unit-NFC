@@ -16,9 +16,9 @@
 #ifndef M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_V_HPP
 #define M5_UNIT_NFC_NFC_LAYER_NFC_LAYER_V_HPP
 
-#include "nfc_layer.hpp"
+#include "nfc/layer/nfc_layer.hpp"
 #include "nfc/v/nfcv.hpp"
-#include "ndef_layer.hpp"
+#include "nfc/layer/ndef_layer.hpp"
 #include <vector>
 #include <memory>
 
@@ -243,7 +243,6 @@ struct NFCLayerV::Adapter {
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
                           const m5::nfc::v::ModulationMode mode)                              = 0;
     virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)            = 0;
-
 };
 ///@endcond
 
