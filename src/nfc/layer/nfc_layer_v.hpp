@@ -58,6 +58,17 @@ public:
         return _activePICC;
     }
 
+    // @brief Get current modulation mode
+    inline m5::nfc::v::ModulationMode modulationMode() const
+    {
+        return _modulation;
+    }
+    // @brief Set current modulation mode
+    inline void setModulationMode(const m5::nfc::v::ModulationMode mode)
+    {
+        _modulation = mode;
+    }
+
     ///@name Detection and activation
     ///@{
     /*!
@@ -96,7 +107,7 @@ public:
     ///@name For activated PICC
     ///@{
     /*!
-      @brief Send Reset to ready  to the currently selected PICC (deactivate)
+      @brief Send Reset to ready to the currently selected PICC (deactivate)
       @return True if successful
       @pre A PICC is in the SELECTED state
       @post PICC transitions: SELECTED -> READY on a successful response
@@ -184,7 +195,11 @@ public:
 protected:
     bool dump_all();
     bool dump_block(const uint8_t block);
+
     bool detect_single(m5::nfc::v::PICC& picc);
+    bool get_system_information(m5::nfc::v::PICC& picc);
+    bool reset_to_ready(const m5::nfc::v::PICC* picc);
+    bool stay_quiet(const m5::nfc::v::PICC& picc);
 
     virtual uint16_t first_user_block() const override
     {
@@ -213,6 +228,7 @@ protected:
 private:
     std::unique_ptr<Adapter> _impl;
     m5::nfc::ndef::NDEFLayer _ndef;
+    m5::nfc::v::ModulationMode _modulation{m5::nfc::v::ModulationMode::OneOf4};
 };
 
 ///@cond
@@ -222,14 +238,12 @@ struct NFCLayerV::Adapter {
 
     // virtual uint16_t max_fifo_depth() = 0;
 
-    virtual bool inventory(std::vector<m5::nfc::v::PICC>& piccs)                                                  = 0;
-    virtual bool stay_quiet(const m5::nfc::v::PICC& picc)                                                         = 0;
-    virtual bool select(const m5::nfc::v::PICC& picc)                                                             = 0;
-    virtual bool reset_to_ready(const m5::nfc::v::PICC& picc)                                                     = 0;
-    virtual bool reset_to_ready()                                                                                 = 0;
-    virtual bool get_system_information(m5::nfc::v::PICC& picc)                                                   = 0;
-    virtual bool read_single_block(uint8_t rx[32], const uint8_t block)                                           = 0;
-    virtual bool write_single_block(const uint8_t block, const uint8_t* tx, const uint8_t tx_len, const bool opt) = 0;
+    virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                            const uint32_t timeout_ms, const m5::nfc::v::ModulationMode mode) = 0;
+    virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
+                          const m5::nfc::v::ModulationMode mode)                              = 0;
+    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)            = 0;
+
 };
 ///@endcond
 

@@ -124,6 +124,8 @@ void loop()
                               picc.typeAsString().c_str(), picc.totalSize());
                 nfc_v.dump();
                 nfc_v.deactivate();
+            } else {
+                M5_LOGW("FAuled to reactivate");
             }
         } else {
             M5.Log.printf("PICC NOT exists\n");

@@ -101,7 +101,7 @@ void setup()
         lcd.setRotation(1);
     }
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(0);
+    lcd.fillScreen(TFT_DARKGREEN);
     lcd.setCursor(0, 0);
 }
 

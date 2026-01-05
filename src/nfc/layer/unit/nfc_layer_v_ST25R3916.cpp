@@ -25,58 +25,30 @@ struct AdapterST25R3916ForV final : NFCLayerV::Adapter {
     {
     }
 
-    virtual bool inventory(std::vector<m5::nfc::v::PICC>& piccs) override;
-    virtual bool stay_quiet(const m5::nfc::v::PICC& picc) override;
-    virtual bool select(const m5::nfc::v::PICC& picc) override;
-    virtual bool reset_to_ready() override;
-    virtual bool reset_to_ready(const m5::nfc::v::PICC& picc) override;
-    virtual bool get_system_information(m5::nfc::v::PICC& picc) override;
-    virtual bool read_single_block(uint8_t rx[32], const uint8_t block) override;
-    virtual bool write_single_block(const uint8_t block, const uint8_t* tx, const uint8_t tx_len,
-                                    const bool opt) override;
+    virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                            const uint32_t timeout_ms, const m5::nfc::v::ModulationMode mode) override;
+    virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
+                          const m5::nfc::v::ModulationMode mode) override;
+    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) override;
 
     UnitST25R3916& _u;
 };
 
-bool AdapterST25R3916ForV::inventory(std::vector<m5::nfc::v::PICC>& piccs)
+bool AdapterST25R3916ForV::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                                      const uint32_t timeout_ms, const m5::nfc::v::ModulationMode mode)
 {
-    return _u.nfcvInventry(piccs, true);
+    return _u.nfcvTransceive(rx, rx_len, tx, tx_len, timeout_ms, mode);
 }
 
-bool AdapterST25R3916ForV::stay_quiet(const m5::nfc::v::PICC& picc)
+bool AdapterST25R3916ForV::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
+                                    const m5::nfc::v::ModulationMode mode)
 {
-    return _u.nfcvStayQuiet(picc);
+    return _u.nfcvTransmit(tx, tx_len, timeout_ms, mode);
 }
 
-bool AdapterST25R3916ForV::select(const m5::nfc::v::PICC& picc)
+bool AdapterST25R3916ForV::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
 {
-    return _u.nfcvSelect(picc);
-}
-
-bool AdapterST25R3916ForV::reset_to_ready(const m5::nfc::v::PICC& picc)
-{
-    return _u.nfcvResetToReady(picc);
-}
-
-bool AdapterST25R3916ForV::reset_to_ready()
-{
-    return _u.nfcvResetToReady();
-}
-
-bool AdapterST25R3916ForV::get_system_information(m5::nfc::v::PICC& picc)
-{
-    return _u.nfcvGetSystemInformation(picc);
-}
-
-bool AdapterST25R3916ForV::read_single_block(uint8_t rx[32], const uint8_t block)
-{
-    return _u.nfcvReadSingleBlock(rx, block);
-}
-
-bool AdapterST25R3916ForV::write_single_block(const uint8_t block, const uint8_t* tx, const uint8_t tx_len,
-                                              const bool opt)
-{
-    return _u.nfcvWriteSingleBlock(block, tx, tx_len, opt);
+    return _u.nfcvReceive(rx, rx_len, timeout_ms);
 }
 
 //

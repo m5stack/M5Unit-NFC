@@ -36,6 +36,7 @@ enum class Type : uint8_t {
     NXP_ICODE_SLIX_2,  //!< ICODE SLIX2
     NXP,               //!< NXP (Unclassified)
 
+    TI_TAGIT_2048,       //!< Tag-it 2048
     TI_TAGIT_HF_I,       //!< Tag-it HF-I Standard
     TI_TAGIT_HF_I_Plus,  //!< Tag-it HF-I Plus
     TI_TAGIT_HF_I_Pro,   //!< Tag-it HF-I Pro
@@ -71,14 +72,6 @@ enum class ModulationMode : uint8_t {
     OneOf4,    //!< 1 out of 4 pulse-position modulation
     OneOf256,  //!< 1 out of 256 pulse-position modulation
 };
-
-/*!
-  @brief Identify the type from  Manufacturer Code, IC Identifier, IC Reference
-  @return Type
-  @warning Not all tags can be identified
-  @warning If identification is impossible, Unclassified is returned
- */
-Type identify_type(const uint8_t mf, const uint8_t ic, const uint8_t ir, const uint8_t uid4);
 
 //! @brief Get NFC Forum Tag Type from PICC type
 inline m5::nfc::NFCForumTag get_nfc_forum_tag_type(const Type t)
@@ -160,6 +153,14 @@ inline bool operator!=(const PICC& a, const PICC& b)
 {
     return !(a == b);
 }
+
+/*!
+  @brief Identify the type from Manufacturer Code, IC Identifier, IC Reference
+  @return Type
+  @warning Not all tags can be identified
+  @warning If identification is impossible, Unclassified is returned
+ */
+Type identify_type(const PICC& picc);
 
 /*!
   @enum Command

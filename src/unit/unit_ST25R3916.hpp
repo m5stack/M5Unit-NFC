@@ -1990,96 +1990,11 @@ public:
     bool nfcvTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_bytes,
                         const uint32_t timeout_ms,
                         const m5::nfc::v::ModulationMode mode = m5::nfc::v::ModulationMode::OneOf4);
-    /*!
-      @brief Check inventory slots
-      @param[out] piccs Detected PICCs
-      @param single Using 1 slot if true, using 16 slot if false
-      @return True if successful
-      @note ISO/IEC 15693-3 INVENTORY
-     */
-    bool nfcvInventry(std::vector<m5::nfc::v::PICC>& piccs, const bool single = true);
-    /*!
-      @brief Stay quiet
-      @patam picc PICC
-      @return True if successful
-      @note ISO/IEC 15693-3 STAY QUIET
-     */
-    bool nfcvStayQuiet(const m5::nfc::v::PICC& picc);
-    /*!
-      @brief Select
-      @patam picc PICC
-      @return True if successful
-      @note ISO/IEC 15693-3 SELECT
-     */
-    bool nfcvSelect(const m5::nfc::v::PICC& picc);
-    /*!
-      @brief Reset to ready for specific PICC
-      @patam picc PICC
-      @return True if successful
-      @note ISO/IEC 15693-3 RESET TO READY
-     */
-    bool nfcvResetToReady(const m5::nfc::v::PICC& picc);
-    /*!
-      @brief Reset to ready for selected PICC
-      @return True if successful
-      @note ISO/IEC 15693-3 RESET TO READY
-     */
-    bool nfcvResetToReady();
-    /*!
-      @brief  Get system information
-      @patam[in/out] picc PICC
-      @return True if successful
-      @note ISO/IEC 15693-3 GET SYSTEM INFORMATION
-      @note The information obtained is used to update the PICC
-     */
-    bool nfcvGetSystemInformation(m5::nfc::v::PICC& picc);
-    /*!
-      @brief Read the block of the specified PICC
-      @param[out] rx Output buffer (At least the size of one PICC block)
-      @patam picc PICC
-      @param block Block address
-      @return True if successful
-      @note The specified PICC status is not required
-      @warning The required size varies depending on the PICC
-      @warning The maximum rx size is 32
-     */
-    bool nfcvReadSingleBlock(uint8_t rx[32], const m5::nfc::v::PICC& picc, const uint8_t block);
-    /*!
-      @brief Read the block of the selected PICC
-      @param[out] rx Output buffer (At least the size of one PICC block)
-      @patam picc PICC
-      @param block Block address
-      @return True if successful
-      @warning The required size varies depending on the PICC
-      @warning The maximum rx size is 32
-     */
-    bool nfcvReadSingleBlock(uint8_t rx[32], const uint8_t block);
-    /*!
-      @brief Write the block of the specified PICC
-      @patam picc PICC
-      @param block Block address
-      @param tx Input buffer
-      @param tx_len Input buffer length (Same as the size of one PICC block)
-      @param option Using option_flag for request if true
-      @return True if successful
-      @note The specified PICC status is not required
-      @warning The required tx_size varies depending on the PICC
-      @warning The maximum tx_len is 32
-     */
-    bool nfcvWriteSingleBlock(const m5::nfc::v::PICC& picc, const uint8_t block, const uint8_t* tx,
-                              const uint8_t tx_len, const bool option = false);
-    /*!
-      @brief Write the block of the selected PICC
-      @param block Block address
-      @param tx Input buffer
-      @param tx_len Input buffer length (Same as the size of one PICC block)
-      @param option Using option_flag for request if true
-      @return True if successful
-      @note The specified PICC status is not required
-      @warning The required tx_size varies depending on the PICC
-      @warning The maximum tx_len is 32
-     */
-    bool nfcvWriteSingleBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len, const bool option = false);
+
+    bool nfcvTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
+                      const m5::nfc::v::ModulationMode mode = m5::nfc::v::ModulationMode::OneOf4);
+    bool nfcvReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
+
     ///@}
 
     ///@name PT_MEMORY
@@ -2190,15 +2105,6 @@ protected:
                                            const uint32_t timeout_ms, const bool include_crc, const bool decrypt);
     bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::PICC& picc, const uint8_t block,
                                      const m5::nfc::a::mifare::classic::Key& key);
-
-    // NFC-V
-    bool nfcv_transmit(const uint8_t* tx, const uint16_t tx_len, const m5::nfc::v::ModulationMode mode,
-                       const uint32_t timeout_ms);
-    bool nfcv_receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
-    bool nfcv_reset_to_ready(const m5::nfc::v::PICC* picc);
-    bool nfcv_read_single_block(uint8_t rx[32], const uint8_t req, const m5::nfc::v::PICC* picc, const uint8_t block);
-    bool nfcv_write_single_block(const m5::nfc::v::PICC* picc, const uint8_t block, const uint8_t req,
-                                 const uint8_t* tx, const uint8_t tx_len);
 
 private:
     config_t _cfg{};

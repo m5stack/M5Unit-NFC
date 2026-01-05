@@ -15,28 +15,44 @@ using namespace m5::nfc::v;
 
 namespace {
 
-constexpr char name_unknown[]      = "Unknown";
-constexpr char name_sli[]          = "ICODE SLI";
-constexpr char name_slix[]         = "ICODE SLIX";
-constexpr char name_slix2[]        = "ICODE SLIX2";
-constexpr char name_nxp[]          = "NXP(Unclassified)";
-constexpr char name_hf_i[]         = "Tag-it HF-I";
-constexpr char name_hf_i_plus[]    = "Tag-it HF-I Plus";
-constexpr char name_hf_i_pro[]     = "Tag-it HF-I Pro";
-constexpr char name_ti[]           = "TI(Unclassified)";
-constexpr char name_lri[]          = "ST LRI";
-constexpr char name_st25v[]        = "ST25V";
-constexpr char name_st[]           = "ST(Unclassified)";
-constexpr char name_fram[]         = "FRAM";
-constexpr char name_fujitsu[]      = "Fujitsu(Unclassified)";
-constexpr char name_unclassified[] = "Unclassified";
+constexpr char name_unknown[]         = "Unknown";
+constexpr char name_nxp_icode_sli[]   = "ICODE SLI";
+constexpr char name_nxp_icode_slix[]  = "ICODE SLIX";
+constexpr char name_nxp_icode_slix2[] = "ICODE SLIX2";
+constexpr char name_nxp[]             = "NXP(Unclassified)";
+constexpr char name_tagit_2048[]      = "Tag-it 2048";
+constexpr char name_tagit_hf_i[]      = "Tag-it HF-I";
+constexpr char name_tagit_hf_i_plus[] = "Tag-it HF-I Plus";
+constexpr char name_tagit_hf_i_pro[]  = "Tag-it HF-I Pro";
+constexpr char name_ti[]              = "TI(Unclassified)";
+constexpr char name_st_lri[]          = "ST LRI";
+constexpr char name_st_st25v[]        = "ST25V";
+constexpr char name_st[]              = "ST(Unclassified)";
+constexpr char name_fram[]            = "FRAM";
+constexpr char name_fujitsu[]         = "Fujitsu(Unclassified)";
+constexpr char name_unclassified[]    = "Unclassified";
 
 constexpr const char* name_table[] = {
-    name_unknown,                                                //
-    name_sli,          name_slix,      name_slix2,    name_nxp,  //
-    name_hf_i,         name_hf_i_plus, name_hf_i_pro, name_ti,   //
-    name_lri,          name_st25v,     name_st,                  //
-    name_fram,         name_fujitsu,                             //
+    name_unknown,
+    // NXP
+    name_nxp_icode_sli,
+    name_nxp_icode_slix,
+    name_nxp_icode_slix2,
+    name_nxp,
+    // TI
+    name_tagit_2048,
+    name_tagit_hf_i,
+    name_tagit_hf_i_plus,
+    name_tagit_hf_i_pro,
+    name_ti,
+    // ST
+    name_st_lri,
+    name_st_st25v,
+    name_st,
+    // Others
+    name_fram,
+    name_fujitsu,
+    //
     name_unclassified,
 };
 
@@ -115,19 +131,23 @@ namespace m5 {
 namespace nfc {
 namespace v {
 
-Type identify_type(const uint8_t mf, const uint8_t ic, const uint8_t ir, const uint8_t uid4)
+Type identify_type(const PICC& picc)
 {
+    const uint8_t mf = picc.manufacturerCode();
+    const uint8_t ic = picc.icIdentifier();
+    const uint8_t ir = picc.icReference();
+
     // mf -> See also https://en.wikipedia.org/wiki/ISO/IEC_15693
     if (mf == 0xFF || ic == 0xFF) {
         return Type::Unknown;
     }
 
-    // M5_LIB_LOGE("mf:%02X ic:%02X ir:%02X op:%02X", mf, ic, ir, uid4);
+    // M5_LIB_LOGE("mf:%02X ic:%02X ir:%02X", mf, ic, ir);
 
     // NXP
     if (mf == 0x04) {
         if (ic == 0x01) {
-            uint8_t type_indicator_bits = (uid4 >> 3) & 0x03;
+            uint8_t type_indicator_bits = (picc.uid[3] >> 3) & 0x03;
             switch (type_indicator_bits) {
                 case 0:
                     return Type::NXP_ICODE_SLI;
@@ -144,7 +164,10 @@ Type identify_type(const uint8_t mf, const uint8_t ic, const uint8_t ir, const u
 
     // TI
     if (mf == 0x07) {
-        if (ic == 0x00 || ic == 0x01 || ic == 0x80 || ic == 0x81) {
+        if (ic == 0x80) {
+            return Type::TI_TAGIT_2048;
+        }
+        if (ic == 0x00 || ic == 0x01 || ic == 0x81) {
             return Type::TI_TAGIT_HF_I_Plus;
         }
         if (ic == 0xC0 || ic == 0xC1) {
