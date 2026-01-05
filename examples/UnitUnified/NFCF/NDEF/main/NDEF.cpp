@@ -175,8 +175,8 @@ void setup()
     lcd.setFont(&fonts::Font0);
     lcd.fillScreen(0);
     lcd.setCursor(0, 0);
-    lcd.printf("Please put the PICC and click G0");
-    M5.Log.printf("Please put the PICC and click G0\n");
+    lcd.printf("Please put the PICC and click BtnA");
+    M5.Log.printf("Please put the PICC and click BtnA\n");
 }
 
 void loop()
@@ -207,8 +207,8 @@ void loop()
                 nfc_f.deactivate();
             }
             lcd.setCursor(0, 0);
-            lcd.printf("Please put the PICC and click/hold G0");
-            M5.Log.printf("Please put the PICC and click/hold G0\n");
+            lcd.printf("Please put the PICC and click/hold BtnA");
+            M5.Log.printf("Please put the PICC and click/hold BtnA\n");
         } else {
             M5.Log.printf("PICC NOT exists\n");
         }

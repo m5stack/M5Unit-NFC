@@ -1911,9 +1911,32 @@ public:
     // ----------------------------------------------------------------------------------------------
     ///@name NFC-B
     ///@{
+    /*!
+      @brief Transceive with NFC-B PICC
+      @param[out] rx Receive buffer
+      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param tx Send buffer
+      @param tx_len Size of send buffer
+      @param timeout_ms Timeout(ms)
+      @return True if successful
+     */
     bool nfcbTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                         const uint32_t timeout_ms);
+    /*!
+      @param Transmit to NFC-B PICC
+      @param tx Send buffer
+      @param tx_len Size of send buffer
+      @param timeout_ms Timeout(ms)
+      @return True if successful
+     */
     bool nfcbTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
+    /*!
+      @param Receive from NFC-B PICC
+      @param[out] rx Receive buffer
+      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param timeout_ms Timeout(ms)
+      @return True if successful
+     */
     bool nfcbReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
     ///@}
 
@@ -1921,7 +1944,7 @@ public:
     ///@name NFC-F
     ///@{
     /*!
-      @brief Transceive
+      @brief Transceive with NFC-F PICC
       @param[out] rx Receive buffer
       @param[in/out] rx_len in:Size of receive buffer out:actual read size
       @param tx Send buffer
@@ -1931,84 +1954,23 @@ public:
      */
     bool nfcfTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                         const uint32_t timeout_ms);
+    /*!
+      @param Transmit to NFC-F PICC
+      @param tx Send buffer
+      @param tx_len Size of send buffer
+      @param timeout_ms Timeout(ms)
+      @return True if successful
+     */
     bool nfcfTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
+    /*!
+      @param Receive from NFC-F PICC
+      @param[out] rx Receive buffer
+      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param timeout_ms Timeout(ms)
+      @return True if successful
+     */
     bool nfcfReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
 
-    /*!
-      @brief Polling
-      @param[out] PICC detected PICC
-      @param system_code System code
-      @param request_code Request code
-      @param time_slot Maximum number of slots that can be responded
-      @return True if successful
-      @note SENSF_REQ
-     */
-    bool nfcfPolling(m5::nfc::f::PICC& picc, const uint16_t system_code, const m5::nfc::f::RequestCode request_code,
-                     const m5::nfc::f::TimeSlot time_slot);
-
-    /*!
-      @brief Requset service
-      @param[out] ky_version Node key version array (at leaset node_size)
-      @param picc PICC
-      @param node_code Node code array
-      @param node_num Number of elements in the node_code array
-      @return True if successful
-      @warning FeliCa Standard only
-     */
-    bool nfcfRequestService(uint16_t key_version[], const m5::nfc::f::PICC& picc, const uint16_t* node_code,
-                            const uint8_t node_num);
-
-    /*!
-      @brief Request response
-      @param[out] mode Mode if detected
-      @param picc PICC
-      @return True if successful
-      @warning FeliCa Standard only
-     */
-    bool nfcfRequestResponse(m5::nfc::f::standard::Mode& mode, const m5::nfc::f::PICC& picc);
-
-    /*!
-      @brief Request system code
-      @param[out] code_list Code list array (at least 255)
-      @param[out] code_num Number of code_list
-      @param picc PICC
-      @return True if successful
-      @warning FeliCa Standard only
-     */
-    bool nfcfRequestSystemCode(uint16_t code_list[255], uint8_t& code_num, const m5::nfc::f::PICC& picc);
-
-    /*!
-      @brief Read the area that does not require authentication
-      @param[out] rx Buffer(at least 16 bytes * number of blocks)
-      @param[in/out] rx_len in:Bufffer size out:Actual size
-      @param picc PICC
-      @param service_code Service code array
-      @param service_num Number of elements in the service_code array (1-16)
-      @param block_list Block list
-      @param block_num Number of elements in the block_list array (1-8)
-      @return True if successful
-      @note The read unit is 16 bytes
-      @warning The maximum number of blocks read varies by type
-    */
-    bool nfcfReadWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,
-                                   const uint16_t* service_code, const uint8_t service_num,
-                                   const m5::nfc::f::block_t* block_list, const uint8_t block_num);
-    /*!
-      @brief Write the area that does not require authentication
-      @param picc PICC
-      @param service_code Service code array
-      @param service_num Number of elements in the service_code array (1-16)
-      @param block_list Block list
-      @param block_num Number of elements in the block_list array
-      @param tx Buffer
-      @param tx_len tx size
-      @return True if successful
-      @note The write unit is 16 bytes
-      @warning The maximum number of blocks write varies by type
-    */
-    bool nfcfWriteWithoutEncryption(const m5::nfc::f::PICC& picc, const uint16_t* service_code,
-                                    const uint8_t service_num, const m5::nfc::f::block_t* block_list,
-                                    const uint8_t block_num, const uint8_t* tx, const uint16_t tx_len);
     ///@}
 
     // ----------------------------------------------------------------------------------------------

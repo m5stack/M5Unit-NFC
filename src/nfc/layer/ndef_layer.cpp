@@ -442,9 +442,7 @@ bool NDEFLayer::write_type3(const m5::nfc::ndef::TLV& tlv)
     }
 
     // Read AB
-    if (!readAttributeBlock(ab)) {
-        return false;
-    }
+    (void)readAttributeBlock(ab);
 
     uint16_t first_block = _interface.first_user_block();
     uint16_t last_block  = _interface.last_user_block();

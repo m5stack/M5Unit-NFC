@@ -37,17 +37,6 @@ uint8_t val_table[] = {
 
 };
 */
-
-uint32_t get_block_list_size(const block_t* block_list, const uint8_t block_num)
-{
-    uint32_t sz{};
-    if (block_list && block_num) {
-        for (uint_fast16_t i = 0; i < block_num; ++i) {
-            sz += 2 + block_list[i].is_3byte();
-        }
-    }
-    return sz;
-}
 }  // namespace
 
 namespace m5 {
@@ -109,49 +98,7 @@ bool UnitST25R3916::configure_emulation_f()
 bool UnitST25R3916::nfcfTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                    const uint32_t timeout_ms)
 {
-#if 0
-    CHECK_MODE();
-
-    const auto rx_len_org = rx_len;
-    rx_len                = 0;
-
-    if (!tx || !tx_len) {
-        return false;
-    }
-
-    if (timeout_ms && !write_fwt_timer(timeout_ms)) {
-        return false;
-    }
-    if (!clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) || !clearInterrupts() ||
-        !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) || !writeNumberOfTransmittedBytes(tx_len, 0) ||
-        !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
-        return false;
-    }
-    auto irq32 = wait_for_interrupt(I_txe32, timeout_ms) & I_txe32;
-    if (!irq32) {
-        return false;
-    }
-    // Send only
-    if (!rx && !rx_len) {
-        return true;
-    }
-
-    if (rx && rx_len_org) {
-        if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
-            M5_LIB_LOGD("Timeout");
-            return false;
-        }
-        uint16_t actual{};
-        if (readFIFO(actual, rx, rx_len_org)) {
-            rx_len = actual;
-            return true;
-        }
-        M5_LIB_LOGD("Failed to readFIFO %u/%u", actual, rx_len_org);
-    }
-    return false;
-#else
     return nfcfTransmit(tx, tx_len, timeout_ms) && nfcfReceive(rx, rx_len, timeout_ms);
-#endif
 }
 
 bool UnitST25R3916::nfcfTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
@@ -197,6 +144,7 @@ bool UnitST25R3916::nfcfReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
     return false;
 }
 
+#if 0
 bool UnitST25R3916::nfcfPolling(m5::nfc::f::PICC& picc, const uint16_t system_code,
                                 const m5::nfc::f::RequestCode request_code, const m5::nfc::f::TimeSlot time_slot)
 {
@@ -286,7 +234,6 @@ bool UnitST25R3916::nfcfRequestResponse(m5::nfc::f::standard::Mode& mode, const 
     mode = standard::Mode::Mode0;
 
     if (picc.type != Type::FeliCaStandard) {
-        M5_LIB_LOGE("========================");
         return false;
     }
 
@@ -452,6 +399,7 @@ bool UnitST25R3916::nfcfWriteWithoutEncryption(const m5::nfc::f::PICC& picc, con
     }
     return true;
 }
+#endif
 
 }  // namespace unit
 }  // namespace m5

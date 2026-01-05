@@ -11,7 +11,7 @@
   NOTICE: Please note that cards that have undergone the initial issuance procedure cannot be read without subsequent
   authentication.
   *******************************************************************************************************************
-*/
+  */
 #include <M5Unified.h>
 #include <M5UnitUnified.h>
 #include <M5UnitUnifiedNFC.h>
@@ -111,7 +111,7 @@ bool internal_auth()
     }
 
     uint8_t ck[16]{};
-    derive_card_key(ck, example_master_key, example_ckv, picc.idm.data());
+    derive_card_key(ck, example_master_key, example_ckv, picc.idm);
     //    M5.Log.printf("==== CK:\n");
     //    m5::utility::log::dump(ck, 16, false);
 
@@ -134,7 +134,7 @@ bool external_auth()
     }
 
     uint8_t ck[16]{};
-    derive_card_key(ck, example_master_key, example_ckv, picc.idm.data());
+    derive_card_key(ck, example_master_key, example_ckv, picc.idm);
     //    M5.Log.printf("==== CK:\n");
     //    m5::utility::log::dump(ck, 16, false);
 
@@ -142,62 +142,166 @@ bool external_auth()
     return nfc_f.externalAuthenticate(ck, example_ckv);
 }
 
-void read_example()
+void access_example()
 {
     uint8_t rx[16]{};
+    constexpr char data0[] = "0-ABCDEF";
+    constexpr char data1[] = "1-GHIJKL";
+    constexpr char data2[] = "2-MNOPQR";
 
-    // nfc_f.dump(lite_s::MC);
+    nfc_f.dump();
 
-    if (!nfc_f.read16(rx, 1)) {
-        M5.Log.printf("Failed to read 1 (need auth)\n");
+    // No auth
+    M5.Log.printf("======== No auth\n");
+
+    M5.Log.printf("Block 2 does not require authentication)\n");
+    if (nfc_f.write16(2, (uint8_t*)data2, sizeof(data2))) {
+        M5.Log.printf("  OK W\n");
+    }
+    if (nfc_f.read16(rx, 2)) {
+        M5.Log.printf("  OK R\n");
+        m5::utility::log::dump(rx, 16, false);
+    }
+    M5.Log.printf("Block 0 requires authentication\n");
+    if (!nfc_f.write16(0, (uint8_t*)data0, sizeof(data0))) {
+        M5.Log.printf("  OK NW\n");
     } else {
-        M5.Log.printf("read block 1 without auth OK\n");
-        // m5::utility::log::dump(rx, 16, false);
+        M5_LOGE("  NG");
     }
     if (!nfc_f.read16(rx, 0)) {
-        M5.Log.printf("Failed to read 0 (need auth)\n");
+        M5.Log.printf("  OK NR\n");
     } else {
-        M5.Log.printf("read block 0 without auth OK\n");
-        // m5::utility::log::dump(rx, 16, false);
+        M5_LOGE("  NG");
     }
 
+    M5.Log.printf("Block 1 requires authentication\n");
+    if (!nfc_f.write16(1, (uint8_t*)data1, sizeof(data1))) {
+        M5.Log.printf("  OK NW\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+    if (!nfc_f.read16(rx, 1)) {
+        M5.Log.printf("  OK NR\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+
+    // Internal auth
     if (!internal_auth()) {
         // ******************************************************************************
         // If the first_issuance_procedure_lite_s() has not been executed, an error will occur here.
         // ******************************************************************************
-        M5_LOGE("Failed to internalAuthenticate");
+        M5_LOGE("Failed to internal authenticate");
         lcd.fillScreen(TFT_RED);
         return;
     }
-    M5.Log.printf("internal auth OK\n");
+    M5.Log.printf("======== Internal auth OK\n");
 
-    // Read block
-    if (nfc_f.readWithMAC16(rx, 1)) {
-        M5.Log.printf("Read block 1 OK\n");
-        m5::utility::log::dump(rx, 16, false);
-    } else {
-        M5_LOGE("Failed to read 1");
+    M5.Log.printf("Block 2 does not require authentication)\n");
+    if (nfc_f.read16(rx, 2)) {
+        M5.Log.printf("  OK\n");
     }
-
-    // Read block 0
-    if (!external_auth()) {
-        M5_LOGE("Failed to externalAuthenticate");
-        lcd.fillScreen(TFT_RED);
-        return;
-    }
-    M5.Log.printf("external auth OK\n");
-
+    M5.Log.printf("Block 0 requires authentication\n");
     if (!nfc_f.read16(rx, 0)) {
-        M5.Log.printf("You can NOT read16");
+        M5.Log.printf("  OK NR\n");
     } else {
-        M5_LOGE("Oops!");
+        M5_LOGE("  NG");
+    }
+    if (!nfc_f.readWithMAC16(rx, 0)) {
+        M5.Log.printf("  OK NR\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+    if (!nfc_f.write16(0, (uint8_t*)data0, sizeof(data0))) {
+        M5.Log.printf("  OK NW\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+    if (!nfc_f.writeWithMAC16(0, (uint8_t*)data0, sizeof(data0))) {
+        M5.Log.printf("  OK NWMAC\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+
+    M5.Log.printf("Block 1 requires authentication\n");
+    if (!nfc_f.read16(rx, 1)) {
+        M5.Log.printf("  OK NR\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+    if (!nfc_f.readWithMAC16(rx, 1)) {
+        M5.Log.printf("  OK NR\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+    if (!nfc_f.write16(1, (uint8_t*)data1, sizeof(data0))) {
+        M5.Log.printf("  OK NW\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+    if (!nfc_f.writeWithMAC16(1, (uint8_t*)data1, sizeof(data0))) {
+        M5.Log.printf("  OK NWMAC\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+
+    // External auth
+    if (!external_auth()) {
+        M5_LOGE("Failed to external authenticate");
+        lcd.fillScreen(TFT_RED);
+        return;
+    }
+    M5.Log.printf("======== External auth OK\n");
+
+    M5.Log.printf("Block 2 does not require authentication)\n");
+    if (nfc_f.read16(rx, 2)) {
+        M5.Log.printf("  OK\n");
+    }
+
+    M5.Log.printf("Block 0 requires authentication\n");
+    if (nfc_f.read16(rx, 0)) {
+        M5.Log.printf("  OK R\n");
         m5::utility::log::dump(rx, 16, false);
+    } else {
+        M5_LOGE("  NG");
     }
     if (nfc_f.readWithMAC16(rx, 0)) {
-        M5.Log.printf("Read block 0 OK\n");
+        M5.Log.printf("  OK RMAC\n");
         m5::utility::log::dump(rx, 16, false);
     } else {
-        M5_LOGE("Failed to read 0");
+        M5_LOGE("  NG");
+    }
+    // Block 0 can write without encryption
+    if (nfc_f.write16(0, (uint8_t*)data0, sizeof(data0))) {
+        M5.Log.printf("  OK W\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+
+    M5.Log.printf("Block 1 requires authentication\n");
+    if (nfc_f.read16(rx, 1)) {
+        M5.Log.printf("  OK R\n");
+        m5::utility::log::dump(rx, 16, false);
+    } else {
+        M5_LOGE("  NG");
+    }
+    if (nfc_f.readWithMAC16(rx, 1)) {
+        M5.Log.printf("  OK RMAC\n");
+        m5::utility::log::dump(rx, 16, false);
+    } else {
+        M5_LOGE("  NG");
+    }
+    // Block 1 can NOT write without encryption
+    if (!nfc_f.write16(1, (uint8_t*)data1, sizeof(data1))) {
+        M5.Log.printf("  OK NW\n");
+    } else {
+        M5_LOGE("  NG");
+    }
+    // Block 1 write needs with MAC
+    if (nfc_f.writeWithMAC16(1, (uint8_t*)data1, sizeof(data1))) {
+        M5.Log.printf("  OK WMAC\n");
+    } else {
+        M5_LOGE("  NG");
     }
 
     lcd.fillScreen(0);
@@ -210,11 +314,11 @@ bool first_issuance_procedue_lite_s(const PICC& picc, const uint8_t master_key[2
     M5.Log.printf("First issuance procedue...\n");
 
     // 7.3.2 Write ID (No DFC)
-    if (!nfc_f.write16(lite_s::ID, picc.idm.data(), 8) || !nfc_f.read16(rbuf, lite_s::ID)) {
+    if (!nfc_f.write16(lite_s::ID, picc.idm, 8) || !nfc_f.read16(rbuf, lite_s::ID)) {
         M5_LOGE("Failed to write/read ID");
         return false;
     }
-    if (memcmp(rbuf, picc.idm.data(), 8) != 0) {
+    if (memcmp(rbuf, picc.idm, 8) != 0) {
         M5_LOGE("Failed to verify ID");
         return false;
     }
@@ -225,7 +329,7 @@ bool first_issuance_procedue_lite_s(const PICC& picc, const uint8_t master_key[2
     uint8_t wbuf[2]{};
     wbuf[0] = ckv >> 8;
     wbuf[1] = ckv & 0xFF;
-    derive_card_key(ck, master_key, ckv, picc.idm.data());
+    derive_card_key(ck, master_key, ckv, picc.idm);
 
     //    M5.Log.printf("==== CK:\n");
     //    m5::utility::log::dump(ck, 16, false);
@@ -284,30 +388,34 @@ bool first_issuance_procedue_lite_s(const PICC& picc, const uint8_t master_key[2
         M5_LOGE("Failed to read MC");
         return false;
     }
-    // MC_SP_REG_W_MAC_A (Must be MC_SP_REG_W_RESTR,MC_SP_REG_R_RESTR bit on)
-    mc[10] = 0x01;  // Write SPAD_0 needs MAC -> external auth
-    // MC_SP_REG_W_RESTR
-    mc[8] = 0x01;  // Write SPAD_0,1 needs Auth
-    // MC_SP_REG_R_RESTR
-    mc[6] = 0x01;  // Read SPAD_0,1 needs Auth
-    // MC_CKCKV_W_MAC_A
-    // mc[5]  = 0x01;  // Write CK and CKV needs MAC
-    // RF_PRM
-    mc[4] = 0x07;  // Fixed value
-    // SYS_OP
-    mc[3] = 0x00;  // 0x01 NDEF
-    // MC_ALL
-    mc[2] = 0xFF;
+
+    constexpr uint8_t MC_STATE_W_MAC_A{12};
+    constexpr uint8_t MC_SP_REG_W_MAC_A{10};
+    constexpr uint8_t MC_SP_REG_W_RESTR{8};
+    constexpr uint8_t MC_SP_REG_R_RESTR{6};
+    constexpr uint8_t RF_PRM{4};
+    constexpr uint8_t SYS_OP{3};
+    constexpr uint8_t MC_ALL{2};
+
+    mc[MC_STATE_W_MAC_A]  = 0x01;
+    mc[MC_SP_REG_W_MAC_A] = 0x02;         // SPAD_1 write needs MAC
+    mc[MC_SP_REG_W_RESTR] = 0x01 | 0x02;  // SPAD_0.1 write needs Auth
+    mc[MC_SP_REG_R_RESTR] = 0x01 | 0x02;  // SPAD_0.1 read needs Auth
+    mc[RF_PRM]            = 0x07;         // Fixed value
+    mc[SYS_OP]            = 0x00;         // 0x01 NDEF
+    mc[MC_ALL]            = 0xFF;         // RO
 
     // Some blocks should be set to read-only (not done in this example)
     if (!nfc_f.write16(lite_s::MC, mc, 16) || !nfc_f.read16(rbuf, lite_s::MC)) {
         M5_LOGE("Failed to write/read MC");
         return false;
     }
+    /*
     if (memcmp(mc, rbuf, 16) != 0) {
         M5_LOGE("Failed to verify MC");
         return false;
     }
+    */
 
     M5.Log.printf("  Permission settings OK\n");
 
@@ -321,40 +429,6 @@ bool first_issuance_procedue_lite_s(const PICC& picc, const uint8_t master_key[2
     }
     M5_LOGE("Failed to confirm");
     return false;
-}
-
-void issuance_write_example()
-{
-    // nfc_f.dump(lite_s::MC);
-
-    const auto& picc = nfc_f.activatedPICC();
-
-    if (internal_auth() && external_auth()) {
-        M5.Log.printf("Already first_issuance_procedue_lite_s\n");
-        return;
-    }
-
-    // First issuance procedue
-    if (!first_issuance_procedue_lite_s(picc, example_master_key, example_ckv)) {
-        lcd.fillScreen(TFT_RED);
-        M5_LOGE("Failed to first_issuance_procedue");
-        return;
-    }
-
-#if 1
-    // Write with MAC
-    if (!internal_auth() || !external_auth()) {
-        M5_LOGE("Failed to auth");
-        return;
-    }
-    constexpr char txt[16] = "writeWithMAC";
-    if (!nfc_f.writeWithMAC16(0, (const uint8_t*)txt, sizeof(txt))) {
-        M5_LOGE("Failed to writeWithMAC");
-        return;
-    }
-#endif
-
-    lcd.fillScreen(0);
 }
 
 }  // namespace
@@ -430,8 +504,8 @@ void loop()
     M5.update();
     Units.update();
 
-    bool clicked = M5.BtnA.wasClicked();  // For read
-    bool held    = M5.BtnA.wasHold();     // For write
+    bool clicked = M5.BtnA.wasClicked();  // For access
+    bool held    = M5.BtnA.wasHold();     // For first issuance
 
     if (clicked || held) {
         lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
@@ -442,9 +516,11 @@ void loop()
             if (picc.type == Type::FeliCaLiteS) {
                 if (nfc_f.activate(picc)) {
                     if (clicked) {
-                        read_example();
+                        access_example();
                     } else {
-                        issuance_write_example();
+                        if (!first_issuance_procedue_lite_s(picc, example_master_key, example_ckv)) {
+                            M5_LOGE("Failed to first_issuance_procedue_lite_s");
+                        }
                     }
                     nfc_f.deactivate();
                 }

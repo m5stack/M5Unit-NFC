@@ -75,16 +75,27 @@ struct tm buf_to_tm(const uint8_t date[2], const uint8_t time[2] = nullptr)
 
 void dump_jtic()
 {
+    uint16_t sc[255]{};
+    uint8_t sc_num{};
+    if (!nfc_f.requestSystemCode(sc, sc_num)) {
+        return;
+    }
+    M5.Log.printf("System code %u\n", sc_num);
+    for (uint_fast8_t i = 0; i < sc_num; ++i) {
+        M5.Log.printf("  %04X\n", sc[i]);
+    }
+
     standard::Mode m{};
     if (!nfc_f.requestResponse(m)) {
         return;
     }
+    M5.Log.printf("Mode:%u\n", m);
 
     // Balance
     uint16_t key_version{};
     if (nfc_f.requestService(key_version, service_balance) && key_version != 0xFFFF) {
         uint8_t buf[16]{};
-        if (nfc_f.read16(buf, 0, service_balance)) {
+        if (nfc_f.read16(buf, block_t(0), service_balance)) {
             M5.Log.printf("Type:%02X Balance:%u Update:%u\n",
                           buf[8],                              //
                           ((uint16_t)buf[12] << 8) | buf[11],  // LE
@@ -240,6 +251,9 @@ void setup()
     }
     lcd.setFont(&fonts::Font0);
     lcd.fillScreen(0);
+    lcd.setCursor(0, 0);
+    lcd.printf("Please put the PICC and click BtnA");
+    M5.Log.printf("Please put the PICC and click BtnA\n");
 }
 
 void loop()

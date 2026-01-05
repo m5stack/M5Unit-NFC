@@ -176,7 +176,10 @@ public:
       @param[out] mode Mode if detected
       @warning FeliCa Standard only
      */
-    bool requestResponse(m5::nfc::f::standard::Mode& mode);
+    inline bool requestResponse(m5::nfc::f::standard::Mode& mode)
+    {
+        return _activePICC.valid() && request_response_impl(_activePICC, mode);
+    }
 
     /*!
       @brief Request system code
@@ -205,34 +208,28 @@ public:
     ///@note For activated PICC
     ///@name Read/Write without encryption
     /*!
-      @brief Read the 1 block
-      @param[out] rx Output buffer
-      @param block Target block
-      @return True if successful
-     */
-    inline bool read16(uint8_t rx[16], const m5::nfc::f::block_t block)
-    {
-        return read_16(rx, block, true);
-    }
-    /*!
       @brief Read the 1 block with service code
       @param[out] rx Output buffer
       @param block Target block
       @param service_code Service code
       @return True if successful
      */
-    bool read16(uint8_t rx[16], const m5::nfc::f::block_t block, const uint16_t service_code);
+    inline bool read16(uint8_t rx[16], const m5::nfc::f::block_t block,
+                       const uint16_t service_code = m5::nfc::f::service_random_read)
+    {
+        return read16(rx, &block, 1, service_code);
+    }
     /*!
       @brief Read the 1 block with service codes
       @param[out] rx Output buffer
       @param block Target block array
       @param block_num Number of block
+      @param service_code Service code
       @return True if successful
-      @param service_code Service code array
-      @param service_num Number of service code
+      @param service_code Service code
      */
-    bool read16(uint8_t rx[16], const m5::nfc::f::block_t* block, const uint8_t block_num, const uint16_t* service_code,
-                const uint8_t service_num);
+    bool read16(uint8_t rx[16], const m5::nfc::f::block_t* block, const uint8_t block_num,
+                const uint16_t service_code = m5::nfc::f::service_random_read);
 
     /*!
       @brief Read any bytes from user area
@@ -246,15 +243,22 @@ public:
     bool read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::block_t sblock);
 
     /*!
-      @breif Read the specified block list
+      @breif Read the specified block list and service codes
       @param[out] rx Buffer (At least 16 * block_num)
       @param[in/out] rx_len in:buffer size, out:actual read size
       @param block Target block array
       @param block_num Number of block
+      @param service_code Service code array
+      @param service_num Number of service code
       @return True if successful
       @warning rx in 16-byte units
      */
-    bool read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::block_t* block, const uint8_t block_num);
+    inline bool read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::block_t* block_list, const uint8_t block_num,
+                     const uint16_t* service_code, const uint8_t service_num)
+    {
+        return _activePICC.valid() &&
+               read_without_encryption_impl(rx, rx_len, block_list, block_num, service_code, service_num, _activePICC);
+    }
 
     /*!
       @brief Write the 1 block
@@ -275,6 +279,14 @@ public:
       @return True if successful
     */
     bool write(const m5::nfc::f::block_t sblock, const uint8_t* tx, const uint16_t tx_len);
+
+    /*!
+      @brief Clear SPAD_0 - 13
+      @return True if successful
+      @pre Each area can be written to without authentication
+    */
+    bool clearSPAD();
+
     ///@}
 
     ///@note For activated PICC
@@ -389,8 +401,13 @@ protected:
         return _activePICC.maximumWriteBlocks();
     }
 
-    bool read_16(uint8_t rx[16], const m5::nfc::f::block_t block, const bool check_picc_valid);
-    bool write_32(const m5::nfc::f::block_t block[2], const uint8_t tx[32]);  // For write with MAC
+    bool request_response_impl(const m5::nfc::f::PICC& picc, m5::nfc::f::standard::Mode& mode);
+    bool read_without_encryption_impl(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::block_t* block_list,
+                                      const uint8_t block_num, const uint16_t* service_code, const uint8_t service_num,
+                                      const m5::nfc::f::PICC& picc);
+    bool write_without_encryption_impl(const m5::nfc::f::PICC& picc, const m5::nfc::f::block_t* block_list,
+                                       const uint8_t block_num, const uint16_t* service_code, const uint8_t service_num,
+                                       const uint8_t* tx, const uint16_t tx_len);
 
     bool dump_felica_lite();
     bool dump_felica_lite_s();
@@ -422,20 +439,8 @@ private:
 struct NFCLayerF::Adapter {
     virtual ~Adapter() = default;
 
-    virtual bool polling(m5::nfc::f::PICC& picc, const uint16_t system_code, const m5::nfc::f::RequestCode request_code,
-                         const m5::nfc::f::TimeSlot time_slot) = 0;
-
-    virtual bool requestService(uint16_t key_version[], const m5::nfc::f::PICC& picc, const uint16_t* node_code,
-                                const uint8_t node_num)                                                      = 0;
-    virtual bool requestResponse(m5::nfc::f::standard::Mode& mode, const m5::nfc::f::PICC& picc)             = 0;
-    virtual bool requestSystemCode(uint16_t code_list[255], uint8_t& code_num, const m5::nfc::f::PICC& picc) = 0;
-
-    virtual bool readWithoutEncryption(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::PICC& picc,
-                                       const uint16_t* service_code, const uint8_t service_num,
-                                       const m5::nfc::f::block_t* block_list, const uint8_t block_num)     = 0;
-    virtual bool writeWithoutEncryption(const m5::nfc::f::PICC& picc, const uint16_t* service_code,
-                                        const uint8_t service_num, const m5::nfc::f::block_t* block_list,
-                                        const uint8_t block_num, const uint8_t* tx, const uint16_t tx_len) = 0;
+    virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                            const uint32_t timeout_ms) = 0;
 };
 ///@endcond
 
