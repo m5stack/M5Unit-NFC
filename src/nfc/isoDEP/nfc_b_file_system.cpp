@@ -22,7 +22,7 @@ namespace nfc {
 
 NFCBFileSystem::NFCBFileSystem(m5::nfc::NFCLayerB& layer) : FileSystem{layer.isoDEP()}
 {
-    const auto& picc = layer.activatedPICC();
+    const auto& picc     = layer.activatedPICC();
     auto cfg             = _isoDEP.config();
     cfg.fwt_ms           = fwi_to_ms(picc.fwi(), 13.56e6f);
     cfg.fsc              = picc.maximumFrameLength();

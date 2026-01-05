@@ -23,7 +23,6 @@ using namespace m5::nfc::v;
 #pragma GCC optimize("O3")
 // clang-format on
 
-
 #define CHECK_MODE()                                   \
     do {                                               \
         if (!isNFCMode(NFC::V)) {                      \
@@ -241,4 +240,3 @@ bool UnitST25R3916::nfcvReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
 
 }  // namespace unit
 }  // namespace m5
-

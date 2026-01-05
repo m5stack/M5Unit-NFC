@@ -18,7 +18,9 @@ using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
-#pragma GCC optimize ("O3")
+// clang-format off
+#pragma GCC optimize("O3")
+// clang-format on
 
 namespace m5 {
 namespace nfc {
@@ -65,7 +67,7 @@ struct PollerST25R3916ForA final : NFCLayerA::Adapter {
 };
 
 bool PollerST25R3916ForA::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                      const uint32_t timeout_ms)
+                                     const uint32_t timeout_ms)
 {
     return _u.nfcaTransceive(rx, rx_len, tx, tx_len, timeout_ms);
 }
@@ -126,13 +128,13 @@ bool PollerST25R3916ForA::nfca_write_page(const uint8_t addr, const uint8_t tx[4
 }
 
 bool PollerST25R3916ForA::mifare_classic_authenticate(const bool auth_a, const PICC& picc, const uint8_t block,
-                                                       const Key& key)
+                                                      const Key& key)
 {
     return auth_a ? _u.mifareClassicAuthenticateA(picc, block, key) : _u.mifareClassicAuthenticateB(picc, block, key);
 }
 
 bool PollerST25R3916ForA::mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
-                                                      const uint32_t arg)
+                                                     const uint32_t arg)
 {
     return _u.mifareClassicValueBlock(cmd, block, arg);
 }

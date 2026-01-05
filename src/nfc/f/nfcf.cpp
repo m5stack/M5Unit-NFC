@@ -195,16 +195,15 @@ bool is_read_only_lite_s(const block_t block)
            block == lite_s::CRC_CHECK;
 }
 
-bool can_read_lite(const block_t block){
+bool can_read_lite(const block_t block)
+{
     return !(block == lite_s::RC || block == lite_s::CK);
 }
 
-bool can_read_lite_s(const block_t block){
+bool can_read_lite_s(const block_t block)
+{
     return !(block == lite_s::RC || block == lite_s::CK);
 }
-
-
-
 
 //
 bool PICC::valid() const

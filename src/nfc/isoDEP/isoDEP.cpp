@@ -457,8 +457,8 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                     break;  // resend I-Block
                 }
                 return false;
-            }  // for
-        }  // while
+            }
+        }
 
         // next chunk
         tx_off = (uint16_t)(tx_off + chunk);
