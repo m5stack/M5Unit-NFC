@@ -6,6 +6,7 @@
 /*
   Example using M5UnitUnified for ST25R3916
   Read/write NDEF NFC-A PICC
+  This example is shared with M5Unit-RFID
 */
 #include <M5Unified.h>
 #include <M5UnitUnified.h>
@@ -16,11 +17,17 @@
 // *************************************************************
 // Choose one define symbol to match the unit you are using
 // *************************************************************
-#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP)
+#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP) && !defined(USING_UNIT_RFID2)
 // For UnitNFC
 // #define USING_UNIT_NFC
 // For CapNFC
 // #define USING_HACKER_CAP
+// For UnitRFID2
+// #define USING_UNIT_RFID2
+#endif
+
+#if defined(USING_UNIT_RFID2)
+#include <M5UnitUnifiedRFID.h>
 #endif
 
 using namespace m5::nfc::a;
@@ -37,6 +44,9 @@ m5::unit::UnitNFC unit{};  // I2C
 #elif defined(USING_HACKER_CAP)
 #pragma message "Choose HackerCapNFC"
 m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
+#elif defined(USING_UNIT_RFID2)
+#pragma message "Choose UnitRFID2"
+m5::unit::UnitRFID2 unit{};  // UnitRFID2 (M5Unit-RFID)
 #else
 #error Choose unit please!
 #endif

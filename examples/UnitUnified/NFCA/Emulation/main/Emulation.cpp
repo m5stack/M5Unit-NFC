@@ -22,6 +22,9 @@
 // For CapNFC
 // #define USING_HACKER_CAP
 #endif
+#if defined(USING_UNIT_RFID2)
+#error UnitRFID2 does NOT support emulation
+#endif
 
 using namespace m5::nfc;
 using namespace m5::nfc::a;

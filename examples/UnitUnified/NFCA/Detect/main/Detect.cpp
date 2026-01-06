@@ -6,6 +6,7 @@
 /*
   Example using M5UnitUnified for M5Cardputer-ADV with HackerCap
   Detect NFC-A PICC
+  This example is shared with M5Unit-RFID
 */
 #include <M5Unified.h>
 #include <M5UnitUnified.h>
@@ -16,11 +17,17 @@
 // *************************************************************
 // Choose one define symbol to match the unit you are using
 // *************************************************************
-#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP)
+#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP) && !defined(USING_UNIT_RFID2)
 // For UnitNFC
 // #define USING_UNIT_NFC
 // For CapNFC
 // #define USING_HACKER_CAP
+// For UnitRFID2
+// #define USING_UNIT_RFID2
+#endif
+
+#if defined(USING_UNIT_RFID2)
+#include <M5UnitUnifiedRFID.h>
 #endif
 
 using namespace m5::nfc::a;
@@ -35,6 +42,9 @@ m5::unit::UnitNFC unit{};  // I2C
 #elif defined(USING_HACKER_CAP)
 #pragma message "Choose HackerCapNFC"
 m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
+#elif defined(USING_UNIT_RFID2)
+#pragma message "Choose UnitRFID2"
+m5::unit::UnitRFID2 unit{}; // UnitRFID2 (M5Unit-RFID)
 #else
 #error Choose unit please!
 #endif
@@ -57,7 +67,7 @@ void setup()
     }
 #endif
 
-#if defined(USING_UNIT_NFC)
+#if defined(USING_UNIT_NFC) || defined(USING_UNIT_RFID2)
     auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
     auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
     M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
@@ -111,9 +121,8 @@ void loop()
         lcd.setCursor(0, 0);
         uint32_t idx{};
         for (auto&& u : piccs) {
-            // detect only performs a provisional classification based on sak, so further identification  is required
             M5.Speaker.tone(6000, 5);
-
+            // detect only performs a provisional classification based on sak, so further identification is required
             if (nfc_a.identify(u)) {
                 M5.Log.printf("PICC:%s %s %04X/%02X %u/%u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.atqa,
                               u.sak, u.userAreaSize(), u.totalSize());
