@@ -1,7 +1,7 @@
 /*
  * SPDX-FileCopyrightText: 2025 M5Stack Technology CO LTD
  *
-s * SPDX-License-Identifier: MIT
+ * SPDX-License-Identifier: MIT
  */
 /*!
   @file emulation_layer_a_ST25R3916.cpp
@@ -22,7 +22,9 @@ using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
+// clang-format off
 #pragma GCC optimize("O3")
+// clang-format on
 
 namespace {
 inline bool is_eof(const uint32_t irq)
@@ -273,7 +275,7 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_idle()
 
     _u.update();
     return update_idle();
-    return EmulationLayerA::State::Idle;
+    //    return EmulationLayerA::State::Idle;
 }
 
 EmulationLayerA::State ListenerST25R3916ForA::goto_ready()
@@ -290,11 +292,9 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_ready()
     _u.clear_bit_register8(REG_OPERATION_CONTROL, wu);  // Disable wakeup mode
     _u.writeModeDefinition(mode_listen_nfc_a);          // Disable bitrate detection and collision
 
-    _u.set_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Disable auto response for NFC-A
-
     _u.update();
     return update_ready();
-    return EmulationLayerA::State::Ready;
+    //    return EmulationLayerA::State::Ready;
 }
 
 EmulationLayerA::State ListenerST25R3916ForA::goto_active()
@@ -307,7 +307,7 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_active()
 
     _u.update();
     return update_active();
-    return EmulationLayerA::State::Active;
+    //    return EmulationLayerA::State::Active;
 }
 
 EmulationLayerA::State ListenerST25R3916ForA::goto_halt()
@@ -328,7 +328,7 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_halt()
 
     _u.update();
     return update_halt();
-    return EmulationLayerA::State::Halt;
+    //    return EmulationLayerA::State::Halt;
 }
 
 // ------------------------------------------------------------
@@ -421,6 +421,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_ready()
     }
 
     if (is_eof(irq32)) {
+        // M5_LIB_LOGE("OFF");
         return goto_off();
     }
     if (irq32 & (I_wu_a32 | I_wu_ax32)) {

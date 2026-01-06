@@ -17,7 +17,7 @@ using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::a::mifare::classic;
 
 // clang-format off
-#pragma GCC optimize("O3")
+//#pragma GCC optimize("O3")
 // clang-format on
 
 namespace {
@@ -77,23 +77,23 @@ void EmulationLayerA::update()
         case State::None:
             break;
         case State::Off:
-            if (_state != _prev) M5_LIB_LOGE("==OFF");
+            if (_state != _prev) M5_LIB_LOGD("==OFF");
             update_off();
             break;
         case State::Idle:
-            if (_state != _prev) M5_LIB_LOGE("==IDLE");
+            if (_state != _prev) M5_LIB_LOGD("==IDLE");
             update_idle();
             break;
         case State::Ready:
-            if (_state != _prev) M5_LIB_LOGE("==READY");
+            if (_state != _prev) M5_LIB_LOGD("==READY");
             update_ready();
             break;
         case State::Active:
-            if (_state != _prev) M5_LIB_LOGE("==ACTIVE");
+            if (_state != _prev) M5_LIB_LOGD("==ACTIVE");
             update_active();
             break;
         case State::Halt:
-            if (_state != _prev) M5_LIB_LOGE("==HALT");
+            if (_state != _prev) M5_LIB_LOGD("==HALT");
             update_halt();
             break;
         default:
