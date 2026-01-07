@@ -10,6 +10,7 @@
 #ifndef M5_UNIT_UNIFIED_NFC_NFC_NFCA_MIFARE_HPP
 #define M5_UNIT_UNIFIED_NFC_NFC_NFCA_MIFARE_HPP
 
+#include <cstdint>
 #include <array>
 
 namespace m5 {

@@ -102,11 +102,11 @@ uint32_t ListenerST25R3916ForA::get_irq(const uint32_t bits)
         _u._interrupt_occurred = false;
         uint32_t v{};
         (void)_u.readInterrupts(v);
-        _u._stored_irq |= v;
+        _u._stored_irq = _u._stored_irq | v;
     }
     uint32_t irq32 = _u._stored_irq & bits;
     if (irq32) {
-        _u._stored_irq &= ~irq32;
+        _u._stored_irq = _u._stored_irq & ~irq32;
     }
     return irq32;
 }

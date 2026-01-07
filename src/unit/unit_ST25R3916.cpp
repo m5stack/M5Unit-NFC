@@ -239,7 +239,7 @@ void UnitST25R3916::update(const bool /*force*/)
     if (!_using_irq) {
         uint32_t v{};
         (void)readInterrupts(v);
-        _stored_irq |= (v & _enabled_irq);
+        _stored_irq = _stored_irq | (v & _enabled_irq);
     }
 }
 
@@ -610,12 +610,12 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t bits, const uint32_t t
             _interrupt_occurred = false;
             uint32_t v{};
             if (readInterrupts(v)) {
-                _stored_irq |= v;
+                _stored_irq = _stored_irq | v;
             }
         }
         uint32_t irq32 = _stored_irq & bits;
         if (irq32) {
-            _stored_irq &= ~irq32;
+            _stored_irq = _stored_irq & ~irq32;
             return irq32;
         }
         std::this_thread::yield();

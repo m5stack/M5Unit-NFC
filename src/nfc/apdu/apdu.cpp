@@ -9,6 +9,7 @@
 */
 #include "apdu.hpp"
 #include <M5Utility.hpp>
+#include <inttypes.h>
 
 namespace {
 
@@ -167,7 +168,7 @@ void dump_tlv(const std::vector<TLV>& tlvs, const uint8_t depth)
     }
     for (auto&& t : tlvs) {
         printf("%*s", depth * 2, "");
-        printf("TLV:%2X %u %p\n", t.tag, t.len, t.v);
+        printf("TLV:%" PRIx32 " %" PRIu32 " %p\n", t.tag, t.len, t.v);
         if (t.is_constructed()) {
             dump_tlv(parse_tlv(t.v, t.len), depth + 1);
         }

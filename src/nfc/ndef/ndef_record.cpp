@@ -235,7 +235,7 @@ std::string Record::payloadAsString() const
                 std::string s(cptr + 1, cptr + _payload.size());
                 len      = snprintf(tmp, sizeof(tmp), "%s%s", get_uri_idc_string(up), s.c_str());
                 tmp[len] = '\0';
-                cptr     = tmp;
+                return std::string(tmp);
             }
             break;
         default:

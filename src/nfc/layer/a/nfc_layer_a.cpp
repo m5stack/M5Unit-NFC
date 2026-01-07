@@ -1035,7 +1035,7 @@ bool NFCLayerA::dump_iso_dep()
 
     uint8_t ver[256]{};
     uint16_t ver_len = sizeof(ver);
-    if (!fs.selectApplication(0u)) {
+    if (!fs.selectApplication()) {
         return false;
     }
     if (!fs.getApplicationIDs(aids)) {

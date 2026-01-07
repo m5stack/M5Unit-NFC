@@ -46,11 +46,11 @@ constexpr uint32_t default_irq = I_nfct32 | I_rxs32 | I_eon32 | I_eof32 | I_crc3
 
 struct ESP32Rng {
     using result_type = uint32_t;
-    static result_type min()
+    static constexpr result_type min()
     {
         return 0;
     }
-    static result_type max()
+    static constexpr result_type max()
     {
         return UINT32_MAX;
     }
@@ -110,11 +110,11 @@ uint32_t ListenerST25R3916ForF::get_irq(const uint32_t bits)
         _u._interrupt_occurred = false;
         uint32_t v{};
         (void)_u.readInterrupts(v);
-        _u._stored_irq |= v;
+        _u._stored_irq = _u._stored_irq | v;
     }
     uint32_t irq32 = _u._stored_irq & bits;
     if (irq32) {
-        _u._stored_irq &= ~irq32;
+        _u._stored_irq = _u._stored_irq & ~irq32;
     }
     return irq32;
 }

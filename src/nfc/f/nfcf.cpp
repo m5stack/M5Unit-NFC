@@ -252,6 +252,12 @@ bool PICC::emulate(const Type t, const uint8_t idm[8], const uint8_t pmm[8],
     return validEmulation();
 }
 
+bool operator==(const PICC& a, const PICC& b)
+{
+    return a.valid() && b.valid() && memcmp(a.idm, b.idm, sizeof(a.idm)) == 0 &&
+           memcmp(a.pmm, b.pmm, sizeof(a.pmm)) == 0 && a.type == b.type;
+}
+
 }  // namespace f
 }  // namespace nfc
 }  // namespace m5

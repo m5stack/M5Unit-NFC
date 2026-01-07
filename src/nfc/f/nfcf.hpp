@@ -461,10 +461,7 @@ struct PICC {
 };
 
 //! @brief Equal? (Only IDm,PMm)
-inline bool operator==(const PICC& a, const PICC& b)
-{
-    return a.valid() && b.valid() && a.idm == b.idm && a.pmm == b.pmm && a.type == b.type;
-}
+bool operator==(const PICC& a, const PICC& b);
 //! @brief Not equal?
 inline bool operator!=(const PICC& a, const PICC& b)
 {

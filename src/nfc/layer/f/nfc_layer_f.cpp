@@ -32,8 +32,9 @@ inline bool exists_known_system_code(const uint16_t code)
 
 inline bool exists_picc(const std::vector<PICC>& v, const PICC& picc)
 {
-    return std::find_if(v.begin(), v.end(),
-                        [&picc](const PICC& p) { return p.idm == picc.idm && p.pmm == picc.pmm; }) != v.end();
+    return std::find_if(v.begin(), v.end(), [&picc](const PICC& p) {
+               return memcmp(p.idm, picc.idm, sizeof(p.idm)) == 0 && memcmp(p.pmm, picc.pmm, sizeof(p.pmm)) == 0;
+           }) != v.end();
 }
 
 uint32_t get_block_list_size(const block_t* block_list, const uint8_t block_num)

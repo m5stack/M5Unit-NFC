@@ -119,7 +119,7 @@ void loop()
     if (nfc_a.detect(piccs)) {
         lcd.fillScreen(0);
         lcd.setCursor(0, 0);
-        uint32_t idx{};
+        uint16_t idx{};
         for (auto&& u : piccs) {
             M5.Speaker.tone(6000, 5);
             // detect only performs a provisional classification based on sak, so further identification is required
