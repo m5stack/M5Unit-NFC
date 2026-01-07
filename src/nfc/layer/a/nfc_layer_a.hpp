@@ -501,6 +501,9 @@ protected:
     bool mifare_ultralightC_authenticate1(uint8_t ek[8]);
     bool mifare_ultralightC_authenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16]);
 
+    bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
+    bool ntag_write_page(const uint8_t page, const uint8_t tx[4]);  // NTAG,UL,ULC
+
     bool dump_sector_structure(const m5::nfc::a::PICC& picc, const m5::nfc::a::mifare::classic::Key& key);
     bool dump_sector(const uint8_t sector);
     bool dump_page_structure(const uint16_t maxPage);
@@ -527,27 +530,21 @@ struct NFCLayerA::Adapter {
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms) = 0;
-    //    virtual bool mifare_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-    //                                   const uint32_t timeout_ms) = 0;
 
     virtual bool request(uint16_t& atqa) = 0;
     virtual bool wakeup(uint16_t& atqa)  = 0;
 
     virtual bool select(m5::nfc::a::PICC& picc)         = 0;
     virtual bool activate(const m5::nfc::a::PICC& picc) = 0;
-    virtual bool hlt() = 0;
+    virtual bool hlt()                                  = 0;
 
-    virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr)        = 0;  // READ
-    virtual bool nfca_write_block(const uint8_t addr, const uint8_t tx[16]) = 0;  // WRITE_BLOCK
-    virtual bool nfca_write_page(const uint8_t addr, const uint8_t tx[4])   = 0;  // WRITE_PAGE
-
+    // Due to the chip-side cryptographic mechanism, the following shall be treated as an independent API
+    virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr)                      = 0;
+    virtual bool nfca_write_block(const uint8_t addr, const uint8_t tx[16])               = 0;
     virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::PICC& picc, const uint8_t block,
                                              const m5::nfc::a::mifare::classic::Key& key) = 0;
     virtual bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
                                             const uint32_t arg = 0)                       = 0;
-
-    virtual bool ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage,
-                                const uint8_t epage) = 0;  // FAST_READ
 };
 ///@endcond
 

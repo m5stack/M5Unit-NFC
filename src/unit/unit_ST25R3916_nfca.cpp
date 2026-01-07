@@ -218,41 +218,7 @@ bool UnitST25R3916::configure_emulation_a()
 uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                        const uint32_t timeout_ms)
 {
-#if 0    
-    CHECK_MODE();
-
-    const auto rx_len_org = rx_len;
-    rx_len                = 0;
-    if (!rx || !rx_len_org || !tx || !tx_len) {
-        return false;
-    }
-    // m5::utility::log::dump(tx, tx_len, false);
-
-    if ((timeout_ms ? !write_fwt_timer(timeout_ms) : false) ||                //
-        !writeSettingsISO14443A(0x00 /*standard*/) || !clear_bit_register8(REG_AUXILIARY_DEFINITION,no_crc_rx) ||  //
-        !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||
-        !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
-        return false;
-    }
-
-    if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
-        M5_LIB_LOGD("Timeout");
-        return false;
-    }
-
-    uint16_t actual{};
-    auto bb = readFIFO(actual, rx, rx_len_org);
-    if (bb) {
-        M5_LIB_LOGV("readFIFO %u/%u %u/%u %02X", actual, rx_len_org, bb >> 16, bb & 0xFFFF, rx[0]);
-        rx_len = actual;
-        return bb;
-    }
-    M5_LIB_LOGD("Failed to readFIFO %u/%u", actual, rx_len_org);
-    return false;
-#else
     return nfcaTransmit(tx, tx_len, timeout_ms) && nfcaReceive(rx, rx_len, timeout_ms);
-
-#endif
 }
 
 bool UnitST25R3916::nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
@@ -619,29 +585,6 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
     return false;
 }
 
-bool UnitST25R3916::nfcaWritePage(const uint8_t page, const uint8_t tx[4])
-{
-    CHECK_MODE();
-
-    if (!tx) {
-        return false;
-    }
-
-    // M5_LIB_LOGD("WRITE_PAGE:%u", page);
-    // m5::utility::log::dump(tx, 4, false);
-
-    uint8_t cmd[6]{m5::stl::to_underlying(m5::nfc::a::Command::WRITE_PAGE), page};
-    std::memcpy(cmd + 2, tx, 4);
-
-    uint8_t rx[2]{};
-    uint16_t rx_len{2};
-    if (nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_WRITE2)) {
-        return true;
-    }
-    M5_LIB_LOGD("Failed to write page");
-    return false;
-}
-
 // -------------------------------- For MIFARE classic
 bool UnitST25R3916::mifare_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                       const uint32_t timeout_ms)
@@ -894,30 +837,6 @@ bool UnitST25R3916::mifareClassicValueBlock(const m5::nfc::a::Command cmd, const
         return false;
     }
     return !wait_for_FIFO(TIMEOUT_VALUE_BLOCK);  // Consider the timeout a success
-}
-
-// -------------------------------- For NTAG
-bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
-{
-    CHECK_MODE();
-
-    if (spage > epage) {
-        return false;
-    }
-    uint8_t cmd[3] = {m5::stl::to_underlying(Command::FAST_READ), spage, epage};
-
-    const uint8_t pages = epage - spage + 1;
-    uint16_t timeout    = (pages == 1)   ? TIMEOUT_FAST_READ
-                          : (pages < 4)  ? TIMEOUT_FAST_READ_4PAGE
-                          : (pages < 12) ? TIMEOUT_FAST_READ_12PAGE
-                          : (pages < 32) ? TIMEOUT_FAST_READ_32PAGE
-                                         : TIMEOUT_FAST_READ_32PAGE * 2;
-
-    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), timeout)) {
-        M5_LIB_LOGD("Failed to transceive");
-        return false;
-    }
-    return true;
 }
 
 }  // namespace unit

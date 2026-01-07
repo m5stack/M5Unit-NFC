@@ -1800,19 +1800,10 @@ public:
      */
     bool nfcaWriteBlock(const uint8_t block, const uint8_t tx[16]);
     /*!
-      @brief Write the 1 page (4 bytes)
-      @param tx Send buffer (at least 4 bytes)
-      @return True if successful
-      @pre The block must be authenticated if MIFARE classic
-     */
-    bool nfcaWritePage(const uint8_t page, const uint8_t tx[4]);
-
-    /*!
       @brief Hlt for PICC
       @return True if successful
      */
     bool nfcaHlt();
-
     ///@}
 
     // ----------------------------------------------------------------------------------------------
@@ -1852,20 +1843,6 @@ public:
       @return True if successful
      */
     bool mifareClassicValueBlock(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
-    ///@}
-
-    ///@name NTAG
-    ///@{
-    /*!
-      @brief Read between specified pages
-      @param rx Receiver buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
-      @param spage Start reading page
-      @param epage End reading page
-      @return True if successful
-      @warning Only PICC with the FAST_READ command
-     */
-    bool ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage);
     ///@}
 
     // ----------------------------------------------------------------------------------------------

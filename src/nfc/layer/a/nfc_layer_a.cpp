@@ -297,7 +297,7 @@ bool NFCLayerA::read4(uint8_t rx[4], const uint8_t addr)
 
     uint16_t rx_len{4};
     if (_activePICC.canFastRead()) {
-        return _impl->ntag_read_page(rx, rx_len, addr, addr);
+        return ntag_read_page(rx, rx_len, addr, addr);
     }
     uint8_t tmp[16]{};
     if (_impl->nfca_read_block(tmp, addr & ~0x03)) {
@@ -311,7 +311,7 @@ bool NFCLayerA::read16(uint8_t rx[16], const uint8_t addr)
 {
     uint16_t rx_len{16};
     return rx && _activePICC.valid() &&
-           (_activePICC.canFastRead() ? (_impl->ntag_read_page(rx, rx_len, addr, addr + 3) && rx_len == 16)
+           (_activePICC.canFastRead() ? (ntag_read_page(rx, rx_len, addr, addr + 3) && rx_len == 16)
                                       : _impl->nfca_read_block(rx, addr));
 }
 
@@ -331,10 +331,9 @@ bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t add
 
     const uint16_t last = get_last_user_block(t);
     uint16_t need_page  = ((rx_len + 3) >> 2);
-    //    uint16_t from       = std::min<uint16_t>(last, std::max<uint16_t>(addr, get_first_user_block(t)));
-    uint16_t from  = addr;
-    uint16_t to    = std::min<uint16_t>(from + need_page - 1, last);
-    uint16_t pages = to - from + 1;
+    uint16_t from       = addr;
+    uint16_t to         = std::min<uint16_t>(from + need_page - 1, last);
+    uint16_t pages      = to - from + 1;
 
     uint16_t read_size = pages << 2;  // 4 byte unit
     if (read_size > rx_len) {
@@ -360,7 +359,7 @@ bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t add
 
         M5_LIB_LOGD("  READ:%u-%u %u %u/%u", spage, epage, len, actual, pages);
 
-        if (!_impl->ntag_read_page(rx + rx_len, len, spage, epage) || len != (ps << 2)) {
+        if (!ntag_read_page(rx + rx_len, len, spage, epage) || len != (ps << 2)) {
             M5_LIB_LOGD("Failed to read %u-%u", spage, epage);
             return false;
         }
@@ -440,7 +439,7 @@ bool NFCLayerA::write4(const uint8_t addr, const uint8_t* tx, const uint16_t tx_
 
     uint8_t buf[4]{};
     memcpy(buf, tx, std::min<uint16_t>(4, tx_len));
-    return _impl->nfca_write_page(addr, buf);
+    return ntag_write_page(addr, buf);
 }
 
 bool NFCLayerA::write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len, const bool safety)
@@ -460,7 +459,7 @@ bool NFCLayerA::write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx
             return false;
         }
         for (uint_fast8_t i = 0; i < 4; ++i) {
-            if (!_impl->nfca_write_page(addr + i, buf + i * 4)) {
+            if (!ntag_write_page(addr + i, buf + i * 4)) {
                 return false;
             }
         }
@@ -572,15 +571,6 @@ bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const
         ++cur;
     }
     return written == tx_len;
-}
-
-bool NFCLayerA::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
-{
-    if (!tx || !tx_len || !_activePICC.valid()) {
-        return false;
-    }
-    return _activePICC.supportsNFC() ? write_using_write4(saddr, tx, tx_len)
-                                     : write_using_write16(saddr, tx, tx_len, DEFAULT_KEY);
 }
 
 bool NFCLayerA::dump(const Key& mkey)
@@ -1087,6 +1077,7 @@ bool NFCLayerA::mifare_classic_value_block(const m5::nfc::a::Command cmd, const 
     return _impl->mifare_classic_value_block(cmd, block, arg);
 }
 
+// for ndef
 bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
 {
     if (!rx || !rx_len || !_activePICC.valid()) {
@@ -1096,6 +1087,17 @@ bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
                                      : read_using_read16(rx, rx_len, saddr, DEFAULT_KEY);
 }
 
+// for NDEF
+bool NFCLayerA::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
+{
+    if (!tx || !tx_len || !_activePICC.valid()) {
+        return false;
+    }
+    return _activePICC.supportsNFC() ? write_using_write4(saddr, tx, tx_len)
+                                     : write_using_write16(saddr, tx, tx_len, DEFAULT_KEY);
+}
+
+//
 bool NFCLayerA::mifare_ultralightC_authenticate1(uint8_t ek[8])
 {
     uint8_t cmd[2] = {m5::stl::to_underlying(Command::AUTHENTICATE_1), 0x00};
@@ -1255,5 +1257,42 @@ bool NFCLayerA::mifare_get_version_L4(uint8_t* ver, uint16_t& ver_len)
     }
     return false;
 }
+
+bool NFCLayerA::ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
+{
+    if (!rx || !rx_len || spage > epage || !_activePICC.valid()) {
+        return false;
+    }
+    uint8_t cmd[3]      = {m5::stl::to_underlying(Command::FAST_READ), spage, epage};
+    const uint8_t pages = epage - spage + 1;
+    uint16_t timeout    = (pages == 1)   ? TIMEOUT_FAST_READ
+                          : (pages < 4)  ? TIMEOUT_FAST_READ_4PAGE
+                          : (pages < 12) ? TIMEOUT_FAST_READ_12PAGE
+                          : (pages < 32) ? TIMEOUT_FAST_READ_32PAGE
+                                         : TIMEOUT_FAST_READ_32PAGE * 2;
+
+    if (!_impl->transceive(rx, rx_len, cmd, sizeof(cmd), timeout)) {
+        M5_LIB_LOGD("Failed to transceive");
+        return false;
+    }
+    return true;
+}
+
+bool NFCLayerA::ntag_write_page(const uint8_t page, const uint8_t tx[4])
+{
+    if (!tx || !_activePICC.valid()) {
+        return false;
+    }
+
+    // M5_LIB_LOGD("WRITE_PAGE:%u", page);
+    // m5::utility::log::dump(tx, 4, false);
+    uint8_t cmd[6]{m5::stl::to_underlying(m5::nfc::a::Command::WRITE_PAGE), page};
+    std::memcpy(cmd + 2, tx, 4);
+
+    uint8_t rx[1]{};
+    uint16_t rx_len{1};
+    return _impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_WRITE1);
+}
+
 }  // namespace nfc
 }  // namespace m5

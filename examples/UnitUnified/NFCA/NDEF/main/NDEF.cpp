@@ -268,7 +268,7 @@ void loop()
                     if (clicked) {
                         M5.Speaker.tone(2000, 30);
                         lcd.fillScreen(TFT_BLUE);
-                        nfc_a.dump();
+                        // nfc_a.dump();
                         read_ndef();
                     } else if (held) {
                         M5.Speaker.tone(4000, 30);

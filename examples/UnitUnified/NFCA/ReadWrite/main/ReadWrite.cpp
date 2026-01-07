@@ -89,7 +89,7 @@ bool read_write(const uint8_t sblock, const char* msg, const Key& key)
     uint16_t rx_len = sizeof(buf);
 
     // Write
-    M5.Log.printf("================================ WRITE\n");
+    M5.Log.printf("================================ WRITE %u len:%zu\n", sblock, sizeof(buf));
     if (nfc_a.write(sblock, (const uint8_t*)msg, len, key)) {
         lcd.fillScreen(TFT_ORANGE);
         nfc_a.dump();
@@ -98,7 +98,10 @@ bool read_write(const uint8_t sblock, const char* msg, const Key& key)
         if (nfc_a.read(buf, rx_len, sblock, key)) {
             lcd.fillScreen(TFT_BLUE);
             M5.Log.printf("================================ VERIFY:%s\n", memcmp(buf, msg, len) == 0 ? "OK" : "NG");
-            m5::utility::log::dump(buf, rx_len, false);
+            if (memcmp(buf, msg, len)) {
+                m5::utility::log::dump(buf, rx_len, false);
+                M5_LOGE("VERIFY NG!!");
+            }
 
             // Clear
             memset(buf, 0, sizeof(buf));
@@ -162,7 +165,7 @@ void read_write_sector_structure(const uint8_t block, const Key& key)
     nfc_a.dump(block);
 }
 
-// Using read4,16/write4 for Ultralight,NTAG
+// Using read4,write4 for Ultralight,NTAG
 void read_write_page_structure(const PICC& picc, const uint8_t page)
 {
     constexpr char msg[] = "M5";
@@ -181,21 +184,19 @@ void read_write_page_structure(const PICC& picc, const uint8_t page)
     nfc_a.dump(aligned_page);
 
     // Read
-    uint8_t rbuf[16]{};
-    if (picc.isNTAG()) {
-        if (!nfc_a.read4(rbuf, page)) {
-            M5_LOGE("Failed to read");
-            return;
-        }
-    } else {
-        if (!nfc_a.read16(rbuf, aligned_page)) {
-            M5_LOGE("Failed to read");
-            return;
-        }
+    uint8_t rbuf[4]{};
+    if (!nfc_a.read4(rbuf, page)) {
+        M5_LOGE("Failed to read");
+        return;
     }
 
     bool verify = std::memcmp(rbuf, (const uint8_t*)msg, sizeof(msg)) == 0;
-    M5.Log.printf("Verify %s\n", verify ? "OK" : "NG");
+    M5.Log.printf("Verify %u %s\n", picc.isNTAG(), verify ? "OK" : "NG");
+    if (!verify) {
+        M5_LOGE("VERIFY NG!!");
+        m5::utility::log::dump(msg, sizeof(msg), false);
+        m5::utility::log::dump(rbuf, sizeof(rbuf), false);
+    }
 
     // Clear
     M5.Log.printf("Clear\n");
@@ -285,7 +286,8 @@ void loop()
                     M5.Speaker.tone(2000, 30);
                     // Need key if MIFARE classic, Ignore key if not MIFARE classic
                     read_all_user_area(keyA);
-                    auto ret = read_write(0, picc.userAreaSize() >= 120 ? long_msg : short_msg, keyA);
+                    auto ret =
+                        read_write(picc.firstUserBlock(), picc.userAreaSize() >= 120 ? long_msg : short_msg, keyA);
                     lcd.fillScreen(ret ? 0 : TFT_RED);
                 } else if (held) {
                     M5.Speaker.tone(4000, 30);
