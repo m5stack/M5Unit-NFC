@@ -44,7 +44,7 @@ m5::unit::UnitNFC unit{};  // I2C
 m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
 #elif defined(USING_UNIT_RFID2)
 #pragma message "Choose UnitRFID2"
-m5::unit::UnitRFID2 unit{}; // UnitRFID2 (M5Unit-RFID)
+m5::unit::UnitRFID2 unit{};  // UnitRFID2 (M5Unit-RFID)
 #else
 #error Choose unit please!
 #endif

@@ -87,12 +87,14 @@ bool NFCLayerA::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, con
 
 bool NFCLayerA::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
 {
+    M5_LIB_LOGE(">>>>>>>>>>>>> NOT YET");
     //    return _impl->transmit(tx, tx_len, timeout_ms);
     return false;
 }
 
 bool NFCLayerA::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
 {
+    M5_LIB_LOGE(">>>>>>>>>>>>> NOT YET");
     return false;
     //    return _impl->receive(rx, rx_len, timeout_ms, rx_crc);
 }
@@ -137,6 +139,7 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
         if (!select(picc)) {
             return false;
         }
+
         M5_LIB_LOGV("Detect:ATQA:%04X SAK:%02X %s (%s)", picc.atqa, picc.sak, picc.uidAsString().c_str(),
                     picc.typeAsString().c_str());
 
@@ -159,7 +162,7 @@ bool NFCLayerA::select(m5::nfc::a::PICC& picc)
     _activePICC = PICC{};
     if (_impl->select(picc)) {
         if (picc.isISO14443_4()) {
-            if (!_impl->nfca_request_ats(picc.ats)) {
+            if (!nfca_request_ats(picc.ats)) {
                 return false;
             }
         }
@@ -175,8 +178,8 @@ bool NFCLayerA::activate(const PICC& picc)
     if (_impl->activate(picc)) {
         if (picc.isISO14443_4()) {
             ATS discard{};
-            if (!_impl->nfca_request_ats(discard)) {
-                M5_LIB_LOGD("Failed to RATS");
+            if (!nfca_request_ats(discard)) {
+                M5_LIB_LOGE("Failed to RATS");
                 return false;
             }
         }
@@ -184,30 +187,32 @@ bool NFCLayerA::activate(const PICC& picc)
         M5_LIB_LOGV("ACTIVATED %s %u", _activePICC.uidAsString().c_str(), _activePICC.isISO14443_4());
         return true;
     }
-    M5_LIB_LOGD("Failed to activate");
+    M5_LIB_LOGE("Failed to activate");
     return false;
 }
 
 bool NFCLayerA::reactivate(const PICC& picc)
 {
     PICC tmp = picc;
-    uint16_t discard{};
-    if (deactivate()) {
-        m5::utility::delay(2);  // FDT
-        if (!wakeup(discard)) {
-            M5_LIB_LOGE("Failed to wakeup");
+    if (_activePICC.valid()) {
+        if (!deactivate()) {
+            M5_LIB_LOGE("Failed to deactivate");
             return false;
         }
         m5::utility::delay(2);  // FDT
-        if (!activate(tmp)) {
-            M5_LIB_LOGE("Failed to activate");
-            return false;
-        }
-        // m5::utility::delay(1);  // FDT
-        return true;
     }
-    M5_LIB_LOGD("Failed to deactivate");
-    return false;
+    uint16_t discard{};
+    if (!wakeup(discard)) {
+        M5_LIB_LOGE("Failed to wakeup");
+        return false;
+    }
+    m5::utility::delay(2);  // FDT
+    if (!activate(tmp)) {
+        M5_LIB_LOGE("Failed to activate");
+        return false;
+    }
+    // m5::utility::delay(1);  // FDT
+    return true;
 }
 
 bool NFCLayerA::deactivate()
@@ -215,12 +220,7 @@ bool NFCLayerA::deactivate()
     auto tmp    = _activePICC;
     _activePICC = PICC{};
 
-    if (tmp.isISO14443_4()) {
-        if (!_impl->deactivate(true)) {
-            return false;
-        }
-    }
-    return _impl->deactivate(false);
+    return tmp.isISO14443_4() ? nfca_deselect() : _impl->hlt();
 }
 
 bool NFCLayerA::identify(m5::nfc::a::PICC& picc)
@@ -250,9 +250,9 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         } else {
             //  Check historical bytes
             // M5_LIB_LOGE(">>>> Check historical bytes");
-            // m5::utility::log::dump(ats.historical.data(), ats.historical_len, false);
-            type = historical_bytes_to_type_sak20(picc.sub_type, picc.ats.historical.data(), picc.ats.historical_len,
-                                                  picc.atqa);
+            // m5::utility::log::dump(picc.ats.historical.data(), picc.ats.historical_len, false);
+            type = historical_bytes_to_type(picc.sub_type, picc.atqa, picc.sak, picc.ats.historical.data(),
+                                            picc.ats.historical_len);
         }
         // If it's still unclassify at this stage, read more in SystemFile
         if (type != Type::Unknown) {
@@ -260,15 +260,17 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
             picc.blocks = get_number_of_blocks(picc.type);
             return true;
         }
-        M5_LIB_LOGW("NEED MORE CHECK!! %u", _activePICC.isISO14443_4());
+        M5_LIB_LOGW("NEED MORE CHECK!!");
         return true;
     }
 
     if (picc.type == Type::MIFARE_Ultralight) {
         uint8_t ver[8]{};
         // GetVersion(L3)
-        if (_impl->mifare_get_version_L3(ver)) {
-            // ULEV, UL Nano, NTAG2xx
+        if (mifare_get_version_L3(ver)) {
+            // M5_LIB_LOGE("L3 OK");
+            // m5::utility::log::dump(ver, 8, false);
+            //  ULEV, UL Nano, NTAG2xx
             picc.type   = version3_to_type(ver);
             picc.blocks = get_number_of_blocks(picc.type);
             return true;
@@ -279,8 +281,7 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         }
         // Try ULC Auth
         uint8_t discard_ek[8]{};
-        picc.type =
-            _impl->mifare_ultralightc_authenticate1(discard_ek) ? Type::MIFARE_UltralightC : Type::MIFARE_Ultralight;
+        picc.type   = mifare_ultralightC_authenticate1(discard_ek) ? Type::MIFARE_UltralightC : Type::MIFARE_Ultralight;
         picc.blocks = get_number_of_blocks(picc.type);
         return true;
     }
@@ -290,10 +291,20 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
 
 bool NFCLayerA::read4(uint8_t rx[4], const uint8_t addr)
 {
+    if (!rx || !_activePICC.valid()) {
+        return false;
+    }
+
     uint16_t rx_len{4};
-    return rx && _activePICC.valid() &&
-           (_activePICC.canFastRead() ? (_impl->ntag_read_page(rx, rx_len, addr, addr) && rx_len == 4)
-                                      : _impl->nfca_read_block(rx, addr));
+    if (_activePICC.canFastRead()) {
+        return _impl->ntag_read_page(rx, rx_len, addr, addr);
+    }
+    uint8_t tmp[16]{};
+    if (_impl->nfca_read_block(tmp, addr & ~0x03)) {
+        memcpy(rx, tmp + 4 * (addr & 0x03), 4);
+        return true;
+    }
+    return false;
 }
 
 bool NFCLayerA::read16(uint8_t rx[16], const uint8_t addr)
@@ -327,7 +338,7 @@ bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t add
 
     uint16_t read_size = pages << 2;  // 4 byte unit
     if (read_size > rx_len) {
-        M5_LIB_LOGE("Not enough rx size %u-%u %u/%u", from, to, rx_len, read_size);
+        M5_LIB_LOGD("Not enough rx size %u-%u %u/%u", from, to, rx_len, read_size);
         rx_len = 0;
         return false;
     }
@@ -350,7 +361,7 @@ bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t add
         M5_LIB_LOGD("  READ:%u-%u %u %u/%u", spage, epage, len, actual, pages);
 
         if (!_impl->ntag_read_page(rx + rx_len, len, spage, epage) || len != (ps << 2)) {
-            M5_LIB_LOGE("Failed to read %u-%u", spage, epage);
+            M5_LIB_LOGD("Failed to read %u-%u", spage, epage);
             return false;
         }
         rx_len += len;
@@ -374,7 +385,7 @@ bool NFCLayerA::read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t a
 
     uint16_t read_size = blocks << 4;  // 16 byte unit
     if (read_size > rx_len) {
-        M5_LIB_LOGE("Not enough rx size %u-%u %u/%u", from, to, rx_len, read_size);
+        M5_LIB_LOGD("Not enough rx size %u-%u %u/%u", from, to, rx_len, read_size);
         rx_len = 0;
         return false;
     }
@@ -394,7 +405,7 @@ bool NFCLayerA::read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t a
             if (_activePICC.isMifareClassic()) {
                 M5_LIB_LOGD("   AUTH:%u/%u", cur, st_block);
                 if (!mifareClassicAuthenticateA(st_block, key)) {
-                    M5_LIB_LOGE("Failed to AUTH %u", st_block);
+                    M5_LIB_LOGD("Failed to AUTH %u", st_block);
                     return false;
                 }
             }
@@ -406,7 +417,7 @@ bool NFCLayerA::read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t a
         }
         M5_LIB_LOGD("   READ:%u %u/%u", cur, actual, blocks);
         if (!read16(rx + 16 * actual, cur)) {
-            M5_LIB_LOGE("Failed to read block:%u", cur);
+            M5_LIB_LOGD("Failed to read block:%u", cur);
             return false;
         }
         rx_len += 16;
@@ -486,12 +497,12 @@ bool NFCLayerA::write_using_write4(const uint8_t addr, const uint8_t* tx, const 
     uint16_t written{0};
 
     if (!is_user_block(t, from)) {
-        M5_LIB_LOGE("The write start position is not in the user area %u/%u", addr, from);
+        M5_LIB_LOGD("The write start position is not in the user area %u/%u", addr, from);
         return false;
     }
 
     if (tx_len > total) {
-        M5_LIB_LOGE("Not enough user area from %u-%u %u/%u", from, to, tx_len, total);
+        M5_LIB_LOGD("Not enough user area from %u-%u %u/%u", from, to, tx_len, total);
         return false;
     }
 
@@ -541,7 +552,7 @@ bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const
             if (_activePICC.isMifareClassic()) {
                 M5_LIB_LOGD("  AUTH:%u", st_block);
                 if (!mifareClassicAuthenticateA(st_block, key)) {
-                    M5_LIB_LOGE("Failed to AUTH %u", st_block);
+                    M5_LIB_LOGD("Failed to AUTH %u", st_block);
                     break;
                 }
             }
@@ -561,6 +572,15 @@ bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const
         ++cur;
     }
     return written == tx_len;
+}
+
+bool NFCLayerA::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
+{
+    if (!tx || !tx_len || !_activePICC.valid()) {
+        return false;
+    }
+    return _activePICC.supportsNFC() ? write_using_write4(saddr, tx, tx_len)
+                                     : write_using_write16(saddr, tx, tx_len, DEFAULT_KEY);
 }
 
 bool NFCLayerA::dump(const Key& mkey)
@@ -619,7 +639,7 @@ bool NFCLayerA::mifareClassicReadAccessCondition(uint8_t& c123, const uint8_t bl
     }
 
     if (!decode_access_bits(permissions, rbuf + 6)) {
-        M5_LIB_LOGE("Failed to decode access bits %u %02X:%02X:%02X:%02X",  //
+        M5_LIB_LOGD("Failed to decode access bits %u %02X:%02X:%02X:%02X",  //
                     st_block, rbuf[6], rbuf[7], rbuf[8], rbuf[9]);
         return false;
     }
@@ -644,7 +664,7 @@ bool NFCLayerA::mifareClassicWriteAccessCondition(const uint8_t block, const uin
     }
 
     if (!decode_access_bits(permissions, buf + 6)) {
-        M5_LIB_LOGE("Failed to decode access bits %u %02X:%02X:%02X:%02X",  //
+        M5_LIB_LOGD("Failed to decode access bits %u %02X:%02X:%02X:%02X",  //
                     st_block, buf[6], buf[7], buf[8], buf[9]);
         return false;
     }
@@ -653,7 +673,7 @@ bool NFCLayerA::mifareClassicWriteAccessCondition(const uint8_t block, const uin
     permissions[offset] = c123;
 
     if (!encode_access_bits(buf + 6, permissions)) {
-        M5_LIB_LOGE("Failed to encode access bits %02X:%02X:%02X:%02X",  //
+        M5_LIB_LOGD("Failed to encode access bits %02X:%02X:%02X:%02X",  //
                     permissions[0], permissions[1], permissions[2], permissions[3]);
         return false;
     }
@@ -678,18 +698,18 @@ bool NFCLayerA::mifareClassicIsValueBlock(bool& is_value_block, const uint8_t bl
     uint8_t buf[16]{}, stbuf[16]{};
 
     if (!read16(buf, block)) {
-        M5_LIB_LOGE("Failed to read %u", block);
+        M5_LIB_LOGD("Failed to read %u", block);
         return false;
     }
     if (!read16(stbuf, st_block)) {
-        M5_LIB_LOGE("Failed to read %u", st_block);
+        M5_LIB_LOGD("Failed to read %u", st_block);
         return false;
     }
 
     uint8_t permissions[4]{};
     auto offset = get_permission_offset(block);
     if (!decode_access_bits(permissions, stbuf + 6)) {
-        M5_LIB_LOGE("Failed to decode access bits %u/%u %02X:%02X:%02X:%02X",  //
+        M5_LIB_LOGD("Failed to decode access bits %u/%u %02X:%02X:%02X:%02X",  //
                     block, st_block, stbuf[6], stbuf[7], stbuf[8], stbuf[9]);
         return false;
     }
@@ -714,7 +734,7 @@ bool NFCLayerA::mifareClassicReadValueBlock(int32_t& value, const uint8_t block)
     uint8_t addr{};
     int32_t v{};
     if (!decode_value_block(v, addr, buf)) {
-        M5_LIB_LOGE("Failed to value block %u", block);
+        M5_LIB_LOGD("Failed to value block %u", block);
         M5_DUMPE(buf, sizeof(buf));
         return false;
     }
@@ -787,7 +807,7 @@ bool NFCLayerA::mifareUltralightChangeFormatToNDEF()
     // m5::utility::log::dump(cc.block, 4, false);
 
     if (!write4(TYPE2_CC_BLOCK, cc.block, sizeof(cc.block), false)) {
-        M5_LIB_LOGE("Failed to write");
+        M5_LIB_LOGD("Failed to write");
         return false;
     }
     return true;
@@ -802,8 +822,8 @@ bool NFCLayerA::mifareUltralightCAuthenticate(const uint8_t key[16])
 
     // Auth step 1. Receive ek(RndB)
     uint8_t ek_rndB[8]{};
-    if (!_impl->mifare_ultralightC_authenticate1(ek_rndB)) {
-        M5_LIB_LOGE("Failed to auth1");
+    if (!mifare_ultralightC_authenticate1(ek_rndB)) {
+        M5_LIB_LOGD("Failed to auth1");
         return false;
     }
 
@@ -813,7 +833,7 @@ bool NFCLayerA::mifareUltralightCAuthenticate(const uint8_t key[16])
     {
         TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, iv};
         if (!des.decrypt(rndB, ek_rndB, sizeof(ek_rndB), key16)) {
-            M5_LIB_LOGE("Failed to decrypt");
+            M5_LIB_LOGD("Failed to decrypt");
             return false;
         }
     }
@@ -840,15 +860,15 @@ bool NFCLayerA::mifareUltralightCAuthenticate(const uint8_t key[16])
     {
         TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_rndB};
         if (!des.encrypt(ek_AB, plain_AB, sizeof(plain_AB), key16)) {
-            M5_LIB_LOGE("Failed to encrypt");
+            M5_LIB_LOGD("Failed to encrypt");
             return false;
         }
     }
 
     // Auth step 2. Send [AF || ek(RndA||RndB')], Receive [RndA']
     uint8_t ek_rndA_rot_from_card[8]{};
-    if (!_impl->mifare_ultralightC_authenticate2(ek_rndA_rot_from_card, ek_AB)) {
-        M5_LIB_LOGE("Failed to auth2");
+    if (!mifare_ultralightC_authenticate2(ek_rndA_rot_from_card, ek_AB)) {
+        M5_LIB_LOGD("Failed to auth2");
         return false;
     }
 
@@ -863,7 +883,7 @@ bool NFCLayerA::mifareUltralightCAuthenticate(const uint8_t key[16])
 
     // Compare
     if (memcmp(rndA_rot, rndA_rot_from_card, 8) != 0) {
-        M5_LIB_LOGE("Not match");
+        M5_LIB_LOGD("Not match");
         m5::utility::log::dump(rndA_rot, 8, false);
         m5::utility::log::dump(rndA_rot_from_card, 8, false);
         return false;
@@ -924,7 +944,7 @@ bool NFCLayerA::dump_sector_structure(const PICC& picc, const Key& key)
         auto sblock = get_sector_trailer_block_from_sector(sector);
         if (mifareClassicAuthenticateA(sblock, key)) {
             if (!dump_sector(sector)) {
-                M5_LIB_LOGE("Failed to dump:%u", sector);
+                M5_LIB_LOGD("Failed to dump:%u", sector);
                 return false;
             }
         } else {
@@ -1034,7 +1054,7 @@ bool NFCLayerA::dump_iso_dep()
     if (!aids.empty()) {
         uint32_t idx{};
         for (auto& a : aids) {
-            M5_LIB_LOGE("  AID[%2u]:%02X:%02X:%02X", idx, a.aid[0], a.aid[1], a.aid[2]);
+            M5_LIB_LOGD("  AID[%2u]:%02X:%02X:%02X", idx, a.aid[0], a.aid[1], a.aid[2]);
             ++idx;
         }
     } else {
@@ -1076,13 +1096,101 @@ bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
                                      : read_using_read16(rx, rx_len, saddr, DEFAULT_KEY);
 }
 
-bool NFCLayerA::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
+bool NFCLayerA::mifare_ultralightC_authenticate1(uint8_t ek[8])
 {
-    if (!tx || !tx_len || !_activePICC.valid()) {
+    uint8_t cmd[2] = {m5::stl::to_underlying(Command::AUTHENTICATE_1), 0x00};
+    uint8_t rx[9]{};
+    uint16_t rx_len{9};
+    if (ek && _impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_AUTH1) && rx_len == 9 && rx[0] == 0xAF) {
+        memcpy(ek, rx + 1, 8);
+        return true;
+    }
+    // m5::utility::log::dump(rx, rx_len, false);
+    return false;
+}
+
+bool NFCLayerA::mifare_ultralightC_authenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16])
+{
+    if (!rx_ek || !tx_ek) {
         return false;
     }
-    return _activePICC.supportsNFC() ? write_using_write4(saddr, tx, tx_len)
-                                     : write_using_write16(saddr, tx, tx_len, DEFAULT_KEY);
+
+    uint8_t cmd[1 + 16] = {m5::stl::to_underlying(Command::AUTHENTICATE_2)};
+    memcpy(cmd + 1, tx_ek, 16);
+
+    uint8_t rx[9]{};
+    uint16_t rx_len{9};
+    if (_impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_AUTH2) && rx_len == 9 && rx[0] == 0x00) {
+        memcpy(rx_ek, rx + 1, 8);
+        return true;
+    }
+    return false;
+}
+
+bool NFCLayerA::nfca_deselect()
+{
+    uint8_t rx[1]{};
+    uint16_t rx_len = sizeof(rx);
+    uint8_t cmd[1]  = {m5::stl::to_underlying(Command::DESELECT)};
+    if (!_impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_DESELECT) || !rx_len) {
+        M5_LIB_LOGE("Failed to deselect %u", rx_len);
+        return false;
+    }
+    // Discard response
+    return true;
+}
+
+bool NFCLayerA::nfca_request_ats(m5::nfc::a::ATS& ats, const uint8_t fsdi, const uint8_t cid)
+{
+    if (fsdi > 8) {
+        return false;
+    }
+
+    uint8_t rx[256]{};  // 2^((fsdi+4)/2) max fsdi = 8 ==> 256
+    uint16_t rx_len = sizeof(rx);
+    uint8_t cmd[]   = {m5::stl::to_underlying(Command::RATS), 0x00};
+    cmd[1]          = ((fsdi & 0x0F) << 4) | (cid & 0x0F);
+
+    if (!_impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_RATS) || rx_len < 2) {
+        M5_LIB_LOGE("Failed to RATS %u", rx_len);
+        M5_DUMPE(cmd, sizeof(cmd));
+        m5::utility::log::dump(rx, rx_len, false);
+        return false;
+    }
+    // M5_LIB_LOGE(">>>>ATS %u bytes", rx_len);
+    // m5::utility::log::dump(rx, rx_len, false);
+
+    const uint32_t ats_len = rx[0];
+    uint32_t offset{};
+    ats.TL = rx[offset++];
+    ats.T0 = rx[offset++];
+    if (offset < ats_len && ats.validTA()) {
+        ats.TA = rx[offset++];
+    }
+    if (offset < ats_len && ats.validTB()) {
+        ats.TB = rx[offset++];
+    }
+    if (offset < ats_len && ats.validTC()) {
+        ats.TC = rx[offset++];
+    }
+    ats.historical_len = 0;
+    if (offset < ats_len) {
+        const uint32_t hlen = std::min<uint32_t>(ats.historical.size(), ats_len - offset);
+        memcpy(ats.historical.data(), rx + offset, hlen);
+        ats.historical_len = hlen;
+    }
+    return true;
+}
+
+bool NFCLayerA::mifare_get_version_L3(uint8_t ver[8])
+{
+    if (!ver) {  // Skip check valid (Since it targets unconfirmed items)
+        return false;
+    }
+    // GetVerison (L3)
+    uint8_t cmd[1]  = {m5::stl::to_underlying(Command::GET_VERSION)};
+    uint16_t rx_len = 8;
+    return _impl->transceive(ver, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION);
 }
 
 bool NFCLayerA::mifare_get_version_L4(uint8_t* ver, uint16_t& ver_len)
@@ -1090,7 +1198,7 @@ bool NFCLayerA::mifare_get_version_L4(uint8_t* ver, uint16_t& ver_len)
     auto org_ver_len = ver_len;
     ver_len          = 0;
 
-    if (!ver || org_ver_len < 8) {
+    if (!ver || org_ver_len < 8) {  // Skip check valid (Since it targets unconfirmed items)
         return false;
     }
 
@@ -1109,7 +1217,7 @@ bool NFCLayerA::mifare_get_version_L4(uint8_t* ver, uint16_t& ver_len)
     acc.reserve(org_ver_len);
 
     if (!_isoDEP.transceiveINF(rx, rx_len, cmd, sizeof(cmd)) || (rx_len < 2)) {
-        M5_LIB_LOGE("Failed to GetVersionL4 %u", rx_len);
+        M5_LIB_LOGD("Failed to GetVersionL4 %u", rx_len);
         cfg.fwt_ms = saved;
         _isoDEP.config(cfg);
         return false;

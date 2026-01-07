@@ -177,12 +177,9 @@ Type sak_to_type(const uint8_t sak);
 Type version3_to_type(const uint8_t info[8]);
 //!  @brief Inferring the type from GetVersion L4
 Type version4_to_type(uint8_t& sub, const uint8_t info[8]);
-//! @brief Historical bytes to type on SAK 0x18
-Type historical_bytes_to_type_sak18(uint8_t& sub, const uint8_t* bytes, const uint8_t len);
-//! @brief Historical bytes to type on SAK 0x08
-Type historical_bytes_to_type_sak08(uint8_t& sub, const uint8_t* bytes, const uint8_t len);
-//! @brief Historical bytes to type on SAK 0x20
-Type historical_bytes_to_type_sak20(uint8_t& sub, const uint8_t* bytes, const uint8_t len, const uint16_t atqa);
+//! @brief Historical bytes to type
+Type historical_bytes_to_type(uint8_t& sub, const uint16_t atqa, const uint8_t sak, const uint8_t* bytes,
+                              const uint8_t len);
 
 //! @brief Gets the number of blocks
 uint16_t get_number_of_blocks(const Type t);
@@ -219,26 +216,60 @@ struct ATS {
     union {
         uint8_t header[5]{};
         struct {
-            uint8_t tl;   // length
-            uint8_t t0;   // format
-            uint8_t ta1;  // interface DS/DR
-            uint8_t tb1;  // interface FWI/SFGI
-            uint8_t tc1;  // code protocol options
+            uint8_t TL;  //!< Length byte
+            uint8_t T0;  //!< Format byte
+            uint8_t TA;  //!< Interface DS/DR
+            uint8_t TB;  //!< Interface FWI/SFGI
+            uint8_t TC;  //!< Code protocol options
         };
     };
-    std::array<uint8_t, 32> historical{};
-    uint8_t historical_len{};
-#if 0
-    //
-    uint8_t fsci{};        // (T0 under 4bit)
-    uint16_t fsd{};        // Frame Size Device
-    uint16_t fsc{};        // Frame Size Card
-    uint8_t supportedD{};  // bitRate combo  (106/212/424/848)
-    bool supportsCID{};
-    bool supportsNAD{};
-#endif
+    std::array<uint8_t, 32> historical{};  //!< Historical bytes(optional)
+    uint8_t historical_len{};              //!< Length of historical bytes
 
-    Type identify() const;
+    inline bool validTA() const
+    {
+        return T0 & 0x10;
+    }
+    inline bool validTB() const
+    {
+        return T0 & 0x20;
+    }
+    inline bool validTC() const
+    {
+        return T0 & 0x40;
+    }
+    inline uint8_t fsci() const
+    {
+        return T0 & 0x0F;
+    }
+    inline Bitrate maximumBitrateDR() const
+    {
+        return validTA() ? static_cast<Bitrate>(TA & 0x07) : Bitrate::Invalid;
+    }
+    inline Bitrate maximumBitrateDS() const
+    {
+        return validTA() ? static_cast<Bitrate>((TA >> 4) & 0x07) : Bitrate::Invalid;
+    }
+    inline bool supportsAsymmetricSpeed() const
+    {
+        return validTA() && (TA & 0x80);
+    }
+    inline uint8_t fwi() const
+    {
+        return validTB() ? (TB >> 4) : 0x00;
+    }
+    inline uint8_t sfgi() const
+    {
+        return validTB() ? (TB & 0x0F) : 0x00;
+    }
+    inline bool supportsNAD() const
+    {
+        return validTC() && (TC & 0x01);
+    }
+    inline bool supportsCID() const
+    {
+        return validTC() && (TC & 0x02);
+    }
 };
 
 /*!
@@ -457,7 +488,6 @@ constexpr uint32_t TIMEOUT_WRITE2{10};
 constexpr uint32_t TIMEOUT_VALUE_BLOCK{5};  // Value block operation
 constexpr uint32_t TIMEOUT_RATS{5};
 constexpr uint32_t TIMEOUT_DESELECT{5};
-
 ///@}
 
 ///@name 4bit ACK

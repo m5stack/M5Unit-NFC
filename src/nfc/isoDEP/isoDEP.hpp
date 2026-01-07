@@ -25,14 +25,18 @@ namespace isodep {
 uint32_t fwi_to_ms(const uint8_t fwi, const float fc);
 
 struct config_t {
+#if 0
     // PICCが受けられる最大INF（FSC）
     uint16_t fsc{256};
-
     // PCD側の送受信制約（Unit依存: FIFO/内部バッファ）
     // ISO-DEP フレーム全体(PCB+CID/NAD+INF)をこのサイズ以内に収める
     uint16_t pcd_max_frame_tx{256};
     uint16_t pcd_max_frame_rx{256};
-
+#else
+    uint16_t fsc{64};
+    uint16_t pcd_max_frame_tx{64};
+    uint16_t pcd_max_frame_rx{64};
+#endif
     // 待ち（FWT/WTX）は後で詰められるように一旦msで持つ
     uint32_t fwt_ms{100};
     uint32_t wtx_max_ms{5000};
@@ -54,10 +58,10 @@ struct RxInfo {
 
 class IsoDEP {
 public:
-    explicit IsoDEP(NFCLayerInterface& layer) : _tr{layer}
+    explicit IsoDEP(NFCLayerInterface& layer) : _layer{layer}
     {
     }
-    IsoDEP(NFCLayerInterface& layer, const config_t& c) : _tr{layer}, _cfg{c}
+    IsoDEP(NFCLayerInterface& layer, const config_t& c) : _layer{layer}, _cfg{c}
     {
     }
 
@@ -80,7 +84,7 @@ public:
     bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
 
 private:
-    NFCLayerInterface& _tr;
+    NFCLayerInterface& _layer;
     config_t _cfg{};
     uint8_t _block_num{};  // I-Block BN (0/1)
 };

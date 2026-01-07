@@ -1813,20 +1813,6 @@ public:
      */
     bool nfcaHlt();
 
-    /*!
-      @brief Request for answer to select (RATS)
-      @param[out] ats Answer to select (ATS)
-      @param fsdi Frame Size for PCD Integer
-      @param cid Card Identifier
-      @return True if successful
-     */
-    bool nfcaRequestATS(m5::nfc::a::ATS& ats, const uint8_t fsdi = 5, const uint8_t cid = 0);
-    /*!
-      @brief Deselect ISO/IEC 14443-4 PICC
-      @return True if successful
-      @note Call before nfcaHlt if ISO/IEC 14443-4 PICC
-     */
-    bool nfcaDeselect();
     ///@}
 
     // ----------------------------------------------------------------------------------------------
@@ -1866,32 +1852,6 @@ public:
       @return True if successful
      */
     bool mifareClassicValueBlock(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
-
-    /*!
-      @brief Authentication step 1 for UltralightC
-      @param[out] ek ek(RndB) 8-byte encrypted PICC random number RndB
-      @return True if successful
-     */
-    bool mifareUltralightCAuthenticate1(uint8_t ek[8]);
-    /*!
-      @brief Authentication step 1 for UltralightC
-      @param[out] rx_ek ek(RndA') 8-byte encrypted, shifted PCD random number RndA'
-      @param tx_ek ek(RandA || RndB') 16-byte encrypted random numbers RNDA concatenated by RndB'
-      @return True if successful
-     */
-    bool mifareUltralightCAuthenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16]);
-    /*!
-      @brief GetVersion (L3)
-      @param[out] ver Version information
-      @return True if successful
-     */
-    bool mifareGetVersion3(uint8_t ver[8]);
-    /*!
-      @brief GetVersion (L4)
-      @param[out] ver Version information
-      @return True if successful
-     */
-    bool mifareGetVersion4(uint8_t ver[8]);
     ///@}
 
     ///@name NTAG
@@ -2079,27 +2039,11 @@ protected:
     bool modify_interrupts(const uint32_t clr, const uint32_t set);
     inline bool enable_interrupts(const uint32_t mask)
     {
-#if 0
-        if (writeMaskInterrupts(~mask)) {
-            _enabled_irq |= mask;
-            return true;
-        }
-        return false;
-#else
         return modify_interrupts(mask, 0);
-#endif
     }
     inline bool disable_interrupts(const uint32_t mask)
     {
-#if 0
-        if (writeMaskInterrupts(mask)) {
-            _enabled_irq &= ~mask;
-            return true;
-        }
-        return false;
-#else
         return modify_interrupts(0, mask);
-#endif
     }
 
     bool enable_osc();

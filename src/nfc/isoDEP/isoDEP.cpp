@@ -215,15 +215,6 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
     uint16_t tx_off{};
     uint16_t rx_written{};
 
-    // helper: TX then RX
-    auto exchange = [&](const uint8_t* tx, const uint16_t tx_len, uint8_t* rx, uint16_t& rx_len,
-                        const uint32_t timeout_ms) -> bool {
-        if (!_tr.transmit(tx, tx_len, timeout_ms)) {
-            return false;
-        }
-        return _tr.receive(rx, rx_len, timeout_ms);
-    };
-
     // Transmit chaining
     while (tx_off < tx_inf_len) {
         const uint16_t remain = tx_inf_len - tx_off;
@@ -250,7 +241,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
             uint32_t timeout_ms = _cfg.fwt_ms;
 
             // Send I-Block and receive first frame
-            if (!_tr.transceive(rx_buf, rlen, tx_buf, tpos, timeout_ms)) {
+            if (!_layer.transceive(rx_buf, rlen, tx_buf, tpos, timeout_ms)) {
                 if (retries++ < _cfg.max_retries) continue;
                 return false;
             }
@@ -305,7 +296,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
 
                     // Receive next frame after WTX-ACK (do NOT resend I-Block)
                     rlen = sizeof(rx_buf);
-                    if (!exchange(s_ack, sp, rx_buf, rlen, wtx_timeout)) {
+                    if (!_layer.transceive(rx_buf, rlen, s_ack, sp, wtx_timeout)) {
                         if (retries++ < _cfg.max_retries) {
                             break;  // resend I-Block
                         }
@@ -380,7 +371,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                         if (_cfg.use_cid) r_ack[rp++] = (uint8_t)(_cfg.cid & 0x0F);
 
                         uint16_t rlen2 = sizeof(rx_buf);
-                        if (!exchange(r_ack, rp, rx_buf, rlen2, _cfg.fwt_ms)) {
+                        if (!_layer.transceive(rx_buf, rlen2, r_ack, rp, _cfg.fwt_ms)) {
                             return false;
                         }
 
@@ -413,7 +404,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                                     mul_clamp_u32(_cfg.fwt_ms, (uint32_t)wtxm, _cfg.wtx_max_ms);
 
                                 rlen2 = sizeof(rx_buf);
-                                if (!exchange(s_ack, sp, rx_buf, rlen2, wtx_timeout)) {
+                                if (!_layer.transceive(rx_buf, rlen2, s_ack, sp, wtx_timeout)) {
                                     return false;
                                 }
                                 continue;
@@ -425,7 +416,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
 
                                 // ACK: receive again
                                 rlen2 = sizeof(rx_buf);
-                                if (!_tr.receive(rx_buf, rlen2, _cfg.fwt_ms)) {
+                                if (!_layer.receive(rx_buf, rlen2, _cfg.fwt_ms)) {
                                     return false;
                                 }
                                 continue;
@@ -466,6 +457,9 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
     }
 
     rx_inf_len = rx_written;
+
+    // M5_LIB_LOGE(">>>> INF %u", rx_inf_len);
+    // m5::utility::log::dump(rx_inf, rx_inf_len, false);
     return true;
 }
 
@@ -564,7 +558,7 @@ bool IsoDEP::transceiveAPDU(uint8_t* rx, uint16_t& rx_len, const uint8_t* cmd, c
 bool IsoDEP::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                         const uint32_t timeout_ms)
 {
-    return _tr.transceive(rx, rx_len, tx, tx_len, timeout_ms);
+    return _layer.transceive(rx, rx_len, tx, tx_len, timeout_ms);
 }
 
 }  // namespace isodep

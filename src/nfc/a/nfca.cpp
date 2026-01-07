@@ -247,6 +247,38 @@ constexpr const uint8_t* emu_ver3_table[] = {
     nullptr,                                                                                             //
 };
 
+Type historical_bytes_to_type_sak18(uint8_t& sub, const uint8_t* bytes, const uint8_t len)
+{
+    return Type::Unknown;
+}
+
+Type historical_bytes_to_type_sak08(uint8_t& sub, const uint8_t* bytes, const uint8_t len)
+{
+    return Type::Unknown;
+}
+
+Type historical_bytes_to_type_sak20(uint8_t& sub, const uint16_t atqa, const uint8_t* bytes, const uint8_t len)
+{
+    Type t = Type::Unknown;
+    sub    = 0;
+
+    if (bytes && len >= 7) {
+        // m5::utility::log::dump(bytes, len, false);
+        for (auto&& h : historical_table_sak20) {
+            // m5::utility::log::dump(h.h.data(), h.h.size(), false);
+            if (memcmp(h.h.data(), bytes, h.h.size()) == 0) {
+                t   = h.t;
+                sub = m5::stl::to_underlying(h.sub);
+                break;
+            }
+        }
+        if (t == Type::MIFARE_Plus_2K) {
+            t = static_cast<Type>(m5::stl::to_underlying(t) + ((atqa & 0x000F) == 0x02));  // 2/4K
+        }
+    }
+    return t;
+}
+
 }  // namespace
 
 namespace m5 {
@@ -475,35 +507,20 @@ Type version4_to_type(uint8_t& sub, const uint8_t ver[8])
     return type;
 }
 
-Type historical_bytes_to_type_sak18(uint8_t& sub, const uint8_t* bytes, const uint8_t len)
+Type historical_bytes_to_type(uint8_t& sub, const uint16_t atqa, const uint8_t sak, const uint8_t* bytes,
+                              const uint8_t len)
 {
-    return Type::Unknown;
-}
-
-Type historical_bytes_to_type_sak08(uint8_t& sub, const uint8_t* bytes, const uint8_t len)
-{
-    return Type::Unknown;
-}
-Type historical_bytes_to_type_sak20(uint8_t& sub, const uint8_t* bytes, const uint8_t len, const uint16_t atqa)
-{
-    Type t = Type::Unknown;
-    sub    = 0;
-
-    if (bytes && len >= 7) {
-        // m5::utility::log::dump(bytes, len, false);
-        for (auto&& h : historical_table_sak20) {
-            // m5::utility::log::dump(h.h.data(), h.h.size(), false);
-            if (memcmp(h.h.data(), bytes, h.h.size()) == 0) {
-                t   = h.t;
-                sub = m5::stl::to_underlying(h.sub);
-                break;
-            }
-        }
-        if (t == Type::MIFARE_Plus_2K) {
-            t = static_cast<Type>(m5::stl::to_underlying(t) + ((atqa & 0x000F) == 0x02));  // 2/4K
-        }
+    switch (sak) {
+        case 0x20:
+            return historical_bytes_to_type_sak20(sub, atqa, bytes, len);
+        case 0x18:
+            return historical_bytes_to_type_sak18(sub, bytes, len);
+        case 0x08:
+            return historical_bytes_to_type_sak08(sub, bytes, len);
+        default:
+            break;
     }
-    return t;
+    return Type::Unknown;
 }
 
 const uint8_t* get_version3_response(const Type t)

@@ -70,7 +70,7 @@ void append_parity(uint8_t* out, const uint32_t out_len, const uint8_t* in, cons
 {
     const uint32_t required_size = (in_len * 9 + 7) >> 3;
     if (out_len < required_size) {
-        M5_LIB_LOGE("Not enough out %u/%u", out_len, required_size);
+        M5_LIB_LOGD("Not enough out %u/%u", out_len, required_size);
         return;
     }
 
@@ -177,7 +177,7 @@ bool UnitST25R3916::configure_emulation_a()
         uint8_t rv{};
         read_register8(reg, rv);
         if(rv != v){
-            M5_LIB_LOGE("[%02X]:%02X/%02X %08o/%08o", reg, rv,v, OCB(rv), OCB(v));
+            M5_LIB_LOGD("[%02X]:%02X/%02X %08o/%08o", reg, rv,v, OCB(rv), OCB(v));
             write_register8(reg, v);
         }
         ++reg;
@@ -236,7 +236,7 @@ uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint
     }
 
     if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
-        M5_LIB_LOGE("Timeout");
+        M5_LIB_LOGD("Timeout");
         return false;
     }
 
@@ -289,13 +289,17 @@ bool UnitST25R3916::nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
 
     uint16_t actual{};
     auto bb = readFIFO(actual, rx, rx_len_org);
-    if (bb) {
-        M5_LIB_LOGV("readFIFO %u/%u %u/%u %02X", actual, rx_len_org, bb >> 16, bb & 0xFFFF, rx[0]);
-        rx_len = actual;
-        return bb;
+    if (!bb) {
+        M5_LIB_LOGD("Failed to readFIFO %u/%u", actual, rx_len_org);
+        return false;
     }
-    M5_LIB_LOGD("Failed to readFIFO %u/%u", actual, rx_len_org);
-    return false;
+
+    // Check NACK
+    uint16_t bytes = bb & 0xffff;
+    uint16_t bits  = (bb >> 16) & 0xFF;
+    M5_LIB_LOGV("readFIFO %u/%u %u/%u %02X", actual, rx_len_org, bb >> 16, bb & 0xFFFF, rx[0]);
+    rx_len = actual;
+    return (bytes == 1 && bits == 4) ? rx[0] == ACK_NIBBLE : true;
 }
 
 bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
@@ -310,12 +314,12 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
         !writeSettingsISO14443A(antcl) || !set_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||
         !writeDirectCommand(request ? CMD_TRANSMIT_REQA : CMD_TRANSMIT_WUPA)) {
-        M5_LIB_LOGE("Failed to %s", request ? "REQA" : "WUPA");
+        M5_LIB_LOGD("Failed to %s", request ? "REQA" : "WUPA");
         return false;
     }
 
     auto irq = wait_for_interrupt(I_rxe32 | I_rxs32 | I_col32, TIMEOUT_REQ_WUP);
-    // M5_LIB_LOGE("IRQ:%08X", irq);
+    // M5_LIB_LOGD("IRQ:%08X", irq);
 
     if (!is_irq32_rxe(irq) && is_irq32_rxs(irq)) {
         auto timeout_at = m5::utility::millis() + TIMEOUT_REQ_WUP;
@@ -337,14 +341,14 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
         uint16_t actual{};
         if (readFIFO(actual, rbuf, sizeof(rbuf)) && actual == 2) {
             atqa = ((uint16_t)rbuf[1] << 8) | (uint16_t)rbuf[0];
-            // M5_LIB_LOGE("ATQA:%04X %u", atqa, actual);
+            // M5_LIB_LOGD("ATQA:%04X %u", atqa, actual);
             //  When ocuur collisions, the ATQA value is inaccurate
             return true;
         }
         return false;
     }
 
-    // M5_LIB_LOGE("Error: %08X", irq);
+    // M5_LIB_LOGD("Error: %08X", irq);
     return false;
 #if 0
     if (has_irq32_error(irq)) {
@@ -386,7 +390,7 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
         auto irq  = wait_for_interrupt(I_rxe32 | I_col32, TIMEOUT_ANTICOLL);
         collision = is_irq32_collision(irq);
         if ((!collision && !is_irq32_rxe(irq))) {
-            M5_LIB_LOGE("Failed Lv::%u col:%u %08X", lv, collision, irq);
+            M5_LIB_LOGD("Failed Lv::%u col:%u %08X", lv, collision, irq);
             return false;
         }
         uint8_t cd{};
@@ -450,12 +454,12 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
     // Select
     uint16_t rx_len{3};
     if (!nfcaTransceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
-        M5_LIB_LOGE("Failed to select");
+        M5_LIB_LOGD("Failed to select");
         return false;
     }
 
     uint8_t sak = rbuf[0];
-    // M5_LIB_LOGE(">>>> SAK:%02X (%u, %u)  %u ",  //
+    // M5_LIB_LOGD(">>>> SAK:%02X (%u, %u)  %u ",  //
     //            sak, is_sak_completed(sak), is_sak_completed_14443_4(sak), sak_to_type(sak));
 
     //   Completed?
@@ -467,9 +471,7 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
         picc.blocks = get_number_of_blocks(picc.type);
         completed   = true;
         return true;
-    }
-
-    if (is_sak_completed(sak)) {
+    } else if (is_sak_completed(sak)) {
         picc.size = 1 + lv * 3;
         picc.sak  = sak;
         picc.type =
@@ -477,7 +479,7 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
         picc.blocks = get_number_of_blocks(picc.type);
         completed   = true;
     }
-    // M5_LIB_LOGE(">>>> Select %02X %u %u", sak, completed, has_sak_dependent_bit(sak));
+    // M5_LIB_LOGD(">>>> Select %02X %u %u", sak, completed, has_sak_dependent_bit(sak));
     return completed || has_sak_dependent_bit(sak);  // completed or continue
 }
 
@@ -496,7 +498,7 @@ bool UnitST25R3916::nfcaSelect(const PICC& picc)
     uint8_t offset{};
 
     if (!writeSettingsISO14443A(0x00 /*standard*/) || !clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx)) {
-        M5_LIB_LOGE("Failed to settings");
+        M5_LIB_LOGD("Failed to settings");
         return false;
     }
 
@@ -516,14 +518,14 @@ bool UnitST25R3916::nfcaSelect(const PICC& picc)
         // Select
         uint16_t rx_len{3};
         if (!nfcaTransceive(rbuf, rx_len, select_frame, sizeof(select_frame), TIMEOUT_SELECT) || rx_len != 3) {
-            M5_LIB_LOGE("Failed to select");
+            M5_LIB_LOGD("Failed to select");
             return false;
         }
         completed = is_sak_completed(rbuf[0]) || is_sak_completed_14443_4(rbuf[0]);
 
         ++lv;
     } while (!completed && lv < 4);
-    // M5_LIB_LOGE("   >>>> SELECT Result:%u", completed);
+    // M5_LIB_LOGD("   >>>> SELECT Result:%u", completed);
 
     return completed;
 }
@@ -547,7 +549,7 @@ bool UnitST25R3916::nfcaHlt()
             !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
             !writeFIFO(hlt_frame, sizeof(hlt_frame)) || !writeNumberOfTransmittedBytes(sizeof(hlt_frame), 0) ||  //
             !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
-            M5_LIB_LOGE("Failed to hlt");
+            M5_LIB_LOGD("Failed to hlt");
             return false;
         }
     }
@@ -598,10 +600,10 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
                 rx[0] == ACK_NIBBLE) {
                 return true;
             }
-            M5_LIB_LOGE("Faile to WRITE2");
+            M5_LIB_LOGD("Faile to WRITE2");
             return false;
         } else {
-            M5_LIB_LOGE("Faile to WRITE1");
+            M5_LIB_LOGD("Faile to WRITE1");
             return false;
         }
     }
@@ -613,7 +615,7 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
             return true;
         }
     }
-    M5_LIB_LOGE("Faile to WRITE");
+    M5_LIB_LOGD("Faile to WRITE");
     return false;
 }
 
@@ -625,7 +627,7 @@ bool UnitST25R3916::nfcaWritePage(const uint8_t page, const uint8_t tx[4])
         return false;
     }
 
-    // M5_LIB_LOGE("WRITE_PAGE:%u", page);
+    // M5_LIB_LOGD("WRITE_PAGE:%u", page);
     // m5::utility::log::dump(tx, 4, false);
 
     uint8_t cmd[6]{m5::stl::to_underlying(m5::nfc::a::Command::WRITE_PAGE), page};
@@ -636,45 +638,8 @@ bool UnitST25R3916::nfcaWritePage(const uint8_t page, const uint8_t tx[4])
     if (nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_WRITE2)) {
         return true;
     }
-    M5_LIB_LOGE("Failed to write page");
+    M5_LIB_LOGD("Failed to write page");
     return false;
-}
-
-bool UnitST25R3916::nfcaRequestATS(m5::nfc::a::ATS& ats, const uint8_t fsdi, const uint8_t cid)
-{
-    uint8_t rx[128]{};
-    uint16_t rx_len = sizeof(rx);
-    uint8_t cmd[]   = {m5::stl::to_underlying(Command::RATS), 0x00};
-    cmd[1]          = ((fsdi & 0x0F) << 4) | (cid & 0x0F);
-    cmd[1]          = 0x80;
-
-    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_RATS) || rx_len < 7) {
-        //       if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), 300) || rx_len < 7) {
-        M5_LIB_LOGE("Failed to RATS %u", rx_len);
-        M5_DUMPE(cmd, sizeof(cmd));
-        return false;
-    }
-    // M5_LIB_LOGE(">>>>ATS %u bytes", rx_len);
-    // m5::utility::log::dump(rx, rx_len, false);
-
-    memcpy(ats.header, rx, 5);
-    if (7 < rx_len) {
-        memcpy(ats.historical.data(), rx + 5, rx_len - 7);
-    }
-    ats.historical_len = rx_len - 7;
-    return true;
-}
-
-bool UnitST25R3916::nfcaDeselect()
-{
-    uint8_t rx[1]{};
-    uint16_t rx_len = sizeof(rx);
-    uint8_t cmd[1]  = {m5::stl::to_underlying(Command::DESELECT)};
-    if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_DESELECT) || !rx_len) {
-        return false;
-    }
-    // m5::utility::log::dump(rx, rx_len, false);
-    return true;
 }
 
 // -------------------------------- For MIFARE classic
@@ -724,7 +689,7 @@ bool UnitST25R3916::mifare_classic_send_encrypt(const uint8_t* tx, const uint16_
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                  //
         !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sbytes, sbits) ||  //
         !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
-        M5_LIB_LOGE("Failed to send");
+        M5_LIB_LOGD("Failed to send");
         return false;
     }
     return true;
@@ -741,7 +706,7 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
     // Send
     if (!set_bit_register8(REG_AUXILIARY_DEFINITION, (include_crc ? no_crc_rx : 0)) ||
         !mifare_classic_send_encrypt(tx, tx_len)) {
-        M5_LIB_LOGE("SNED ERROR");
+        M5_LIB_LOGD("SNED ERROR");
         return false;
     }
 
@@ -749,19 +714,19 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
     const uint32_t rlen = rx_len + (include_crc ? 2 : 0 /* CRC */);
 
     if (!wait_for_FIFO(timeout_ms, rlen)) {
-        M5_LIB_LOGE("Timeout");
+        M5_LIB_LOGD("Timeout");
         return false;
     }
 
     uint8_t rbuf[rlen]{};
     uint16_t actual{};
     if (!readFIFO(actual, rbuf, sizeof(rbuf)) || actual != rlen) {
-        M5_LIB_LOGE("Failed to readFIFO %u/%u", actual, rlen);
+        M5_LIB_LOGD("Failed to readFIFO %u/%u", actual, rlen);
         M5_DUMPE(rbuf, actual);
         return false;
     }
 
-    // M5_LIB_LOGE("read: %u/%u", actual, rlen);
+    // M5_LIB_LOGD("read: %u/%u", actual, rlen);
 
     // Decryption
     if (decrypt) {
@@ -774,7 +739,7 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
             res |= (_crypto1.step_with(0) ^ ((ret >> 3) & 1)) << 3;
             rbuf[0] = res;
             if (res != ACK_NIBBLE) {
-                M5_LIB_LOGE("NACK:%02X", res);
+                M5_LIB_LOGD("NACK:%02X", res);
                 return false;
             }
         } else {
@@ -788,14 +753,14 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
         m5::utility::CRC16 crc16(0xC6C6, 0x1021, true, true, 0);
         uint16_t crc = crc16.range(rbuf, rx_len);
         if ((crc & 0xFF) != rbuf[rlen - 2] || ((crc >> 8) != rbuf[rlen - 1])) {
-            M5_LIB_LOGE("CRC ERROR: C:%04x R:%02x%02x", crc, rbuf[rlen - 2], rbuf[rlen - 1]);
+            M5_LIB_LOGD("CRC ERROR: C:%04x R:%02x%02x", crc, rbuf[rlen - 2], rbuf[rlen - 1]);
             return false;
         }
     }
     actual = std::min<uint16_t>(actual - (include_crc ? 2 : 0), rx_len);
     memcpy(rx, rbuf, actual);
 
-    // M5_LIB_LOGE("copy: %u/%u", actual, rx_len);
+    // M5_LIB_LOGD("copy: %u/%u", actual, rx_len);
 
     return true;
 }
@@ -823,12 +788,12 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const PICC& p
 
     if (_encrypted) {
         if (!mifare_classic_transceive_encrypt(RB, rlen, auth_frame, sizeof(auth_frame), TIMEOUT_AUTH1, false, false)) {
-            M5_LIB_LOGE("Failed to send AUTH1(encrypt) %u", rlen);
+            M5_LIB_LOGD("Failed to send AUTH1(encrypt) %u", rlen);
             return false;
         }
     } else {
         if (!nfcaTransceive(RB, rlen, auth_frame, sizeof(auth_frame), TIMEOUT_AUTH1)) {
-            M5_LIB_LOGE("Failed to send AUTH1(plain) %u", rlen);
+            M5_LIB_LOGD("Failed to send AUTH1(plain) %u", rlen);
             return false;
         }
     }
@@ -845,7 +810,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const PICC& p
     uint8_t parity{};
     uint8_t bitstream[9 /* AB 8bytes + encrypt parity 1(8bits)] */]{};
 
-    // M5_LIB_LOGE("Nt:%08X", Nt);
+    // M5_LIB_LOGD("Nt:%08X", Nt);
 
     _crypto1.init(key48);
     if (!_encrypted) {
@@ -855,7 +820,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const PICC& p
     }
     suc_23(m5::stl::byteswap(Nt), Ar /* == suc2 */, suc3);
 
-    M5_LIB_LOGD("Auth:%u  mkey:%llX uid:%X Nt:%X Nr:%X Ar:%X suc3:%X", block, key48, u32, Nt, Nr, Ar, suc3);
+    M5_LIB_LOGV("Auth:%u  mkey:%llX uid:%X Nt:%X Nr:%X Ar:%X suc3:%X", block, key48, u32, Nt, Nr, Ar, suc3);
 
     parity = _crypto1.encrypt(AB, Nr, Ar);
     append_parity(bitstream, sizeof(bitstream), AB, sizeof(AB), parity);
@@ -867,11 +832,11 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const PICC& p
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                         //
         !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sizeof(bitstream), 0) ||  //
         !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
-        M5_LIB_LOGE("Failed to AUTH2(encrypt)");
+        M5_LIB_LOGD("Failed to AUTH2(encrypt)");
         return false;
     }
     if (!wait_for_FIFO(TIMEOUT_AUTH2, 4)) {
-        M5_LIB_LOGE("Timeout AUTH2");
+        M5_LIB_LOGD("Timeout AUTH2");
         return false;
     }
 
@@ -879,7 +844,7 @@ bool UnitST25R3916::mifare_classic_authenticate(const Command cmd, const PICC& p
     uint8_t BA[4]{};
     uint16_t actual{};
     if (!readFIFO(actual, BA, sizeof(BA)) || actual != 4) {
-        M5_LIB_LOGE("Failed to readFIFO AUTH2 %u", actual);
+        M5_LIB_LOGD("Failed to readFIFO AUTH2 %u", actual);
         return false;
     }
 
@@ -905,12 +870,12 @@ bool UnitST25R3916::mifareClassicValueBlock(const m5::nfc::a::Command cmd, const
     uint8_t rx[1]{};
     uint16_t rx_len{1};
 
-    M5_LIB_LOGD("ValuBlock:%02X %u %u", cmd, block, arg);
+    M5_LIB_LOGV("ValuBlock:%02X %u %u", cmd, block, arg);
 
     if (!mifare_classic_transceive_encrypt(                                                 //
             rx, rx_len, cmd_frame, sizeof(cmd_frame), TIMEOUT_VALUE_BLOCK, false, true) ||  //
         rx[0] != ACK_NIBBLE) {
-        M5_LIB_LOGE("Failed to command %02X %u %u %02X", cmd, block, arg, rx[0]);
+        M5_LIB_LOGD("Failed to command %02X %u %u %02X", cmd, block, arg, rx[0]);
         return false;
     }
     if (cmd == Command::TRANSFER) {
@@ -925,66 +890,10 @@ bool UnitST25R3916::mifareClassicValueBlock(const m5::nfc::a::Command cmd, const
     arg8[2] = arg >> 16;
     arg8[3] = arg >> 24;
     if (!clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) || !mifare_classic_send_encrypt(arg8, sizeof(arg8))) {
-        M5_LIB_LOGE("Failed to send");
+        M5_LIB_LOGD("Failed to send");
         return false;
     }
     return !wait_for_FIFO(TIMEOUT_VALUE_BLOCK);  // Consider the timeout a success
-}
-
-bool UnitST25R3916::mifareUltralightCAuthenticate1(uint8_t ek[8])
-{
-    uint8_t cmd[2] = {m5::stl::to_underlying(Command::AUTHENTICATE_1), 0x00};
-    uint8_t rx[9]{};
-    uint16_t rx_len{9};
-    if (ek && mifare_transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_AUTH1) && rx_len == 9 && rx[0] == 0xAF) {
-        memcpy(ek, rx + 1, 8);
-        return true;
-    }
-    return false;
-}
-
-bool UnitST25R3916::mifareUltralightCAuthenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16])
-{
-    if (!rx_ek || !tx_ek) {
-        return false;
-    }
-
-    uint8_t cmd[1 + 16] = {m5::stl::to_underlying(Command::AUTHENTICATE_2)};
-    memcpy(cmd + 1, tx_ek, 16);
-
-    uint8_t rx[9]{};
-    uint16_t rx_len{9};
-    if (mifare_transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_AUTH2) && rx_len == 9 && rx[0] == 0x00) {
-        memcpy(rx_ek, rx + 1, 8);
-        return true;
-    }
-    return false;
-}
-
-bool UnitST25R3916::mifareGetVersion3(uint8_t info[8])
-{
-    // GetVerison (L3)
-    uint8_t cmd[]   = {m5::stl::to_underlying(Command::GET_VERSION)};
-    uint16_t rx_len = 8;
-    return info && mifare_transceive(info, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION);
-}
-
-bool UnitST25R3916::mifareGetVersion4(uint8_t info[8])
-{
-    // GetVerison (L4)
-    //    uint8_t cmd[] = {0x90, m5::stl::to_underlying(Command::GET_VERSION), 0x00, 0x00, 0x00};
-    //    uint8_t cmd[] = {0x02, m5::stl::to_underlying(Command::GET_VERSION)};
-    uint8_t cmd[] = {m5::stl::to_underlying(Command::GET_VERSION)};
-    uint8_t rx[128]{};
-    uint16_t rx_len = 128;
-
-    if (info && nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION)) {
-        // M5_LIB_LOGE(">>>> VER L4");
-        // m5::utility::log::dump(rx, rx_len, false);
-        return true;
-    }
-    M5_LIB_LOGE(">>>> ERROR VER L4");
-    return false;
 }
 
 // -------------------------------- For NTAG
@@ -1005,7 +914,7 @@ bool UnitST25R3916::ntagReadPage(uint8_t* rx, uint16_t& rx_len, const uint8_t sp
                                          : TIMEOUT_FAST_READ_32PAGE * 2;
 
     if (!nfcaTransceive(rx, rx_len, cmd, sizeof(cmd), timeout)) {
-        M5_LIB_LOGE("Failed to transceive");
+        M5_LIB_LOGD("Failed to transceive");
         return false;
     }
     return true;
