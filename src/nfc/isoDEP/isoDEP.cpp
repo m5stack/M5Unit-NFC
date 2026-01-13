@@ -206,6 +206,9 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
     const uint16_t overhead          = 1 + (_cfg.use_cid ? 1 : 0) + (_cfg.use_nad ? 1 : 0);
     const uint16_t tx_frame_cap      = (_cfg.pcd_max_frame_tx > overhead) ? (_cfg.pcd_max_frame_tx - overhead) : 0;
     const uint16_t max_inf_per_frame = (tx_frame_cap < _cfg.fsc) ? tx_frame_cap : _cfg.fsc;
+    if (max_inf_per_frame == 0) {
+        return false;
+    }
 
     const uint16_t rx_overhead_min = overhead;
 

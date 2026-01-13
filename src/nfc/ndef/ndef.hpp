@@ -11,6 +11,7 @@
 #define M5_UNIT_NFC_NDEF_NFC_NDEF_HPP
 
 #include <cstdint>
+#include <vector>
 #include <m5_utility/stl/extension.hpp>
 
 namespace m5 {
@@ -36,7 +37,7 @@ constexpr uint16_t CC4_MAX_NDEF_LENGTH{2040};  //!< Maximum ndef length for 4 by
 
 /*!
   @enum Tag
-  @brief TLV(Tag,Length,Value) tag
+  @brief TLV(Tag,Length,Value) tag for type2/5
  */
 enum class Tag : uint8_t {
     Null,                //!< NULL TLV
@@ -48,56 +49,13 @@ enum class Tag : uint8_t {
 };
 
 /*!
-  @enum URIProtocol
-  @brief URI Identifier Code
- */
-enum class URIProtocol : uint8_t {
-    NA,           //!< N/A
-    HTTP_WWW,     //!< http://www.
-    HTTPS_WWW,    //!< https://www.
-    HTTP,         //!< http://
-    HTTPS,        //!< https://
-    TEL,          //!< tel:
-    MAILTO,       //!< mailto:
-    FTP_AA,       //!< ftp://anonymous:anonymous@
-    FTP_FTP,      //!< ftp://ftp.
-    FTPS,         //!< ftps://
-    SFTP,         //!< sftp://
-    SMB,          //!< smb://
-    NFS,          //!< nfs://
-    FTP,          //!< ftp://
-    DEV,          //!< dav://
-    NEWS,         //!< news:
-    TELNET,       //!< telnet://
-    IMAP,         //!< imap:
-    RSTP,         //!< rtsp://
-    URN,          //!< urn:
-    POP,          //!< pop:
-    SIP,          //!< sip:
-    SIPS,         //!< sips:
-    TFTP,         //!< tftp:
-    BTSPP,        //!< btspp://
-    BTL2CAP,      //!< btl2cap://
-    BTGOEP,       //!< btgoep://
-    TCPOBEX,      //!< tcpobex://
-    IRDAOBEX,     //!< irdaobex://
-    FILE,         //!< file://
-    URN_EPC_ID,   //!< urn:epc:id:
-    URN_EPC_TAG,  //!< urn:epc:tag:
-    URN_EPC_PAT,  //!< urn:epc:pat:
-    URN_EPC_RAW,  //!< urn:epc:raw:
-    URN_EPC,      //!< urn:epc:
-    NFC,          //!< urn:nfc:
-};
-
-/*!
   @typedef TagBits
-  @brief TLV(Tag,Length,Value) tag bit group
+  @brief TLV(Tag,Length,Value) tag bit group for type2/5
 */
 using TagBits = uint8_t;
 
 //! @brief Tag to TagBit
-constexpr TagBits tag_to_tagbit(const Tag t)
+constexpr inline TagBits tag_to_tagbit(const Tag t)
 {
     return (t == Tag::Null)            ? (1u << 0)
            : (t == Tag::LockControl)   ? (1u << 1)
@@ -166,6 +124,49 @@ inline bool is_terminator_tag(const uint8_t t)
 {
     return t == m5::stl::to_underlying(Tag::Terminator);
 }
+
+/*!
+  @enum URIProtocol
+  @brief URI Identifier Code
+ */
+enum class URIProtocol : uint8_t {
+    NA,           //!< N/A
+    HTTP_WWW,     //!< http://www.
+    HTTPS_WWW,    //!< https://www.
+    HTTP,         //!< http://
+    HTTPS,        //!< https://
+    TEL,          //!< tel:
+    MAILTO,       //!< mailto:
+    FTP_AA,       //!< ftp://anonymous:anonymous@
+    FTP_FTP,      //!< ftp://ftp.
+    FTPS,         //!< ftps://
+    SFTP,         //!< sftp://
+    SMB,          //!< smb://
+    NFS,          //!< nfs://
+    FTP,          //!< ftp://
+    DEV,          //!< dav://
+    NEWS,         //!< news:
+    TELNET,       //!< telnet://
+    IMAP,         //!< imap:
+    RSTP,         //!< rtsp://
+    URN,          //!< urn:
+    POP,          //!< pop:
+    SIP,          //!< sip:
+    SIPS,         //!< sips:
+    TFTP,         //!< tftp:
+    BTSPP,        //!< btspp://
+    BTL2CAP,      //!< btl2cap://
+    BTGOEP,       //!< btgoep://
+    TCPOBEX,      //!< tcpobex://
+    IRDAOBEX,     //!< irdaobex://
+    FILE,         //!< file://
+    URN_EPC_ID,   //!< urn:epc:id:
+    URN_EPC_TAG,  //!< urn:epc:tag:
+    URN_EPC_PAT,  //!< urn:epc:pat:
+    URN_EPC_RAW,  //!< urn:epc:raw:
+    URN_EPC,      //!< urn:epc:
+    NFC,          //!< urn:nfc:
+};
 
 //! @brief Get string of the URI IDC
 const char* get_uri_idc_string(const URIProtocol protocol);
@@ -350,6 +351,139 @@ struct AttributeBlock {
 };
 
 }  // namespace type3
+
+/*!
+  @namespace type4
+  @brief For NDEF Type4
+ */
+namespace type4 {
+
+constexpr uint16_t CC_FILE_ID{0xE103};                                      // CC file id
+constexpr uint8_t NDEF_AID[] = {0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01};  //!< AID for NDEF
+
+/*!
+  @enum FileControlTag
+  @brief File control for File Control TLV for type4
+ */
+enum class FileControlTag : uint8_t {
+    Message     = 0x04,  //!< Message
+    Proprietary = 0x05,  //!< Proprietary
+    //    Extended    = 0x06,  //!< Extended NDEF (Over 32KB) Type 4 Tag Specification v2.0 or later
+};
+
+/*!
+  @typedef FileControTagBlits
+  @brief File control TLV tag bit group for type4
+*/
+using FileControlTagBits = uint8_t;
+
+//! @brief Tag to TagBit
+constexpr inline FileControlTagBits fc_to_fcbit(const FileControlTag t)
+{
+    return (t == FileControlTag::Message) ? (1u << 0) : ((t == FileControlTag::Proprietary) ? (1u << 1) : 0u);
+}
+
+///@cond
+template <typename... Ts>
+struct are_all_fc : std::true_type { /**/
+};
+template <typename T, typename... Ts>
+struct are_all_fc<T, Ts...>
+    : std::integral_constant<bool, std::is_same<FileControlTag, T>::value && are_all_fc<Ts...>::value> {};
+
+constexpr FileControlTagBits make_fc_bits_impl(FileControlTagBits acc)
+{
+    return acc;
+}
+
+template <typename... Rest>
+constexpr FileControlTagBits make_fc_bits_impl(FileControlTagBits acc, FileControlTag head, Rest... rest)
+{
+    return make_fc_bits_impl(acc | fc_to_fcbit(head), rest...);
+}
+///@endcond
+
+/*!
+  @brief Make FileControlBit from FileControlTag
+  @param fcs FileControl(s)
+  @return FcBit
+ */
+template <typename... T>
+constexpr FileControlTagBits make_fc_bits(T... fcs)
+{
+    static_assert(sizeof...(fcs) > 0, "At least one Fc is required");
+    static_assert(are_all_fc<T...>::value, "Arguments must be Fc");
+    return make_fc_bits_impl(0u, fcs...);
+}
+
+//! @brief Check whether FileControlTagBits contains given FileControl
+inline constexpr bool contains_file_control_tag(const FileControlTagBits tb, const FileControlTag t)
+{
+    return (tb & fc_to_fcbit(t)) != 0;
+}
+
+//! @brief All fcs
+constexpr FileControlTagBits fcBitsAll = make_fc_bits(FileControlTag::Message, FileControlTag::Proprietary);
+//! @brief Message only
+constexpr FileControlTagBits fcBitsMessage = make_fc_bits(FileControlTag::Message);
+
+/*!
+  @struct CapabilityContainer
+  @brief Capability container for Type4
+ */
+struct CapabilityContainer {
+    //! @brief File control TLV
+    struct FileControlTLV {
+        uint8_t tag{};              //!< File control tag
+        uint8_t len{};              //!< Length
+        uint16_t ndef_file_id{};    //!< NDEF file ID
+        uint16_t ndef_file_size{};  //!< NDEF file size
+        uint8_t read_access{};      //!< Read access
+        uint8_t write_access{};     //!< Write access
+
+        inline FileControlTag fctag() const
+        {
+            return static_cast<FileControlTag>(this->tag);
+        }
+        inline bool can_read() const
+        {
+            return read_access == ACCESS_FREE;
+        }
+        inline bool can_write() const
+        {
+            return write_access == ACCESS_FREE;
+        }
+    };
+
+    uint16_t cclen{};           //!< CC length
+    uint8_t mapping_version{};  //!< Mapping version
+    uint16_t mle{};             //!< Maximum Le
+    uint16_t mlc{};             //!< Maximum Lc
+    std::vector<FileControlTLV> fctlvs{};
+
+    inline uint8_t major_version() const
+    {
+        return (mapping_version >> 4) & 0x0F;
+    }
+    inline uint8_t minor_version() const
+    {
+        return mapping_version & 0x0F;
+    }
+    inline bool valid() const
+    {
+        return cclen > 7 && !this->fctlvs.empty();
+    }
+
+    inline FileControlTLV fctlv(const uint8_t index) const
+    {
+        return index < this->fctlvs.size() ? this->fctlvs[index] : FileControlTLV{};
+    }
+    FileControlTLV fctlv(const FileControlTag fc = FileControlTag::Message) const;
+
+    bool parse(const uint8_t* buf, const uint16_t len);
+};
+
+}  // namespace type4
 
 /*!
   @namespace type5

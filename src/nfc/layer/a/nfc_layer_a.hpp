@@ -19,8 +19,9 @@
 
 #include "nfc/layer/nfc_layer.hpp"
 #include "nfc/a/nfca.hpp"
-#include "nfc/isodep/isoDEP.hpp"
+#include "nfc/isoDEP/isoDEP.hpp"
 #include "nfc/layer/ndef_layer.hpp"
+#include "nfc/ndef/ndef.hpp"
 #include <vector>
 #include <memory>
 
@@ -47,15 +48,19 @@ public:
     explicit NFCLayerA(m5::unit::UnitST25R3916& u);
     explicit NFCLayerA(m5::unit::CapST25R3916& u);
 
+    ///@name override
+    ///@{
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms) override;
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) override;
     virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) override;
-
-    m5::nfc::isodep::IsoDEP& isoDEP()
+    virtual m5::nfc::NFCForumTag supportsNFCTag() const override;
+    virtual file_system_feature_t supportsFilesystem() const override;
+    virtual m5::nfc::isodep::IsoDEP* isoDEP() override
     {
-        return _isoDEP;
+        return &_isoDEP;
     }
+    ///@}
 
     /*!
       @brief Is the specified PICC currently active?
@@ -484,6 +489,7 @@ protected:
     }
 
     bool identify_picc(m5::nfc::a::PICC& picc);
+    m5::nfc::a::Type identify_picc_st25ta();
 
     bool read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr);
     bool read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
@@ -538,7 +544,6 @@ struct NFCLayerA::Adapter {
     virtual bool activate(const m5::nfc::a::PICC& picc) = 0;
     virtual bool hlt()                                  = 0;
 
-    // Due to the chip-side cryptographic mechanism, the following shall be treated as an independent API
     virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr)                      = 0;
     virtual bool nfca_write_block(const uint8_t addr, const uint8_t tx[16])               = 0;
     virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::PICC& picc, const uint8_t block,

@@ -100,6 +100,8 @@ void read_ndef()
 {
     bool valid{};
     if (!nfc_a.ndefIsValidFormat(valid)) {
+        M5_LOGE("Failed to ndefIsValidFormat");
+        lcd.fillScreen(TFT_RED);
         return;
     }
     if (!valid) {
@@ -264,7 +266,7 @@ void loop()
             if (nfc_a.identify(picc) && nfc_a.reactivate(picc)) {
                 M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
                               picc.userAreaSize(), picc.totalSize());
-                if (picc.supportsNFC()) {
+                if (picc.supportsNDEF()) {
                     if (clicked) {
                         M5.Speaker.tone(2000, 30);
                         lcd.fillScreen(TFT_BLUE);

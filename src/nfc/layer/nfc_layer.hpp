@@ -15,13 +15,35 @@
 namespace m5 {
 namespace nfc {
 
+namespace isodep {
+class IsoDEP;
+}
+
 class NFCLayerInterface {
 public:
+    //! @brief activePICC's NDEF type
+    virtual m5::nfc::NFCForumTag supportsNFCTag() const
+    {
+        return m5::nfc::NFCForumTag::None;
+    }
+    //! @brief activePICC's File system
+    virtual file_system_feature_t supportsFilesystem() const
+    {
+        return file_system_feature_t(0);
+    }
+    // For ISO-DEP based operations (Type4, DESFire, etc.)
+    virtual m5::nfc::isodep::IsoDEP* isoDEP()
+    {
+        return nullptr;
+    }
+
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms)
     {
         return false;
     }
+
+    //
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
     {
         return false;
@@ -31,7 +53,7 @@ public:
         return false;
     }
 
-    ///////
+    // for NDEF read/write
     virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)             = 0;
     virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) = 0;
 

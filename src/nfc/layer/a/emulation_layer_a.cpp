@@ -35,7 +35,7 @@ bool EmulationLayerA::begin(const m5::nfc::a::PICC& picc, uint8_t* ptr, const ui
         return false;
     }
 
-    if (!(picc.isNTAG() || picc.type == Type::MIFARE_Ultralight)) {
+    if (!(picc.isNTAG2() || picc.type == Type::MIFARE_Ultralight)) {
         M5_LIB_LOGE("Not support %u %s", picc.type, picc.typeAsString().c_str());
         return false;
     }
@@ -175,7 +175,7 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
             }
         } break;
         case Command::READ_SIG:
-            if (_picc.isNTAG() || _picc.type == Type::MIFARE_Ultralight_EV1_1 ||
+            if (_picc.isNTAG2() || _picc.type == Type::MIFARE_Ultralight_EV1_1 ||
                 _picc.type == Type::MIFARE_Ultralight_EV1_2 || _picc.type == Type::MIFARE_Ultralight_Nano) {
                 if (rx_len == 2 && rx[1] == 0x00 /*RFU*/) {
                     ret = _impl->transmit(dummy_signature, sizeof(dummy_signature), 4) ? State::Active : State::None;

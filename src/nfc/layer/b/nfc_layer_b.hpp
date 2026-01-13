@@ -18,7 +18,7 @@
 
 #include "nfc/layer/nfc_layer.hpp"
 #include "nfc/b/nfcb.hpp"
-#include "nfc/isodep/isoDEP.hpp"
+#include "nfc/isoDEP/isoDEP.hpp"
 #include "nfc/layer/ndef_layer.hpp"
 #include <vector>
 #include <memory>
@@ -45,10 +45,9 @@ public:
                             const uint32_t timeout_ms) override;
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) override;
     virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) override;
-
-    m5::nfc::isodep::IsoDEP& isoDEP()
+    virtual m5::nfc::isodep::IsoDEP* isoDEP() override
     {
-        return _isoDEP;
+        return &_isoDEP;
     }
 
     /*!

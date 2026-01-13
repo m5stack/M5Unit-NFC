@@ -10,6 +10,7 @@
 #include "ndef_layer.hpp"
 #include "nfc/ndef/ndef.hpp"
 #include "nfc/ndef/ndef_tlv.hpp"
+#include "nfc/isoDEP/file_system.hpp"
 #include "nfc/ndef/ndef_record.hpp"
 #include <M5Utility.hpp>
 #include <algorithm>
@@ -17,6 +18,21 @@
 
 using namespace m5::nfc;
 using namespace m5::nfc::ndef;
+
+namespace {
+type4::FileControlTagBits tag_bits_to_file_control_tag_bits(const TagBits tb)
+{
+    type4::FileControlTagBits bits{};
+    if (tb & make_tag_bits(Tag::Message)) {
+        bits |= type4::fcBitsMessage;
+    }
+    if (tb & make_tag_bits(Tag::Proprietary)) {
+        bits |= type4::make_fc_bits(type4::FileControlTag::Proprietary);
+    }
+    return bits;
+}
+
+}  // namespace
 
 namespace m5 {
 namespace nfc {
@@ -43,6 +59,13 @@ bool NDEFLayer::isValidFormat(bool& valid, const m5::nfc::NFCForumTag ftag)
                 return true;
             }
         } break;
+        case NFCForumTag::Type4: {
+            type4::CapabilityContainer cc{};
+            if (readCapabilityContainer(cc)) {
+                valid = cc.valid();
+                return true;
+            }
+        }; break;
         case NFCForumTag::Type5: {
             type5::CapabilityContainer cc{};
             if (readCapabilityContainer(cc)) {
@@ -51,7 +74,6 @@ bool NDEFLayer::isValidFormat(bool& valid, const m5::nfc::NFCForumTag ftag)
             }
         } break;
         case NFCForumTag::Type1:
-        case NFCForumTag::Type4:
         default:
             break;
     }
@@ -103,6 +125,60 @@ bool NDEFLayer::readAttributeBlock(m5::nfc::ndef::type3::AttributeBlock& ab)
     return true;
 }
 
+bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type4::CapabilityContainer& cc)
+{
+    using type4::CapabilityContainer;
+    using type4::NDEF_AID;
+
+    cc = m5::nfc::ndef::type4::CapabilityContainer{};
+
+    auto* dep = _interface.isoDEP();
+    if (!dep) {
+        return false;
+    }
+
+    m5::nfc::FileSystem fs(*dep);
+    const bool selected_df = fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::FCI) ||
+                             fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::None) ||
+                             fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::FCP);
+    if (!selected_df) {
+        return false;
+    }
+    const bool selected_cc = fs.selectByFileId(m5::nfc::ndef::type4::CC_FILE_ID, m5::nfc::apdu::SelectResponse::None) ||
+                             fs.selectByFileId(m5::nfc::ndef::type4::CC_FILE_ID, m5::nfc::apdu::SelectResponse::FCI);
+    if (!selected_cc) {
+        return false;
+    }
+
+    // Check length
+    std::vector<uint8_t> head;
+    if (!fs.readBinary(head, 0, 2) || head.size() < 2) {
+        return false;
+    }
+    const uint16_t cc_len = (static_cast<uint16_t>(head[0]) << 8) | head[1];
+    if (cc_len < 7) {
+        return false;
+    }
+
+    // Read
+    std::vector<uint8_t> raw;
+    raw.reserve(cc_len);
+    uint16_t offset = 0;
+    while (offset < cc_len) {
+        const uint16_t chunk = std::min<uint16_t>(static_cast<uint16_t>(cc_len - offset), 0xFF);
+        std::vector<uint8_t> part;
+        if (!fs.readBinary(part, offset, chunk) || part.size() < chunk) {
+            return false;
+        }
+        raw.insert(raw.end(), part.begin(), part.end());
+        offset = static_cast<uint16_t>(offset + chunk);
+    }
+    if (raw.size() < cc_len) {
+        return false;
+    }
+    return cc.parse(raw.data(), raw.size());
+}
+
 bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContainer& cc)
 {
     using type5::CapabilityContainer;
@@ -150,10 +226,11 @@ bool NDEFLayer::read(const m5::nfc::NFCForumTag ftag, std::vector<m5::nfc::ndef:
                 return true;
             }
         } break;
+        case NFCForumTag::Type4:
+            return read_type4(tlvs, tag_bits_to_file_control_tag_bits(tagBits));
         case NFCForumTag::Type5:
             return read_type5(tlvs, tagBits);
         case NFCForumTag::Type1:
-        case NFCForumTag::Type4:
         default:
             break;
     }
@@ -302,6 +379,119 @@ skip:
     return ret;
 }
 
+bool NDEFLayer::read_type4(std::vector<m5::nfc::ndef::TLV>& tlvs,
+                           const m5::nfc::ndef::type4::FileControlTagBits fc_bits)
+{
+    using type4::CapabilityContainer;
+    using type4::NDEF_AID;
+
+    tlvs.clear();
+
+    CapabilityContainer cc{};
+    if (!readCapabilityContainer(cc) || !cc.valid()) {
+        return false;
+    }
+
+    auto* dep = _interface.isoDEP();
+    if (!dep) {
+        return false;
+    }
+
+    m5::nfc::FileSystem fs(*dep);
+    const bool selected_df = fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::FCI) ||
+                             fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::None) ||
+                             fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::FCP);
+    if (!selected_df) {
+        return false;
+    }
+
+    for (auto&& fctlv : cc.fctlvs) {
+        if (!type4::contains_file_control_tag(fc_bits, fctlv.fctag())) {
+            continue;
+        }
+
+        const bool selected_file = fs.selectByFileId(fctlv.ndef_file_id, m5::nfc::apdu::SelectResponse::None) ||
+                                   fs.selectByFileId(fctlv.ndef_file_id, m5::nfc::apdu::SelectResponse::FCI);
+        if (!selected_file) {
+            return false;
+        }
+
+        //
+        if (fctlv.fctag() == type4::FileControlTag::Proprietary) {
+            std::vector<uint8_t> data;
+            const uint16_t size = fctlv.ndef_file_size;
+            if (size == 0) {
+                continue;
+            }
+            data.reserve(size);
+            uint16_t offset       = 0;
+            const uint16_t max_le = cc.mle ? std::min<uint16_t>(cc.mle, 32) : 0x00FF;
+            while (offset < size) {
+                const uint16_t remaining = static_cast<uint16_t>(size - offset);
+                const uint16_t chunk     = std::min<uint16_t>(remaining, max_le);
+                std::vector<uint8_t> part;
+                if (!fs.readBinary(part, offset, chunk) || part.size() < chunk) {
+                    return false;
+                }
+                data.insert(data.end(), part.begin(), part.begin() + chunk);
+                offset = static_cast<uint16_t>(offset + chunk);
+            }
+            TLV tlv{Tag::Proprietary};
+            tlv.payload() = std::move(data);
+            tlvs.push_back(tlv);
+            continue;
+        }
+
+        //
+        std::vector<uint8_t> head;
+        if (!fs.readBinary(head, 0, 2) || head.size() < 2) {
+            return false;
+        }
+        const uint16_t nlen = (static_cast<uint16_t>(head[0]) << 8) | head[1];
+        M5_LIB_LOGD("Type4 NLEN:%u", nlen);
+        if (nlen == 0) {
+            tlvs.emplace_back(Tag::Message);
+            continue;
+        }
+        if (fctlv.ndef_file_size && nlen > (fctlv.ndef_file_size - 2)) {
+            return false;
+        }
+
+        std::vector<uint8_t> buf;
+        buf.reserve(nlen);
+        uint16_t offset       = 0;
+        const uint16_t max_le = cc.mle ? std::min<uint16_t>(cc.mle, 32) : 0x00FF;
+        while (offset < nlen) {
+            const uint16_t remaining = static_cast<uint16_t>(nlen - offset);
+            const uint16_t chunk     = std::min<uint16_t>(remaining, max_le);
+            std::vector<uint8_t> part;
+            if (!fs.readBinary(part, static_cast<uint16_t>(2 + offset), chunk) || part.size() < chunk) {
+                return false;
+            }
+            buf.insert(buf.end(), part.begin(), part.begin() + chunk);
+            offset = static_cast<uint16_t>(offset + chunk);
+        }
+        if (buf.size() < nlen) {
+            return false;
+        }
+
+        TLV msg{Tag::Message};
+        uint16_t decoded{};
+        while (decoded < nlen) {
+            Record r{};
+            auto len = r.decode(buf.data() + decoded, nlen - decoded);
+            if (!len) {
+                return false;
+            }
+            msg.push_back(r);
+            decoded += len;
+        }
+        tlvs.push_back(msg);
+    }
+
+    return true;
+}
+
 bool NDEFLayer::read_type5(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits)
 {
     tlvs.clear();
@@ -366,6 +556,7 @@ skip:
     return ret;
 }
 
+//
 bool NDEFLayer::write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep)
 {
     bool ret{};

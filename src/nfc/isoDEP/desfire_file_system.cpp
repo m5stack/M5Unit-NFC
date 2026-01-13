@@ -9,9 +9,10 @@
 */
 #include "desfire_file_system.hpp"
 #include "nfc/layer/a/nfc_layer_a.hpp"
-#include "nfc/isodep/isoDEP.hpp"
+#include "nfc/isoDEP/isoDEP.hpp"
 #include "nfc/apdu/apdu.hpp"
 #include <cstring>
+#include <esp_random.h>
 #include <M5Utility.hpp>
 
 using namespace m5::nfc;
@@ -19,6 +20,23 @@ using namespace m5::nfc::isodep;
 using namespace m5::nfc::apdu;
 
 namespace {
+
+constexpr uint16_t DEFAULT_RX_LEN{1024};
+
+void rotate_byte_left(uint8_t out[8], const uint8_t in[8])
+{
+    for (int i = 0; i < 7; ++i) {
+        out[i] = in[i + 1];
+    }
+    out[7] = in[0];
+}
+
+inline void pack_le24(uint8_t out[3], const uint32_t value)
+{
+    out[0] = static_cast<uint8_t>(value & 0xFF);
+    out[1] = static_cast<uint8_t>((value >> 8) & 0xFF);
+    out[2] = static_cast<uint8_t>((value >> 16) & 0xFF);
+}
 
 }  // namespace
 
@@ -62,22 +80,53 @@ std::vector<uint8_t> make_native_wrap_command(const uint8_t ins, const uint8_t* 
     return cmd;
 }
 
-DESFireFileSystem::DESFireFileSystem(m5::nfc::NFCLayerA& layer) : FileSystem{layer.isoDEP()}
+DESFireFileSystem::DESFireFileSystem(m5::nfc::NFCLayerA& layer)
+    : FileSystem{*layer.isoDEP() /* always exists _isoDEP */}
 {
     const auto& picc = layer.activatedPICC();
     // M5_LIB_LOGE(">>>>PICC %s %u", picc.uidAsString().c_str(), picc.valid());
 
     auto cfg = _isoDEP.config();
-    //        cfg.fwt_ms           = fwi_to_ms(picc.fwi(), 13.56e6f);
-    //        cfg.fsc              = picc.maximumFrameLength();
-    //        cfg.pcd_max_frame_tx = cfg.pcd_max_frame_rx = 256;  // TODO FIFO_DEPTH
+#if 0
+    cfg.fwt_ms           = fwi_to_ms(picc.ats.fwi(), 13.56e6f);
+    cfg.fsc              = picc.maximumFrameLength();
+    cfg.pcd_max_frame_tx = cfg.pcd_max_frame_rx = 64;  // TODO FIFO_DEPTH
+#else
     cfg.fwt_ms           = 500;
     cfg.fsc              = 256;
-    cfg.pcd_max_frame_tx = cfg.pcd_max_frame_rx = 256;  // TODO FIFO_DEPTH
+    cfg.pcd_max_frame_tx = cfg.pcd_max_frame_rx = 64;  // TODO FIFO_DEPTH
+#endif
     _isoDEP.config(cfg);
 }
 
-bool DESFireFileSystem::selectApplication(const uint8_t aid[3], const uint32_t timeout_ms)
+#if 0
+bool DESFireFileSystem::open(const uint8_t aid[3], const uint8_t fileNo, const uint32_t timeout_ms)
+{
+    if (!selectApplication(aid, timeout_ms)) {
+        return false;
+    }
+    _file_no = fileNo;
+    return true;
+}
+
+bool DESFireFileSystem::open(const uint32_t aid24, const uint8_t fileNo, const uint32_t timeout_ms)
+{
+    if (!selectApplication(aid24, timeout_ms)) {
+        return false;
+    }
+    _file_no = fileNo;
+    return true;
+}
+
+bool DESFireFileSystem::open(const uint8_t fileNo, const uint32_t timeout_ms)
+{
+    (void)timeout_ms;
+    _file_no = fileNo;
+    return true;
+}
+#endif
+
+bool DESFireFileSystem::selectApplication(const uint8_t aid[3])
 {
     auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_SELECT_APPLICATION), aid, 3);
     uint8_t rx[2]{};
@@ -90,16 +139,16 @@ bool DESFireFileSystem::selectApplication(const uint8_t aid[3], const uint32_t t
     return is_successful(rx, rx_len);
 }
 
-bool DESFireFileSystem::selectApplication(const uint32_t aid24, const uint32_t timeout_ms)
+bool DESFireFileSystem::selectApplication(const uint32_t aid24)
 {
     uint8_t aid[3]{};
     aid[0] = aid24 >> 16;
     aid[1] = aid24 >> 8;
     aid[2] = aid24 & 0xFF;
-    return selectApplication(aid, timeout_ms);
+    return selectApplication(aid);
 }
 
-bool DESFireFileSystem::getApplicationIDs(std::vector<desfire_aid_t>& out, uint32_t timeout_ms)
+bool DESFireFileSystem::getApplicationIDs(std::vector<desfire_aid_t>& out)
 {
     out.clear();
     auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_GET_APPLICATION_IDS));
@@ -129,6 +178,195 @@ bool DESFireFileSystem::getApplicationIDs(std::vector<desfire_aid_t>& out, uint3
     }
     return false;
 }
+
+bool DESFireFileSystem::getFileIDs(std::vector<uint8_t>& out)
+{
+    out.clear();
+    auto cmd = make_native_wrap_command(m5::stl ::to_underlying(INS::DF_GET_FILE_IDS));
+
+    std::vector<uint8_t> rx(DEFAULT_RX_LEN);
+    uint16_t rx_len = rx.size();
+    if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+        M5_LIB_LOGE("Failed to getFileIDs %u", rx_len);
+        return false;
+    }
+    if (is_successful(rx.data(), rx_len)) {
+        const uint16_t data_len = rx_len - 2;
+        out.assign(rx.begin(), rx.begin() + data_len);
+        return true;
+    }
+    return false;
+}
+
+#if 0
+bool DESFireFileSystem::readData(uint8_t fileNo, std::vector<uint8_t>& out, uint32_t timeout_ms)
+{
+    return readData(fileNo, 0, 0, out);
+}
+
+bool DESFireFileSystem::readData(uint8_t fileNo, uint32_t offset, uint32_t length, std::vector<uint8_t>& out)
+{
+    out.clear();
+
+    uint8_t payload[1 + 3 + 3]{};
+    payload[0] = fileNo;
+    pack_le24(payload + 1, offset);
+    pack_le24(payload + 4, length);
+
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_READ_DATA), payload, sizeof(payload));
+
+    const uint32_t rx_cap = (length > 0) ? (length + 2) : DEFAULT_RX_LEN;
+    std::vector<uint8_t> rx(rx_cap);
+    uint16_t rx_len = rx.size();
+
+    if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+        M5_LIB_LOGE("Failed to readData %u", rx_len);
+        return false;
+    }
+    if (is_successful(rx.data(), rx_len)) {
+        const uint16_t data_len = rx_len - 2;
+        out.assign(rx.begin(), rx.begin() + data_len);
+        return true;
+    }
+    return false;
+}
+
+bool DESFireFileSystem::writeData(uint8_t fileNo, uint32_t offset, const uint8_t* data, uint32_t data_len)
+{
+    if (!data || data_len == 0) {
+        return false;
+    }
+
+    std::vector<uint8_t> payload;
+    payload.resize(1 + 3 + 3 + data_len);
+    payload[0] = fileNo;
+    pack_le24(payload.data() + 1, offset);
+    pack_le24(payload.data() + 4, data_len);
+    std::memcpy(payload.data() + 7, data, data_len);
+
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_WRITE_DATA), payload.data(), payload.size());
+    uint8_t rx[2]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+        M5_LIB_LOGE("Failed to writeData %u", rx_len);
+        return false;
+    }
+    return is_successful(rx, rx_len);
+}
+
+bool DESFireFileSystem::authenticateDES(const uint8_t key_no, const uint8_t key[16])
+{
+    using m5::utility::crypto::TripleDES;
+
+    if (!key) {
+        return false;
+    }
+
+    TripleDES::Key16 key16{};
+    std::memcpy(key16.data(), key, 16);
+
+    uint8_t auth_key_no[1] = {key_no};
+    auto cmd               = make_native_wrap_command(m5::stl::to_underlying(INS::DF_AUTHENTICATE), auth_key_no, 1);
+
+    std::vector<uint8_t> rx(DEFAULT_RX_LEN);
+    uint16_t rx_len = rx.size();
+    if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd.data(), cmd.size(), nullptr) || rx_len < 2) {
+        M5_LIB_LOGE("Failed to auth step1 %u", rx_len);
+        return false;
+    }
+    if (!is_more(rx.data(), rx_len) || rx_len < 10) {
+        M5_LIB_LOGE("Unexpected auth step1 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
+        return false;
+    }
+
+    uint8_t ek_rndB[8]{};
+    std::memcpy(ek_rndB, rx.data(), 8);
+
+    uint8_t rndB[8]{};
+    {
+        uint8_t iv[8]{};
+        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, iv};
+        if (!des.decrypt(rndB, ek_rndB, sizeof(ek_rndB), key16)) {
+            return false;
+        }
+    }
+
+    uint8_t rndA[8]{};
+    for (auto& r : rndA) {
+        r = static_cast<uint8_t>(esp_random());
+    }
+
+    uint8_t rndB_rot[8]{};
+    uint8_t rndA_rot[8]{};
+    rotate_byte_left(rndB_rot, rndB);
+    rotate_byte_left(rndA_rot, rndA);
+
+    uint8_t plain_AB[16]{};
+    std::memcpy(plain_AB, rndA, 8);
+    std::memcpy(plain_AB + 8, rndB_rot, 8);
+
+    uint8_t ek_AB[16]{};
+    {
+        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_rndB};
+        if (!des.encrypt(ek_AB, plain_AB, sizeof(plain_AB), key16)) {
+            return false;
+        }
+    }
+
+    auto cmd2 = make_native_wrap_command(0xAF, ek_AB, sizeof(ek_AB));
+    rx_len    = rx.size();
+    if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd2.data(), cmd2.size(), nullptr) || rx_len < 2) {
+        M5_LIB_LOGE("Failed to auth step2 %u", rx_len);
+        return false;
+    }
+    if (!is_successful(rx.data(), rx_len) || rx_len < 10) {
+        M5_LIB_LOGE("Unexpected auth step2 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
+        return false;
+    }
+
+    uint8_t rndA_rot_from_card[8]{};
+    {
+        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_AB + 8};
+        if (!des.decrypt(rndA_rot_from_card, rx.data(), 8, key16)) {
+            return false;
+        }
+    }
+
+    return std::memcmp(rndA_rot, rndA_rot_from_card, 8) == 0;
+}
+
+bool DESFireFileSystem::read(std::vector<uint8_t>& out)
+{
+    if (_file_no == 0xFF) {
+        return false;
+    }
+    return readData(_file_no, out);
+}
+
+bool DESFireFileSystem::read(uint32_t offset, uint32_t length, std::vector<uint8_t>& out)
+{
+    if (_file_no == 0xFF) {
+        return false;
+    }
+    return readData(_file_no, offset, length, out);
+}
+
+bool DESFireFileSystem::write(const uint8_t* data, uint32_t data_len)
+{
+    if (_file_no == 0xFF) {
+        return false;
+    }
+    return writeData(_file_no, 0, data, data_len);
+}
+
+bool DESFireFileSystem::write(uint32_t offset, const uint8_t* data, uint32_t data_len)
+{
+    if (_file_no == 0xFF) {
+        return false;
+    }
+    return writeData(_file_no, offset, data, data_len);
+}
+#endif
 
 // Support continued reception via 0x91AF
 bool DESFireFileSystem::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len)

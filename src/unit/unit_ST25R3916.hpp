@@ -2031,8 +2031,6 @@ protected:
     bool nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv);
 
     // MIFARE
-    bool mifare_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                           const uint32_t timeout_ms);
     bool mifare_classic_send_encrypt(const uint8_t* tx, const uint16_t tx_len);
     bool mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                            const uint32_t timeout_ms, const bool include_crc, const bool decrypt);

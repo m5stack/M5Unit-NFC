@@ -11,6 +11,7 @@
 #define M5_UNIT_UNIFIED_NFC_NFC_NFC_HPP
 
 #include <cstdint>
+#include "manufacturer_id.hpp"
 
 namespace m5 {
 /*!
@@ -55,6 +56,14 @@ enum class Bitrate : uint8_t {
     Bps848K,  //!< 848K
     Invalid = 0xFF,
 };
+
+///@name File system (bits)
+///@{
+using file_system_feature_t = uint8_t;                          //!< Alias for file_system_feature_t
+constexpr file_system_feature_t FILE_SYSTEM_FLAT_MEMORY{0x01};  //!< Block/Page base R/W (flat memory)
+constexpr file_system_feature_t FILE_SYSTEM_ISO7816_4{0x02};    //!< ISO 7816-4 base
+constexpr file_system_feature_t FILE_SYSTEM_DESFIRE{0x04};      //!< MIFARE DESFire base
+///@}
 
 }  // namespace nfc
 }  // namespace m5

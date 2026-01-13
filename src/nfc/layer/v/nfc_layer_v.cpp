@@ -462,7 +462,7 @@ bool NFCLayerV::dump_all()
     printf("%.*s\n", block_size * 3 + 8, dump_line);
 
     bool ret{true};
-    for (int_fast8_t block = 0; block < blocks; ++block) {
+    for (uint16_t block = 0; block < blocks; ++block) {
         ret &= dump_block(block);
     }
     return ret;

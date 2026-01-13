@@ -7,8 +7,8 @@
   @file ndef.cpp
   @brief NDEF related
 */
-
 #include "ndef.hpp"
+#include <M5Utility.hpp>
 
 namespace {
 constexpr char uri_na[]          = "";
@@ -56,6 +56,12 @@ constexpr const char* uri_idc_table[] = {
     uri_btspp,      uri_btl2cap,     uri_btgoep,      uri_tcpobex,     uri_irdaobex, uri_file,
     uri_urn_epc_id, uri_urn_epc_tag, uri_urn_epc_pat, uri_urn_epc_raw, uri_urn_epc,  uri_nfc,
 };
+
+inline bool is_valid_file_control_tag(const m5::nfc::ndef::type4::FileControlTag t)
+{
+    return t == m5::nfc::ndef::type4::FileControlTag::Message || t == m5::nfc::ndef::type4::FileControlTag::Proprietary;
+}
+
 }  // namespace
 
 namespace m5 {
@@ -94,6 +100,59 @@ uint16_t AttributeBlock::update_check_sum()
     return sum;
 }
 }  // namespace type3
+
+namespace type4 {
+
+bool CapabilityContainer::parse(const uint8_t* buf, const uint16_t len)
+{
+    *this = CapabilityContainer{};
+    if (!buf || len < 7) {
+        return false;
+    }
+    this->cclen           = (static_cast<uint16_t>(buf[0]) << 8) | buf[1];
+    this->mapping_version = buf[2];
+    this->mle             = (static_cast<uint16_t>(buf[3]) << 8) | buf[4];
+    this->mlc             = (static_cast<uint16_t>(buf[5]) << 8) | buf[6];
+
+    uint16_t max_len = len;
+    if (cclen && cclen < max_len) {
+        max_len = cclen;
+    }
+    uint16_t offset = 7;  // TLV
+    while (offset + 2 <= max_len) {
+        FileControlTLV tlv{};
+        tlv.tag               = buf[offset++];
+        const uint8_t tlv_len = buf[offset++];
+        if (offset + tlv_len > max_len) {
+            break;
+        }
+        tlv.len = tlv_len;
+
+        if (is_valid_file_control_tag(static_cast<FileControlTag>(tlv.tag)) && tlv_len == 6) {
+            tlv.ndef_file_id   = (static_cast<uint16_t>(buf[offset]) << 8) | buf[offset + 1];
+            tlv.ndef_file_size = (static_cast<uint16_t>(buf[offset + 2]) << 8) | buf[offset + 3];
+            tlv.read_access    = buf[offset + 4];
+            tlv.write_access   = buf[offset + 5];
+            fctlvs.emplace_back(tlv);
+            M5_LIB_LOGV("type4CC: fid:%04X sz:%04x ac:%02X/%02X", tlv.ndef_file_id, tlv.ndef_file_size, tlv.read_access,
+                        tlv.write_access);
+        }
+        offset = offset + tlv_len;
+    }
+    return valid();
+}
+
+CapabilityContainer::FileControlTLV CapabilityContainer::fctlv(const FileControlTag fc) const
+{
+    for (auto&& tlv : this->fctlvs) {
+        if ((FileControlTag)tlv.tag == fc) {
+            return tlv;
+        }
+    }
+    return CapabilityContainer::FileControlTLV{};
+}
+
+}  // namespace type4
 
 }  // namespace ndef
 }  // namespace nfc

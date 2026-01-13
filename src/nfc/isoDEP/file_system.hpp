@@ -10,6 +10,7 @@
 #ifndef M5_UNIT_UNIFIED_NFC_NFC_ISODEP_FILE_SYSTEM_HPP
 #define M5_UNIT_UNIFIED_NFC_NFC_ISODEP_FILE_SYSTEM_HPP
 #include "isoDEP.hpp"
+#include "nfc/apdu/apdu.hpp"
 
 namespace m5 {
 namespace nfc {
@@ -17,6 +18,10 @@ namespace isodep {
 class IsoDEP;
 }
 
+/*!
+  @class FileSystem
+  @brief  ISO/IEC 7816-4 file system
+ */
 class FileSystem {
 public:
     explicit FileSystem(m5::nfc::isodep::IsoDEP& isoDEP) : _isoDEP{isoDEP}
@@ -26,13 +31,23 @@ public:
 
     ///@name ISO/IEC 7816-4 Standard commands
     ///@{
-    bool selectFile(const uint8_t* aid, const uint8_t aid_len, const uint8_t param1 = 0x00,
-                    const uint8_t param2 = 0x0C /* No response*/);
-    bool selectFile(const uint16_t fid, const uint8_t param1 = 0x00, const uint8_t param2 = 0x0C /* No response */);
 
+    bool selectFile(const m5::nfc::apdu::SelectBy by, const m5::nfc::apdu::SelectOccurrence occ,
+                    const m5::nfc::apdu::SelectResponse res, const uint8_t* param, const uint8_t param_len);
+    bool selectByFileId(const uint16_t fid,
+                        const m5::nfc::apdu::SelectResponse res = m5::nfc::apdu::SelectResponse::FCI,
+                        const m5::nfc::apdu::SelectOccurrence occ = m5::nfc::apdu::SelectOccurrence::FirstOrOnly);
+    bool selectByDfName(const uint8_t* aid, const uint8_t aid_len,
+                        const m5::nfc::apdu::SelectResponse res = m5::nfc::apdu::SelectResponse::FCI,
+                        const m5::nfc::apdu::SelectOccurrence occ = m5::nfc::apdu::SelectOccurrence::FirstOrOnly);
+    bool selectByPath(const uint8_t* path, const uint8_t path_len, const bool from_mf = true,
+                      const m5::nfc::apdu::SelectResponse res = m5::nfc::apdu::SelectResponse::FCI,
+                      const m5::nfc::apdu::SelectOccurrence occ = m5::nfc::apdu::SelectOccurrence::FirstOrOnly);
+    bool selectParent(const m5::nfc::apdu::SelectResponse res = m5::nfc::apdu::SelectResponse::FCI,
+                      const m5::nfc::apdu::SelectOccurrence occ = m5::nfc::apdu::SelectOccurrence::FirstOrOnly);
     inline bool selectMasterFile()
     {
-        return selectFile(0x3F00, 0, 0);
+        return selectByFileId(m5::nfc::apdu::master_file_id);
     }
 
     bool verify(const uint8_t* password, const uint16_t pass_len, const uint8_t param2);

@@ -9,7 +9,7 @@
 */
 #include "nfc_b_file_system.hpp"
 #include "nfc/layer/b/nfc_layer_b.hpp"
-#include "nfc/isodep/isoDEP.hpp"
+#include "nfc/isoDEP/isoDEP.hpp"
 #include "nfc/apdu/apdu.hpp"
 #include <M5Utility.hpp>
 
@@ -20,7 +20,7 @@ using namespace m5::nfc::isodep;
 namespace m5 {
 namespace nfc {
 
-NFCBFileSystem::NFCBFileSystem(m5::nfc::NFCLayerB& layer) : FileSystem{layer.isoDEP()}
+NFCBFileSystem::NFCBFileSystem(m5::nfc::NFCLayerB& layer) : FileSystem{*layer.isoDEP() /* always exists _isoDEP*/}
 {
     const auto& picc     = layer.activatedPICC();
     auto cfg             = _isoDEP.config();

@@ -28,8 +28,8 @@
 #include "nfc/layer/f/emulation_layer_f.hpp"
 #include "nfc/layer/v/nfc_layer_v.hpp"
 
-#include "nfc/isodep/nfc_b_file_system.hpp"
-#include "nfc/isodep/desfire_file_system.hpp"
+#include "nfc/isoDEP/nfc_b_file_system.hpp"
+#include "nfc/isoDEP/desfire_file_system.hpp"
 
 /*!
   @namespace m5

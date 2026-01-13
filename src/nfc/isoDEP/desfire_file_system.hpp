@@ -23,6 +23,17 @@ namespace mifare {
  */
 namespace desfire {
 
+///@name File number
+///@{
+using file_no_t = uint8_t;                //!< Alias for file number
+constexpr file_no_t MINIMUM_FILE_NO{0};   //!< Minimum file number
+constexpr file_no_t MAXIMUM_FILE_NO{31};  //!< Maximum file number
+///@}
+
+/*!
+  @struct desfire_aid_t
+  @brief 24bit Application ID
+ */
 struct desfire_aid_t {
     uint8_t aid[3]{};  // BE
     uint8_t _pad{};
@@ -40,17 +51,14 @@ struct desfire_aid_t {
         return aid24();
     }
 };
-
 inline bool operator==(const desfire_aid_t& a, const desfire_aid_t& b) noexcept
 {
     return a.aid[0] == b.aid[0] && a.aid[1] == b.aid[1] && a.aid[2] == b.aid[2];
 }
-
 inline bool operator!=(const desfire_aid_t& a, const desfire_aid_t& b) noexcept
 {
     return !(a == b);
 }
-
 inline bool operator<(const desfire_aid_t& a, const desfire_aid_t& b) noexcept
 {
     return a.aid24() < b.aid24();
@@ -86,21 +94,34 @@ class DESFireFileSystem : public FileSystem {
 public:
     explicit DESFireFileSystem(m5::nfc::NFCLayerA& layer);
 
-    inline bool selectApplication(const desfire_aid_t& aid, const uint32_t timeout_ms = 200)
+    inline bool selectApplication(const desfire_aid_t& aid)
     {
-        return selectApplication(aid.data(), timeout_ms);
+        return selectApplication(aid.data());
     }
-    bool selectApplication(const uint8_t aid[3], const uint32_t timeout_ms = 200);
-    bool selectApplication(const uint32_t aid24 = 0u, const uint32_t timeout_ms = 200);
+    bool selectApplication(const uint8_t aid[3]);
+    bool selectApplication(const uint32_t aid24 = 0u);
 
-    bool getApplicationIDs(std::vector<desfire_aid_t>& out, const uint32_t timeout_ms = 200);
+    bool getApplicationIDs(std::vector<desfire_aid_t>& out);
+    bool getFileIDs(std::vector<uint8_t>& out);
 
-    bool getFileIDs(std::vector<uint8_t>& out, const uint32_t timeout_ms = 200);
+#if 0    
+    inline bool open(const desfire_aid_t& aid, const uint8_t fileNo, const uint32_t timeout_ms = 200)
+    {
+        return open(aid.data(), fileNo, timeout_ms);
+    }
+    bool open(const uint8_t aid[3], const uint8_t fileNo, const uint32_t timeout_ms = 200);
+    bool open(const uint32_t aid24, const uint8_t fileNo, const uint32_t timeout_ms = 200);
+    bool open(const uint8_t fileNo, const uint32_t timeout_ms = 200);
 
-    bool readData(uint8_t fileNo, std::vector<uint8_t>& out, uint32_t timeout_ms = 400);
-    bool readData(uint8_t fileNo, uint32_t offset, uint32_t length, std::vector<uint8_t>& out,
-                  const uint32_t timeout_ms = 400);
+    bool authenticateDES(const uint8_t key_no, const uint8_t key[16], const uint32_t timeout_ms = 200);
 
+    bool read(std::vector<uint8_t>& out, const uint32_t timeout_ms = 400);
+    bool read(uint32_t offset, uint32_t length, std::vector<uint8_t>& out, const uint32_t timeout_ms = 400);
+
+    bool write(const uint8_t* data, uint32_t data_len, const uint32_t timeout_ms = 400);
+    bool write(uint32_t offset, const uint8_t* data, uint32_t data_len, const uint32_t timeout_ms = 400);
+#endif
+    
 protected:
     bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len);
 };

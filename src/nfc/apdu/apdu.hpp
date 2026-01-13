@@ -91,9 +91,52 @@ enum class INS : uint8_t {
     // DESFire
     DF_SELECT_APPLICATION  = 0x5A,
     DF_GET_APPLICATION_IDS = 0x6A,
+    DF_GET_FILE_IDS        = 0x6F,
+    DF_AUTHENTICATE        = 0x0A,
+    DF_READ_DATA           = 0xBD,
+    DF_WRITE_DATA          = 0x3D,
+};
+///@}
+
+/*!
+  @enum SelectBy
+  @brief Select control for SELECT_FILE
+  @note OR with SelectOccurrence
+ */
+enum class SelectBy : uint8_t {
+    FileId            = 0x00,  //!< Select MF/DF/EF by file ID
+    ChildDf           = 0x01,  //!< Select child DF (FID in data)
+    EfUnderCurrentDf  = 0x02,  //!< Select EF under current DF (FID in data)
+    ParentDf          = 0x03,  //!< Select parent DF
+    DfName            = 0x04,  //!< Select by DF name (AID)
+    PathFromMf        = 0x08,  //!< Select by path from MF
+    PathFromCurrentDf = 0x09,  //!< Select by path from current DF
 };
 
-///@}
+/*!
+  @enum SelectOccurrence
+  @brief Select occurrence for SELECT_FILE
+  @note OR with SelectBy
+ */
+enum class SelectOccurrence : uint8_t {
+    FirstOrOnly = 0x00,  //!< Select the first (or only) match
+    Last        = 0x01,  //!<  Select the last match
+    Next        = 0x02,  //!<  Select the next match
+    Previous    = 0x03,  //!<  Select the previous match
+};
+
+/*!
+  @enum SelectResponse
+  @brief Response for SELECT_FILE
+*/
+enum class SelectResponse : uint8_t {
+    FCI  = 0x00,  //!< FCI template
+    FCP  = 0x04,  //!< FCP template
+    FMD  = 0x08,  //!< FMD template
+    None = 0x0C,  //!</ No response
+};
+
+constexpr uint16_t master_file_id{0x3F00};  //!< Master file ID
 
 inline bool need_select_file_le(const uint8_t param2)
 {

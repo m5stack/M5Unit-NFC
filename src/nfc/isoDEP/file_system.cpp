@@ -8,7 +8,7 @@
   @brief File system base using isoDEP
 */
 #include "file_system.hpp"
-#include "nfc/isodep/isoDEP.hpp"
+#include "nfc/isoDEP/isoDEP.hpp"
 #include "nfc/apdu/apdu.hpp"
 #include <M5Utility.hpp>
 
@@ -18,14 +18,17 @@ using namespace m5::nfc::apdu;
 namespace m5 {
 namespace nfc {
 
-bool FileSystem::selectFile(const uint8_t* aid, const uint8_t aid_len, const uint8_t param1, const uint8_t param2)
+bool FileSystem::selectFile(const m5::nfc::apdu::SelectBy by, const m5::nfc::apdu::SelectOccurrence occ,
+                            const m5::nfc::apdu::SelectResponse res, const uint8_t* param, const uint8_t param_len)
 {
-    if (!aid || !aid_len) {
+    if (!param || !param_len) {
         return false;
     }
 
-    auto cmd = make_apdu_case4(0x00, m5::stl::to_underlying(INS::SELECT_FILE), param1, param2, aid, aid_len,
-                               need_select_file_le(param2) ? 256 : 0);
+    const uint8_t p1  = m5::stl::to_underlying(by) | m5::stl::to_underlying(occ);
+    const uint8_t p2  = m5::stl::to_underlying(res);
+    const uint16_t le = need_select_file_le(p2) ? 256 : 0;
+    auto cmd          = make_apdu_command(0x00, m5::stl::to_underlying(INS::SELECT_FILE), p1, p2, param, param_len, le);
 
     uint8_t rx[256]{};
     uint16_t rx_len = sizeof(rx);
@@ -36,7 +39,7 @@ bool FileSystem::selectFile(const uint8_t* aid, const uint8_t aid_len, const uin
     // m5::utility::log::dump(rx, rx_len, false);
 
     auto tlvs = parse_tlv(rx, rx_len - 2);
-    dump_tlv(tlvs);
+    //    dump_tlv(tlvs);
 
     if (!is_response_OK(rx + rx_len - 2)) {
         M5_LIB_LOGE("SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
@@ -46,26 +49,49 @@ bool FileSystem::selectFile(const uint8_t* aid, const uint8_t aid_len, const uin
     return true;
 }
 
-bool FileSystem::selectFile(const uint16_t fid, const uint8_t param1, const uint8_t param2)
+bool FileSystem::selectByFileId(const uint16_t fid, const m5::nfc::apdu::SelectResponse res,
+                                const m5::nfc::apdu::SelectOccurrence occ)
 {
     const uint8_t file_id[2] = {
         static_cast<uint8_t>((fid >> 8) & 0xFF),
         static_cast<uint8_t>(fid & 0xFF),
     };
+    return selectFile(m5::nfc::apdu::SelectBy::FileId, occ, res, file_id, sizeof(file_id));
+}
 
-    auto cmd = make_apdu_case4(0x00, m5::stl::to_underlying(INS::SELECT_FILE), param1, param2, file_id, sizeof(file_id),
-                               (need_select_file_le(param2) && fid != 0x3F00) ? 256 : 0);
+bool FileSystem::selectByDfName(const uint8_t* aid, const uint8_t aid_len, const m5::nfc::apdu::SelectResponse res,
+                                const m5::nfc::apdu::SelectOccurrence occ)
+{
+    return selectFile(m5::nfc::apdu::SelectBy::DfName, occ, res, aid, aid_len);
+}
+
+bool FileSystem::selectByPath(const uint8_t* path, const uint8_t path_len, const bool from_mf,
+                              const m5::nfc::apdu::SelectResponse res, const m5::nfc::apdu::SelectOccurrence occ)
+{
+    const auto by = from_mf ? m5::nfc::apdu::SelectBy::PathFromMf : m5::nfc::apdu::SelectBy::PathFromCurrentDf;
+    return selectFile(by, occ, res, path, path_len);
+}
+
+bool FileSystem::selectParent(const m5::nfc::apdu::SelectResponse res, const m5::nfc::apdu::SelectOccurrence occ)
+{
+    const uint8_t p1 = m5::stl::to_underlying(m5::nfc::apdu::SelectBy::ParentDf) | m5::stl::to_underlying(occ);
+    const uint8_t p2 = m5::stl::to_underlying(res);
+
+    std::vector<uint8_t> cmd = need_select_file_le(p2)
+                                   ? make_apdu_case2(0x00, m5::stl::to_underlying(INS::SELECT_FILE), p1, p2, 256)
+                                   : make_apdu_case1(0x00, m5::stl::to_underlying(INS::SELECT_FILE), p1, p2);
 
     uint8_t rx[256]{};
     uint16_t rx_len = sizeof(rx);
     if (!_isoDEP.transceiveAPDU(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
-        M5_LIB_LOGE("Failed SELECT by File ID");
+        M5_LIB_LOGE("Failed SELECT parent");
         return false;
     }
-    // m5::utility::log::dump(rx, rx_len, false);
 
-    auto tlvs = parse_tlv(rx, rx_len - 2);
-    dump_tlv(tlvs);
+    if (need_select_file_le(p2)) {
+        auto tlvs = parse_tlv(rx, rx_len - 2);
+        dump_tlv(tlvs);
+    }
 
     if (!is_response_OK(rx + rx_len - 2)) {
         M5_LIB_LOGE("SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
@@ -102,7 +128,8 @@ bool FileSystem::readBinary(std::vector<uint8_t>& out, const uint16_t offset,
 {
     out.clear();
 
-    if (le == 0) {
+    if (le == 0 || le > 256) {
+        M5_LIB_LOGE("invalid le %u", le);
         return false;
     }
 
@@ -116,11 +143,10 @@ bool FileSystem::readBinary(std::vector<uint8_t>& out, const uint16_t offset,
 
     uint16_t rx_len = static_cast<uint16_t>(rx.size());
     if (!_isoDEP.transceiveAPDU(rx.data(), rx_len, cmd.data(), static_cast<uint16_t>(cmd.size())) || rx_len < 2) {
-        M5_LIB_LOGE("READ BINARY failed (transport)");
+        M5_LIB_LOGE("READ BINARY failed (transport) %u", rx_len);
         return false;
     }
 
-    // SW をチェック
     if (!is_response_OK(rx.data() + rx_len - 2)) {
         M5_LIB_LOGE("SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
         M5_DUMPE(cmd.data(), cmd.size());

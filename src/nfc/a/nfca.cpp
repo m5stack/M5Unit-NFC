@@ -38,9 +38,10 @@ constexpr char name_ntag213[]  = "NTAG 213";
 constexpr char name_ntag215[]  = "NTAG 215";
 constexpr char name_ntag216[]  = "NTAG 216";
 //
-constexpr char name_st25ta_2k[]  = "ST25TA 2K";
-constexpr char name_st25ta_16k[] = "ST25TA 16K";
-constexpr char name_st25ta_64k[] = "ST25TA 64K";
+constexpr char name_st25ta_512b[] = "ST25TA 512B";
+constexpr char name_st25ta_2k[]   = "ST25TA 2K";
+constexpr char name_st25ta_16k[]  = "ST25TA 16K";
+constexpr char name_st25ta_64k[]  = "ST25TA 64K";
 //
 constexpr char name_iso14443_4[] = "ISO14443-4";
 // Plus
@@ -64,7 +65,7 @@ constexpr const char* name_table[] = {
     name_ntag203,      name_ntag210u,   name_ntag210,                                    // NTAG 2xx
     name_ntag212,      name_ntag213,    name_ntag215,                                    // NTAG 2xx
     name_ntag216,                                                                        // NTAG 2xx
-    name_st25ta_2k,    name_st25ta_16k, name_st25ta_64k,                                 // ST25A
+    name_st25ta_512b,  name_st25ta_2k,  name_st25ta_16k, name_st25ta_64k,                // ST25A
     name_iso14443_4,                                                                     // 14443-4
     name_plus_2K,      name_plus_4K,    name_plus_se,                                    // Plus
     name_desfire_2K,   name_desfire_4K, name_desfire_8K, name_desfire_light,             // DESFire
@@ -93,7 +94,7 @@ constexpr uint16_t max_block_table[] = {0,                                 // Un
                                         20,  64,  128, 256,                // Classic
                                         16,  20,  40,  14,  48,            // Light
                                         42,  20,  16,  40,  45, 135, 231,  // NTAG 2xx
-                                        0,   0,   0,                       // ST25TA
+                                        0,   0,   0,   0,                  // ST25TA
                                         0,                                 // 14443-4
                                         128, 256, 64,                      // Plus
                                         0,   0,   0,   0,                  // DESFire (Not has blocks, File base system)
@@ -126,6 +127,7 @@ constexpr uint8_t user_block_table[][2] = {
     {0, 0},
     {0, 0},
     {0, 0},
+    {0, 0},
     // 14443-4
     {0, 0},
     // Plus
@@ -148,7 +150,7 @@ constexpr uint8_t max_sector_table[] = {
     5,  16, 32, 40,           // Classic
     0,  0,  0,  0,  0,        // Light
     0,  0,  0,  0,  0, 0, 0,  // NTAG
-    0,  0,  0,                // ST25TA
+    0,  0,  0,  0,            // ST25TA
     0,                        //
     32, 40, 16,               // Plus
     0,  0,  0,  0,            // Desfire
@@ -162,7 +164,7 @@ constexpr uint16_t user_area_size_table[] = {
     240,  752,  1504, 3440,                 // Classic
     48,   48,   128,  40,   144,            // Light
     144,  48,   144,  208,  144, 504, 888,  // NTAG
-    0,    0,    0,                          // ST25
+    64,   256,  2048, 8192,                 // ST25
     0,                                      //
     1504, 3440, 752,                        // Plus
     0,    0,    0,    0,                    // Desfire
@@ -176,7 +178,7 @@ constexpr NFCForumTag nfc_forum_tag_table[] = {
     NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,  // Light
     NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                      // NTAG 2xx
     NFCForumTag::Type2, NFCForumTag::Type2, NFCForumTag::Type2,                                          // NTAG 2xx
-    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                                          // ST25TA
+    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                      // ST25TA
     NFCForumTag::None,                                                                                   //
     NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                                           // Plus
     NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                      // DESFire
@@ -194,7 +196,7 @@ constexpr EmulationSetting emulation_settings[] = {
     {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00},  // Light
     {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00},                  // NTAG 2xx
     {0x0044, 0x00}, {0x0044, 0x00}, {0x0044, 0x00},                                  // NTAG 2xx
-    {0x0000, 0x00}, {0x0000, 0x00}, {0x0000, 0x00},                                  // ST25TA
+    {0x0000, 0x00}, {0x0000, 0x00}, {0x0000, 0x00}, {0x0000, 0x00},                  // ST25TA
     {0x0000, 0x20},                                                                  //
     {0x0000, 0x20}, {0x0000, 0x20}, {0x0000, 0x20},                                  // Plus
     {0x0344, 0x20}, {0x0344, 0x20}, {0x0344, 0x20}, {0x0344, 0x20},                  // DESFire
@@ -239,7 +241,7 @@ constexpr const uint8_t* emu_ver3_table[] = {
     nullptr, nullptr,        nullptr,       nullptr,                                                     // Classic
     nullptr, ver3_ul_ev11,   ver3_ul_ev21,  ver3_ul_nano,  nullptr,                                      // Light
     nullptr, ver3_ntag_210u, ver3_ntag_210, ver3_ntag_212, ver3_ntag_213, ver3_ntag_215, ver3_ntag_216,  // NTAG2xx
-    nullptr, nullptr,        nullptr,                                                                    // ST25TA
+    nullptr, nullptr,        nullptr,       nullptr,                                                     // ST25TA
     nullptr,                                                                                             //
     nullptr, nullptr,        nullptr,                                                                    // Plus
     nullptr, nullptr,        nullptr,       nullptr,                                                     // DESFire
@@ -307,7 +309,7 @@ uint16_t get_user_area_size(const Type t)
 
 uint16_t get_unit_size(const Type t)
 {
-    return supports_NFC(t) ? 4 : is_mifare(t) ? 16 : 0;
+    return supports_NFC(t) ? 4 : is_mifare(t) ? 16 : 0 /* Not block/page file system */;
 }
 
 uint16_t get_number_of_sectors(const Type t)
@@ -338,6 +340,18 @@ bool is_user_block(const Type t, const uint16_t block)
         return (block >= get_first_user_block(t)) && (block <= get_last_user_block(t));
     }
     return false;
+}
+
+file_system_feature_t get_file_system_feature(const Type t)
+{
+    if (is_mifare_desfire(t)) {
+        return FILE_SYSTEM_DESFIRE | FILE_SYSTEM_ISO7816_4;
+    } else if (is_st25ta(t) || is_iso14443_4(t)) {
+        return FILE_SYSTEM_ISO7816_4;
+    } else if (t != Type::Unknown) {
+        return FILE_SYSTEM_FLAT_MEMORY;
+    }
+    return 0u;
 }
 
 Type sak_to_type(const uint8_t sak)

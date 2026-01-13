@@ -39,11 +39,13 @@ public:
 
     bool readCapabilityContainer(m5::nfc::ndef::type2::CapabilityContainer& cc);
     bool readAttributeBlock(m5::nfc::ndef::type3::AttributeBlock& ab);
+    bool readCapabilityContainer(m5::nfc::ndef::type4::CapabilityContainer& cc);
     bool readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContainer& cc);
 
 protected:
     bool read_type2(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits);
     bool read_type3(m5::nfc::ndef::TLV& tlv);
+    bool read_type4(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::type4::FileControlTagBits fcBits);
     bool read_type5(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits);
 
     bool write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep);

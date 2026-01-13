@@ -24,6 +24,13 @@ namespace isodep {
 //! @brief Calculate waiting time(ms) by fwi and fc
 uint32_t fwi_to_ms(const uint8_t fwi, const float fc);
 
+//! @brief Convert FSCI to FSC (ISO/IEC 14443-4)
+inline uint16_t fsci_to_fsc(const uint8_t fsci)
+{
+    static constexpr uint16_t table[] = {16, 24, 32, 40, 48, 64, 96, 128, 256};
+    return (fsci < (sizeof(table) / sizeof(table[0]))) ? table[fsci] : 0;
+}
+
 struct config_t {
 #if 0
     // PICCが受けられる最大INF（FSC）

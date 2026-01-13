@@ -316,11 +316,6 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
 
     // M5_LIB_LOGD("Error: %08X", irq);
     return false;
-#if 0
-    if (has_irq32_error(irq)) {
-    }
-    return is_irq32_collision(irq);
-#endif
 }
 
 bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
@@ -586,22 +581,6 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
 }
 
 // -------------------------------- For MIFARE classic
-bool UnitST25R3916::mifare_transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                      const uint32_t timeout_ms)
-{
-    if (!rx | !rx_len || !tx || !tx_len) {
-        return false;
-    }
-    auto bb = nfcaTransceive(rx, rx_len, tx, tx_len, timeout_ms);
-    if (!bb) {
-        return false;
-    }
-    // Check NACK
-    uint16_t bytes = bb & 0xffff;
-    uint16_t bits  = (bb >> 16) & 0xFF;
-    return (bytes == 1 && bits == 4) ? rx[0] == ACK_NIBBLE : true;
-}
-
 bool UnitST25R3916::mifare_classic_send_encrypt(const uint8_t* tx, const uint16_t tx_len)
 {
     if (!tx || !tx_len || tx_len > 32) {

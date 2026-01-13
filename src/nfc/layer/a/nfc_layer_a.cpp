@@ -10,7 +10,8 @@
 #include "nfc_layer_a.hpp"
 #include "nfc/ndef/ndef.hpp"
 #include "nfc/ndef/ndef_tlv.hpp"
-#include "nfc/isodep/desfire_file_system.hpp"
+#include "nfc/isoDEP/file_system.hpp"
+#include "nfc/isoDEP/desfire_file_system.hpp"
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
@@ -97,6 +98,16 @@ bool NFCLayerA::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms
     M5_LIB_LOGE(">>>>>>>>>>>>> NOT YET");
     return false;
     //    return _impl->receive(rx, rx_len, timeout_ms, rx_crc);
+}
+
+m5::nfc::NFCForumTag NFCLayerA::supportsNFCTag() const
+{
+    return _activePICC.nfcForumTagType();
+}
+
+file_system_feature_t NFCLayerA::supportsFilesystem() const
+{
+    return _activePICC.fileSystemFeature();
 }
 
 bool NFCLayerA::request(uint16_t& atqa)
@@ -244,24 +255,36 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         uint8_t ver[64]{};
         uint16_t ver_len = sizeof(ver);
         if (mifare_get_version_L4(ver, ver_len)) {
+            // Plus,DESFire,NTAG4xx
             // M5_LIB_LOGE(">>>> GetVerionL4 OK");
             // m5::utility::log::dump(ver, ver_len, false);
             type = version4_to_type(picc.sub_type, ver);
         } else {
+            // Plus,ST25TA
             //  Check historical bytes
             // M5_LIB_LOGE(">>>> Check historical bytes");
             // m5::utility::log::dump(picc.ats.historical.data(), picc.ats.historical_len, false);
             type = historical_bytes_to_type(picc.sub_type, picc.atqa, picc.sak, picc.ats.historical.data(),
                                             picc.ats.historical_len);
         }
-        // If it's still unclassify at this stage, read more in SystemFile
         if (type != Type::Unknown) {
             picc.type   = type;
             picc.blocks = get_number_of_blocks(picc.type);
             return true;
         }
-        M5_LIB_LOGW("NEED MORE CHECK!!");
-        return true;
+
+        // ST25TA series?
+        if (picc.uid[0] == m5::stl::to_underlying(ManufacturerId::STMicroelectronics)) {
+            type = identify_picc_st25ta();
+            if (type != Type::Unknown) {
+                picc.type   = type;
+                picc.blocks = get_number_of_blocks(picc.type);
+                return true;
+            }
+        }
+
+        // Not changed
+        return reactivate(picc);
     }
 
     if (picc.type == Type::MIFARE_Ultralight) {
@@ -287,6 +310,53 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
     }
     // Not changed
     return true;
+}
+
+m5::nfc::a::Type NFCLayerA::identify_picc_st25ta()
+{
+    st25ta::SystemFile sf{};
+
+    // Read ST25TA system file
+    FileSystem fs(_isoDEP);
+    const bool selected_df = fs.selectByDfName(type4::NDEF_AID, sizeof(type4::NDEF_AID), apdu::SelectResponse::FCI) ||
+                             fs.selectByDfName(type4::NDEF_AID, sizeof(type4::NDEF_AID), apdu::SelectResponse::None) ||
+                             fs.selectByDfName(type4::NDEF_AID, sizeof(type4::NDEF_AID), apdu::SelectResponse::FCP);
+    if (!selected_df) {
+        return Type::Unknown;
+    }
+    const bool selected_cc = fs.selectByFileId(st25ta::SYSTEM_FILE_ID, apdu::SelectResponse::None) ||
+                             fs.selectByFileId(st25ta::SYSTEM_FILE_ID, apdu::SelectResponse::FCI);
+    if (!selected_cc) {
+        return Type::Unknown;
+    }
+
+    // Check length
+    std::vector<uint8_t> head;
+    if (!fs.readBinary(head, 0, 2) || head.size() < 2) {
+        return Type::Unknown;
+    }
+    const uint16_t cc_len = (static_cast<uint16_t>(head[0]) << 8) | head[1];
+    if (cc_len != sizeof(sf)) {
+        return Type::Unknown;
+    }
+
+    // Read
+    std::vector<uint8_t> raw;
+    raw.reserve(cc_len);
+    uint16_t offset = 0;
+    while (offset < cc_len) {
+        const uint16_t chunk = std::min<uint16_t>(static_cast<uint16_t>(cc_len - offset), 0xFF);
+        std::vector<uint8_t> part;
+        if (!fs.readBinary(part, offset, chunk) || part.size() < chunk) {
+            return Type::Unknown;
+        }
+        raw.insert(raw.end(), part.begin(), part.end());
+        offset = static_cast<uint16_t>(offset + chunk);
+    }
+    if (raw.size() < cc_len) {
+        return Type::Unknown;
+    }
+    return st25ta::get_type(raw[17]);
 }
 
 bool NFCLayerA::read4(uint8_t rx[4], const uint8_t addr)
@@ -884,9 +954,7 @@ bool NFCLayerA::mifareUltralightCAuthenticate(const uint8_t key[16])
 bool NFCLayerA::ndefIsValidFormat(bool& valid)
 {
     valid = false;
-    return (_activePICC.supportsNFC() || _activePICC.isMifareUltralight())
-               ? _ndef.isValidFormat(valid, _activePICC.nfcForumTagType())
-               : false;
+    return _activePICC.supportsNDEF() ? _ndef.isValidFormat(valid, _activePICC.nfcForumTagType()) : false;
 }
 
 bool NFCLayerA::ndefRead(m5::nfc::ndef::TLV& msg)
@@ -903,7 +971,7 @@ bool NFCLayerA::ndefRead(m5::nfc::ndef::TLV& msg)
 
 bool NFCLayerA::ndefRead(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits)
 {
-    return _activePICC.supportsNFC() && _ndef.read(_activePICC.nfcForumTagType(), tlvs, tagBits);
+    return _activePICC.supportsNDEF() && _ndef.read(_activePICC.nfcForumTagType(), tlvs, tagBits);
 }
 
 bool NFCLayerA::ndefWrite(const m5::nfc::ndef::TLV& msg)
@@ -1155,10 +1223,13 @@ bool NFCLayerA::nfca_request_ats(m5::nfc::a::ATS& ats, const uint8_t fsdi, const
 
     if (!_impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_RATS) || rx_len < 2) {
         M5_LIB_LOGE("Failed to RATS %u", rx_len);
-        M5_DUMPE(cmd, sizeof(cmd));
-        m5::utility::log::dump(rx, rx_len, false);
+        // M5_DUMPE(cmd, sizeof(cmd));
+        // m5::utility::log::dump(rx, rx_len, false);
         return false;
     }
+    M5_LIB_LOGD("ATS len:%u T0:%02X TA:%02X TB:%02X TC:%02X", rx_len, rx[1], rx_len > 2 ? rx[2] : 0,
+                rx_len > 3 ? rx[3] : 0, rx_len > 4 ? rx[4] : 0);
+
     // M5_LIB_LOGE(">>>>ATS %u bytes", rx_len);
     // m5::utility::log::dump(rx, rx_len, false);
 
@@ -1181,6 +1252,23 @@ bool NFCLayerA::nfca_request_ats(m5::nfc::a::ATS& ats, const uint8_t fsdi, const
         memcpy(ats.historical.data(), rx + offset, hlen);
         ats.historical_len = hlen;
     }
+    // Reflect ATS into ISO-DEP config (FSC/FWT/CID)
+    {
+        auto cfg           = _isoDEP.config();
+        const uint16_t fsc = m5::nfc::isodep::fsci_to_fsc(ats.fsci());
+        if (fsc) {
+            cfg.fsc = fsc;
+        }
+        const uint8_t fwi     = ats.validTB() ? ats.fwi() : 4;  // Default FWI=4 if TB absent
+        const uint32_t fwt_ms = m5::nfc::isodep::fwi_to_ms(fwi, 13.56e6f);
+        if (fwt_ms) {
+            cfg.fwt_ms = fwt_ms;
+        }
+        cfg.use_cid = (cid != 0) && ats.supportsCID();
+        cfg.cid     = cid & 0x0F;
+        _isoDEP.config(cfg);
+    }
+
     return true;
 }
 

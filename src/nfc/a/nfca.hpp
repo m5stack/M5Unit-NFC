@@ -50,9 +50,10 @@ enum class Type : uint8_t {
     NTAG_215,   //!< NTAG 215
     NTAG_216,   //!< NTAG 216
 
-    ST25TA_2K,   //!< ST25TA02K
-    ST25TA_16K,  //!< ST25TA16K
-    ST25TA_64K,  //!< ST25TA64K
+    ST25TA_512B,  //!< ST25TA512B
+    ST25TA_2K,    //!< ST25TA02K
+    ST25TA_16K,   //!< ST25TA16K
+    ST25TA_64K,   //!< ST25TA64K
 
     ISO_14443_4,  //!< PICC compliant with ISO/IEC 14443-4
 
@@ -69,7 +70,7 @@ enum class Type : uint8_t {
 
     ISO_18092,  //!< PICC compliant with ISO/IEC 18092
 
-    NotCompleted = 0xFF,  //!< SAK indicates UID is not complete
+    //    NotCompleted = 0xFF,  //!< SAK indicates UID is not complete
 };
 
 enum class SubTypePlus : uint8_t {
@@ -102,10 +103,16 @@ inline bool is_mifare_ultralight(const Type t)
     return t >= Type::MIFARE_Ultralight && t <= Type::MIFARE_UltralightC;
 }
 
-//! @brief Is type NTAG?
-inline bool is_ntag(const Type t)
+//! @brief Is type NTAG2xx?
+inline bool is_ntag2(const Type t)
 {
     return t >= Type::NTAG_203 && t <= Type::NTAG_216;
+}
+
+//! @brief Is type NTAG4xx?
+inline bool is_ntag4(const Type t)
+{
+    return t >= Type::NTAG_4XX;
 }
 
 //! @brief Is type MIFARE Plus?
@@ -126,10 +133,16 @@ inline bool is_mifare(const Type t)
     return is_mifare_classic(t) || is_mifare_ultralight(t) || is_mifare_plus(t) || is_mifare_desfire(t);
 }
 
+//! @brief Is ST25TA series?
+inline bool is_st25ta(const Type t)
+{
+    return t >= Type::ST25TA_2K && t <= Type::ST25TA_64K;
+}
+
 //! @brief Is ISO 14443-4?
 inline bool is_iso14443_4(const Type t)
 {
-    return is_mifare_plus(t) || is_mifare_desfire(t) || (t == Type::ISO_14443_4);
+    return is_mifare_plus(t) || is_mifare_desfire(t) || is_st25ta(t) || (t == Type::ISO_14443_4);
 }
 
 //! @brief Is ISO 14443-3?
@@ -141,7 +154,7 @@ inline bool is_iso14443_3(const Type t)
 //! @brief Does the specified type function as NFC?
 inline bool supports_NFC(const Type t)
 {
-    return (t >= Type::MIFARE_Ultralight && t <= Type::MIFARE_UltralightC) || is_ntag(t);
+    return (t >= Type::MIFARE_Ultralight && t <= Type::MIFARE_UltralightC) || is_ntag2(t);
 }
 
 //! @brief Has FAST_READ command?
@@ -201,6 +214,9 @@ uint16_t get_first_user_block(const Type t);
 uint16_t get_last_user_block(const Type t);
 //! @brief Is block user area?
 bool is_user_block(const Type t, const uint16_t block);
+
+//! @brief Get file system fearure bits
+file_system_feature_t get_file_system_feature(const Type t);
 
 //! @brief Calculate bcc8
 uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len);
@@ -348,13 +364,19 @@ struct PICC {
         return is_mifare_desfire(type);
     }
     //! @brief Is NTAG?
-    inline bool isNTAG() const
+    inline bool isNTAG2() const
     {
-        return is_ntag(type);
+        return is_ntag2(type);
     }
+    //! @brief Is ISO1443-4?
     inline bool isISO14443_4() const
     {
         return is_iso14443_4(type);
+    }
+    //! @brief Is ST25TA?
+    inline bool isST25TA() const
+    {
+        return is_st25ta(type);
     }
     ///@}
 
@@ -363,7 +385,9 @@ struct PICC {
     //! @brief Total size
     inline uint16_t totalSize() const
     {
-        return valid() ? get_number_of_blocks(type) * get_unit_size(type) : 0;
+        return valid()
+                   ? (get_unit_size(type) ? get_number_of_blocks(type) * get_unit_size(type) : get_user_area_size(type))
+                   : 0;
     }
     //! @brief Total user area size
     inline uint16_t userAreaSize() const
@@ -390,12 +414,6 @@ struct PICC {
     {
         return valid() ? is_user_block(type, block) : false;
     }
-
-    //! @brief NFC ForumTag
-    inline NFCForumTag nfcForumTagType() const
-    {
-        return get_nfc_forum_tag_type(type);
-    }
     ///@}
 
     ///@name Capability
@@ -405,10 +423,25 @@ struct PICC {
     {
         return valid() && supports_NFC(type);
     }
+    //! @brief Supports NDEF?
+    inline bool supportsNDEF() const
+    {
+        return valid() && nfcForumTagType() != NFCForumTag::None;
+    }
+    //! @brief NFC ForumTag
+    inline NFCForumTag nfcForumTagType() const
+    {
+        return get_nfc_forum_tag_type(type);
+    }
     //! @brief Can use FAST_READ command?
     inline bool canFastRead() const
     {
         return valid() && has_fast_read(type);
+    }
+    //! @brief File system features
+    file_system_feature_t fileSystemFeature() const
+    {
+        return valid() ? get_file_system_feature(type) : 0;
     }
     ///@}
 };
@@ -494,6 +527,93 @@ constexpr uint32_t TIMEOUT_DESELECT{5};
 ///@{
 constexpr uint8_t ACK_NIBBLE{0x0A};
 ///@}
+
+/*!
+  @namespace st25ta
+  @brief For ST25TA series
+ */
+namespace st25ta {
+constexpr uint16_t SYSTEM_FILE_ID{0xE101};  //!< System file for ST25TA
+
+///@name Identifier
+///@{
+constexpr uint8_t IC_REFERENCE_ST25TA512B{0xE5};
+constexpr uint8_t IC_REFERENCE_ST25TA02KB{0xE2};
+constexpr uint8_t IC_REFERENCE_ST25TA02KB_D{0xF2};
+constexpr uint8_t IC_REFERENCE_ST25TA02KB_P{0xA2};
+constexpr uint8_t PRODUCT_CODE_ST25TA16K{0xC5};
+constexpr uint8_t PRODUCT_CODE_ST25TA64K{0xC4};
+///@}
+
+//! @brief Gets the type from IC reference or product code
+inline Type get_type(const uint8_t ic_ref_or_product_code)
+{
+    return (ic_ref_or_product_code == IC_REFERENCE_ST25TA512B)
+               ? Type::ST25TA_512B
+               : ((ic_ref_or_product_code == IC_REFERENCE_ST25TA02KB ||
+                   ic_ref_or_product_code == IC_REFERENCE_ST25TA02KB_D ||
+                   ic_ref_or_product_code == IC_REFERENCE_ST25TA02KB_P)
+                      ? Type::ST25TA_2K
+                      : ((ic_ref_or_product_code == PRODUCT_CODE_ST25TA16K)   ? Type::ST25TA_16K
+                         : (ic_ref_or_product_code == PRODUCT_CODE_ST25TA64K) ? Type::ST25TA_64K
+                                                                              : Type::Unknown));
+}
+
+/*!
+  @struct SystemFile
+  @brief ST25TA series system file
+ */
+struct SystemFile {
+#if 0
+    /*!
+      @struct ST25TA02K
+      @note Include ST25TA512B
+     */
+    struct ST25TA02K {
+        uint16_t sflen;                //!< Length system file
+        uint8_t gpo_config;            //!< GPO config if ST25TA02KB-D/P, reserved(0x80) if ST25TA512B/02KB
+        uint8_t event_counter_config;  //!< Event Counter Config
+        uint8_t counter[3];            //!< 20-bit counter
+        uint8_t product_version;       //!< Product version
+        uint8_t uid[7];                //!< UID
+        uint16_t memory_size;          //!< Memory size - 1
+        uint8_t ic_reference_code;     //!< IC reference code
+    } __attribute__((packed));
+
+    //! @struct ST25TA16K
+    struct ST25TA16K {
+        uint16_t sflen;        //!< Length system file
+        uint8_t reserved[6];   //!< Reserved
+        uint8_t uid[7];        //!< UID
+        uint16_t memory_size;  //!< Memory size - 1
+        uint8_t product_code;  //!< Product code
+    } __attribute__((packed_));
+
+    //! @struct ST25TA64K
+    struct ST25TA64K {
+        uint16_t sflen;        //!< Length system file
+        uint8_t reserved[6];   //!< Reserved
+        uint8_t uid[7];        //!< UID
+        uint16_t memory_size;  //!< Memory size - 1
+        uint8_t product_code;  //!< Product code
+    } __attribute__((packed));
+
+    union{
+        block[18]{};
+        ST25TA02K st25ta02k;
+        ST25TA16K st25ta02k;
+        ST25TA64K st25ta02k;
+    };
+#else
+    uint8_t block[18]{};
+#endif
+    inline Type type() const
+    {
+        return get_type(block[17]);
+    }
+} __attribute__((packed));
+
+}  // namespace st25ta
 
 }  // namespace a
 }  // namespace nfc

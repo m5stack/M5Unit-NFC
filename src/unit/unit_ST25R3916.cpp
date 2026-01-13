@@ -118,7 +118,7 @@ bool UnitST25R3916::begin()
 {
     // Attach interrupt
     if (_cfg.using_irq) {
-        M5_LIB_LOGE("Using IRQ:%u", _cfg.irq);
+        M5_LIB_LOGD("Using IRQ:%u", _cfg.irq);
         //        pinMode(_cfg.irq, INPUT_PULLDOWN);
         pinMode(_cfg.irq, INPUT);
         attachInterruptArg(digitalPinToInterrupt(_cfg.irq), &UnitST25R3916::on_irq, this, RISING);
@@ -169,8 +169,6 @@ bool UnitST25R3916::begin()
         M5_LIB_LOGE("Failed to TXDriver");
         return false;
     }
-    readTXDriver(txd);
-    M5_LIB_LOGD("TXD:%02X", txd);
 
     //
 #if 0
@@ -227,7 +225,7 @@ bool UnitST25R3916::begin()
     // Check vdd voltage
     uint8_t value{};
     if (readRegulatorDisplay(value)) {
-        M5_LIB_LOGE("Regulated voltages:%02X:%1.1fV", value, regulated_voltages(value, _cfg.vdd_voltage_5V));
+        M5_LIB_LOGV("Regulated voltages:%02X:%1.1fV", value, regulated_voltages(value, _cfg.vdd_voltage_5V));
     }
 
     return !_cfg.emulation ? configureNFCMode(_cfg.mode) : configureEmulationMode(_cfg.mode);

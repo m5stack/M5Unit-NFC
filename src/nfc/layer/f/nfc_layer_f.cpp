@@ -489,6 +489,9 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
     uint16_t sc{service_random_read};
     uint16_t start  = sblock.block();
     uint16_t blocks = rx_org_len >> 4;
+    if (blocks == 0) {
+        return false;
+    }
     uint16_t last   = std::min<uint16_t>(_activePICC.lastUserBlock(), start + blocks - 1);
     if (!_activePICC.valid() || !rx || !rx_org_len || !_activePICC.isUserBlock(sblock) ||
         !_activePICC.isUserBlock(last)) {
