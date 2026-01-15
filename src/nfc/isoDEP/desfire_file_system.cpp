@@ -285,8 +285,6 @@ bool DESFireFileSystem::createStdDataFile(const uint8_t file_no, const uint16_t 
     uint8_t data[1 + 2 + 1 + 2 + 3]{};
     uint8_t* p = data;
 
-    M5_LIB_LOGE(">>>> access_rights %04X", access_rights);
-
     *p++ = file_no;
     *p++ = static_cast<uint8_t>(iso_fid & 0xFF);
     *p++ = static_cast<uint8_t>((iso_fid >> 8) & 0xFF);
@@ -298,6 +296,7 @@ bool DESFireFileSystem::createStdDataFile(const uint8_t file_no, const uint16_t 
 
     const uint16_t len = static_cast<uint16_t>(p - data);
     auto cmd           = make_native_wrap_command(m5::stl::to_underlying(INS::DF_CREATE_STD_DATA_FILE), data, len);
+
     M5_LIB_LOGE("CreateStdDataFile cmd:");
     m5::utility::log::dump(cmd.data(), cmd.size(), false);
 
@@ -400,6 +399,29 @@ bool DESFireFileSystem::createNDEFFiles(const NdefFormatOptions& opt)
         return false;
     }
 
+    // adjust NDEF file size
+    NdefFormatOptions opt2 = opt;
+    uint32_t free_mem{};
+    if (getFreeMemory(free_mem)) {
+        const uint32_t reserve = (free_mem >= 8192) ? 256 : 0;
+        const uint32_t capped    = (free_mem > reserve) ? (free_mem - reserve) : 0;
+        const uint16_t ndef_size = static_cast<uint16_t>(std::min<uint32_t>(opt2.ndef_file_size, capped));
+
+        opt2.ndef_file_size = ndef_size;
+        M5_LIB_LOGE(">>>> NDEF size:%u", ndef_size);
+        if (ndef_size < 32) {
+            M5_LIB_LOGE("createNDEFFiles: NDEF size too small %u", ndef_size);
+            return false;
+        }
+
+        for (auto& fct : opt2.cc.fctlvs) {
+            if (fct.fctag() == m5::nfc::ndef::type4::FileControlTag::Message) {
+                fct.ndef_file_size = ndef_size;
+                break;
+            }
+        }
+    }
+
     // picc auth
     bool picc_des_ok{};
     bool picc_iso_ok{};
@@ -490,10 +512,11 @@ bool DESFireFileSystem::createNDEFFiles(const NdefFormatOptions& opt)
         M5_LIB_LOGE("createNDEFFiles: create CC file failed");
         return false;
     }
+
     std::vector<uint8_t> cc;
     uint16_t ndef_fid{};
     uint16_t ndef_size{};
-    if (!build_cc(cc, opt, ndef_fid, ndef_size)) {
+    if (!build_cc(cc, opt2, ndef_fid, ndef_size)) {
         M5_LIB_LOGE("createNDEFFiles: build CC failed");
         return false;
     }
