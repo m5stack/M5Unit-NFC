@@ -217,6 +217,11 @@ bool is_user_block(const Type t, const uint16_t block);
 
 //! @brief Get file system fearure bits
 file_system_feature_t get_file_system_feature(const Type t);
+//! @brief File base file system?
+inline bool is_file_base_file_system(const Type t)
+{
+    return get_file_system_feature(t) & (FILE_SYSTEM_ISO7816_4 | FILE_SYSTEM_DESFIRE);
+}
 
 //! @brief Calculate bcc8
 uint8_t calculate_bcc8(const uint8_t* data, const uint32_t len);
@@ -315,7 +320,8 @@ struct PICC {
     //! @brief Valid?
     inline bool valid() const
     {
-        return (size == 4 || size == 7 || size == 10) && (type != Type::Unknown) && (isISO14443_4() || blocks);
+        return (size == 4 || size == 7 || size == 10) && (type != Type::Unknown) &&
+               (is_file_base_file_system(type) || blocks);
     }
     //! @brief Retrieve the last 4 bytes of UID
     void tail4(uint8_t buf[4]) const

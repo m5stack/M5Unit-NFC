@@ -17,6 +17,9 @@
 namespace m5 {
 namespace nfc {
 class NFCLayerInterface;
+namespace isodep {
+class IsoDEP;
+}
 namespace ndef {
 
 class TLV;
@@ -31,15 +34,56 @@ public:
     explicit NDEFLayer(NFCLayerInterface& layer) : _interface{layer}
     {
     }
+    /*!
+      @brief Check whether the tag is in NDEF format
+      @param[out] valid True if the tag has a valid NDEF format
+      @param ftag NFC Forum Tag type
+      @return True if command succeeded
+     */
     bool isValidFormat(bool& valid, const m5::nfc::NFCForumTag ftag);
 
+    /*!
+      @brief Read NDEF data
+      @param ftag NFC Forum Tag type
+      @param[out] tlvs Output TLVs
+      @param tagBits Target TLV tags
+      @return True if successful
+     */
     bool read(const m5::nfc::NFCForumTag ftag, std::vector<m5::nfc::ndef::TLV>& tlvs,
               const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsMessage);
+    /*!
+      @brief Write NDEF data
+      @param ftag NFC Forum Tag type
+      @param tlvs TLVs to write
+      @param keep Keep existing TLVs when possible
+      @return True if successful
+      @note The message will be overwritten
+     */
     bool write(const m5::nfc::NFCForumTag ftag, const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep = true);
 
+    /*!
+      @brief Read Type2 Capability Container
+      @param[out] cc Capability container
+      @return True if successful
+     */
     bool readCapabilityContainer(m5::nfc::ndef::type2::CapabilityContainer& cc);
+    /*!
+      @brief Read Type3 Attribute Block
+      @param[out] ab Attribute block
+      @return True if successful
+     */
     bool readAttributeBlock(m5::nfc::ndef::type3::AttributeBlock& ab);
+    /*!
+      @brief Read Type4 Capability Container
+      @param[out] cc Capability container
+      @return True if successful
+     */
     bool readCapabilityContainer(m5::nfc::ndef::type4::CapabilityContainer& cc);
+    /*!
+      @brief Read Type5 Capability Container
+      @param[out] cc Capability container
+      @return True if successful
+     */
     bool readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContainer& cc);
 
 protected:
@@ -50,6 +94,11 @@ protected:
 
     bool write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep);
     bool write_type3(const m5::nfc::ndef::TLV& tlv);
+    bool write_type4(const std::vector<m5::nfc::ndef::TLV>& tlvs);
+    bool write_type4_iso7816(const std::vector<m5::nfc::ndef::TLV>& tlvs, const type4::CapabilityContainer& cc,
+                             isodep::IsoDEP& dep);
+    bool write_type4_desfire(const std::vector<m5::nfc::ndef::TLV>& tlvs, const type4::CapabilityContainer& cc,
+                             isodep::IsoDEP& dep);
     bool write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep);
 
     std::vector<m5::nfc::ndef::TLV> merge_tlv(std::vector<m5::nfc::ndef::TLV>& old_tlvs,

@@ -89,12 +89,21 @@ enum class INS : uint8_t {
     GET_VERSION       = 0x60,
 
     // DESFire
-    DF_SELECT_APPLICATION  = 0x5A,
-    DF_GET_APPLICATION_IDS = 0x6A,
-    DF_GET_FILE_IDS        = 0x6F,
-    DF_AUTHENTICATE        = 0x0A,
-    DF_READ_DATA           = 0xBD,
-    DF_WRITE_DATA          = 0x3D,
+    DF_CREATE_APPLICATION   = 0xCA,
+    DF_DELETE_APPLICATION   = 0xDA,
+    DF_SELECT_APPLICATION   = 0x5A,
+    DF_GET_APPLICATION_IDS  = 0x6A,
+    DF_CREATE_STD_DATA_FILE = 0xCD,
+    DF_GET_FREE_MEMORY      = 0x6E,
+    DF_GET_FILE_IDS         = 0x6F,
+    DF_GET_KEY_SETTINGS     = 0x45,
+    DF_AUTHENTICATE         = 0x0A,
+    DF_AUTHENTICATE_ISO     = 0x1A,
+    DF_AUTHENTICATE_AES     = 0xAA,
+    DF_FORMAT_PICC          = 0xFC,
+    DF_READ_DATA            = 0xBD,
+    DF_WRITE_DATA           = 0x3D,
+    DF_GET_FILE_SETTINGS    = 0xF5,
 };
 ///@}
 

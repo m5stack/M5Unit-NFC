@@ -10,10 +10,13 @@
 #include "desfire_file_system.hpp"
 #include "nfc/layer/a/nfc_layer_a.hpp"
 #include "nfc/isoDEP/isoDEP.hpp"
+#include "nfc/ndef/ndef.hpp"
 #include "nfc/apdu/apdu.hpp"
 #include <cstring>
+#include <mbedtls/aes.h>
 #include <esp_random.h>
 #include <M5Utility.hpp>
+#include <algorithm>
 
 using namespace m5::nfc;
 using namespace m5::nfc::isodep;
@@ -22,6 +25,93 @@ using namespace m5::nfc::apdu;
 namespace {
 
 constexpr uint16_t DEFAULT_RX_LEN{1024};
+
+bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, const uint8_t key[16])
+{
+    using m5::utility::crypto::TripleDES;
+    using namespace m5::nfc::a::mifare::desfire;
+
+    if (!key) {
+        return false;
+    }
+
+    TripleDES::Key16 key16{};
+    std::memcpy(key16.data(), key, 16);
+
+    uint8_t auth_key_no[1] = {key_no};
+    auto cmd               = make_native_wrap_command(ins, auth_key_no, 1);
+
+    std::vector<uint8_t> rx(DEFAULT_RX_LEN);
+    uint16_t rx_len = rx.size();
+    if (!dep.transceiveINF(rx.data(), rx_len, cmd.data(), cmd.size(), nullptr) || rx_len < 2) {
+        M5_LIB_LOGE("Failed to auth step1 %u", rx_len);
+        return false;
+    }
+    if (!is_more(rx.data(), rx_len) || rx_len < 10) {
+        M5_LIB_LOGE("Unexpected auth step1 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
+        return false;
+    }
+
+    uint8_t ek_rndB[8]{};
+    std::memcpy(ek_rndB, rx.data(), 8);
+
+    uint8_t rndB[8]{};
+    {
+        uint8_t iv[8]{};
+        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, iv};
+        if (!des.decrypt(rndB, ek_rndB, sizeof(ek_rndB), key16)) {
+            return false;
+        }
+    }
+
+    uint8_t rndB_rot[8]{};
+    uint8_t rndA[8]{};
+    for (int i = 0; i < 7; ++i) {
+        rndB_rot[i] = rndB[i + 1];
+    }
+    rndB_rot[7] = rndB[0];
+    for (auto& r : rndA) {
+        r = static_cast<uint8_t>(esp_random());
+    }
+
+    uint8_t plain_AB[16]{};
+    std::memcpy(plain_AB, rndA, 8);
+    std::memcpy(plain_AB + 8, rndB_rot, 8);
+
+    uint8_t ek_AB[16]{};
+    {
+        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_rndB};
+        if (!des.encrypt(ek_AB, plain_AB, sizeof(plain_AB), key16)) {
+            return false;
+        }
+    }
+
+    auto cmd2 = make_native_wrap_command(0xAF, ek_AB, sizeof(ek_AB));
+    rx_len    = rx.size();
+    if (!dep.transceiveINF(rx.data(), rx_len, cmd2.data(), cmd2.size(), nullptr) || rx_len < 2) {
+        M5_LIB_LOGE("Failed to auth step2 %u", rx_len);
+        return false;
+    }
+    if (!is_successful(rx.data(), rx_len) || rx_len < 10) {
+        M5_LIB_LOGE("Unexpected auth step2 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
+        return false;
+    }
+
+    uint8_t rndA_rot_from_card[8]{};
+    {
+        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_AB + 8};
+        if (!des.decrypt(rndA_rot_from_card, rx.data(), 8, key16)) {
+            return false;
+        }
+    }
+
+    uint8_t rndA_rot[8]{};
+    for (int i = 0; i < 7; ++i) {
+        rndA_rot[i] = rndA[i + 1];
+    }
+    rndA_rot[7] = rndA[0];
+    return std::memcmp(rndA_rot, rndA_rot_from_card, 8) == 0;
+}
 
 void rotate_byte_left(uint8_t out[8], const uint8_t in[8])
 {
@@ -36,6 +126,56 @@ inline void pack_le24(uint8_t out[3], const uint32_t value)
     out[0] = static_cast<uint8_t>(value & 0xFF);
     out[1] = static_cast<uint8_t>((value >> 8) & 0xFF);
     out[2] = static_cast<uint8_t>((value >> 16) & 0xFF);
+}
+
+inline uint32_t unpack_le24(const uint8_t in[3])
+{
+    return static_cast<uint32_t>(in[0]) | (static_cast<uint32_t>(in[1]) << 8) | (static_cast<uint32_t>(in[2]) << 16);
+}
+
+bool build_cc(std::vector<uint8_t>& out, const m5::nfc::a::mifare::desfire::NdefFormatOptions& opt, uint16_t& ndef_fid,
+              uint16_t& ndef_size)
+{
+    out.clear();
+
+    if (opt.cc.fctlvs.empty()) {
+        return false;
+    }
+    const auto& fct = opt.cc.fctlvs.front();
+    if (!fct.ndef_file_id) {
+        return false;
+    }
+    const uint16_t cc_len = opt.cc_file_size ? opt.cc_file_size : 0x000F;
+    const uint8_t mapping = opt.cc.mapping_version ? opt.cc.mapping_version : 0x20;
+    const uint16_t mle    = opt.cc.mle ? opt.cc.mle : 0x003A;
+    const uint16_t mlc    = opt.cc.mlc ? opt.cc.mlc : 0x0034;
+
+    ndef_fid  = fct.ndef_file_id;
+    ndef_size = fct.ndef_file_size ? fct.ndef_file_size : opt.ndef_file_size;
+    if (fct.ndef_file_size && opt.ndef_file_size && fct.ndef_file_size != opt.ndef_file_size) {
+        return false;
+    }
+    if (!ndef_size) {
+        return false;
+    }
+
+    out.reserve(cc_len);
+    out.push_back(static_cast<uint8_t>((cc_len >> 8) & 0xFF));
+    out.push_back(static_cast<uint8_t>(cc_len & 0xFF));
+    out.push_back(mapping);
+    out.push_back(static_cast<uint8_t>((mle >> 8) & 0xFF));
+    out.push_back(static_cast<uint8_t>(mle & 0xFF));
+    out.push_back(static_cast<uint8_t>((mlc >> 8) & 0xFF));
+    out.push_back(static_cast<uint8_t>(mlc & 0xFF));
+    out.push_back(0x04);
+    out.push_back(0x06);
+    out.push_back(static_cast<uint8_t>((ndef_fid >> 8) & 0xFF));
+    out.push_back(static_cast<uint8_t>(ndef_fid & 0xFF));
+    out.push_back(static_cast<uint8_t>((ndef_size >> 8) & 0xFF));
+    out.push_back(static_cast<uint8_t>(ndef_size & 0xFF));
+    out.push_back(fct.read_access);
+    out.push_back(fct.write_access);
+    return out.size() >= 7;
 }
 
 }  // namespace
@@ -83,60 +223,314 @@ std::vector<uint8_t> make_native_wrap_command(const uint8_t ins, const uint8_t* 
 DESFireFileSystem::DESFireFileSystem(m5::nfc::NFCLayerA& layer)
     : FileSystem{*layer.isoDEP() /* always exists _isoDEP */}
 {
-    const auto& picc = layer.activatedPICC();
-    // M5_LIB_LOGE(">>>>PICC %s %u", picc.uidAsString().c_str(), picc.valid());
-
-    auto cfg = _isoDEP.config();
-#if 0
-    cfg.fwt_ms           = fwi_to_ms(picc.ats.fwi(), 13.56e6f);
-    cfg.fsc              = picc.maximumFrameLength();
-    cfg.pcd_max_frame_tx = cfg.pcd_max_frame_rx = 64;  // TODO FIFO_DEPTH
-#else
-    cfg.fwt_ms           = 500;
-    cfg.fsc              = 256;
-    cfg.pcd_max_frame_tx = cfg.pcd_max_frame_rx = 64;  // TODO FIFO_DEPTH
-#endif
-    _isoDEP.config(cfg);
 }
 
-#if 0
-bool DESFireFileSystem::open(const uint8_t aid[3], const uint8_t fileNo, const uint32_t timeout_ms)
+m5::stl::expected<void, uint8_t> DESFireFileSystem::createApplication(const uint8_t aid[3], const uint8_t key_settings1,
+                                                                      const uint8_t key_settings2,
+                                                                      const uint16_t iso_fid, const uint8_t* df_name,
+                                                                      const uint8_t df_name_len)
 {
-    if (!selectApplication(aid, timeout_ms)) {
+    std::vector<uint8_t> data;
+    data.reserve(5 + 2 + df_name_len);
+    data.push_back(aid[0]);
+    data.push_back(aid[1]);
+    data.push_back(aid[2]);
+    data.push_back(key_settings1);
+    data.push_back(key_settings2);
+
+    if (iso_fid || (df_name && df_name_len)) {
+        data.push_back(static_cast<uint8_t>(iso_fid & 0xFF));
+        data.push_back(static_cast<uint8_t>((iso_fid >> 8) & 0xFF));
+    }
+    if (df_name && df_name_len) {
+        data.insert(data.end(), df_name, df_name + df_name_len);
+    }
+
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_CREATE_APPLICATION), data.data(), data.size());
+
+    M5_LIB_LOGE("cmd:");
+    m5::utility::log::dump(cmd.data(), cmd.size(), false);
+
+    uint8_t rx[16]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+        return m5::stl::unexpected<uint8_t>{0xFF};
+    }
+    const uint8_t status = status_code(rx, rx_len);
+    if (is_successful(rx, rx_len) || is_duplicate(rx, rx_len)) {
+        return {};
+    }
+    M5_LIB_LOGE("CreateApplication failed (%02X)", status);
+    return m5::stl::unexpected<uint8_t>{status};
+}
+
+bool DESFireFileSystem::deleteApplication(const uint8_t aid[3])
+{
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_DELETE_APPLICATION), aid, 3);
+    uint8_t rx[16]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
         return false;
     }
-    _file_no = fileNo;
-    return true;
+    if (is_successful(rx, rx_len)) {
+        return true;
+    }
+    M5_LIB_LOGE("DeleteApplication failed (%02X)", status_code(rx, rx_len));
+    return false;
 }
 
-bool DESFireFileSystem::open(const uint32_t aid24, const uint8_t fileNo, const uint32_t timeout_ms)
+bool DESFireFileSystem::createStdDataFile(const uint8_t file_no, const uint16_t iso_fid, const uint8_t comm_mode,
+                                          const uint16_t access_rights, const uint32_t file_size)
 {
-    if (!selectApplication(aid24, timeout_ms)) {
+    uint8_t data[1 + 2 + 1 + 2 + 3]{};
+    uint8_t* p = data;
+
+    M5_LIB_LOGE(">>>> access_rights %04X", access_rights);
+
+    *p++ = file_no;
+    *p++ = static_cast<uint8_t>(iso_fid & 0xFF);
+    *p++ = static_cast<uint8_t>((iso_fid >> 8) & 0xFF);
+    *p++ = comm_mode;
+    *p++ = static_cast<uint8_t>((access_rights >> 8) & 0xFF);
+    *p++ = static_cast<uint8_t>(access_rights & 0xFF);
+    pack_le24(p, file_size);
+    p += 3;
+
+    const uint16_t len = static_cast<uint16_t>(p - data);
+    auto cmd           = make_native_wrap_command(m5::stl::to_underlying(INS::DF_CREATE_STD_DATA_FILE), data, len);
+    M5_LIB_LOGE("CreateStdDataFile cmd:");
+    m5::utility::log::dump(cmd.data(), cmd.size(), false);
+
+    uint8_t rx[16]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
         return false;
     }
-    _file_no = fileNo;
+    if (is_successful(rx, rx_len) || is_duplicate(rx, rx_len)) {
+        return true;
+    }
+    M5_LIB_LOGE("CreateStdDataFile failed (%02X)", status_code(rx, rx_len));
+    return false;
+}
+
+bool DESFireFileSystem::readData(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset,
+                                 const uint32_t length)
+{
+    out.clear();
+
+    uint8_t data[1 + 3 + 3]{};
+    uint8_t* p = data;
+    *p++       = file_no;
+    pack_le24(p, offset);
+    p += 3;
+    pack_le24(p, length);
+    p += 3;
+
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_READ_DATA), data, sizeof(data));
+
+    const size_t rx_cap = length ? static_cast<size_t>(length + 2) : static_cast<size_t>(DEFAULT_RX_LEN);
+    std::vector<uint8_t> rx(rx_cap);
+    uint16_t rx_len = static_cast<uint16_t>(rx.size());
+    if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+        return false;
+    }
+    if (!is_successful(rx.data(), rx_len)) {
+        return false;
+    }
+    out.assign(rx.begin(), rx.begin() + (rx_len - 2));
     return true;
 }
 
-bool DESFireFileSystem::open(const uint8_t fileNo, const uint32_t timeout_ms)
+bool DESFireFileSystem::writeData(const uint8_t file_no, const uint32_t offset, const uint8_t* data,
+                                  const uint32_t data_len)
 {
-    (void)timeout_ms;
-    _file_no = fileNo;
+    if (!data || data_len == 0) {
+        return false;
+    }
+
+    constexpr uint32_t kParamLen = 1 + 3 + 3;
+    constexpr uint32_t kMaxLc    = 255;
+    const auto cfg               = _isoDEP.config();
+    const uint16_t overhead      = 1 + (cfg.use_cid ? 1U : 0U) + (cfg.use_nad ? 1U : 0U);
+    const uint16_t tx_frame_cap  = (cfg.pcd_max_frame_tx > (overhead + 2)) ? (cfg.pcd_max_frame_tx - overhead - 2) : 0;
+    const uint16_t max_inf_frame = (tx_frame_cap < cfg.fsc) ? tx_frame_cap : cfg.fsc;
+    const uint16_t safe_inf      = (max_inf_frame > 1) ? static_cast<uint16_t>(max_inf_frame - 1) : 0;  // margin
+    constexpr uint32_t kApduBase = 4 + 1 + 1 + kParamLen;
+    const uint32_t max_cmd_chunk = (safe_inf > kApduBase) ? (safe_inf - kApduBase) : 0;
+    const uint32_t kMaxChunk     = std::min<uint32_t>(kMaxLc - kParamLen, max_cmd_chunk);
+
+    // M5_LIB_LOGE("max inf %u kMaxChunk %u", max_inf_frame, kMaxChunk);
+
+    uint32_t written{};
+    while (written < data_len) {
+        const uint32_t chunk = std::min<uint32_t>(data_len - written, kMaxChunk);
+        std::vector<uint8_t> payload;
+        payload.resize(kParamLen + chunk);
+        uint8_t* p = payload.data();
+        *p++       = file_no;
+        pack_le24(p, offset + written);
+        p += 3;
+        pack_le24(p, chunk);
+        p += 3;
+        std::memcpy(p, data + written, chunk);
+
+        auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_WRITE_DATA), payload.data(),
+                                            static_cast<uint16_t>(payload.size()));
+
+        uint8_t rx[16]{};
+        uint16_t rx_len = sizeof(rx);
+        if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+            M5_LIB_LOGE("Transceive failed %u", written);
+            return false;
+        }
+        if (!is_successful(rx, rx_len)) {
+            M5_LIB_LOGE("WriteData failed %u (%02X)", written, status_code(rx, rx_len));
+            return false;
+        }
+        written += chunk;
+    }
     return true;
 }
-#endif
+
+bool DESFireFileSystem::createNDEFFiles(const NdefFormatOptions& opt)
+{
+    // select
+    if (!selectApplication()) {
+        M5_LIB_LOGE("createNDEFFiles: select PICC");
+        return false;
+    }
+
+    // picc auth
+    bool picc_des_ok{};
+    bool picc_iso_ok{};
+    bool picc_aes_ok{};
+    if (opt.picc_master_key) {
+        bool ok = false;
+        if (opt.auth_mode == AuthMode::DES || opt.auth_mode == AuthMode::Auto) {
+            picc_des_ok = authenticateDES(0x00, opt.picc_master_key);
+            M5_LIB_LOGE("DES:%u", picc_des_ok);
+            if (!picc_des_ok) {
+                picc_iso_ok = authenticateISO(0x00, opt.picc_master_key);
+                M5_LIB_LOGE("ISO:%u", picc_iso_ok);
+            }
+            ok = picc_des_ok || picc_iso_ok;
+        }
+        if (!ok && (opt.auth_mode == AuthMode::AES || opt.auth_mode == AuthMode::Auto)) {
+            picc_aes_ok = authenticateAES(0x00, opt.picc_master_key);
+            M5_LIB_LOGE("AES:%u", picc_aes_ok);
+            ok = picc_aes_ok;
+        }
+        if (!ok) {
+            M5_LIB_LOGE("createNDEFFiles: PICC master auth failed");
+            return false;
+        }
+    }
+    constexpr uint16_t app_iso_fid = 0xE110;
+    const auto* df_name            = m5::nfc::ndef::type4::NDEF_AID;
+    constexpr uint8_t df_name_len  = sizeof(m5::nfc::ndef::type4::NDEF_AID);
+
+    uint8_t key_settings2 = opt.key_settings2;
+    if (opt.auth_mode == AuthMode::Auto && opt.picc_master_key) {
+        const uint8_t base = static_cast<uint8_t>(opt.key_settings2 & 0x3F);
+        if (picc_aes_ok) {
+            key_settings2 = static_cast<uint8_t>(0x80 | base);
+        } else if (picc_iso_ok) {
+            key_settings2 = base;
+        } else if (picc_des_ok) {
+            key_settings2 = base;
+        }
+    }
+
+    // create app
+    auto created = createApplication(opt.aid, opt.key_settings1, key_settings2, app_iso_fid, df_name, df_name_len);
+    if (!created.has_value() && created.error() == 0x9E) {
+        created = createApplication(opt.aid, opt.key_settings1, key_settings2, 0, nullptr, 0);
+    }
+    if (!created.has_value()) {
+        M5_LIB_LOGE("createNDEFFiles: create application failed");
+        return false;
+    }
+    if (!selectApplication(opt.aid)) {
+        M5_LIB_LOGE("createNDEFFiles: select application failed");
+        return false;
+    }
+    // app auth
+    if (opt.app_master_key) {
+        bool ok = false;
+        if (opt.auth_mode == AuthMode::Auto && opt.picc_master_key) {
+            if (picc_aes_ok) {
+                ok = authenticateAES(0x00, opt.app_master_key);
+            } else if (picc_iso_ok) {
+                ok = authenticateISO(0x00, opt.app_master_key);
+            } else {
+                ok = authenticateDES(0x00, opt.app_master_key);
+                if (!ok) {
+                    ok = authenticateISO(0x00, opt.app_master_key);
+                }
+            }
+        } else {
+            if (opt.auth_mode == AuthMode::DES || opt.auth_mode == AuthMode::Auto) {
+                ok = authenticateDES(0x00, opt.app_master_key);
+                if (!ok) {
+                    ok = authenticateISO(0x00, opt.app_master_key);
+                }
+            }
+            if (!ok && (opt.auth_mode == AuthMode::AES || opt.auth_mode == AuthMode::Auto)) {
+                ok = authenticateAES(0x00, opt.app_master_key);
+            }
+        }
+        if (!ok) {
+            M5_LIB_LOGE("createNDEFFiles: app master auth failed");
+            return false;
+        }
+    }
+
+    // create CC file
+    if (!createStdDataFile(opt.cc_file_no, 0xE103, opt.comm_mode, opt.access_rights, opt.cc_file_size)) {
+        M5_LIB_LOGE("createNDEFFiles: create CC file failed");
+        return false;
+    }
+    std::vector<uint8_t> cc;
+    uint16_t ndef_fid{};
+    uint16_t ndef_size{};
+    if (!build_cc(cc, opt, ndef_fid, ndef_size)) {
+        M5_LIB_LOGE("createNDEFFiles: build CC failed");
+        return false;
+    }
+    if (!writeData(opt.cc_file_no, 0, cc.data(), static_cast<uint32_t>(cc.size()))) {
+        M5_LIB_LOGE("createNDEFFiles: write CC failed");
+        return false;
+    }
+
+    // create NDEF file
+    if (!createStdDataFile(opt.ndef_file_no, ndef_fid, opt.comm_mode, opt.access_rights, ndef_size)) {
+        M5_LIB_LOGE("createNDEFFiles: create NDEF file failed");
+        return false;
+    }
+
+    // Write empty (len == 0)
+    const uint8_t nlen0[2] = {0x00, 0x00};
+    if (!writeData(opt.ndef_file_no, 0, nlen0, sizeof(nlen0))) {
+        M5_LIB_LOGE("Failed to write");
+    }
+    return true;
+}
 
 bool DESFireFileSystem::selectApplication(const uint8_t aid[3])
 {
     auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_SELECT_APPLICATION), aid, 3);
-    uint8_t rx[2]{};
+    uint8_t rx[16]{};
     uint16_t rx_len = sizeof(rx);
 
     if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
         M5_LIB_LOGE("Failed to selectApplication %u", rx_len);
         return false;
     }
-    return is_successful(rx, rx_len);
+    if (!is_successful(rx, rx_len)) {
+        M5_LIB_LOGE("selectApplication failed (%02X)", status_code(rx, rx_len));
+        return false;
+    }
+    return true;
 }
 
 bool DESFireFileSystem::selectApplication(const uint32_t aid24)
@@ -162,6 +556,7 @@ bool DESFireFileSystem::getApplicationIDs(std::vector<desfire_aid_t>& out)
     if (is_successful(rx, rx_len)) {
         const uint16_t data_len = rx_len - 2;
         if (data_len % 3 != 0) {
+            M5_LIB_LOGW("getApplicationIDs: secured response not supported");
             return false;
         }
 
@@ -179,12 +574,104 @@ bool DESFireFileSystem::getApplicationIDs(std::vector<desfire_aid_t>& out)
     return false;
 }
 
+bool DESFireFileSystem::getFreeMemory(uint32_t& out)
+{
+    out      = 0;
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_GET_FREE_MEMORY));
+
+    uint8_t rx[16]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+        return false;
+    }
+
+    // M5_LIB_LOGW("getFreeMemory: rx_len=%u", rx_len);
+    // m5::utility::log::dump(rx, rx_len, false);
+
+    if (!is_successful(rx, rx_len)) {
+        return false;
+    }
+
+    const uint16_t data_len = static_cast<uint16_t>(rx_len - 2);
+    if (data_len > 3) {
+        M5_LIB_LOGW("getFreeMemory: secured response not supported");
+        return false;
+    }
+    if (data_len == 2) {
+        out = static_cast<uint32_t>(rx[0]) | (static_cast<uint32_t>(rx[1]) << 8);
+        return true;
+    }
+    if (data_len == 3) {
+        out = unpack_le24(rx);
+        return true;
+    }
+    return false;
+}
+
+bool DESFireFileSystem::getKeySettings(uint8_t& key_settings, uint8_t& key_count)
+{
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_GET_KEY_SETTINGS));
+
+    uint8_t rx[8]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 4) {
+        return false;
+    }
+    if (!is_successful(rx, rx_len)) {
+        return false;
+    }
+    const uint16_t data_len = static_cast<uint16_t>(rx_len - 2);
+    if (data_len > 2) {
+        M5_LIB_LOGW("getKeySettings: secured response not supported");
+        return false;
+    }
+    key_settings = rx[0];
+    key_count    = rx[1];
+    return true;
+}
+
+bool DESFireFileSystem::formatPICC(const uint8_t* picc_master_key, const AuthMode mode)
+{
+    if (!picc_master_key) {
+        return false;
+    }
+    if (!selectApplication(static_cast<uint32_t>(0x000000))) {
+        M5_LIB_LOGE("Failed to select app");
+        return false;
+    }
+
+    bool ok = false;
+    if (mode == AuthMode::DES || mode == AuthMode::Auto) {
+        ok = authenticateDES(0x00, picc_master_key);
+        if (!ok) {
+            ok = authenticateISO(0x00, picc_master_key);
+        }
+    }
+    if (!ok && (mode == AuthMode::AES || mode == AuthMode::Auto)) {
+        ok = authenticateAES(0x00, picc_master_key);
+    }
+    if (!ok) {
+        M5_LIB_LOGE("Failed to auth");
+        return false;
+    }
+
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_FORMAT_PICC));
+    uint8_t rx[16]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+        return false;
+    }
+    M5_LIB_LOGE("Foamt response");
+    m5::utility::log::dump(rx, rx_len, false);
+    return is_successful(rx, rx_len);
+}
+
 bool DESFireFileSystem::getFileIDs(std::vector<uint8_t>& out)
 {
     out.clear();
     auto cmd = make_native_wrap_command(m5::stl ::to_underlying(INS::DF_GET_FILE_IDS));
 
-    std::vector<uint8_t> rx(DEFAULT_RX_LEN);
+    std::vector<uint8_t> rx(MAXIMUM_FILES + 2);
     uint16_t rx_len = rx.size();
     if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
         M5_LIB_LOGE("Failed to getFileIDs %u", rx_len);
@@ -192,181 +679,142 @@ bool DESFireFileSystem::getFileIDs(std::vector<uint8_t>& out)
     }
     if (is_successful(rx.data(), rx_len)) {
         const uint16_t data_len = rx_len - 2;
+        if (data_len > MAXIMUM_FILES) {
+            M5_LIB_LOGW("getFileIDs: secured response not supported");
+            return false;
+        }
         out.assign(rx.begin(), rx.begin() + data_len);
         return true;
     }
     return false;
 }
 
-#if 0
-bool DESFireFileSystem::readData(uint8_t fileNo, std::vector<uint8_t>& out, uint32_t timeout_ms)
+bool DESFireFileSystem::getFileSettings(FileSettings& out, const uint8_t file_no)
 {
-    return readData(fileNo, 0, 0, out);
-}
+    out      = {};
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_GET_FILE_SETTINGS), &file_no, 1);
 
-bool DESFireFileSystem::readData(uint8_t fileNo, uint32_t offset, uint32_t length, std::vector<uint8_t>& out)
-{
-    out.clear();
-
-    uint8_t payload[1 + 3 + 3]{};
-    payload[0] = fileNo;
-    pack_le24(payload + 1, offset);
-    pack_le24(payload + 4, length);
-
-    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_READ_DATA), payload, sizeof(payload));
-
-    const uint32_t rx_cap = (length > 0) ? (length + 2) : DEFAULT_RX_LEN;
-    std::vector<uint8_t> rx(rx_cap);
-    uint16_t rx_len = rx.size();
-
-    if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
-        M5_LIB_LOGE("Failed to readData %u", rx_len);
-        return false;
-    }
-    if (is_successful(rx.data(), rx_len)) {
-        const uint16_t data_len = rx_len - 2;
-        out.assign(rx.begin(), rx.begin() + data_len);
-        return true;
-    }
-    return false;
-}
-
-bool DESFireFileSystem::writeData(uint8_t fileNo, uint32_t offset, const uint8_t* data, uint32_t data_len)
-{
-    if (!data || data_len == 0) {
-        return false;
-    }
-
-    std::vector<uint8_t> payload;
-    payload.resize(1 + 3 + 3 + data_len);
-    payload[0] = fileNo;
-    pack_le24(payload.data() + 1, offset);
-    pack_le24(payload.data() + 4, data_len);
-    std::memcpy(payload.data() + 7, data, data_len);
-
-    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_WRITE_DATA), payload.data(), payload.size());
-    uint8_t rx[2]{};
+    uint8_t rx[32]{};
     uint16_t rx_len = sizeof(rx);
     if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
-        M5_LIB_LOGE("Failed to writeData %u", rx_len);
         return false;
     }
-    return is_successful(rx, rx_len);
+    if (!is_successful(rx, rx_len)) {
+        return false;
+    }
+    const uint16_t data_len = static_cast<uint16_t>(rx_len - 2);
+    if (data_len < 7) {
+        return false;
+    }
+    if (data_len > 7) {
+        M5_LIB_LOGW("getFileSettings: secured response not supported");
+    }
+    out.file_type     = rx[0];
+    out.comm_mode     = rx[1];
+    out.access_rights = static_cast<uint16_t>(rx[2]) | (static_cast<uint16_t>(rx[3]) << 8);
+    out.file_size     = unpack_le24(rx + 4);
+    return true;
 }
 
 bool DESFireFileSystem::authenticateDES(const uint8_t key_no, const uint8_t key[16])
 {
-    using m5::utility::crypto::TripleDES;
+    return authenticate_legacy(_isoDEP, m5::stl::to_underlying(INS::DF_AUTHENTICATE), key_no, key);
+}
 
+bool DESFireFileSystem::authenticateISO(const uint8_t key_no, const uint8_t key[16])
+{
+    return authenticate_legacy(_isoDEP, m5::stl::to_underlying(INS::DF_AUTHENTICATE_ISO), key_no, key);
+}
+
+bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[16])
+{
     if (!key) {
         return false;
     }
 
-    TripleDES::Key16 key16{};
-    std::memcpy(key16.data(), key, 16);
-
     uint8_t auth_key_no[1] = {key_no};
-    auto cmd               = make_native_wrap_command(m5::stl::to_underlying(INS::DF_AUTHENTICATE), auth_key_no, 1);
+    auto cmd               = make_native_wrap_command(m5::stl::to_underlying(INS::DF_AUTHENTICATE_AES), auth_key_no, 1);
 
     std::vector<uint8_t> rx(DEFAULT_RX_LEN);
     uint16_t rx_len = rx.size();
     if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd.data(), cmd.size(), nullptr) || rx_len < 2) {
-        M5_LIB_LOGE("Failed to auth step1 %u", rx_len);
+        M5_LIB_LOGE("Failed to auth AES step1 %u", rx_len);
         return false;
     }
-    if (!is_more(rx.data(), rx_len) || rx_len < 10) {
-        M5_LIB_LOGE("Unexpected auth step1 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
+    if (!is_more(rx.data(), rx_len) || rx_len < 18) {
+        M5_LIB_LOGE("Unexpected auth AES step1 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
         return false;
     }
 
-    uint8_t ek_rndB[8]{};
-    std::memcpy(ek_rndB, rx.data(), 8);
+    uint8_t ek_rndB[16]{};
+    std::memcpy(ek_rndB, rx.data(), 16);
 
-    uint8_t rndB[8]{};
+    uint8_t rndB[16]{};
     {
-        uint8_t iv[8]{};
-        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, iv};
-        if (!des.decrypt(rndB, ek_rndB, sizeof(ek_rndB), key16)) {
-            return false;
-        }
+        mbedtls_aes_context aes;
+        mbedtls_aes_init(&aes);
+        mbedtls_aes_setkey_dec(&aes, key, 128);
+        uint8_t iv[16]{};
+        mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, ek_rndB, rndB);
+        mbedtls_aes_free(&aes);
     }
 
-    uint8_t rndA[8]{};
+    uint8_t rndB_rot[16]{};
+    for (int i = 0; i < 15; ++i) {
+        rndB_rot[i] = rndB[i + 1];
+    }
+    rndB_rot[15] = rndB[0];
+
+    uint8_t rndA[16]{};
     for (auto& r : rndA) {
         r = static_cast<uint8_t>(esp_random());
     }
 
-    uint8_t rndB_rot[8]{};
-    uint8_t rndA_rot[8]{};
-    rotate_byte_left(rndB_rot, rndB);
-    rotate_byte_left(rndA_rot, rndA);
+    uint8_t plain_AB[32]{};
+    std::memcpy(plain_AB, rndA, 16);
+    std::memcpy(plain_AB + 16, rndB_rot, 16);
 
-    uint8_t plain_AB[16]{};
-    std::memcpy(plain_AB, rndA, 8);
-    std::memcpy(plain_AB + 8, rndB_rot, 8);
-
-    uint8_t ek_AB[16]{};
+    uint8_t ek_AB[32]{};
     {
-        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_rndB};
-        if (!des.encrypt(ek_AB, plain_AB, sizeof(plain_AB), key16)) {
-            return false;
-        }
+        mbedtls_aes_context aes;
+        mbedtls_aes_init(&aes);
+        mbedtls_aes_setkey_enc(&aes, key, 128);
+        uint8_t iv[16]{};
+        std::memcpy(iv, ek_rndB, 16);
+        mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, sizeof(plain_AB), iv, plain_AB, ek_AB);
+        mbedtls_aes_free(&aes);
     }
 
     auto cmd2 = make_native_wrap_command(0xAF, ek_AB, sizeof(ek_AB));
     rx_len    = rx.size();
     if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd2.data(), cmd2.size(), nullptr) || rx_len < 2) {
-        M5_LIB_LOGE("Failed to auth step2 %u", rx_len);
+        M5_LIB_LOGE("Failed to auth AES step2 %u", rx_len);
         return false;
     }
-    if (!is_successful(rx.data(), rx_len) || rx_len < 10) {
-        M5_LIB_LOGE("Unexpected auth step2 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
+    if (!is_successful(rx.data(), rx_len) || rx_len < 18) {
+        M5_LIB_LOGE("Unexpected auth AES step2 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
         return false;
     }
 
-    uint8_t rndA_rot_from_card[8]{};
+    uint8_t rndA_rot_from_card[16]{};
     {
-        TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_AB + 8};
-        if (!des.decrypt(rndA_rot_from_card, rx.data(), 8, key16)) {
-            return false;
-        }
+        mbedtls_aes_context aes;
+        mbedtls_aes_init(&aes);
+        mbedtls_aes_setkey_dec(&aes, key, 128);
+        uint8_t iv[16]{};
+        std::memcpy(iv, ek_AB + 16, 16);
+        mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, rx.data(), rndA_rot_from_card);
+        mbedtls_aes_free(&aes);
     }
 
-    return std::memcmp(rndA_rot, rndA_rot_from_card, 8) == 0;
-}
-
-bool DESFireFileSystem::read(std::vector<uint8_t>& out)
-{
-    if (_file_no == 0xFF) {
-        return false;
+    uint8_t rndA_rot[16]{};
+    for (int i = 0; i < 15; ++i) {
+        rndA_rot[i] = rndA[i + 1];
     }
-    return readData(_file_no, out);
-}
+    rndA_rot[15] = rndA[0];
 
-bool DESFireFileSystem::read(uint32_t offset, uint32_t length, std::vector<uint8_t>& out)
-{
-    if (_file_no == 0xFF) {
-        return false;
-    }
-    return readData(_file_no, offset, length, out);
+    return std::memcmp(rndA_rot, rndA_rot_from_card, 16) == 0;
 }
-
-bool DESFireFileSystem::write(const uint8_t* data, uint32_t data_len)
-{
-    if (_file_no == 0xFF) {
-        return false;
-    }
-    return writeData(_file_no, 0, data, data_len);
-}
-
-bool DESFireFileSystem::write(uint32_t offset, const uint8_t* data, uint32_t data_len)
-{
-    if (_file_no == 0xFF) {
-        return false;
-    }
-    return writeData(_file_no, offset, data, data_len);
-}
-#endif
 
 // Support continued reception via 0x91AF
 bool DESFireFileSystem::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len)
@@ -388,7 +836,7 @@ bool DESFireFileSystem::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t*
     // First
     if (!_isoDEP.transceiveINF(tmp_rx.data(), tmp_rx_len, tx, tx_len) || tmp_rx_len < 2) {
         M5_LIB_LOGE("Failed to transceiveINF %u", tmp_rx_len);
-        // m5::utility::log::dump(tmp_rx.data(), tmp_rx_len, false);
+        M5_DUMPE(tmp_rx.data(), tmp_rx_len);
         return false;
     }
 
@@ -411,10 +859,10 @@ bool DESFireFileSystem::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t*
         // More response please!
         if (!_isoDEP.transceiveINF(tmp_rx.data(), tmp_rx_len, af_cmd, sizeof(af_cmd)) || tmp_rx_len < 2) {
             M5_LIB_LOGE("Failed to transceiveINF %u", tmp_rx_len);
+            M5_DUMPE(tmp_rx.data(), tmp_rx_len);
             return false;
         }
         // m5::utility::log::dump(tmp_rx.data(), tmp_rx_len, false);
-
         if (tmp_rx_len > 2) {
             if (acc.size() + (tmp_rx_len - 2) + 2 /*status 2bytes*/ > org_rx_len) {
                 return false;

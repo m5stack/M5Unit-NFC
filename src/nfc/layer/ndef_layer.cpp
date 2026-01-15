@@ -11,6 +11,7 @@
 #include "nfc/ndef/ndef.hpp"
 #include "nfc/ndef/ndef_tlv.hpp"
 #include "nfc/isoDEP/file_system.hpp"
+#include "nfc/isoDEP/desfire_file_system.hpp"
 #include "nfc/ndef/ndef_record.hpp"
 #include <M5Utility.hpp>
 #include <algorithm>
@@ -63,6 +64,11 @@ bool NDEFLayer::isValidFormat(bool& valid, const m5::nfc::NFCForumTag ftag)
             type4::CapabilityContainer cc{};
             if (readCapabilityContainer(cc)) {
                 valid = cc.valid();
+                return true;
+            }
+            // Unformatted DESFire returns success
+            if (_interface.supportsFilesystem() & FILE_SYSTEM_DESFIRE) {
+                valid = false;
                 return true;
             }
         }; break;
@@ -137,15 +143,12 @@ bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type4::CapabilityContaine
         return false;
     }
 
-    m5::nfc::FileSystem fs(*dep);
-    const bool selected_df = fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::FCI) ||
-                             fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::None) ||
-                             fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::FCP);
+    FileSystem fs(*dep);
+    const bool selected_df = fs.selectDfNameAuto(NDEF_AID, sizeof(NDEF_AID));
     if (!selected_df) {
         return false;
     }
-    const bool selected_cc = fs.selectByFileId(m5::nfc::ndef::type4::CC_FILE_ID, m5::nfc::apdu::SelectResponse::None) ||
-                             fs.selectByFileId(m5::nfc::ndef::type4::CC_FILE_ID, m5::nfc::apdu::SelectResponse::FCI);
+    const bool selected_cc = fs.selectFileIdAuto(m5::nfc::ndef::type4::CC_FILE_ID);
     if (!selected_cc) {
         return false;
     }
@@ -211,6 +214,7 @@ bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContaine
     return true;
 }
 
+//
 bool NDEFLayer::read(const m5::nfc::NFCForumTag ftag, std::vector<m5::nfc::ndef::TLV>& tlvs,
                      const m5::nfc::ndef::TagBits tagBits)
 {
@@ -237,26 +241,6 @@ bool NDEFLayer::read(const m5::nfc::NFCForumTag ftag, std::vector<m5::nfc::ndef:
     return false;
 }
 
-bool NDEFLayer::write(const m5::nfc::NFCForumTag ftag, const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep)
-{
-    if (!tlvs.empty()) {
-        switch (ftag) {
-            case NFCForumTag::Type2:
-                return write_type2(tlvs, keep);
-            case NFCForumTag::Type3:
-                return write_type3(tlvs.front());
-            case NFCForumTag::Type5:
-                return write_type5(tlvs, keep);
-            case NFCForumTag::Type1:
-            case NFCForumTag::Type4:
-            default:
-                break;
-        }
-    }
-    return false;
-}
-
-//
 bool NDEFLayer::read_type2(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits)
 {
     tlvs.clear();
@@ -397,10 +381,8 @@ bool NDEFLayer::read_type4(std::vector<m5::nfc::ndef::TLV>& tlvs,
         return false;
     }
 
-    m5::nfc::FileSystem fs(*dep);
-    const bool selected_df = fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::FCI) ||
-                             fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::None) ||
-                             fs.selectByDfName(NDEF_AID, sizeof(NDEF_AID), m5::nfc::apdu::SelectResponse::FCP);
+    FileSystem fs(*dep);
+    const bool selected_df = fs.selectDfNameAuto(NDEF_AID, sizeof(NDEF_AID));
     if (!selected_df) {
         return false;
     }
@@ -410,8 +392,7 @@ bool NDEFLayer::read_type4(std::vector<m5::nfc::ndef::TLV>& tlvs,
             continue;
         }
 
-        const bool selected_file = fs.selectByFileId(fctlv.ndef_file_id, m5::nfc::apdu::SelectResponse::None) ||
-                                   fs.selectByFileId(fctlv.ndef_file_id, m5::nfc::apdu::SelectResponse::FCI);
+        const bool selected_file = fs.selectFileIdAuto(fctlv.ndef_file_id);
         if (!selected_file) {
             return false;
         }
@@ -557,6 +538,27 @@ skip:
 }
 
 //
+
+bool NDEFLayer::write(const m5::nfc::NFCForumTag ftag, const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep)
+{
+    if (!tlvs.empty()) {
+        switch (ftag) {
+            case NFCForumTag::Type2:
+                return write_type2(tlvs, keep);
+            case NFCForumTag::Type3:
+                return write_type3(tlvs.front());
+            case NFCForumTag::Type4:
+                return write_type4(tlvs);
+            case NFCForumTag::Type5:
+                return write_type5(tlvs, keep);
+            case NFCForumTag::Type1:
+            default:
+                break;
+        }
+    }
+    return false;
+}
+
 bool NDEFLayer::write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep)
 {
     bool ret{};
@@ -701,6 +703,179 @@ bool NDEFLayer::write_type3(const m5::nfc::ndef::TLV& tlv)
 skip:
     free(buf);
     return ret;
+}
+
+bool NDEFLayer::write_type4(const std::vector<m5::nfc::ndef::TLV>& tlvs)
+{
+    using type4::CapabilityContainer;
+
+    if (tlvs.empty()) {
+        return false;
+    }
+
+    CapabilityContainer cc{};
+    if (!readCapabilityContainer(cc) || !cc.valid()) {
+        return false;
+    }
+
+    auto* dep = _interface.isoDEP();
+    if (!dep) {
+        return false;
+    }
+
+    if (_interface.supportsFilesystem() & FILE_SYSTEM_DESFIRE) {
+        return write_type4_desfire(tlvs, cc, *dep);
+    }
+
+    return write_type4_iso7816(tlvs, cc, *dep);
+}
+
+bool NDEFLayer::write_type4_desfire(const std::vector<m5::nfc::ndef::TLV>& tlvs, const type4::CapabilityContainer& cc,
+                                    isodep::IsoDEP& dep)
+{
+    (void)cc;
+
+    const TLV* src = nullptr;
+    for (auto&& tlv : tlvs) {
+        if (tlv.isMessageTLV()) {
+            src = &tlv;
+            break;
+        }
+    }
+    if (!src) {
+        return false;
+    }
+
+    const uint32_t record_size = std::accumulate(src->records().begin(), src->records().end(), 0U,
+                                                 [](uint32_t acc, const Record& r) { return acc + r.required(); });
+    if (record_size == 0) {
+        return false;
+    }
+    const uint32_t total_size = record_size + 2;  // NLEN + payload
+    const uint32_t user_size  = _interface.user_area_size();
+    if (user_size && total_size > user_size) {
+        return false;
+    }
+
+    std::vector<uint8_t> msg{};
+    msg.resize(record_size);
+    uint32_t offset{};
+    for (auto&& r : src->records()) {
+        auto len = r.encode(msg.data() + offset, record_size - offset);
+        if (!len) {
+            return false;
+        }
+        offset += len;
+    }
+
+    const uint16_t nlen      = static_cast<uint16_t>(msg.size());
+    const uint8_t nlen_be[2] = {static_cast<uint8_t>(nlen >> 8), static_cast<uint8_t>(nlen & 0xFF)};
+    std::vector<uint8_t> payload;
+    payload.reserve(total_size);
+    payload.insert(payload.end(), nlen_be, nlen_be + sizeof(nlen_be));
+    payload.insert(payload.end(), msg.begin(), msg.end());
+
+    a::mifare::desfire::DESFireFileSystem dfs(dep);
+    constexpr uint8_t kNdefFileNo = 0x02;  // AN11004 default NDEF file number
+    if (!dfs.selectApplication((0x000001))) {
+        return false;
+    }
+    return dfs.writeData(kNdefFileNo, 0, payload.data(), static_cast<uint32_t>(payload.size()));
+}
+
+bool NDEFLayer::write_type4_iso7816(const std::vector<m5::nfc::ndef::TLV>& tlvs, const type4::CapabilityContainer& cc,
+                                    isodep::IsoDEP& dep)
+{
+    using type4::NDEF_AID;
+
+    FileSystem fs(dep);
+    const bool selected_df = fs.selectDfNameAuto(NDEF_AID, sizeof(NDEF_AID));
+    if (!selected_df) {
+        return false;
+    }
+
+    const uint16_t max_lc = cc.mlc ? std::min<uint16_t>(cc.mlc, 32) : 0x00FF;
+
+    for (auto&& fctlv : cc.fctlvs) {
+        const TLV* src = nullptr;
+        if (fctlv.fctag() == type4::FileControlTag::Message) {
+            for (auto&& tlv : tlvs) {
+                if (tlv.isMessageTLV()) {
+                    src = &tlv;
+                    break;
+                }
+            }
+        } else if (fctlv.fctag() == type4::FileControlTag::Proprietary) {
+            for (auto&& tlv : tlvs) {
+                if (tlv.tag() == Tag::Proprietary) {
+                    src = &tlv;
+                    break;
+                }
+            }
+        }
+        if (!src) {
+            continue;
+        }
+
+        const bool selected_file = fs.selectFileIdAuto(fctlv.ndef_file_id);
+        if (!selected_file) {
+            return false;
+        }
+
+        if (fctlv.fctag() == type4::FileControlTag::Proprietary) {
+            const auto& payload = src->payload();
+            if (fctlv.ndef_file_size && payload.size() > fctlv.ndef_file_size) {
+                return false;
+            }
+            uint16_t offset = 0;
+            while (offset < payload.size()) {
+                const uint16_t remaining = static_cast<uint16_t>(payload.size() - offset);
+                const uint16_t chunk     = std::min<uint16_t>(remaining, max_lc);
+                if (!fs.updateBinary(offset, payload.data() + offset, chunk)) {
+                    return false;
+                }
+                offset = static_cast<uint16_t>(offset + chunk);
+            }
+            continue;
+        }
+
+        if (!src->isMessageTLV()) {
+            continue;
+        }
+
+        const uint32_t record_size = std::accumulate(src->records().begin(), src->records().end(), 0U,
+                                                     [](uint32_t acc, const Record& r) { return acc + r.required(); });
+        if (fctlv.ndef_file_size && record_size > (fctlv.ndef_file_size - 2)) {
+            return false;
+        }
+
+        std::vector<uint8_t> msg{};
+        msg.resize(record_size);
+        uint32_t offset{};
+        for (auto&& r : src->records()) {
+            auto len = r.encode(msg.data() + offset, record_size - offset);
+            if (!len) {
+                return false;
+            }
+            offset += len;
+        }
+
+        const uint16_t nlen      = static_cast<uint16_t>(msg.size());
+        const uint8_t nlen_be[2] = {static_cast<uint8_t>(nlen >> 8), static_cast<uint8_t>(nlen & 0xFF)};
+        if (!fs.updateBinary(0, nlen_be, sizeof(nlen_be))) {
+            return false;
+        }
+        offset = 0;
+        while (offset < msg.size()) {
+            const uint16_t remaining = static_cast<uint16_t>(msg.size() - offset);
+            const uint16_t chunk     = std::min<uint16_t>(remaining, max_lc);
+            if (!fs.updateBinary(static_cast<uint16_t>(2 + offset), msg.data() + offset, chunk)) {
+                return false;
+            }
+            offset = static_cast<uint16_t>(offset + chunk);
+        }
+    }
+    return true;
 }
 
 bool NDEFLayer::write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep)

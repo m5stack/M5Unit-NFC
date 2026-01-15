@@ -59,10 +59,26 @@ bool FileSystem::selectByFileId(const uint16_t fid, const m5::nfc::apdu::SelectR
     return selectFile(m5::nfc::apdu::SelectBy::FileId, occ, res, file_id, sizeof(file_id));
 }
 
+bool FileSystem::selectFileIdAuto(const uint16_t fid, const m5::nfc::apdu::SelectOccurrence occ)
+{
+    // Response handling varies depending on PICC, so fallback is required
+    return selectByFileId(fid, m5::nfc::apdu::SelectResponse::None, occ) ||
+           selectByFileId(fid, m5::nfc::apdu::SelectResponse::FCI, occ) ||
+           selectByFileId(fid, m5::nfc::apdu::SelectResponse::FCP, occ);
+}
+
 bool FileSystem::selectByDfName(const uint8_t* aid, const uint8_t aid_len, const m5::nfc::apdu::SelectResponse res,
                                 const m5::nfc::apdu::SelectOccurrence occ)
 {
     return selectFile(m5::nfc::apdu::SelectBy::DfName, occ, res, aid, aid_len);
+}
+
+bool FileSystem::selectDfNameAuto(const uint8_t* aid, const uint8_t aid_len, const m5::nfc::apdu::SelectOccurrence occ)
+{
+    // Response handling varies depending on PICC, so fallback is required
+    return selectByDfName(aid, aid_len, m5::nfc::apdu::SelectResponse::FCI, occ) ||
+           selectByDfName(aid, aid_len, m5::nfc::apdu::SelectResponse::None, occ) ||
+           selectByDfName(aid, aid_len, m5::nfc::apdu::SelectResponse::FCP, occ);
 }
 
 bool FileSystem::selectByPath(const uint8_t* path, const uint8_t path_len, const bool from_mf,
@@ -155,5 +171,31 @@ bool FileSystem::readBinary(std::vector<uint8_t>& out, const uint16_t offset,
     out.assign(rx.begin(), rx.begin() + (rx_len - 2));
     return true;
 }
+
+bool FileSystem::updateBinary(const uint16_t offset, const uint8_t* data, const uint16_t data_len)
+{
+    if (!data || data_len == 0) {
+        return false;
+    }
+
+    const uint8_t p1 = static_cast<uint8_t>((offset >> 8) & 0xFF);
+    const uint8_t p2 = static_cast<uint8_t>(offset & 0xFF);
+
+    auto cmd = make_apdu_case3(0x00, m5::stl::to_underlying(INS::UPDATE_BINARY), p1, p2, data, data_len);
+
+    uint8_t rx[2]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!_isoDEP.transceiveAPDU(rx, rx_len, cmd.data(), static_cast<uint16_t>(cmd.size())) || rx_len < 2) {
+        M5_LIB_LOGE("UPDATE BINARY failed (transport) %u", rx_len);
+        return false;
+    }
+    if (!is_response_OK(rx + rx_len - 2)) {
+        M5_LIB_LOGE("SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
+        M5_DUMPE(cmd.data(), cmd.size());
+        return false;
+    }
+    return true;
+}
+
 }  // namespace nfc
 }  // namespace m5

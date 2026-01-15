@@ -94,10 +94,10 @@ constexpr uint16_t max_block_table[] = {0,                                 // Un
                                         20,  64,  128, 256,                // Classic
                                         16,  20,  40,  14,  48,            // Light
                                         42,  20,  16,  40,  45, 135, 231,  // NTAG 2xx
-                                        0,   0,   0,   0,                  // ST25TA
+                                        0,   0,   0,   0,                  // ST25TA (File base system)
                                         0,                                 // 14443-4
                                         128, 256, 64,                      // Plus
-                                        0,   0,   0,   0,                  // DESFire (Not has blocks, File base system)
+                                        0,   0,   0,   0,                  // DESFire (File base system)
                                         0,                                 // NTAG 4xx
                                         0};
 
@@ -167,7 +167,7 @@ constexpr uint16_t user_area_size_table[] = {
     64,   256,  2048, 8192,                 // ST25
     0,                                      //
     1504, 3440, 752,                        // Plus
-    0,    0,    0,    0,                    // Desfire
+    2048, 4096, 8192, 640,                  // Desfire (2K/4K/8K/Light)
     0,                                      // NTAG 4xx
     0,
 };
@@ -309,7 +309,7 @@ uint16_t get_user_area_size(const Type t)
 
 uint16_t get_unit_size(const Type t)
 {
-    return supports_NFC(t) ? 4 : is_mifare(t) ? 16 : 0 /* Not block/page file system */;
+    return is_file_base_file_system(t) ? 0 : (supports_NFC(t) ? 4 : (is_mifare(t) ? 16 : 0));
 }
 
 uint16_t get_number_of_sectors(const Type t)

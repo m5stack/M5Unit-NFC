@@ -256,8 +256,8 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         uint16_t ver_len = sizeof(ver);
         if (mifare_get_version_L4(ver, ver_len)) {
             // Plus,DESFire,NTAG4xx
-            // M5_LIB_LOGE(">>>> GetVerionL4 OK");
-            // m5::utility::log::dump(ver, ver_len, false);
+            M5_LIB_LOGE(">>>> GetVerionL4 OK");
+            m5::utility::log::dump(ver, ver_len, false);
             type = version4_to_type(picc.sub_type, ver);
         } else {
             // Plus,ST25TA
@@ -318,14 +318,11 @@ m5::nfc::a::Type NFCLayerA::identify_picc_st25ta()
 
     // Read ST25TA system file
     FileSystem fs(_isoDEP);
-    const bool selected_df = fs.selectByDfName(type4::NDEF_AID, sizeof(type4::NDEF_AID), apdu::SelectResponse::FCI) ||
-                             fs.selectByDfName(type4::NDEF_AID, sizeof(type4::NDEF_AID), apdu::SelectResponse::None) ||
-                             fs.selectByDfName(type4::NDEF_AID, sizeof(type4::NDEF_AID), apdu::SelectResponse::FCP);
+    const bool selected_df = fs.selectDfNameAuto(type4::NDEF_AID, sizeof(type4::NDEF_AID));
     if (!selected_df) {
         return Type::Unknown;
     }
-    const bool selected_cc = fs.selectByFileId(st25ta::SYSTEM_FILE_ID, apdu::SelectResponse::None) ||
-                             fs.selectByFileId(st25ta::SYSTEM_FILE_ID, apdu::SelectResponse::FCI);
+    const bool selected_cc = fs.selectFileIdAuto(st25ta::SYSTEM_FILE_ID);
     if (!selected_cc) {
         return Type::Unknown;
     }
@@ -977,12 +974,12 @@ bool NFCLayerA::ndefRead(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::n
 bool NFCLayerA::ndefWrite(const m5::nfc::ndef::TLV& msg)
 {
     std::vector<TLV> tlvs = {msg};
-    return msg.isMessageTLV() && _activePICC.supportsNFC() && _ndef.write(_activePICC.nfcForumTagType(), tlvs);
+    return msg.isMessageTLV() && _activePICC.supportsNDEF() && _ndef.write(_activePICC.nfcForumTagType(), tlvs);
 }
 
 bool NFCLayerA::ndefWrite(const std::vector<m5::nfc::ndef::TLV>& tlvs)
 {
-    return _activePICC.supportsNFC() && _ndef.write(_activePICC.nfcForumTagType(), tlvs, false);
+    return _activePICC.supportsNDEF() && _ndef.write(_activePICC.nfcForumTagType(), tlvs, false);
 }
 
 //
@@ -1145,7 +1142,7 @@ bool NFCLayerA::mifare_classic_value_block(const m5::nfc::a::Command cmd, const 
     return _impl->mifare_classic_value_block(cmd, block, arg);
 }
 
-// for ndef
+// for NDEF
 bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
 {
     if (!rx || !rx_len || !_activePICC.valid()) {
@@ -1227,7 +1224,7 @@ bool NFCLayerA::nfca_request_ats(m5::nfc::a::ATS& ats, const uint8_t fsdi, const
         // m5::utility::log::dump(rx, rx_len, false);
         return false;
     }
-    M5_LIB_LOGD("ATS len:%u T0:%02X TA:%02X TB:%02X TC:%02X", rx_len, rx[1], rx_len > 2 ? rx[2] : 0,
+    M5_LIB_LOGV("ATS len:%u T0:%02X TA:%02X TB:%02X TC:%02X", rx_len, rx[1], rx_len > 2 ? rx[2] : 0,
                 rx_len > 3 ? rx[3] : 0, rx_len > 4 ? rx[4] : 0);
 
     // M5_LIB_LOGE(">>>>ATS %u bytes", rx_len);
@@ -1267,6 +1264,8 @@ bool NFCLayerA::nfca_request_ats(m5::nfc::a::ATS& ats, const uint8_t fsdi, const
         cfg.use_cid = (cid != 0) && ats.supportsCID();
         cfg.cid     = cid & 0x0F;
         _isoDEP.config(cfg);
+        M5_LIB_LOGV("ISO-DEP cfg: FSCI:%u FSC:%u FWT:%u CID:%u tx:%u rx:%u", ats.fsci(), cfg.fsc, cfg.fwt_ms,
+                    cfg.use_cid, cfg.pcd_max_frame_tx, cfg.pcd_max_frame_rx);
     }
 
     return true;
