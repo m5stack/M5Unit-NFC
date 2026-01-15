@@ -62,6 +62,12 @@ public:
     bool write(const m5::nfc::NFCForumTag ftag, const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep = true);
 
     /*!
+      @brief Prepare NDEF files on MIFARE DESFire Light
+      @return True if successful
+     */
+    bool prepare_desfire_light();
+
+    /*!
       @brief Read Type2 Capability Container
       @param[out] cc Capability container
       @return True if successful
@@ -87,9 +93,16 @@ public:
     bool readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContainer& cc);
 
 protected:
+    bool read_capability_container_type4_iso7816(m5::nfc::ndef::type4::CapabilityContainer& cc);
+    bool read_capability_container_type4_desfire(m5::nfc::ndef::type4::CapabilityContainer& cc);
+
     bool read_type2(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits);
     bool read_type3(m5::nfc::ndef::TLV& tlv);
     bool read_type4(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::type4::FileControlTagBits fcBits);
+    bool read_type4_iso7816(std::vector<m5::nfc::ndef::TLV>& tlvs,
+                            const m5::nfc::ndef::type4::FileControlTagBits fcBits);
+    bool read_type4_desfire(std::vector<m5::nfc::ndef::TLV>& tlvs,
+                            const m5::nfc::ndef::type4::FileControlTagBits fcBits);
     bool read_type5(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc::ndef::TagBits tagBits);
 
     bool write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep);

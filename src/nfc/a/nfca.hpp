@@ -534,6 +534,7 @@ constexpr uint32_t TIMEOUT_DESELECT{5};
 constexpr uint8_t ACK_NIBBLE{0x0A};
 ///@}
 
+
 /*!
   @namespace st25ta
   @brief For ST25TA series

@@ -358,8 +358,27 @@ struct AttributeBlock {
  */
 namespace type4 {
 
-constexpr uint16_t CC_FILE_ID{0xE103};                                      // CC file id
+constexpr uint16_t CC_FILE_ID{0xE103};  //!< CC file id
+
 constexpr uint8_t NDEF_AID[] = {0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01};  //!< AID for NDEF
+constexpr uint16_t NDEF_APP_FID{0xE110};                                    //!< ISO DF FID for NDEF app
+constexpr uint16_t NDEF_FILE_ID{0xE104};                                    //!< ISO EF FID for NDEF file
+
+constexpr uint32_t DESFIRE_NDEF_APP_ID{0x000001};           //!< DESFire NDEF application AID
+constexpr uint8_t DESFIRE_CC_FILE_NO{0x01};                 //!< AN11004 default CC file number
+constexpr uint8_t DESFIRE_NDEF_FILE_NO{0x02};               //!< AN11004 default NDEF file number
+constexpr uint8_t DESFIRE_NDEF_AID[] = {0x00, 0x00, 0x01};  //!< DESFire NDEF AID (3 bytes)
+
+constexpr uint8_t DESFIRE_LIGHT_DF_NAME[] = {  //!< DESFire Light default DF Name
+    0xA0, 0x00, 0x00, 0x03, 0x96, 0x56, 0x43, 0x41, 0x03, 0xF0, 0x15, 0x40, 0x00, 0x00, 0x00, 0x0B};
+constexpr uint16_t DESFIRE_LIGHT_DF_FID{0xDF01};  //!< DESFire Light default DF FID
+constexpr uint8_t DESFIRE_LIGHT_CC_FILE_NO{0x00};  //!< DESFire Light CC file number
+constexpr uint8_t DESFIRE_LIGHT_NDEF_FILE_NO{0x04};  //!< DESFire Light NDEF file number
+constexpr uint16_t DESFIRE_LIGHT_CC_FILE_ID{0xEF00};  //!< DESFire Light CC file ID
+constexpr uint16_t DESFIRE_LIGHT_NDEF_FILE_ID{0xEF04};  //!< DESFire Light NDEF file ID
+constexpr uint16_t DESFIRE_LIGHT_NDEF_FILE_SIZE{256};  //!< DESFire Light NDEF file size (bytes)
+
+constexpr uint8_t DESFIRE_DEFAULT_KEY[16]{};  //!  DESFire default key
 
 /*!
   @enum FileControlTag
@@ -428,33 +447,28 @@ constexpr FileControlTagBits fcBitsAll = make_fc_bits(FileControlTag::Message, F
 constexpr FileControlTagBits fcBitsMessage = make_fc_bits(FileControlTag::Message);
 
 /*!
+  @struct FileControlTLV
+  @brief File control TLV
+*/
+struct FileControlTLV {
+    uint8_t tag{};              //!< File control tag
+    uint8_t len{};              //!< Length
+    uint16_t ndef_file_id{};    //!< NDEF file ID
+    uint16_t ndef_file_size{};  //!< NDEF file size
+    uint8_t read_access{};      //!< Read access
+    uint8_t write_access{};     //!< Write access
+
+    inline FileControlTag fctag() const
+    {
+        return static_cast<FileControlTag>(this->tag);
+    }
+};
+
+/*!
   @struct CapabilityContainer
   @brief Capability container for Type4
  */
 struct CapabilityContainer {
-    //! @brief File control TLV
-    struct FileControlTLV {
-        uint8_t tag{};              //!< File control tag
-        uint8_t len{};              //!< Length
-        uint16_t ndef_file_id{};    //!< NDEF file ID
-        uint16_t ndef_file_size{};  //!< NDEF file size
-        uint8_t read_access{};      //!< Read access
-        uint8_t write_access{};     //!< Write access
-
-        inline FileControlTag fctag() const
-        {
-            return static_cast<FileControlTag>(this->tag);
-        }
-        inline bool can_read() const
-        {
-            return read_access == ACCESS_FREE;
-        }
-        inline bool can_write() const
-        {
-            return write_access == ACCESS_FREE;
-        }
-    };
-
     uint16_t cclen{};           //!< CC length
     uint8_t mapping_version{};  //!< Mapping version
     uint16_t mle{};             //!< Maximum Le

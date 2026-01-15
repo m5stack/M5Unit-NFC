@@ -167,7 +167,7 @@ constexpr uint16_t user_area_size_table[] = {
     64,   256,  2048, 8192,                 // ST25
     0,                                      //
     1504, 3440, 752,                        // Plus
-    2048, 4096, 8192, 640,                  // Desfire (2K/4K/8K/Light)
+    2048, 4096, 8192, 512,                  // Desfire (2K/4K/8K/Light)
     0,                                      // NTAG 4xx
     0,
 };
@@ -345,7 +345,8 @@ bool is_user_block(const Type t, const uint16_t block)
 file_system_feature_t get_file_system_feature(const Type t)
 {
     if (is_mifare_desfire(t)) {
-        return FILE_SYSTEM_DESFIRE | FILE_SYSTEM_ISO7816_4;
+        return (t == Type::MIFARE_DESFire_Light ? FILE_SYSTEM_DESFIRE_LIGHT : FILE_SYSTEM_DESFIRE) |
+               FILE_SYSTEM_ISO7816_4;
     } else if (is_st25ta(t) || is_iso14443_4(t)) {
         return FILE_SYSTEM_ISO7816_4;
     } else if (t != Type::Unknown) {

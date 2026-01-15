@@ -142,14 +142,14 @@ bool CapabilityContainer::parse(const uint8_t* buf, const uint16_t len)
     return valid();
 }
 
-CapabilityContainer::FileControlTLV CapabilityContainer::fctlv(const FileControlTag fc) const
+FileControlTLV CapabilityContainer::fctlv(const FileControlTag fc) const
 {
     for (auto&& tlv : this->fctlvs) {
         if ((FileControlTag)tlv.tag == fc) {
             return tlv;
         }
     }
-    return CapabilityContainer::FileControlTLV{};
+    return FileControlTLV{};
 }
 
 }  // namespace type4

@@ -57,13 +57,16 @@ enum class Bitrate : uint8_t {
     Invalid = 0xFF,
 };
 
+
 ///@name File system (bits)
 ///@{
-using file_system_feature_t = uint8_t;                          //!< Alias for file_system_feature_t
-constexpr file_system_feature_t FILE_SYSTEM_FLAT_MEMORY{0x01};  //!< Block/Page base R/W (flat memory)
-constexpr file_system_feature_t FILE_SYSTEM_ISO7816_4{0x02};    //!< ISO 7816-4 base
-constexpr file_system_feature_t FILE_SYSTEM_DESFIRE{0x04};      //!< MIFARE DESFire base
+using file_system_feature_t = uint8_t;                            //!< Alias for file_system_feature_t
+constexpr file_system_feature_t FILE_SYSTEM_FLAT_MEMORY{0x01};    //!< Block/Page base R/W (flat memory)
+constexpr file_system_feature_t FILE_SYSTEM_ISO7816_4{0x02};      //!< ISO 7816-4 (multi file base)
+constexpr file_system_feature_t FILE_SYSTEM_DESFIRE{0x04};        //!< MIFARE DESFire (multi file base)
+constexpr file_system_feature_t FILE_SYSTEM_DESFIRE_LIGHT{0x08};  //!< MIFARE DESFire light (single file base)
 ///@}
+
 
 }  // namespace nfc
 }  // namespace m5

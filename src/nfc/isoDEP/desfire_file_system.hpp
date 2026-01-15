@@ -25,6 +25,10 @@ namespace mifare {
  */
 namespace desfire {
 
+constexpr uint8_t DESFIRE_APDU_CLA{0x90};
+constexpr uint8_t DESFIRE_LIGHT_INS_READ_DATA{0xAD};
+constexpr uint8_t DESFIRE_LIGHT_INS_WRITE_DATA{0x8D};
+
 ///@name File number
 ///@{
 using file_no_t = uint8_t;                //!< Alias for file number
@@ -95,18 +99,40 @@ enum class AuthMode : uint8_t {
  */
 struct NdefFormatOptions {
     m5::nfc::ndef::type4::CapabilityContainer cc;  //!< CC contents
-    uint8_t aid[3]{0x00, 0x00, 0x01};              //!< NDEF Tag Application AID
-    uint8_t cc_file_no{0x01};                      //!< CC file number (DESFire)
-    uint8_t ndef_file_no{0x02};                    //!< NDEF file number (DESFire)
-    uint16_t cc_file_size{0x000F};                 //!< CC file size (bytes)
-    uint16_t ndef_file_size{2048};                 //!< NDEF file size (bytes)
-    uint8_t comm_mode{0x00};                       //!< Plain communication
-    uint16_t access_rights{0xEEEE};                //!< DESFire access rights
-    uint8_t key_settings1{0x09};                   //!< AN11004: Create/Delete requires auth, Get* requires auth
-    uint8_t key_settings2{0x21};                   //!< ISO FID support(bit5) + NumKeys=1 + DES/3DES
-    const uint8_t* picc_master_key{nullptr};       //!< DES/3DES master key (PICC), or nullptr to skip auth
-    const uint8_t* app_master_key{nullptr};        //!< DES/3DES master key (App), or nullptr to skip auth
-    AuthMode auth_mode{AuthMode::Auto};            //!< Authentication mode
+    uint8_t aid[3]{m5::nfc::ndef::type4::DESFIRE_NDEF_AID[0], m5::nfc::ndef::type4::DESFIRE_NDEF_AID[1],
+                   m5::nfc::ndef::type4::DESFIRE_NDEF_AID[2]};         //!< NDEF Tag Application AID
+    uint8_t cc_file_no{m5::nfc::ndef::type4::DESFIRE_CC_FILE_NO};      //!< CC file number (DESFire)
+    uint8_t ndef_file_no{m5::nfc::ndef::type4::DESFIRE_NDEF_FILE_NO};  //!< NDEF file number (DESFire)
+    uint16_t cc_file_size{0x000F};                                     //!< CC file size (bytes)
+    uint16_t ndef_file_size{2048};                                     //!< NDEF file size (bytes)
+    uint8_t comm_mode{0x00};                                           //!< Plain communication
+    uint16_t access_rights{0xEEEE};                                    //!< DESFire access rights
+    uint8_t key_settings1{0x09};              //!< AN11004: Create/Delete requires auth, Get* requires auth
+    uint8_t key_settings2{0x21};              //!< ISO FID support(bit5) + NumKeys=1 + DES/3DES
+    const uint8_t* picc_master_key{nullptr};  //!< DES/3DES master key (PICC), or nullptr to skip auth
+    const uint8_t* app_master_key{nullptr};   //!< DES/3DES master key (App), or nullptr to skip auth
+    AuthMode auth_mode{AuthMode::Auto};       //!< Authentication mode
+};
+
+/*!
+  @struct FileRename
+  @brief File renaming parameters for DESFire Light SetConfiguration
+ */
+struct FileRename {
+    uint8_t old_file_no{};   //!< Current file number
+    uint8_t new_file_no{};   //!< New file number
+    uint16_t new_file_id{};  //!< New ISO File ID (LSB first in command)
+};
+
+/*!
+  @struct Ev2Context
+  @brief Session context for EV2 secure messaging
+ */
+struct Ev2Context {
+    uint8_t ti[4]{};            //!< Transaction Identifier
+    uint16_t cmd_ctr{};         //!< Command Counter
+    uint8_t ses_enc_key[16]{};  //!< Session ENC key
+    uint8_t ses_mac_key[16]{};  //!< Session MAC key
 };
 /*!
   @brief Make native wrap command
@@ -154,8 +180,6 @@ public:
     {
     }
 
-    bool createNDEFFiles(const NdefFormatOptions& opt);
-
     m5::stl::expected<void, uint8_t> createApplication(const uint8_t aid[3], const uint8_t key_settings1,
                                                        const uint8_t key_settings2, const uint16_t iso_fid = 0,
                                                        const uint8_t* df_name = nullptr, const uint8_t df_name_len = 0);
@@ -165,6 +189,7 @@ public:
     }
     bool selectApplication(const uint8_t aid[3]);
     bool selectApplication(const uint32_t aid24 = 0u);
+    bool deleteApplication(const uint8_t aid[3]);
 
     bool getApplicationIDs(std::vector<desfire_aid_t>& out);
     // NOTE: getFreeMemory is intended to be used before authentication (no secure messaging).
@@ -172,12 +197,25 @@ public:
     bool getKeySettings(uint8_t& key_settings, uint8_t& key_count);
     bool getFileIDs(std::vector<uint8_t>& out);
     bool getFileSettings(FileSettings& out, const uint8_t file_no);
+    bool getFileSettingsEV2(FileSettings& out, const uint8_t file_no, Ev2Context& ctx);
+
+    bool changeFileSettingsEV2Full(const uint8_t file_no, const uint8_t file_option, const uint16_t access_rights,
+                                   Ev2Context& ctx);
+    bool changeFileSettingsEV2(const uint8_t file_no, const uint8_t file_option, const uint16_t access_rights,
+                               Ev2Context& ctx);
+    bool changeFileSettings(const uint8_t file_no, const uint8_t file_option, const uint16_t access_rights);
 
     bool formatPICC(const uint8_t* picc_master_key, const AuthMode mode = AuthMode::Auto);
 
-    bool deleteApplication(const uint8_t aid[3]);
     bool createStdDataFile(const uint8_t file_no, const uint16_t iso_fid, const uint8_t comm_mode,
                            const uint16_t access_rights, const uint32_t file_size);
+
+    // DESFire Light: requires AppMasterKey authentication and CommMode.Full.
+    bool setConfigurationFileRenaming(const FileRename& first, const FileRename* second = nullptr);
+    bool setConfigurationFileRenaming(const FileRename& first, const FileRename* second, Ev2Context& ctx);
+
+    bool createNDEFFiles(const uint32_t max_ndef_size);
+    bool createNDEFFilesLight();
 
     /*!
       @brief Read data from DESFire file
@@ -188,11 +226,18 @@ public:
       @return True if successful
      */
     bool readData(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset, const uint32_t length);
+    bool readDataLight(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset, const uint32_t length);
     bool writeData(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len);
+    bool writeDataLight(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len);
+    bool writeDataEV2Mac(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len,
+                         Ev2Context& ctx);
+    bool writeDataEV2Full(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len,
+                          Ev2Context& ctx);
 
     bool authenticateDES(const uint8_t key_no, const uint8_t key[16]);
     bool authenticateISO(const uint8_t key_no, const uint8_t key[16]);
     bool authenticateAES(const uint8_t key_no, const uint8_t key[16]);
+    bool authenticateEV2First(const uint8_t key_no, const uint8_t key[16], Ev2Context& ctx);
 
 protected:
     bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len);

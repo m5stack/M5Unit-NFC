@@ -33,7 +33,7 @@ bool FileSystem::selectFile(const m5::nfc::apdu::SelectBy by, const m5::nfc::apd
     uint8_t rx[256]{};
     uint16_t rx_len = sizeof(rx);
     if (!_isoDEP.transceiveAPDU(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
-        M5_LIB_LOGE("Failed SELECT by DF name");
+        M5_LIB_LOGE("Failed to selectFile");
         return false;
     }
     // m5::utility::log::dump(rx, rx_len, false);
@@ -42,8 +42,8 @@ bool FileSystem::selectFile(const m5::nfc::apdu::SelectBy by, const m5::nfc::apd
     //    dump_tlv(tlvs);
 
     if (!is_response_OK(rx + rx_len - 2)) {
-        M5_LIB_LOGE("SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
-        M5_DUMPE(cmd.data(), cmd.size());
+        M5_LIB_LOGE("Response error SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
+        // M5_DUMPE(cmd.data(), cmd.size());
         return false;
     }
     return true;
@@ -110,8 +110,8 @@ bool FileSystem::selectParent(const m5::nfc::apdu::SelectResponse res, const m5:
     }
 
     if (!is_response_OK(rx + rx_len - 2)) {
-        M5_LIB_LOGE("SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
-        M5_DUMPE(cmd.data(), cmd.size());
+        M5_LIB_LOGE("Response error SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
+        // M5_DUMPE(cmd.data(), cmd.size());
         return false;
     }
     return true;
@@ -132,8 +132,8 @@ bool FileSystem::verify(const uint8_t* password, const uint16_t pass_len, const 
         return false;
     }
     if (!is_response_OK(rx + rx_len - 2)) {
-        M5_LIB_LOGE("SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
-        M5_DUMPE(cmd.data(), cmd.size());
+        M5_LIB_LOGE("Response error SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
+        // M5_DUMPE(cmd.data(), cmd.size());
         return false;
     }
     return true;
@@ -164,8 +164,8 @@ bool FileSystem::readBinary(std::vector<uint8_t>& out, const uint16_t offset,
     }
 
     if (!is_response_OK(rx.data() + rx_len - 2)) {
-        M5_LIB_LOGE("SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
-        M5_DUMPE(cmd.data(), cmd.size());
+        M5_LIB_LOGE("Response error SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
+        // M5_DUMPE(cmd.data(), cmd.size());
         return false;
     }
     out.assign(rx.begin(), rx.begin() + (rx_len - 2));
@@ -190,8 +190,8 @@ bool FileSystem::updateBinary(const uint16_t offset, const uint8_t* data, const 
         return false;
     }
     if (!is_response_OK(rx + rx_len - 2)) {
-        M5_LIB_LOGE("SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
-        M5_DUMPE(cmd.data(), cmd.size());
+        M5_LIB_LOGE("Response error SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
+        // M5_DUMPE(cmd.data(), cmd.size());
         return false;
     }
     return true;

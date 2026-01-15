@@ -427,6 +427,11 @@ public:
      */
     bool ndefIsValidFormat(bool& valid);
     /*!
+      @brief Prepare NDEF files on MIFARE DESFire Light
+      @return True if successful
+     */
+    bool ndefPrepareDesfireLight();
+    /*!
       @brief Read NDEF Message TLV
       @param[out] msg Messgae If it does not exist, a Null TLV is returned
       @return True if successful

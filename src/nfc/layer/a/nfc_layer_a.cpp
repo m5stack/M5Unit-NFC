@@ -117,7 +117,9 @@ bool NFCLayerA::request(uint16_t& atqa)
 
 bool NFCLayerA::wakeup(uint16_t& atqa)
 {
-    return _impl->wakeup(atqa);
+    auto ret = _impl->wakeup(atqa);
+    m5::utility::delay(2);
+    return ret;
 }
 
 bool NFCLayerA::detect(PICC& picc, const uint32_t timeout_ms)
@@ -210,19 +212,16 @@ bool NFCLayerA::reactivate(const PICC& picc)
             M5_LIB_LOGE("Failed to deactivate");
             return false;
         }
-        m5::utility::delay(2);  // FDT
     }
     uint16_t discard{};
     if (!wakeup(discard)) {
         M5_LIB_LOGE("Failed to wakeup");
         return false;
     }
-    m5::utility::delay(2);  // FDT
     if (!activate(tmp)) {
         M5_LIB_LOGE("Failed to activate");
         return false;
     }
-    // m5::utility::delay(1);  // FDT
     return true;
 }
 
@@ -231,7 +230,9 @@ bool NFCLayerA::deactivate()
     auto tmp    = _activePICC;
     _activePICC = PICC{};
 
-    return tmp.isISO14443_4() ? nfca_deselect() : _impl->hlt();
+    auto ret = tmp.isISO14443_4() ? nfca_deselect() : _impl->hlt();
+    m5::utility::delay(2);
+    return ret;
 }
 
 bool NFCLayerA::identify(m5::nfc::a::PICC& picc)
@@ -256,8 +257,8 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         uint16_t ver_len = sizeof(ver);
         if (mifare_get_version_L4(ver, ver_len)) {
             // Plus,DESFire,NTAG4xx
-            M5_LIB_LOGE(">>>> GetVerionL4 OK");
-            m5::utility::log::dump(ver, ver_len, false);
+            // M5_LIB_LOGE(">>>> GetVerionL4 OK");
+            // m5::utility::log::dump(ver, ver_len, false);
             type = version4_to_type(picc.sub_type, ver);
         } else {
             // Plus,ST25TA
@@ -952,6 +953,14 @@ bool NFCLayerA::ndefIsValidFormat(bool& valid)
 {
     valid = false;
     return _activePICC.supportsNDEF() ? _ndef.isValidFormat(valid, _activePICC.nfcForumTagType()) : false;
+}
+
+bool NFCLayerA::ndefPrepareDesfireLight()
+{
+    if (_activePICC.type != Type::MIFARE_DESFire_Light) {
+        return false;
+    }
+    return _ndef.prepare_desfire_light();
 }
 
 bool NFCLayerA::ndefRead(m5::nfc::ndef::TLV& msg)
