@@ -96,10 +96,9 @@ bool build_type4_cc(std::vector<uint8_t>& out, const uint16_t ndef_fid, const ui
     return out.size() >= 7;
 }
 
-constexpr int kAccessDenied = -1;
-constexpr int kAccessFree   = -2;
-
-int required_key_no_from_access_rights(const uint16_t access_rights)
+constexpr int8_t kAccessDenied{-1};
+constexpr int8_t kAccessFree{-2};
+int8_t required_key_no_from_access_rights(const uint16_t access_rights)
 {
     const uint8_t write_key = (access_rights >> 8) & 0x0F;  // Write
     const uint8_t rw_key    = (access_rights >> 4) & 0x0F;  // Read/Write
@@ -189,15 +188,16 @@ bool NDEFLayer::prepare_desfire_light()
         return false;
     }
 
+    // Select DF
     a::mifare::desfire::DESFireFileSystem dfs(*dep);
     if (!dfs.selectDfNameAuto(DESFIRE_LIGHT_DF_NAME, sizeof(DESFIRE_LIGHT_DF_NAME))) {
         M5_LIB_LOGE("prepare_desfire_light: select DF failed");
         return false;
     }
 
-    // Already renamed to AN11004 FIDs?
+    // Rename file ID to NDEF format
     if (!dfs.selectFileIdAuto(type4::CC_FILE_ID)) {
-        M5_LIB_LOGE("prepare_desfire_light: select CC(E103) failed -> rename");
+        M5_LIB_LOGE("select CC(E103) failed -> rename");
         a::mifare::desfire::FileRename cc_rename{};
         cc_rename.old_file_no = DESFIRE_LIGHT_CC_FILE_NO;
         cc_rename.new_file_no = DESFIRE_LIGHT_CC_FILE_NO;
@@ -210,15 +210,13 @@ bool NDEFLayer::prepare_desfire_light()
 
         a::mifare::desfire::Ev2Context ctx{};
         if (!dfs.authenticateEV2First(0x00, DESFIRE_DEFAULT_KEY, ctx)) {
-            M5_LIB_LOGE("prepare_desfire_light: auth EV2 failed");
+            M5_LIB_LOGE("auth EV2 failed");
             return false;
         }
-        if (!dfs.setConfigurationFileRenaming(cc_rename, &ndef_rename, ctx)) {
-            M5_LIB_LOGE("prepare_desfire_light: setConfiguration rename failed");
+        if (!dfs.setConfigurationFileRenamingEV2Full(cc_rename, &ndef_rename, ctx)) {
+            M5_LIB_LOGE("setConfiguration rename failed");
             return false;
         }
-    } else {
-        M5_LIB_LOGV("prepare_desfire_light: CC(E103) already exists");
     }
 
     a::mifare::desfire::Ev2Context ctx{};
@@ -227,6 +225,7 @@ bool NDEFLayer::prepare_desfire_light()
         return false;
     }
 
+    // Get CC/NEDF file settings
     a::mifare::desfire::FileSettings cc_settings{};
     if (!dfs.getFileSettingsEV2(cc_settings, DESFIRE_LIGHT_CC_FILE_NO, ctx)) {
         M5_LIB_LOGE("prepare_desfire_light: getFileSettings CC failed");
@@ -243,35 +242,58 @@ bool NDEFLayer::prepare_desfire_light()
     M5_LIB_LOGE("prepare_desfire_light: NDEF type:%u ar:%04X size:%u", ndef_settings.file_type,
                 ndef_settings.access_rights, ndef_settings.file_size);
 
-    constexpr uint16_t kFreeAccessRights = 0xEE30;
-    constexpr uint8_t kPlainCommMode     = 0x00;
+    // Change file settings for NDEF (No auth, plain)
+    auto change_file_settings_mode = [&dfs, &ctx](const uint8_t file_no, const uint8_t file_opt,
+                                                  const uint16_t access_rights, const uint8_t comm_ar) {
+        switch (comm_ar & 0x0F /* Access righst For change */) {
+            case 0x0E:
+                return dfs.changeFileSettings(file_no, file_opt, access_rights);
+            case 0x00:
+            case 0x01:
+            case 0x02:
+            case 0x03:
+            case 0x04:
+                return dfs.changeFileSettingsEV2Full(file_no, file_opt, access_rights, ctx);
+            default:
+                return false;
+        }
+    };
+
+    constexpr uint16_t kFreeAccessRights{0xEEEE};  // All free access (No auth)
+    constexpr uint8_t kPlainCommMode{0x00};        // Plain
+    constexpr uint8_t file_option = (kPlainCommMode & 0x03);
     if (cc_settings.access_rights != kFreeAccessRights || cc_settings.comm_mode != kPlainCommMode) {
+#if 0
         if (cc_settings.comm_mode != kPlainCommMode) {
             M5_LIB_LOGE("prepare_desfire_light: CC comm_mode %u not supported", cc_settings.comm_mode);
             return false;
         }
-        const uint8_t file_option = (kPlainCommMode & 0x03);
-        if (!dfs.changeFileSettings(DESFIRE_LIGHT_CC_FILE_NO, file_option, kFreeAccessRights)) {
-            M5_LIB_LOGE("prepare_desfire_light: changeFileSettings CC failed");
+#endif
+        if (!change_file_settings_mode(DESFIRE_LIGHT_CC_FILE_NO, file_option, kFreeAccessRights,
+                                       cc_settings.access_rights)) {
+            M5_LIB_LOGE("changeFileSettings CC failed");
             return false;
         }
         cc_settings.access_rights = kFreeAccessRights;
         cc_settings.comm_mode     = kPlainCommMode;
     }
     if (ndef_settings.access_rights != kFreeAccessRights || ndef_settings.comm_mode != kPlainCommMode) {
+#if 0
         if (ndef_settings.comm_mode != kPlainCommMode) {
-            M5_LIB_LOGE("prepare_desfire_light: NDEF comm_mode %u not supported", ndef_settings.comm_mode);
+            M5_LIB_LOGE("NDEF comm_mode %u not supported", ndef_settings.comm_mode);
             return false;
         }
-        const uint8_t file_option = (kPlainCommMode & 0x03);
-        if (!dfs.changeFileSettings(DESFIRE_LIGHT_NDEF_FILE_NO, file_option, kFreeAccessRights)) {
-            M5_LIB_LOGE("prepare_desfire_light: changeFileSettings NDEF failed");
+#endif
+        if (!change_file_settings_mode(DESFIRE_LIGHT_NDEF_FILE_NO, file_option, kFreeAccessRights,
+                                       ndef_settings.access_rights)) {
+            M5_LIB_LOGE("changeFileSettings NDEF failed");
             return false;
         }
         ndef_settings.access_rights = kFreeAccessRights;
         ndef_settings.comm_mode     = kPlainCommMode;
     }
 
+    // Write CC/empty NDEF
     auto write_with_mode = [&dfs, &ctx](const uint8_t file_no, const uint8_t* data, const uint32_t data_len,
                                         const uint8_t comm_mode) {
         switch (comm_mode) {
@@ -293,12 +315,12 @@ bool NDEFLayer::prepare_desfire_light()
     const int cc_key = required_key_no_from_access_rights(cc_settings.access_rights);
     if (cc_key == kAccessDenied ||
         (cc_key >= 0 && !dfs.authenticateEV2First(static_cast<uint8_t>(cc_key), DESFIRE_DEFAULT_KEY, ctx))) {
-        M5_LIB_LOGE("prepare_desfire_light: auth EV2 failed (CC key %d)", cc_key);
+        M5_LIB_LOGE("auth EV2 failed (CC key %d)", cc_key);
         return false;
     }
     if (!write_with_mode(DESFIRE_LIGHT_CC_FILE_NO, cc.data(), static_cast<uint32_t>(cc.size()),
                          cc_settings.comm_mode)) {
-        M5_LIB_LOGE("prepare_desfire_light: write CC failed (comm %u)", cc_settings.comm_mode);
+        M5_LIB_LOGE("write CC failed (comm %u)", cc_settings.comm_mode);
         return false;
     }
 
@@ -306,11 +328,11 @@ bool NDEFLayer::prepare_desfire_light()
     const int ndef_key     = required_key_no_from_access_rights(ndef_settings.access_rights);
     if (ndef_key == kAccessDenied ||
         (ndef_key >= 0 && !dfs.authenticateEV2First(static_cast<uint8_t>(ndef_key), DESFIRE_DEFAULT_KEY, ctx))) {
-        M5_LIB_LOGE("prepare_desfire_light: auth EV2 failed (NDEF key %d)", ndef_key);
+        M5_LIB_LOGE("auth EV2 failed (NDEF key %d)", ndef_key);
         return false;
     }
     if (!write_with_mode(DESFIRE_LIGHT_NDEF_FILE_NO, nlen0, sizeof(nlen0), ndef_settings.comm_mode)) {
-        M5_LIB_LOGE("prepare_desfire_light: write NLEN failed (comm %u)", ndef_settings.comm_mode);
+        M5_LIB_LOGE("write NLEN failed (comm %u)", ndef_settings.comm_mode);
         return false;
     }
     M5_LIB_LOGE("prepare_desfire_light: done");
@@ -364,8 +386,9 @@ bool NDEFLayer::readAttributeBlock(m5::nfc::ndef::type3::AttributeBlock& ab)
 
 bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type4::CapabilityContainer& cc)
 {
-    return _interface.supportsFilesystem() & FILE_SYSTEM_DESFIRE ? read_capability_container_type4_desfire(cc)
-                                                                 : read_capability_container_type4_iso7816(cc);
+    return (_interface.supportsFilesystem() & (FILE_SYSTEM_DESFIRE | FILE_SYSTEM_DESFIRE_LIGHT))
+               ? read_capability_container_type4_desfire(cc)
+               : read_capability_container_type4_iso7816(cc);
 }
 
 bool NDEFLayer::read_capability_container_type4_iso7816(m5::nfc::ndef::type4::CapabilityContainer& cc)
@@ -413,14 +436,18 @@ bool NDEFLayer::read_capability_container_type4_desfire(m5::nfc::ndef::type4::Ca
     a::mifare::desfire::DESFireFileSystem dfs(*dep);
     const bool is_light = _interface.supportsFilesystem() & FILE_SYSTEM_DESFIRE_LIGHT;
     if (is_light) {
+        M5_LIB_LOGE(">>>>>>>>>>> CC light");
+
         if (!dfs.selectDfNameAuto(DESFIRE_LIGHT_DF_NAME, sizeof(DESFIRE_LIGHT_DF_NAME))) {
             return false;
         }
         const auto read_cc = [&dfs](std::vector<uint8_t>& out, const uint16_t offset, const uint16_t len) {
-            return dfs.readData(out, DESFIRE_LIGHT_CC_FILE_NO, offset, len);
+            return dfs.readDataLight(out, DESFIRE_LIGHT_CC_FILE_NO, offset, len);
         };
         return read_cc_common(read_cc, cc);
     }
+
+    M5_LIB_LOGE(">>>>>>>>>>> CC DES");
 
     if (!dfs.selectApplication(DESFIRE_NDEF_APP_ID)) {
         return false;
@@ -428,10 +455,7 @@ bool NDEFLayer::read_capability_container_type4_desfire(m5::nfc::ndef::type4::Ca
     const auto read_cc = [&dfs](std::vector<uint8_t>& out, const uint16_t offset, const uint16_t len) {
         return dfs.readData(out, DESFIRE_CC_FILE_NO, offset, len);
     };
-    if (!read_cc_common(read_cc, cc)) {
-        return false;
-    }
-    return true;
+    return read_cc_common(read_cc, cc);
 }
 
 bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContainer& cc)
@@ -618,8 +642,9 @@ skip:
 bool NDEFLayer::read_type4(std::vector<m5::nfc::ndef::TLV>& tlvs,
                            const m5::nfc::ndef::type4::FileControlTagBits fc_bits)
 {
-    return (_interface.supportsFilesystem() & FILE_SYSTEM_DESFIRE) ? read_type4_desfire(tlvs, fc_bits)
-                                                                   : read_type4_iso7816(tlvs, fc_bits);
+    return (_interface.supportsFilesystem() & (FILE_SYSTEM_DESFIRE | FILE_SYSTEM_DESFIRE_LIGHT))
+               ? read_type4_desfire(tlvs, fc_bits)
+               : read_type4_iso7816(tlvs, fc_bits);
 }
 
 namespace {
@@ -837,7 +862,7 @@ bool NDEFLayer::read_type4_desfire(std::vector<m5::nfc::ndef::TLV>& tlvs,
                 return false;
             }
             const ReadFn read_message = [&dfs](std::vector<uint8_t>& out, const uint16_t offset, const uint16_t len) {
-                return dfs.readData(out, DESFIRE_LIGHT_NDEF_FILE_NO, offset, len);
+                return dfs.readDataLight(out, DESFIRE_LIGHT_NDEF_FILE_NO, offset, len);
             };
             if (!read_type4_message(tlvs, cc, fctlv, read_message)) {
                 return false;
@@ -1162,7 +1187,8 @@ bool NDEFLayer::write_type4(const std::vector<m5::nfc::ndef::TLV>& tlvs)
     }
 
     CapabilityContainer cc{};
-    const bool is_desfire = _interface.supportsFilesystem() & FILE_SYSTEM_DESFIRE;
+    const bool is_desfire = _interface.supportsFilesystem() & (FILE_SYSTEM_DESFIRE | FILE_SYSTEM_DESFIRE_LIGHT);
+    ;
     if (!readCapabilityContainer(cc) || !cc.valid()) {
         M5_LIB_LOGE("Failed to readCapabilityContainer");
         return false;
@@ -1196,6 +1222,7 @@ bool NDEFLayer::write_type4_desfire(const std::vector<m5::nfc::ndef::TLV>& tlvs,
         if (!dfs.selectDfNameAuto(DESFIRE_LIGHT_DF_NAME, sizeof(DESFIRE_LIGHT_DF_NAME))) {
             return false;
         }
+#if 0
         a::mifare::desfire::Ev2Context ctx{};
         if (!dfs.authenticateEV2First(0x00, DESFIRE_DEFAULT_KEY, ctx)) {
             return false;
@@ -1225,6 +1252,8 @@ bool NDEFLayer::write_type4_desfire(const std::vector<m5::nfc::ndef::TLV>& tlvs,
         return write_with_mode(DESFIRE_LIGHT_NDEF_FILE_NO, 0, payload.data(), static_cast<uint32_t>(payload.size()),
                                ndef_settings.comm_mode);
     }
+
+    // DESFire
     if (!dfs.selectApplication(type4::DESFIRE_NDEF_APP_ID)) {
         return false;
     }

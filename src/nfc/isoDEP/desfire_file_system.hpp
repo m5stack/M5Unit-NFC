@@ -212,10 +212,9 @@ public:
 
     // DESFire Light: requires AppMasterKey authentication and CommMode.Full.
     bool setConfigurationFileRenaming(const FileRename& first, const FileRename* second = nullptr);
-    bool setConfigurationFileRenaming(const FileRename& first, const FileRename* second, Ev2Context& ctx);
+    bool setConfigurationFileRenamingEV2Full(const FileRename& first, const FileRename* second, Ev2Context& ctx);
 
     bool createNDEFFiles(const uint32_t max_ndef_size);
-    bool createNDEFFilesLight();
 
     /*!
       @brief Read data from DESFire file
@@ -227,6 +226,10 @@ public:
      */
     bool readData(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset, const uint32_t length);
     bool readDataLight(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset, const uint32_t length);
+    bool readDataLightEV2Full(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset,
+                              const uint32_t length, Ev2Context& ctx);
+    bool readDataLightEV2(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset,
+                          const uint32_t length, Ev2Context& ctx);
     bool writeData(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len);
     bool writeDataLight(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len);
     bool writeDataEV2Mac(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len,

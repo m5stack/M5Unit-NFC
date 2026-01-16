@@ -727,13 +727,12 @@ bool DESFireFileSystem::readDataLight(std::vector<uint8_t>& out, const uint8_t f
     uint8_t data[1 + 3 + 3]{};
     uint8_t* p = data;
     *p++       = file_no;
-    pack_be24(p, offset);
+    pack_le24(p, offset);
     p += 3;
-    pack_be24(p, length);
+    pack_le24(p, length);
     p += 3;
 
-    auto cmd =
-        make_apdu_command(DESFIRE_APDU_CLA, DESFIRE_LIGHT_INS_READ_DATA, 0x00, 0x00, data, sizeof(data), 0x00);
+    auto cmd = make_apdu_command(DESFIRE_APDU_CLA, DESFIRE_LIGHT_INS_READ_DATA, 0x00, 0x00, data, sizeof(data), 256);
 
     const size_t rx_cap = length ? static_cast<size_t>(length + 2) : static_cast<size_t>(DEFAULT_RX_LEN);
     std::vector<uint8_t> rx(rx_cap);
@@ -745,6 +744,46 @@ bool DESFireFileSystem::readDataLight(std::vector<uint8_t>& out, const uint8_t f
         return false;
     }
     out.assign(rx.begin(), rx.begin() + (rx_len - 2));
+    return true;
+}
+
+bool DESFireFileSystem::readDataLightEV2Full(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset,
+                                        const uint32_t length, Ev2Context& ctx)
+{
+    out.clear();
+
+    // ReadData: CmdHeader = FileNo + Offset + Length, CmdData = none
+    uint8_t header[1 + 3 + 3]{};
+    header[0] = file_no;
+    pack_le24(header + 1, offset);
+    pack_le24(header + 4, length);
+
+    std::vector<uint8_t> resp;
+    if (!transceive_sm_full(_isoDEP, m5::stl::to_underlying(INS::DF_READ_DATA), header, sizeof(header), nullptr, 0, ctx,
+                            &resp)) {
+        return false;
+    }
+    out = std::move(resp);
+    return true;
+}
+
+bool DESFireFileSystem::readDataLightEV2(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset,
+                                       const uint32_t length, Ev2Context& ctx)
+{
+    out.clear();
+
+    // ReadData: CmdHeader = FileNo + Offset + Length, CmdData = none
+    uint8_t header[1 + 3 + 3]{};
+    header[0] = file_no;
+    pack_le24(header + 1, offset);
+    pack_le24(header + 4, length);
+
+    std::vector<uint8_t> resp;
+    if (!transceive_sm_mac(_isoDEP, m5::stl::to_underlying(INS::DF_READ_DATA), header, sizeof(header), nullptr, 0, ctx,
+                           &resp)) {
+        return false;
+    }
+    out = std::move(resp);
     return true;
 }
 
@@ -824,14 +863,14 @@ bool DESFireFileSystem::writeDataLight(const uint8_t file_no, const uint32_t off
         payload.resize(kParamLen + chunk);
         uint8_t* p = payload.data();
         *p++       = file_no;
-        pack_be24(p, offset + written);
+        pack_le24(p, offset + written);
         p += 3;
-        pack_be24(p, chunk);
+        pack_le24(p, chunk);
         p += 3;
         std::memcpy(p, data + written, chunk);
 
         auto cmd = make_apdu_command(DESFIRE_APDU_CLA, DESFIRE_LIGHT_INS_WRITE_DATA, 0x00, 0x00, payload.data(),
-                                      static_cast<uint16_t>(payload.size()), 0x00);
+                                     static_cast<uint16_t>(payload.size()), 256);
 
         uint8_t rx[16]{};
         uint16_t rx_len = sizeof(rx);
@@ -1254,7 +1293,8 @@ bool DESFireFileSystem::setConfigurationFileRenaming(const FileRename& first, co
     return is_successful(rx, rx_len);
 }
 
-bool DESFireFileSystem::setConfigurationFileRenaming(const FileRename& first, const FileRename* second, Ev2Context& ctx)
+bool DESFireFileSystem::setConfigurationFileRenamingEV2Full(const FileRename& first, const FileRename* second,
+                                                            Ev2Context& ctx)
 {
     std::vector<uint8_t> data{};
     uint8_t file_opt = 0x01;  // Update ISO File ID
@@ -1276,89 +1316,6 @@ bool DESFireFileSystem::setConfigurationFileRenaming(const FileRename& first, co
     const uint8_t cmd_header[1] = {0x08};
     return transceive_sm_full(_isoDEP, m5::stl::to_underlying(INS::DF_SET_CONFIGURATION), cmd_header,
                               sizeof(cmd_header), data.data(), data.size(), ctx, nullptr);
-}
-
-bool DESFireFileSystem::createNDEFFilesLight()
-{
-    using type4::DESFIRE_DEFAULT_KEY;
-    using type4::DESFIRE_LIGHT_CC_FILE_NO;
-    using type4::DESFIRE_LIGHT_DF_NAME;
-    using type4::DESFIRE_LIGHT_NDEF_FILE_NO;
-
-    M5_LIB_LOGE("----------> LIGHT");
-
-    if (!selectDfNameAuto(DESFIRE_LIGHT_DF_NAME, sizeof(DESFIRE_LIGHT_DF_NAME))) {
-        M5_LIB_LOGE("createNDEFFilesLight: select DF failed");
-        return false;
-    }
-
-    Ev2Context ctx{};
-    const bool auth_ok = authenticateEV2First(0x00, DESFIRE_DEFAULT_KEY, ctx);
-    M5_LIB_LOGE("createNDEFFilesLight: auth EV2 %u", auth_ok);
-    if (!auth_ok) {
-        return false;
-    }
-
-    FileRename cc_rename{};
-    cc_rename.old_file_no = DESFIRE_LIGHT_CC_FILE_NO;
-    cc_rename.new_file_no = DESFIRE_LIGHT_CC_FILE_NO;
-    cc_rename.new_file_id = m5::nfc::ndef::type4::CC_FILE_ID;
-
-    FileRename ndef_rename{};
-    ndef_rename.old_file_no = DESFIRE_LIGHT_NDEF_FILE_NO;
-    ndef_rename.new_file_no = DESFIRE_LIGHT_NDEF_FILE_NO;
-    ndef_rename.new_file_id = m5::nfc::ndef::type4::NDEF_FILE_ID;
-    if (!setConfigurationFileRenaming(cc_rename, &ndef_rename, ctx)) {
-        M5_LIB_LOGE("createNDEFFilesLight: file renaming failed");
-        return false;
-    }
-
-    const uint16_t ndef_size = m5::nfc::ndef::type4::DESFIRE_LIGHT_NDEF_FILE_SIZE;
-    NdefFormatOptions opt{};
-    opt.ndef_file_size = ndef_size;
-    m5::nfc::ndef::type4::FileControlTLV fct{};
-    fct.tag            = 0x04;
-    fct.len            = 0x06;
-    fct.ndef_file_id   = m5::nfc::ndef::type4::NDEF_FILE_ID;
-    fct.ndef_file_size = ndef_size;
-    fct.read_access    = 0x00;
-    fct.write_access   = 0x00;
-    opt.cc.fctlvs.push_back(fct);
-
-    std::vector<uint8_t> cc;
-    uint16_t ndef_fid{};
-    uint16_t ndef_file_size{};
-    if (!build_cc(cc, ndef_fid, ndef_file_size, opt)) {
-        M5_LIB_LOGE("createNDEFFilesLight: build CC failed");
-        return false;
-    }
-
-    if (!selectFileIdAuto(m5::nfc::ndef::type4::CC_FILE_ID)) {
-        M5_LIB_LOGE("createNDEFFilesLight: select CC failed");
-        return false;
-    }
-    uint16_t offset = 0;
-    while (offset < cc.size()) {
-        const uint16_t remaining = static_cast<uint16_t>(cc.size() - offset);
-        const uint16_t chunk     = std::min<uint16_t>(remaining, 0xFF);
-        if (!updateBinary(offset, cc.data() + offset, chunk)) {
-            M5_LIB_LOGE("createNDEFFilesLight: write CC failed");
-            return false;
-        }
-        offset = static_cast<uint16_t>(offset + chunk);
-    }
-
-    if (!selectFileIdAuto(m5::nfc::ndef::type4::NDEF_FILE_ID)) {
-        M5_LIB_LOGE("createNDEFFilesLight: select NDEF failed");
-        return false;
-    }
-    const uint8_t nlen0[2] = {0x00, 0x00};
-    if (!updateBinary(0, nlen0, sizeof(nlen0))) {
-        M5_LIB_LOGE("createNDEFFilesLight: write NLEN failed");
-        return false;
-    }
-
-    return true;
 }
 
 bool DESFireFileSystem::getFileIDs(std::vector<uint8_t>& out)
@@ -1432,26 +1389,26 @@ bool DESFireFileSystem::getFileSettingsEV2(FileSettings& out, const uint8_t file
 bool DESFireFileSystem::changeFileSettingsEV2Full(const uint8_t file_no, const uint8_t file_option,
                                                   const uint16_t access_rights, Ev2Context& ctx)
 {
-    uint8_t data[1 + 1 + 2]{};
-    uint8_t* p = data;
-    *p++       = file_no;
-    *p++       = file_option;
-    *p++       = static_cast<uint8_t>(access_rights & 0xFF);
-    *p++       = static_cast<uint8_t>((access_rights >> 8) & 0xFF);
-    return transceive_sm_full(_isoDEP, m5::stl::to_underlying(INS::DF_CHANGE_FILE_SETTINGS), nullptr, 0, data,
-                              sizeof(data), ctx, nullptr);
+    // FileNo is in header (plain), FileOption + AccessRights are in data (encrypted)
+    uint8_t header[1] = {file_no};
+    uint8_t data[1 + 2]{};
+    data[0] = file_option;
+    data[1] = static_cast<uint8_t>(access_rights & 0xFF);
+    data[2] = static_cast<uint8_t>((access_rights >> 8) & 0xFF);
+    return transceive_sm_full(_isoDEP, m5::stl::to_underlying(INS::DF_CHANGE_FILE_SETTINGS), header, sizeof(header),
+                              data, sizeof(data), ctx, nullptr);
 }
 
 bool DESFireFileSystem::changeFileSettingsEV2(const uint8_t file_no, const uint8_t file_option,
                                               const uint16_t access_rights, Ev2Context& ctx)
 {
-    uint8_t data[1 + 1 + 2]{};
-    uint8_t* p = data;
-    *p++       = file_no;
-    *p++       = (file_option & 0x03);
-    *p++       = static_cast<uint8_t>(access_rights & 0xFF);
-    *p++       = static_cast<uint8_t>((access_rights >> 8) & 0xFF);
-    return transceive_sm_mac(_isoDEP, m5::stl::to_underlying(INS::DF_CHANGE_FILE_SETTINGS), nullptr, 0, data,
+    // FileNo is in header, FileOption + AccessRights are in data
+    uint8_t header[1] = {file_no};
+    uint8_t data[1 + 2]{};
+    data[0] = (file_option & 0x03);
+    data[1] = static_cast<uint8_t>(access_rights & 0xFF);
+    data[2] = static_cast<uint8_t>((access_rights >> 8) & 0xFF);
+    return transceive_sm_mac(_isoDEP, m5::stl::to_underlying(INS::DF_CHANGE_FILE_SETTINGS), header, sizeof(header), data,
                              sizeof(data), ctx, nullptr);
 }
 
