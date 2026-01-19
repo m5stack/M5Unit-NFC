@@ -202,7 +202,6 @@ void write_ndef()
             return;
         }
         M5_LOGI("NDEF format valid?:%u", valid);
-        valid = false;
         if (!valid) {
             format_desfire();
             if (!nfc_a.ndefPrepareDesfire(picc.userAreaSize())) {
