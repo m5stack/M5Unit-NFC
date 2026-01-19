@@ -526,7 +526,7 @@ constexpr uint32_t TIMEOUT_WRITE1{5};
 constexpr uint32_t TIMEOUT_WRITE2{10};
 constexpr uint32_t TIMEOUT_VALUE_BLOCK{5};  // Value block operation
 constexpr uint32_t TIMEOUT_RATS{5};
-constexpr uint32_t TIMEOUT_DESELECT{5};
+constexpr uint32_t TIMEOUT_DESELECT{8};
 ///@}
 
 ///@name 4bit ACK
