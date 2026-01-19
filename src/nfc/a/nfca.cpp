@@ -167,11 +167,12 @@ constexpr uint16_t user_area_size_table[] = {
     64,   256,  2048, 8192,                 // ST25
     0,                                      //
     1504, 3440, 752,                        // Plus
-    2048, 4096, 8192, 512,                  // Desfire (2K/4K/8K/Light)
+    2048, 4096, 8192, 256,                  // Desfire, Light:The total is 512, but the maximum per file is 256
     0,                                      // NTAG 4xx
     0,
 };
 
+// TODO Support DESFire Light
 constexpr NFCForumTag nfc_forum_tag_table[] = {
     NFCForumTag::None,                                                                                   //
     NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                       // Classic
@@ -181,7 +182,7 @@ constexpr NFCForumTag nfc_forum_tag_table[] = {
     NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                      // ST25TA
     NFCForumTag::None,                                                                                   //
     NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                                           // Plus
-    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4,                      // DESFire
+    NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::None,                       // DESFire
     NFCForumTag::Type4,                                                                                  // NTAG 4xx
     NFCForumTag::None,                                                                                   //
 };

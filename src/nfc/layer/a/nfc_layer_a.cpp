@@ -75,6 +75,27 @@ void rotate_byte_left(uint8_t out[8], const uint8_t in[8])
     out[7] = in[0];
 }
 
+constexpr int8_t kAccessDenied{-1};
+constexpr int8_t kAccessFree{-2};
+int8_t required_read_key_no_from_access_rights(const uint16_t access_rights)
+{
+    const uint8_t read_key = (access_rights >> 12) & 0x0F;
+    const uint8_t rw_key   = (access_rights >> 4) & 0x0F;
+    if (read_key == 0x0E) {
+        return kAccessFree;
+    }
+    if (read_key != 0x0F) {
+        return read_key;
+    }
+    if (rw_key == 0x0E) {
+        return kAccessFree;
+    }
+    if (rw_key != 0x0F) {
+        return rw_key;
+    }
+    return kAccessDenied;
+}
+
 }  // namespace
 
 namespace m5 {
@@ -648,12 +669,11 @@ bool NFCLayerA::dump(const Key& mkey)
             return dump_sector_structure(_activePICC, mkey);
         } else if (_activePICC.supportsNFC()) {
             return dump_page_structure(_activePICC.blocks);
-        } else if (_activePICC.isISO14443_4()) {
-            return dump_iso_dep();
+        } else if (_activePICC.isMifareDESFire()) {
+            return _activePICC.type == Type::MIFARE_DESFire_Light ? dump_desfire_light() : dump_desfire();
         }
         M5_LIB_LOGW("Not supported %s", _activePICC.typeAsString().c_str());
     }
-    M5_LIB_LOGW("Invalid PICC %s", _activePICC.typeAsString().c_str());
     return false;
 }
 
@@ -963,6 +983,14 @@ bool NFCLayerA::ndefPrepareDesfireLight()
     return _ndef.prepare_desfire_light();
 }
 
+bool NFCLayerA::ndefPrepareDesfire(const uint32_t max_ndef_size)
+{
+    if (!_activePICC.isMifareDESFire() || _activePICC.type == Type::MIFARE_DESFire_Light) {
+        return false;
+    }
+    return _ndef.prepare_desfire(max_ndef_size);
+}
+
 bool NFCLayerA::ndefRead(m5::nfc::ndef::TLV& msg)
 {
     msg = TLV{};
@@ -1102,28 +1130,220 @@ bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)
     return false;
 }
 
-bool NFCLayerA::dump_iso_dep()
+bool NFCLayerA::dump_desfire()
 {
-    DESFireFileSystem fs(*this);
-    std::vector<desfire_aid_t> aids{};
+    const auto cfg         = _isoDEP.config();
+    uint16_t max_chunk_len = std::min<uint16_t>(256, std::min<uint16_t>(cfg.fsc, cfg.pcd_max_frame_rx));
+    if (max_chunk_len == 0) {
+        max_chunk_len = 16;
+    }
+    DESFireFileSystem dfs{_isoDEP};
 
-    uint8_t ver[256]{};
-    uint16_t ver_len = sizeof(ver);
-    if (!fs.selectApplication()) {
+    std::vector<desfire_aid_t> aids;
+    if (!dfs.getApplicationIDs(aids)) {
+        M5_LIB_LOGE("getApplicationIDs failed");
         return false;
     }
-    if (!fs.getApplicationIDs(aids)) {
-        return false;
-    }
-    if (!aids.empty()) {
-        uint32_t idx{};
-        for (auto& a : aids) {
-            M5_LIB_LOGD("  AID[%2u]:%02X:%02X:%02X", idx, a.aid[0], a.aid[1], a.aid[2]);
-            ++idx;
+
+    for (const auto& aid : aids) {
+        // App
+        if (!dfs.selectApplication(aid)) {
+            M5_LIB_LOGW("selectApplication failed %X", aid.aid24());
+            continue;
         }
-    } else {
-        puts("No applications");
+        printf("AID %02X%02X%02X ", aid.aid[0], aid.aid[1], aid.aid[2]);
+
+        dfs.authenticateDES(0, type4::DESFIRE_DEFAULT_KEY);
+
+        uint8_t key_settings{};
+        uint8_t key_count{};
+        if (dfs.getKeySettings(key_settings, key_count)) {
+            printf("key_settings:%02X key_count:%u", key_settings, key_count);
+        }
+        putchar('\n');
+
+        // Files
+        std::vector<uint8_t> file_nos;
+        if (!dfs.getFileIDs(file_nos)) {
+            M5_LIB_LOGW("  getFileIDs failed");
+            continue;
+        }
+
+        printf("files:%zu\n", file_nos.size());
+
+        uint32_t idx{};
+        for (const auto file_no : file_nos) {
+            ++idx;
+            FileSettings settings{};
+            if (!dfs.getFileSettings(settings, file_no)) {
+                M5_LIB_LOGW("getFileSettings failed file_no %u", file_no);
+                continue;
+            }
+            printf("---- [%02u]:file_no %u type=%u comm=%u ar=%04X size=%u\n", idx - 1, file_no, settings.file_type,
+                   settings.comm_mode, settings.access_rights, settings.file_size);
+            if (settings.file_size == 0) {
+                continue;
+            }
+            {
+                const int8_t read_key = required_read_key_no_from_access_rights(settings.access_rights);
+                if (read_key == kAccessDenied) {
+                    M5_LIB_LOGW("dump_desfire: read access denied file_no %u", file_no);
+                    continue;
+                }
+                if (read_key >= 0) {
+                    constexpr uint8_t kDefaultKey[16]{};
+                    if (!dfs.authenticateAES(static_cast<uint8_t>(read_key), kDefaultKey)) {
+                        M5_LIB_LOGW("dump_desfire: authenticateAES failed key_no %d file_no %u", read_key, file_no);
+                        continue;
+                    }
+                }
+            }
+
+            uint32_t offset = 0;
+            uint32_t total  = 0;
+            std::vector<uint8_t> data{};
+            while (offset < settings.file_size) {
+                const uint32_t remain = settings.file_size - offset;
+                const uint16_t len    = static_cast<uint16_t>(std::min<uint32_t>(remain, max_chunk_len));
+                std::vector<uint8_t> chunk;
+                if (!dfs.readData(chunk, file_no, offset, len)) {
+                    if (offset == 0) {
+                        M5_LIB_LOGW("readData failed");
+                    }
+                    break;
+                }
+                if (chunk.empty()) {
+                    break;
+                }
+                offset += chunk.size();
+                total += chunk.size();
+                data.insert(data.end(), chunk.begin(), chunk.end());
+                if (chunk.size() < len) {
+                    break;
+                }
+            }
+            m5::utility::log::dump(data.data(), data.size(), false);
+        }
     }
+    return true;
+}
+
+bool NFCLayerA::dump_desfire_light()
+{
+    const auto cfg         = _isoDEP.config();
+    uint16_t max_chunk_len = std::min<uint16_t>(16, std::min<uint16_t>(cfg.fsc, cfg.pcd_max_frame_rx));
+    if (max_chunk_len == 0) {
+        max_chunk_len = 16;
+    }
+
+    DESFireFileSystem dfs{_isoDEP};
+    // Light default or NDEF
+    if (!dfs.selectDfNameAuto(type4::DESFIRE_LIGHT_DF_NAME, sizeof(type4::DESFIRE_LIGHT_DF_NAME)) &&
+        !dfs.selectDfNameAuto(type4::NDEF_AID, sizeof(type4::NDEF_AID))) {
+        M5_LIB_LOGE("selectDFname failed");
+        return false;
+    }
+
+    std::vector<uint8_t> file_nos;
+    if (!dfs.getFileIDs(file_nos)) {
+        M5_LIB_LOGW("getFileIDs failed");
+        return false;
+    }
+    printf("files:%zu\n", file_nos.size());
+
+    desfire::Ev2Context ctx{};
+    uint32_t idx{};
+    for (const auto file_no : file_nos) {
+        ++idx;
+
+#if 0        
+        if (file_no == 0x0F /*TMAC*/) {
+            printf("---- [%02u]:file_no %u Probably TMAC, so it can't be read\n", idx - 1, file_no);
+            continue;
+        }
+#endif
+
+        // For clear auth status
+        if (!dfs.selectDfNameAuto(type4::DESFIRE_LIGHT_DF_NAME, sizeof(type4::DESFIRE_LIGHT_DF_NAME)) &&
+            !dfs.selectDfNameAuto(type4::NDEF_AID, sizeof(type4::NDEF_AID))) {
+            M5_LIB_LOGE("selectDFname failed");
+            return false;
+        }
+
+        // Get fileSeetings
+        FileSettings settings{};
+        if (!dfs.getFileSettings(settings, file_no)) {
+            if (!dfs.authenticateEV2First(0x00 /* key 0*/, type4::DESFIRE_DEFAULT_KEY, ctx) ||
+                (!dfs.getFileSettingsEV2Full(settings, file_no, ctx) &&
+                 !dfs.getFileSettingsEV2(settings, file_no, ctx))) {
+                M5_LIB_LOGW("getFileSettings failed file_no [%02u]:%u", idx - 1, file_no);
+                continue;
+            }
+        }
+        const int8_t read_key = required_read_key_no_from_access_rights(settings.access_rights);
+        if (read_key == kAccessDenied) {
+            printf("read access denied file_no %u\n", file_no);
+            continue;
+        }
+        if (read_key >= 0 || settings.comm_mode != 0) {
+            ctx = {};
+            if (!dfs.authenticateEV2First(static_cast<uint8_t>(read_key), type4::DESFIRE_DEFAULT_KEY, ctx)) {
+                M5_LIB_LOGW("authenticateEV2First failed key_no %d file_no %u", read_key, file_no);
+            }
+        }
+
+        switch (settings.file_type) {
+            case 0x02:  // Value file
+                printf("---- [%02u]:file_no %u Value file, so it can't be read\n", idx - 1, file_no);
+                continue;
+                break;
+            case 0x04:  // CyclicRecord file
+                printf("---- [%02u]:file_no %u CyclicRecord file, so it can't be read\n", idx - 1, file_no);
+                continue;
+                break;
+            case 0x05:  // TMAC file
+                printf("---- [%02u]:file_no %u TMAC, so it can't be read\n", idx - 1, file_no);
+                continue;
+                break;
+            default:
+                printf("---- [%02u]:file_no %u type=%u comm=%u ar=%04X size=%u\n", idx - 1, file_no, settings.file_type,
+                       settings.comm_mode, settings.access_rights, settings.file_size);
+                break;
+        }
+
+        uint32_t offset{}, total{};
+        std::vector<uint8_t> data{};
+        while (offset < settings.file_size) {
+            const uint32_t remain = settings.file_size - offset;
+            const uint16_t len    = static_cast<uint16_t>(std::min<uint32_t>(remain, max_chunk_len));
+            std::vector<uint8_t> chunk;
+            bool ok{};
+            switch (settings.comm_mode) {
+                case 0:
+                    ok = dfs.readDataLight(chunk, file_no, offset, len);
+                    break;
+                case 1:
+                    ok = dfs.readDataLightEV2(chunk, file_no, offset, len, ctx);
+                    break;
+                case 3:
+                    ok = dfs.readDataLightEV2Full(chunk, file_no, offset, len, ctx);
+                    break;
+                default:
+                    break;
+            }
+            if (!ok || chunk.empty()) {
+                break;
+            }
+            offset += chunk.size();
+            total += chunk.size();
+            data.insert(data.end(), chunk.begin(), chunk.end());
+            if (chunk.size() < len) {
+                break;
+            }
+        }
+        m5::utility::log::dump(data.data(), data.size(), false);
+    }
+
     return true;
 }
 

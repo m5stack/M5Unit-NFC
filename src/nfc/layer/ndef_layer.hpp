@@ -66,6 +66,12 @@ public:
       @return True if successful
      */
     bool prepare_desfire_light();
+    /*!
+      @brief Prepare NDEF files on MIFARE DESFire (EV1/EV2/EV3)
+      @param max_ndef_size Max size for NDEF file
+      @return True if successful
+     */
+    bool prepare_desfire(const uint32_t max_ndef_size);
 
     /*!
       @brief Read Type2 Capability Container

@@ -12,6 +12,7 @@
 #include <M5UnitUnified.h>
 #include <M5UnitUnifiedNFC.h>
 #include <M5Utility.h>
+#include <algorithm>
 #include <vector>
 
 // *************************************************************
@@ -30,6 +31,7 @@
 #include <M5UnitUnifiedRFID.h>
 #endif
 
+using namespace m5::nfc;
 using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 using namespace m5::nfc::ndef;
@@ -96,8 +98,33 @@ constexpr uint8_t poji_64_png[] = {
 
 constexpr uint32_t poji_64_png_len = 738;
 
+void format_desfire()
+{
+    auto& picc = nfc_a.activatedPICC();
+
+    if (picc.isMifareDESFire()) {
+        desfire::DESFireFileSystem dfs(nfc_a);
+        if (picc.type == Type::MIFARE_DESFire_Light) {
+            M5_LOGW("DESFire light can NOT format");
+            return;
+        } else {
+            if (!dfs.formatPICC(type4::DESFIRE_DEFAULT_KEY)) {
+                M5_LOGE("Failed to formatPICC");
+                return;
+            }
+            uint32_t free_size{};
+            if (dfs.selectApplication() && dfs.getFreeMemory(free_size)) {
+                M5_LOGI("free(picc):%u", free_size);
+            }
+        }
+    }
+}
+
 void read_ndef()
 {
+    // auto& picc = nfc_a.activatedPICC();
+
+    // Disable non-test NDEF read path; keep only the current debug logging.
     bool valid{};
     if (!nfc_a.ndefIsValidFormat(valid)) {
         M5_LOGE("Failed to ndefIsValidFormat");
@@ -143,26 +170,56 @@ void read_ndef()
 
 void write_ndef()
 {
+    auto& picc = nfc_a.activatedPICC();
+
     /*
-      **** NOTICE *********************************************
+      **** MIFARE Ultralight NOTICE ***************************
       Change the Ultralight series to NDEF format
       Note: This change cannot be undone
       *********************************************************
     */
-    if (nfc_a.activatedPICC().isMifareUltralight()) {
+    if (picc.isMifareUltralight()) {
         if (!nfc_a.mifareUltralightChangeFormatToNDEF()) {
             M5_LOGE("Failed to mifareUltralightChangeFormatToNTAG");
             lcd.fillScreen(TFT_RED);
             return;
         }
+        M5_LOGI("Changed NDEF format");
     }
 
+    /*
+      **** MIFARE DESFire NOTICE ******************************
+      If the DESFire card is not in NDEF format, the PICC will be formatted
+      This means all existing files and applications will be deleted!
+      For DESFire light, the file structure is changed to comply with the NDEF specification,
+      and the data is overwritten.
+      *********************************************************
+    */
+    if (picc.isMifareDESFire() && picc.type != Type::MIFARE_DESFire_Light) {
+        bool valid{};
+        if (!nfc_a.ndefIsValidFormat(valid)) {
+            lcd.fillScreen(TFT_RED);
+            return;
+        }
+        M5_LOGI("NDEF format valid?:%u", valid);
+        valid = false;
+        if (!valid) {
+            format_desfire();
+            if (!nfc_a.ndefPrepareDesfire(picc.userAreaSize())) {
+                M5_LOGE("Failed to prepare NDEF files");
+                lcd.fillScreen(TFT_RED);
+                return;
+            }
+            M5_LOGI("Prepare for NDEF OK");
+        }
+    }
+
+    // Build message and write
     TLV msg{Tag::Message};
     Record r[5] = {};  // Wellknown as default
 
     // URI record
     r[0].setURIPayload("m5stack.com/", URIProtocol::HTTPS);
-
     // Text record with langage type
     const char* zh_data = "你好 M5Stack";
     r[1].setTextPayload(zh_data, "zh");
@@ -191,7 +248,7 @@ void write_ndef()
         lcd.fillScreen(TFT_RED);
         return;
     }
-    nfc_a.dump();
+    // nfc_a.dump();
 }
 
 }  // namespace

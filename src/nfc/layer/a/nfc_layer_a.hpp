@@ -432,6 +432,12 @@ public:
      */
     bool ndefPrepareDesfireLight();
     /*!
+      @brief Prepare NDEF files on MIFARE DESFire (EV1/EV2/EV3)
+      @param max_ndef_size Max size for NDEF file
+      @return True if successful
+     */
+    bool ndefPrepareDesfire(const uint32_t max_ndef_size);
+    /*!
       @brief Read NDEF Message TLV
       @param[out] msg Messgae If it does not exist, a Null TLV is returned
       @return True if successful
@@ -519,7 +525,8 @@ protected:
     bool dump_sector(const uint8_t sector);
     bool dump_page_structure(const uint16_t maxPage);
     bool dump_page(const uint8_t page, const uint16_t maxPage);
-    bool dump_iso_dep();
+    bool dump_desfire();
+    bool dump_desfire_light();
 
     static bool push_back_picc(std::vector<m5::nfc::a::PICC>& v, const m5::nfc::a::PICC& picc);
 

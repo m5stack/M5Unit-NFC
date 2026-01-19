@@ -351,11 +351,14 @@ bool transceive_sm_full(m5::nfc::isodep::IsoDEP& iso_dep, const uint8_t cmd, con
 
     auto apdu = m5::nfc::a::mifare::desfire::make_native_wrap_command(cmd, cmd_data_sm.data(),
                                                                       static_cast<uint16_t>(cmd_data_sm.size()));
+    /*
     M5_LIB_LOGE("SM tx cmd:%02X hdr:%u data:%u mac:%u", cmd, static_cast<unsigned>(cmd_header_len),
                 static_cast<unsigned>(enc_data.size()), static_cast<unsigned>(sizeof(mac_trunc)));
     m5::utility::log::dump(apdu.data(), apdu.size(), false);
     M5_LIB_LOGE("SM tx MAC input");
     m5::utility::log::dump(mac_input.data(), mac_input.size(), false);
+    */
+
     std::vector<uint8_t> rx(DEFAULT_RX_LEN);
     uint16_t rx_len = rx.size();
     if (!iso_dep.transceiveINF(rx.data(), rx_len, apdu.data(), apdu.size(), nullptr) || rx_len < 2) {
@@ -630,8 +633,8 @@ m5::stl::expected<void, uint8_t> DESFireFileSystem::createApplication(const uint
 
     auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_CREATE_APPLICATION), data.data(), data.size());
 
-    M5_LIB_LOGE("cmd:");
-    m5::utility::log::dump(cmd.data(), cmd.size(), false);
+    //M5_LIB_LOGE("cmd:");
+    //m5::utility::log::dump(cmd.data(), cmd.size(), false);
 
     uint8_t rx[16]{};
     uint16_t rx_len = sizeof(rx);
@@ -748,7 +751,7 @@ bool DESFireFileSystem::readDataLight(std::vector<uint8_t>& out, const uint8_t f
 }
 
 bool DESFireFileSystem::readDataLightEV2Full(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset,
-                                        const uint32_t length, Ev2Context& ctx)
+                                             const uint32_t length, Ev2Context& ctx)
 {
     out.clear();
 
@@ -759,8 +762,7 @@ bool DESFireFileSystem::readDataLightEV2Full(std::vector<uint8_t>& out, const ui
     pack_le24(header + 4, length);
 
     std::vector<uint8_t> resp;
-    if (!transceive_sm_full(_isoDEP, m5::stl::to_underlying(INS::DF_READ_DATA), header, sizeof(header), nullptr, 0, ctx,
-                            &resp)) {
+    if (!transceive_sm_full(_isoDEP, DESFIRE_LIGHT_INS_READ_DATA, header, sizeof(header), nullptr, 0, ctx, &resp)) {
         return false;
     }
     out = std::move(resp);
@@ -768,7 +770,7 @@ bool DESFireFileSystem::readDataLightEV2Full(std::vector<uint8_t>& out, const ui
 }
 
 bool DESFireFileSystem::readDataLightEV2(std::vector<uint8_t>& out, const uint8_t file_no, const uint32_t offset,
-                                       const uint32_t length, Ev2Context& ctx)
+                                         const uint32_t length, Ev2Context& ctx)
 {
     out.clear();
 
@@ -779,8 +781,7 @@ bool DESFireFileSystem::readDataLightEV2(std::vector<uint8_t>& out, const uint8_
     pack_le24(header + 4, length);
 
     std::vector<uint8_t> resp;
-    if (!transceive_sm_mac(_isoDEP, m5::stl::to_underlying(INS::DF_READ_DATA), header, sizeof(header), nullptr, 0, ctx,
-                           &resp)) {
+    if (!transceive_sm_mac(_isoDEP, DESFIRE_LIGHT_INS_READ_DATA, header, sizeof(header), nullptr, 0, ctx, &resp)) {
         return false;
     }
     out = std::move(resp);
@@ -887,8 +888,8 @@ bool DESFireFileSystem::writeDataLight(const uint8_t file_no, const uint32_t off
     return true;
 }
 
-bool DESFireFileSystem::writeDataEV2Mac(const uint8_t file_no, const uint32_t offset, const uint8_t* data,
-                                        const uint32_t data_len, Ev2Context& ctx)
+bool DESFireFileSystem::writeDataLightEV2(const uint8_t file_no, const uint32_t offset, const uint8_t* data,
+                                          const uint32_t data_len, Ev2Context& ctx)
 {
     if (!data || data_len == 0) {
         return false;
@@ -921,8 +922,8 @@ bool DESFireFileSystem::writeDataEV2Mac(const uint8_t file_no, const uint32_t of
     return true;
 }
 
-bool DESFireFileSystem::writeDataEV2Full(const uint8_t file_no, const uint32_t offset, const uint8_t* data,
-                                         const uint32_t data_len, Ev2Context& ctx)
+bool DESFireFileSystem::writeDataLightEV2Full(const uint8_t file_no, const uint32_t offset, const uint8_t* data,
+                                              const uint32_t data_len, Ev2Context& ctx)
 {
     if (!data || data_len == 0) {
         return false;
@@ -957,158 +958,6 @@ bool DESFireFileSystem::writeDataEV2Full(const uint8_t file_no, const uint32_t o
             return false;
         }
         written += chunk;
-    }
-    return true;
-}
-
-bool DESFireFileSystem::createNDEFFiles(const uint32_t max_ndef_size)
-{
-    if (!max_ndef_size) {
-        return false;
-    }
-
-    // select
-    if (!selectApplication()) {
-        M5_LIB_LOGE("createNDEFFiles: select PICC");
-        return false;
-    }
-
-    // adjust NDEF file size
-    uint32_t free_mem{};
-    uint16_t ndef_file_size{};
-    if (getFreeMemory(free_mem)) {
-        const uint32_t reserve = (free_mem > 4096) ? 256 : 0;  // For 8K
-        const uint32_t capped  = (free_mem > reserve) ? (free_mem - reserve) : 0;
-        ndef_file_size         = static_cast<uint16_t>(std::min<uint32_t>(max_ndef_size, capped));
-        if (ndef_file_size < 32) {
-            M5_LIB_LOGE("createNDEFFiles: NDEF size too small %u", ndef_file_size);
-            return false;
-        }
-    }
-
-    NdefFormatOptions opt{};
-    opt.picc_master_key = type4::DESFIRE_DEFAULT_KEY;
-    opt.app_master_key  = type4::DESFIRE_DEFAULT_KEY;
-    opt.ndef_file_size  = ndef_file_size;
-    type4::FileControlTLV fct{};
-    fct.tag            = 0x04;
-    fct.len            = 0x06;
-    fct.ndef_file_id   = type4::NDEF_FILE_ID;
-    fct.ndef_file_size = ndef_file_size;
-    fct.read_access    = 0x00;
-    fct.write_access   = 0x00;
-    opt.cc.fctlvs.push_back(fct);
-
-    // picc auth
-    bool picc_des_ok{};
-    bool picc_iso_ok{};
-    bool picc_aes_ok{};
-    if (opt.picc_master_key) {
-        bool ok = false;
-        if (opt.auth_mode == AuthMode::DES || opt.auth_mode == AuthMode::Auto) {
-            picc_des_ok = authenticateDES(0x00, opt.picc_master_key);
-            if (!picc_des_ok) {
-                picc_iso_ok = authenticateISO(0x00, opt.picc_master_key);
-            }
-            ok = picc_des_ok || picc_iso_ok;
-        }
-        if (!ok && (opt.auth_mode == AuthMode::AES || opt.auth_mode == AuthMode::Auto)) {
-            picc_aes_ok = authenticateAES(0x00, opt.picc_master_key);
-            ok          = picc_aes_ok;
-        }
-        if (!ok) {
-            M5_LIB_LOGE("createNDEFFiles: PICC master auth failed");
-            return false;
-        }
-    }
-    constexpr uint16_t app_iso_fid = type4::NDEF_APP_FID;
-    const auto* df_name            = type4::NDEF_AID;
-    constexpr uint8_t df_name_len  = sizeof(type4::NDEF_AID);
-
-    uint8_t key_settings2 = opt.key_settings2;
-    if (opt.auth_mode == AuthMode::Auto && opt.picc_master_key) {
-        const uint8_t base = static_cast<uint8_t>(opt.key_settings2 & 0x3F);
-        if (picc_aes_ok) {
-            key_settings2 = static_cast<uint8_t>(0x80 | base);
-        } else if (picc_iso_ok) {
-            key_settings2 = base;
-        } else if (picc_des_ok) {
-            key_settings2 = base;
-        }
-    }
-
-    // create app
-    auto created = createApplication(opt.aid, opt.key_settings1, key_settings2, app_iso_fid, df_name, df_name_len);
-    if (!created.has_value() && created.error() == 0x9E) {
-        created = createApplication(opt.aid, opt.key_settings1, key_settings2, 0, nullptr, 0);
-    }
-    if (!created.has_value()) {
-        M5_LIB_LOGE("createNDEFFiles: create application failed");
-        return false;
-    }
-    if (!selectApplication(opt.aid)) {
-        M5_LIB_LOGE("createNDEFFiles: select application failed");
-        return false;
-    }
-    // app auth
-    if (opt.app_master_key) {
-        bool ok = false;
-        if (opt.auth_mode == AuthMode::Auto && opt.picc_master_key) {
-            if (picc_aes_ok) {
-                ok = authenticateAES(0x00, opt.app_master_key);
-            } else if (picc_iso_ok) {
-                ok = authenticateISO(0x00, opt.app_master_key);
-            } else {
-                ok = authenticateDES(0x00, opt.app_master_key);
-                if (!ok) {
-                    ok = authenticateISO(0x00, opt.app_master_key);
-                }
-            }
-        } else {
-            if (opt.auth_mode == AuthMode::DES || opt.auth_mode == AuthMode::Auto) {
-                ok = authenticateDES(0x00, opt.app_master_key);
-                if (!ok) {
-                    ok = authenticateISO(0x00, opt.app_master_key);
-                }
-            }
-            if (!ok && (opt.auth_mode == AuthMode::AES || opt.auth_mode == AuthMode::Auto)) {
-                ok = authenticateAES(0x00, opt.app_master_key);
-            }
-        }
-        if (!ok) {
-            M5_LIB_LOGE("createNDEFFiles: app master auth failed");
-            return false;
-        }
-    }
-
-    // create CC file
-    if (!createStdDataFile(opt.cc_file_no, type4::CC_FILE_ID, opt.comm_mode, opt.access_rights, opt.cc_file_size)) {
-        M5_LIB_LOGE("createNDEFFiles: create CC file failed");
-        return false;
-    }
-
-    std::vector<uint8_t> cc;
-    uint16_t ndef_fid{};
-    uint16_t ndef_size{};
-    if (!build_cc(cc, ndef_fid, ndef_size, opt)) {
-        M5_LIB_LOGE("createNDEFFiles: build CC failed");
-        return false;
-    }
-    if (!writeData(opt.cc_file_no, 0, cc.data(), static_cast<uint32_t>(cc.size()))) {
-        M5_LIB_LOGE("createNDEFFiles: write CC failed");
-        return false;
-    }
-
-    // create NDEF file
-    if (!createStdDataFile(opt.ndef_file_no, ndef_fid, opt.comm_mode, opt.access_rights, ndef_size)) {
-        M5_LIB_LOGE("createNDEFFiles: create NDEF file failed");
-        return false;
-    }
-
-    // Write empty (len == 0)
-    const uint8_t nlen0[2] = {0x00, 0x00};
-    if (!writeData(opt.ndef_file_no, 0, nlen0, sizeof(nlen0))) {
-        M5_LIB_LOGE("Failed to write");
     }
     return true;
 }
@@ -1179,19 +1028,18 @@ bool DESFireFileSystem::getFreeMemory(uint32_t& out)
     uint8_t rx[16]{};
     uint16_t rx_len = sizeof(rx);
     if (!transceive(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+        M5_LIB_LOGE("transceive failed, rx_len=%u", rx_len);
         return false;
     }
 
-    // M5_LIB_LOGW("getFreeMemory: rx_len=%u", rx_len);
-    // m5::utility::log::dump(rx, rx_len, false);
-
     if (!is_successful(rx, rx_len)) {
+        M5_LIB_LOGE("not successful, status=%02X", status_code(rx, rx_len));
         return false;
     }
 
     const uint16_t data_len = static_cast<uint16_t>(rx_len - 2);
     if (data_len > 3) {
-        M5_LIB_LOGW("getFreeMemory: secured response not supported");
+        M5_LIB_LOGE("Secured response not supported");
         return false;
     }
     if (data_len == 2) {
@@ -1202,6 +1050,7 @@ bool DESFireFileSystem::getFreeMemory(uint32_t& out)
         out = unpack_le24(rx);
         return true;
     }
+    M5_LIB_LOGE("unexpected data_len=%u", data_len);
     return false;
 }
 
@@ -1219,7 +1068,7 @@ bool DESFireFileSystem::getKeySettings(uint8_t& key_settings, uint8_t& key_count
     }
     const uint16_t data_len = static_cast<uint16_t>(rx_len - 2);
     if (data_len > 2) {
-        M5_LIB_LOGW("getKeySettings: secured response not supported");
+        M5_LIB_LOGW("Secured response not supported");
         return false;
     }
     key_settings = rx[0];
@@ -1318,6 +1167,61 @@ bool DESFireFileSystem::setConfigurationFileRenamingEV2Full(const FileRename& fi
                               sizeof(cmd_header), data.data(), data.size(), ctx, nullptr);
 }
 
+bool DESFireFileSystem::setConfigurationAppNameEV2Full(const uint8_t* df_name, uint8_t df_name_len, uint16_t iso_fid,
+                                                       Ev2Context& ctx)
+{
+    if (!df_name || df_name_len == 0 || df_name_len > 16) {
+        return false;
+    }
+
+    std::vector<uint8_t> data{};
+    data.reserve(1 + 16 + 2);
+    const uint8_t app_opt = static_cast<uint8_t>(0x80 | (df_name_len & 0x1F));  // bit7=1 + name length
+    data.push_back(app_opt);
+    for (uint8_t i = 0; i < 16; ++i) {
+        data.push_back((i < df_name_len) ? df_name[i] : 0x00);
+    }
+    data.push_back(static_cast<uint8_t>(iso_fid & 0xFF));  // LSB first
+    data.push_back(static_cast<uint8_t>((iso_fid >> 8) & 0xFF));
+
+    const uint8_t cmd_header[1] = {0x06};
+    return transceive_sm_full(_isoDEP, m5::stl::to_underlying(INS::DF_SET_CONFIGURATION), cmd_header,
+                              sizeof(cmd_header), data.data(), data.size(), ctx, nullptr);
+}
+
+bool DESFireFileSystem::deleteTransactionMACFileEV2Full(const uint8_t file_no, Ev2Context& ctx)
+{
+    // DeleteTransactionMACFile: CmdHeader = FileNo, CmdData = none
+    // This command deletes the TMAC file, which is required for ISOReadBinary to work on DESFire Light
+    const uint8_t cmd_header[1] = {file_no};
+    return transceive_sm_full(_isoDEP, m5::stl::to_underlying(INS::DF_DELETE_TRANSACTION_MAC_FILE), cmd_header,
+                              sizeof(cmd_header), nullptr, 0, ctx, nullptr);
+}
+
+bool DESFireFileSystem::createTransactionMACFileEV2Full(const uint8_t file_no, const uint8_t comm_mode,
+                                                        const uint16_t access_rights, const uint8_t tmac_key[16],
+                                                        const uint8_t tmac_key_ver, Ev2Context& ctx)
+{
+    // CreateTransactionMACFile:
+    // CmdHeader = FileNo + FileOption + AccessRights + TMACKeyOption (5 bytes)
+    // CmdData = TMACKey + TMACKeyVer (17 bytes, encrypted)
+    uint8_t cmd_header[5];
+    cmd_header[0] = file_no;
+    cmd_header[1] = comm_mode & 0x03;                                   // FileOption (CommMode in bits 1-0)
+    cmd_header[2] = static_cast<uint8_t>(access_rights & 0xFF);         // AccessRights LSB
+    cmd_header[3] = static_cast<uint8_t>((access_rights >> 8) & 0xFF);  // AccessRights MSB
+    cmd_header[4] = 0x02;                                               // TMACKeyOption: 02h = AES key
+
+    std::vector<uint8_t> data;
+    data.reserve(16 + 1);
+    for (int i = 0; i < 16; ++i) {
+        data.push_back(tmac_key[i]);
+    }
+    data.push_back(tmac_key_ver);
+    return transceive_sm_full(_isoDEP, m5::stl::to_underlying(INS::DF_CREATE_TRANSACTION_MAC_FILE), cmd_header,
+                              sizeof(cmd_header), data.data(), data.size(), ctx, nullptr);
+}
+
 bool DESFireFileSystem::getFileIDs(std::vector<uint8_t>& out)
 {
     out.clear();
@@ -1338,6 +1242,27 @@ bool DESFireFileSystem::getFileIDs(std::vector<uint8_t>& out)
         out.assign(rx.begin(), rx.begin() + data_len);
         return true;
     }
+    M5_LIB_LOGE("getFileIDs failed status %02X", status_code(rx.data(), rx_len));
+    return false;
+}
+
+bool DESFireFileSystem::getISOFileIDs(std::vector<uint8_t>& out)
+{
+    out.clear();
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_GET_ISO_FILE_IDS));
+
+    // ISO File IDs are 2 bytes each, max 32 files = 64 bytes + status
+    std::vector<uint8_t> rx(MAXIMUM_FILES * 2 + 2);
+    uint16_t rx_len = rx.size();
+    if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+        M5_LIB_LOGE("Failed to getISOFileIDs %u", rx_len);
+        return false;
+    }
+    if (is_successful(rx.data(), rx_len)) {
+        const uint16_t data_len = rx_len - 2;
+        out.assign(rx.begin(), rx.begin() + data_len);
+        return true;
+    }
     return false;
 }
 
@@ -1355,13 +1280,25 @@ bool DESFireFileSystem::getFileSettings(FileSettings& out, const uint8_t file_no
         return false;
     }
     const uint16_t data_len = static_cast<uint16_t>(rx_len - 2);
+    if (data_len < 4) {
+        return false;
+    }
+    const uint8_t file_type = rx[0];
+    if (file_type == 0x05) {  // TransactionMAC file
+        const uint8_t file_option = rx[1];
+        out.file_type     = file_type;
+        out.comm_mode     = (file_option & 0x03);
+        out.access_rights = static_cast<uint16_t>(rx[2]) | (static_cast<uint16_t>(rx[3]) << 8);
+        out.file_size     = 0;
+        return true;
+    }
     if (data_len < 7) {
         return false;
     }
-    if (data_len > 7) {
-        M5_LIB_LOGW("getFileSettings: secured response not supported");
-    }
-    out.file_type     = rx[0];
+    //    if (data_len > 7) {
+    //        M5_LIB_LOGW("getFileSettings: secured response not supported");
+    //    }
+    out.file_type     = file_type;
     out.comm_mode     = rx[1];
     out.access_rights = static_cast<uint16_t>(rx[2]) | (static_cast<uint16_t>(rx[3]) << 8);
     out.file_size     = unpack_le24(rx + 4);
@@ -1376,10 +1313,52 @@ bool DESFireFileSystem::getFileSettingsEV2(FileSettings& out, const uint8_t file
                            &resp)) {
         return false;
     }
+    if (resp.size() < 4) {
+        return false;
+    }
+    const uint8_t file_type = resp[0];
+    if (file_type == 0x05) {  // TransactionMAC file
+        const uint8_t file_option = resp[1];
+        out.file_type     = file_type;
+        out.comm_mode     = (file_option & 0x03);
+        out.access_rights = static_cast<uint16_t>(resp[2]) | (static_cast<uint16_t>(resp[3]) << 8);
+        out.file_size     = 0;
+        return true;
+    }
     if (resp.size() < 7) {
         return false;
     }
-    out.file_type     = resp[0];
+    out.file_type     = file_type;
+    out.comm_mode     = resp[1];
+    out.access_rights = static_cast<uint16_t>(resp[2]) | (static_cast<uint16_t>(resp[3]) << 8);
+    out.file_size     = unpack_le24(resp.data() + 4);
+    return true;
+}
+
+bool DESFireFileSystem::getFileSettingsEV2Full(FileSettings& out, const uint8_t file_no, Ev2Context& ctx)
+{
+    out = {};
+    std::vector<uint8_t> resp;
+    if (!transceive_sm_full(_isoDEP, m5::stl::to_underlying(INS::DF_GET_FILE_SETTINGS), &file_no, 1, nullptr, 0, ctx,
+                            &resp)) {
+        return false;
+    }
+    if (resp.size() < 4) {
+        return false;
+    }
+    const uint8_t file_type = resp[0];
+    if (file_type == 0x05) {  // TransactionMAC file
+        const uint8_t file_option = resp[1];
+        out.file_type     = file_type;
+        out.comm_mode     = (file_option & 0x03);
+        out.access_rights = static_cast<uint16_t>(resp[2]) | (static_cast<uint16_t>(resp[3]) << 8);
+        out.file_size     = 0;
+        return true;
+    }
+    if (resp.size() < 7) {
+        return false;
+    }
+    out.file_type     = file_type;
     out.comm_mode     = resp[1];
     out.access_rights = static_cast<uint16_t>(resp[2]) | (static_cast<uint16_t>(resp[3]) << 8);
     out.file_size     = unpack_le24(resp.data() + 4);
@@ -1408,8 +1387,8 @@ bool DESFireFileSystem::changeFileSettingsEV2(const uint8_t file_no, const uint8
     data[0] = (file_option & 0x03);
     data[1] = static_cast<uint8_t>(access_rights & 0xFF);
     data[2] = static_cast<uint8_t>((access_rights >> 8) & 0xFF);
-    return transceive_sm_mac(_isoDEP, m5::stl::to_underlying(INS::DF_CHANGE_FILE_SETTINGS), header, sizeof(header), data,
-                             sizeof(data), ctx, nullptr);
+    return transceive_sm_mac(_isoDEP, m5::stl::to_underlying(INS::DF_CHANGE_FILE_SETTINGS), header, sizeof(header),
+                             data, sizeof(data), ctx, nullptr);
 }
 
 bool DESFireFileSystem::changeFileSettings(const uint8_t file_no, const uint8_t file_option,

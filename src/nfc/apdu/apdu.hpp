@@ -96,6 +96,7 @@ enum class INS : uint8_t {
     DF_CREATE_STD_DATA_FILE = 0xCD,
     DF_GET_FREE_MEMORY      = 0x6E,
     DF_GET_FILE_IDS         = 0x6F,
+    DF_GET_ISO_FILE_IDS     = 0x61,
     DF_GET_KEY_SETTINGS     = 0x45,
     DF_SET_CONFIGURATION    = 0x5C,
     DF_CHANGE_FILE_SETTINGS = 0x5F,
@@ -104,9 +105,11 @@ enum class INS : uint8_t {
     DF_AUTHENTICATE_AES     = 0xAA,
     DF_AUTHENTICATE_EV2     = 0x71,
     DF_FORMAT_PICC          = 0xFC,
-    DF_READ_DATA            = 0xBD,
-    DF_WRITE_DATA           = 0x3D,
-    DF_GET_FILE_SETTINGS    = 0xF5,
+    DF_READ_DATA                   = 0xBD,
+    DF_WRITE_DATA                  = 0x3D,
+    DF_GET_FILE_SETTINGS           = 0xF5,
+    DF_DELETE_TRANSACTION_MAC_FILE = 0xDF,
+    DF_CREATE_TRANSACTION_MAC_FILE = 0xCE,
 };
 ///@}
 

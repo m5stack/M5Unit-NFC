@@ -30,6 +30,9 @@ bool FileSystem::selectFile(const m5::nfc::apdu::SelectBy by, const m5::nfc::apd
     const uint16_t le = need_select_file_le(p2) ? 256 : 0;
     auto cmd          = make_apdu_command(0x00, m5::stl::to_underlying(INS::SELECT_FILE), p1, p2, param, param_len, le);
 
+    // M5_LIB_LOGE("SELECT p1:%02X p2:%02X le:%u len:%u", p1, p2, le, param_len);
+    // m5::utility::log::dump(cmd.data(), cmd.size(), false);
+
     uint8_t rx[256]{};
     uint16_t rx_len = sizeof(rx);
     if (!_isoDEP.transceiveAPDU(rx, rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
@@ -41,9 +44,17 @@ bool FileSystem::selectFile(const m5::nfc::apdu::SelectBy by, const m5::nfc::apd
     auto tlvs = parse_tlv(rx, rx_len - 2);
     //    dump_tlv(tlvs);
 
+    /*
+    // Debug: Show SELECT response
+    M5_LIB_LOGE("SELECT response: rx_len=%u SW=%02X:%02X", rx_len, rx[rx_len - 2], rx[rx_len - 1]);
+    if (rx_len > 2) {
+        m5::utility::log::dump(rx, rx_len - 2, false);
+    }
+    */
+
     if (!is_response_OK(rx + rx_len - 2)) {
-        M5_LIB_LOGE("Response error SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
-        // M5_DUMPE(cmd.data(), cmd.size());
+        // M5_LIB_LOGE("Response error SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
+        //  M5_DUMPE(cmd.data(), cmd.size());
         return false;
     }
     return true;
@@ -62,8 +73,8 @@ bool FileSystem::selectByFileId(const uint16_t fid, const m5::nfc::apdu::SelectR
 bool FileSystem::selectFileIdAuto(const uint16_t fid, const m5::nfc::apdu::SelectOccurrence occ)
 {
     // Response handling varies depending on PICC, so fallback is required
-    return selectByFileId(fid, m5::nfc::apdu::SelectResponse::None, occ) ||
-           selectByFileId(fid, m5::nfc::apdu::SelectResponse::FCI, occ) ||
+    return selectByFileId(fid, m5::nfc::apdu::SelectResponse::FCI, occ) ||
+           selectByFileId(fid, m5::nfc::apdu::SelectResponse::None, occ) ||
            selectByFileId(fid, m5::nfc::apdu::SelectResponse::FCP, occ);
 }
 
@@ -151,8 +162,11 @@ bool FileSystem::readBinary(std::vector<uint8_t>& out, const uint16_t offset,
 
     const uint8_t p1 = static_cast<uint8_t>((offset >> 8) & 0xFF);
     const uint8_t p2 = static_cast<uint8_t>(offset & 0xFF);
+    // const bool sfi   = (p1 & 0x80) != 0;
+    //  M5_LIB_LOGE("READ BINARY off:%u p1:%02X p2:%02X le:%u sfi:%u", offset, p1, p2, le, sfi ? 1 : 0);
 
     auto cmd = make_apdu_case2(0x00, m5::stl::to_underlying(INS::READ_BINARY), p1, p2, le);
+    // m5::utility::log::dump(cmd.data(), cmd.size(), false);
 
     std::vector<uint8_t> rx;
     rx.resize(le + 2 + 16);
@@ -180,8 +194,11 @@ bool FileSystem::updateBinary(const uint16_t offset, const uint8_t* data, const 
 
     const uint8_t p1 = static_cast<uint8_t>((offset >> 8) & 0xFF);
     const uint8_t p2 = static_cast<uint8_t>(offset & 0xFF);
+    const bool sfi   = (p1 & 0x80) != 0;
+    // M5_LIB_LOGE("UPDATE BINARY off:%u p1:%02X p2:%02X len:%u sfi:%u", offset, p1, p2, data_len, sfi ? 1 : 0);
 
     auto cmd = make_apdu_case3(0x00, m5::stl::to_underlying(INS::UPDATE_BINARY), p1, p2, data, data_len);
+    // m5::utility::log::dump(cmd.data(), cmd.size(), false);
 
     uint8_t rx[2]{};
     uint16_t rx_len = sizeof(rx);

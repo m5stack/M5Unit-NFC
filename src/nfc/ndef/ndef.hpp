@@ -358,8 +358,7 @@ struct AttributeBlock {
  */
 namespace type4 {
 
-constexpr uint16_t CC_FILE_ID{0xE103};  //!< CC file id
-
+constexpr uint16_t CC_FILE_ID{0xE103};                                      //!< CC file id
 constexpr uint8_t NDEF_AID[] = {0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01};  //!< AID for NDEF
 constexpr uint16_t NDEF_APP_FID{0xE110};                                    //!< ISO DF FID for NDEF app
 constexpr uint16_t NDEF_FILE_ID{0xE104};                                    //!< ISO EF FID for NDEF file
@@ -371,12 +370,12 @@ constexpr uint8_t DESFIRE_NDEF_AID[] = {0x00, 0x00, 0x01};  //!< DESFire NDEF AI
 
 constexpr uint8_t DESFIRE_LIGHT_DF_NAME[] = {  //!< DESFire Light default DF Name
     0xA0, 0x00, 0x00, 0x03, 0x96, 0x56, 0x43, 0x41, 0x03, 0xF0, 0x15, 0x40, 0x00, 0x00, 0x00, 0x0B};
-constexpr uint16_t DESFIRE_LIGHT_DF_FID{0xDF01};  //!< DESFire Light default DF FID
-constexpr uint8_t DESFIRE_LIGHT_CC_FILE_NO{0x00};  //!< DESFire Light CC file number
-constexpr uint8_t DESFIRE_LIGHT_NDEF_FILE_NO{0x04};  //!< DESFire Light NDEF file number
-constexpr uint16_t DESFIRE_LIGHT_CC_FILE_ID{0xEF00};  //!< DESFire Light CC file ID
+constexpr uint16_t DESFIRE_LIGHT_DF_FID{0xDF01};        //!< DESFire Light default DF FID
+constexpr uint8_t DESFIRE_LIGHT_CC_FILE_NO{0x00};       //!< DESFire Light CC file number
+constexpr uint8_t DESFIRE_LIGHT_NDEF_FILE_NO{0x04};     //!< DESFire Light NDEF file number
+constexpr uint16_t DESFIRE_LIGHT_CC_FILE_ID{0xEF00};    //!< DESFire Light CC file ID
 constexpr uint16_t DESFIRE_LIGHT_NDEF_FILE_ID{0xEF04};  //!< DESFire Light NDEF file ID
-constexpr uint16_t DESFIRE_LIGHT_NDEF_FILE_SIZE{256};  //!< DESFire Light NDEF file size (bytes)
+constexpr uint16_t DESFIRE_LIGHT_NDEF_FILE_SIZE{256};   //!< DESFire Light NDEF file size (bytes)
 
 constexpr uint8_t DESFIRE_DEFAULT_KEY[16]{};  //!  DESFire default key
 

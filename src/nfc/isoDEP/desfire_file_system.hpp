@@ -196,14 +196,16 @@ public:
     bool getFreeMemory(uint32_t& out);
     bool getKeySettings(uint8_t& key_settings, uint8_t& key_count);
     bool getFileIDs(std::vector<uint8_t>& out);
+    bool getISOFileIDs(std::vector<uint8_t>& out);
     bool getFileSettings(FileSettings& out, const uint8_t file_no);
     bool getFileSettingsEV2(FileSettings& out, const uint8_t file_no, Ev2Context& ctx);
+    bool getFileSettingsEV2Full(FileSettings& out, const uint8_t file_no, Ev2Context& ctx);
 
-    bool changeFileSettingsEV2Full(const uint8_t file_no, const uint8_t file_option, const uint16_t access_rights,
-                                   Ev2Context& ctx);
+    bool changeFileSettings(const uint8_t file_no, const uint8_t file_option, const uint16_t access_rights);
     bool changeFileSettingsEV2(const uint8_t file_no, const uint8_t file_option, const uint16_t access_rights,
                                Ev2Context& ctx);
-    bool changeFileSettings(const uint8_t file_no, const uint8_t file_option, const uint16_t access_rights);
+    bool changeFileSettingsEV2Full(const uint8_t file_no, const uint8_t file_option, const uint16_t access_rights,
+                                   Ev2Context& ctx);
 
     bool formatPICC(const uint8_t* picc_master_key, const AuthMode mode = AuthMode::Auto);
 
@@ -214,7 +216,28 @@ public:
     bool setConfigurationFileRenaming(const FileRename& first, const FileRename* second = nullptr);
     bool setConfigurationFileRenamingEV2Full(const FileRename& first, const FileRename* second, Ev2Context& ctx);
 
-    bool createNDEFFiles(const uint32_t max_ndef_size);
+    /*!
+      @brief Delete TransactionMAC file (required for ISOReadBinary to work)
+      @param file_no File number of TMAC file (default 0)
+      @param ctx EV2 context (must be authenticated with AppMasterKey)
+      @return True if successful
+      @note DESFire Light blocks ISOReadBinary when TMAC file exists
+     */
+    bool deleteTransactionMACFileEV2Full(const uint8_t file_no, Ev2Context& ctx);
+
+    /*!
+      @brief Create TransactionMAC file
+      @param file_no File number for TMAC file
+      @param comm_mode Communication mode (0=Plain, 1=MAC, 3=Full)
+      @param access_rights Access rights
+      @param tmac_key 16-byte TMAC key
+      @param tmac_key_ver Key version
+      @param ctx EV2 context (must be authenticated with AppMasterKey)
+      @return True if successful
+     */
+    bool createTransactionMACFileEV2Full(const uint8_t file_no, const uint8_t comm_mode, const uint16_t access_rights,
+                                         const uint8_t tmac_key[16], const uint8_t tmac_key_ver, Ev2Context& ctx);
+    bool setConfigurationAppNameEV2Full(const uint8_t* df_name, uint8_t df_name_len, uint16_t iso_fid, Ev2Context& ctx);
 
     /*!
       @brief Read data from DESFire file
@@ -232,10 +255,10 @@ public:
                           const uint32_t length, Ev2Context& ctx);
     bool writeData(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len);
     bool writeDataLight(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len);
-    bool writeDataEV2Mac(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len,
-                         Ev2Context& ctx);
-    bool writeDataEV2Full(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len,
-                          Ev2Context& ctx);
+    bool writeDataLightEV2(const uint8_t file_no, const uint32_t offset, const uint8_t* data, const uint32_t data_len,
+                           Ev2Context& ctx);
+    bool writeDataLightEV2Full(const uint8_t file_no, const uint32_t offset, const uint8_t* data,
+                               const uint32_t data_len, Ev2Context& ctx);
 
     bool authenticateDES(const uint8_t key_no, const uint8_t key[16]);
     bool authenticateISO(const uint8_t key_no, const uint8_t key[16]);
