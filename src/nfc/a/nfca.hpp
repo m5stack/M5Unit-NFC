@@ -349,10 +349,10 @@ struct PICC {
     {
         return is_mifare(type);
     }
-    //! @brief Is MIFARE classic?
+    //! @brief Is MIFARE classic? (include Plus SL1)
     inline bool isMifareClassic() const
     {
-        return is_mifare_classic(type);
+        return is_mifare_classic(type) || (is_mifare_plus(type) && security_level == 1);
     }
     //! @brief Is MIFARE Ultralight series?
     inline bool isMifareUltralight() const
@@ -495,6 +495,8 @@ enum class Command : uint8_t {
     TRANSFER        = 0xB0,  //!< MIFARE Classic. writes the contents of the internal Transfer Buffer to a block
     PERSONALIZE_UID_USAGE = 0x40,  //!< MIFARE Classic Personalize UID Usage
     SET_MOD_TYPE          = 0x43,  //!< MIFARE Classic SET_MOD_TYPE
+    WRITE_PERSO           = 0xA8,  //!< MIFARE Plus. WritePerso
+    COMMIT_PERSO          = 0xAA,  //!< MIFARE Plus. CommitPerso
     // MIFARE,NTAG
     WRITE_PAGE = 0xA2,  //!< MIFARE Ultralight/C and NTAG write
     // NTAG
@@ -533,7 +535,6 @@ constexpr uint32_t TIMEOUT_DESELECT{8};
 ///@{
 constexpr uint8_t ACK_NIBBLE{0x0A};
 ///@}
-
 
 /*!
   @namespace st25ta

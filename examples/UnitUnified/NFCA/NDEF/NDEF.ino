@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 /*
-  Example using M5UnitUnified for ST25R3916
+  Example using M5UnitUnified for M5Unit-NFC/RFID
   Read/write NDEF NFC-A PICC
   This example is shared with M5Unit-RFID
 */

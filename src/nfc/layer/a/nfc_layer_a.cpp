@@ -167,14 +167,14 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
-        M5_LIB_LOGV("ATQA:%04X", picc.atqa);
+        M5_LIB_LOGE("ATQA:%04X", picc.atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
 
-        M5_LIB_LOGV("Detect:ATQA:%04X SAK:%02X %s (%s)", picc.atqa, picc.sak, picc.uidAsString().c_str(),
+        M5_LIB_LOGE("Detect:ATQA:%04X SAK:%02X %s (%s)", picc.atqa, picc.sak, picc.uidAsString().c_str(),
                     picc.typeAsString().c_str());
 
         // Hlt
@@ -195,7 +195,7 @@ bool NFCLayerA::select(m5::nfc::a::PICC& picc)
 {
     _activePICC = PICC{};
     if (_impl->select(picc)) {
-        if (picc.isISO14443_4()) {
+        if (picc.isISO14443_4() && !(picc.isMifarePlus() && picc.security_level == 1)) {
             if (!nfca_request_ats(picc.ats)) {
                 return false;
             }
@@ -210,7 +210,7 @@ bool NFCLayerA::activate(const PICC& picc)
 {
     _activePICC = PICC{};
     if (_impl->activate(picc)) {
-        if (picc.isISO14443_4()) {
+        if (picc.isISO14443_4() && !(picc.isMifarePlus() && picc.security_level == 1)) {
             ATS discard{};
             if (!nfca_request_ats(discard)) {
                 M5_LIB_LOGE("Failed to RATS");
@@ -251,7 +251,12 @@ bool NFCLayerA::deactivate()
     auto tmp    = _activePICC;
     _activePICC = PICC{};
 
-    auto ret = tmp.isISO14443_4() ? nfca_deselect() : _impl->hlt();
+    auto ret = false;
+    if (tmp.isMifarePlus() && tmp.security_level == 1) {
+        ret = _impl->hlt();
+    } else {
+        ret = tmp.isISO14443_4() ? nfca_deselect() : _impl->hlt();
+    }
     m5::utility::delay(2);
     return ret;
 }
@@ -271,21 +276,21 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         return false;
     }
 
-    // ISO_14443_4 series
-    if (picc.isISO14443_4()) {
+    // ISO_14443_4 ->
+    if (picc.type == Type::ISO_14443_4) {
         // GetVersion(L4)
-        uint8_t ver[64]{};
-        uint16_t ver_len = sizeof(ver);
-        if (mifare_get_version_L4(ver, ver_len)) {
+        uint8_t ver4[64]{};
+        uint16_t ver_len = sizeof(ver4);
+        if (mifare_get_version_L4_wrapped(ver4, ver_len)) {
             // Plus,DESFire,NTAG4xx
-            // M5_LIB_LOGE(">>>> GetVerionL4 OK");
-            // m5::utility::log::dump(ver, ver_len, false);
-            type = version4_to_type(picc.sub_type, ver);
+            M5_LIB_LOGE(">>>> GetVerionL4 OK %02X/%04X", picc.sak, picc.atqa);
+            m5::utility::log::dump(ver4, ver_len, false);
+            type = version4_to_type(picc.sub_type, ver4);
         } else {
             // Plus,ST25TA
             //  Check historical bytes
-            // M5_LIB_LOGE(">>>> Check historical bytes");
-            // m5::utility::log::dump(picc.ats.historical.data(), picc.ats.historical_len, false);
+            M5_LIB_LOGE(">>>> Check historical bytes %02X/%04X", picc.sak, picc.atqa);
+            m5::utility::log::dump(picc.ats.historical.data(), picc.ats.historical_len, false);
             type = historical_bytes_to_type(picc.sub_type, picc.atqa, picc.sak, picc.ats.historical.data(),
                                             picc.ats.historical_len);
         }
@@ -309,6 +314,7 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         return reactivate(picc);
     }
 
+    // Ultralight ->
     if (picc.type == Type::MIFARE_Ultralight) {
         uint8_t ver[8]{};
         // GetVersion(L3)
@@ -330,7 +336,37 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         picc.blocks = get_number_of_blocks(picc.type);
         return true;
     }
-    // Not changed
+
+    // Classic ->
+    if (picc.isMifareClassic() && !picc.isMifarePlus()) {
+        ATS ats{};
+        if (nfca_request_ats(ats)) {
+            picc.ats = ats;
+
+            uint8_t ver4[64]{};
+            uint16_t ver_len = sizeof(ver4);
+            if (mifare_get_version_L4_raw(ver4, ver_len)) {
+                // Plus EV1 SL1
+                type = version4_to_type(picc.sub_type, ver4);
+            } else {
+                // Plus S/X/SE SL1
+                type = historical_bytes_to_type(picc.sub_type, picc.atqa, picc.sak, ats.historical.data(),
+                                                ats.historical_len);
+            }
+            if (!nfca_deselect()) {
+                M5_LIB_LOGE("Failed to deselect after RATS for Plus SL1");
+            }
+            if (is_mifare_plus(type)) {
+                picc.type           = type;
+                picc.blocks         = get_number_of_blocks(picc.type);
+                picc.security_level = 1;
+                return true;
+            }
+        }
+    }
+
+    // M5_LIB_LOGE(" Not changed");
+    //  Not changed
     return true;
 }
 
@@ -665,7 +701,7 @@ bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const
 bool NFCLayerA::dump(const Key& mkey)
 {
     if (_activePICC.valid()) {
-        if (_activePICC.isMifareClassic() || _activePICC.isMifarePlus()) {
+        if (_activePICC.isMifareClassic()) {
             return dump_sector_structure(_activePICC, mkey);
         } else if (_activePICC.supportsNFC()) {
             return dump_page_structure(_activePICC.blocks);
@@ -966,6 +1002,77 @@ bool NFCLayerA::mifareUltralightCAuthenticate(const uint8_t key[16])
         m5::utility::log::dump(rndA_rot_from_card, 8, false);
         return false;
     }
+    return true;
+}
+
+bool NFCLayerA::mifarePlusUpgradeSecurityLevel1(const mifare::plus::AESKey& card_config_key,
+                                                const mifare::plus::AESKey& card_master_key,
+                                                const mifare::plus::AESKey& l3_switch_key,
+                                                const mifare::classic::Key& key_a, const mifare::classic::Key& key_b)
+{
+    if (!_activePICC.valid() || !_activePICC.isMifarePlus() || _activePICC.security_level != 0) {
+        return false;
+    }
+
+    const uint16_t sectors = get_number_of_sectors(_activePICC.type);
+    if (!sectors) {
+        return false;
+    }
+
+    constexpr uint8_t access_bits_default[3]{0xFF, 0x07, 0x80};
+    constexpr uint8_t gpb_default{0x69};
+
+    uint8_t block[16]{};
+    std::memcpy(block, key_a.data(), key_a.size());
+    std::memcpy(block + 6, access_bits_default, sizeof(access_bits_default));
+    block[9] = gpb_default;
+    std::memcpy(block + 10, key_b.data(), key_b.size());
+
+    auto write_perso_block = [&](const uint16_t block_no, const uint8_t* data) -> bool {
+        if (!data) {
+            return false;
+        }
+        uint8_t tx[19]{};
+        tx[0] = m5::stl::to_underlying(Command::WRITE_PERSO);
+        tx[1] = (uint8_t)(block_no & 0xFF);
+        tx[2] = (uint8_t)(block_no >> 8);
+        memcpy(tx + 3, data, 16);
+
+        uint8_t rx[1]{};
+        uint16_t rx_len{sizeof(rx)};
+        if (!_isoDEP.transceiveINF(rx, rx_len, tx, sizeof(tx)) || !rx_len || rx[0] != 0x90 /* OK */) {
+            M5_LIB_LOGE("write perso %04X failed %u %02X", block, rx_len, rx[0]);
+            return false;
+        }
+        return true;
+    };
+
+    if (!write_perso_block(0x9001, card_config_key.data())) {
+        return false;
+    }
+    if (!write_perso_block(0x9000, card_master_key.data())) {
+        return false;
+    }
+    if (!write_perso_block(0x9003, l3_switch_key.data())) {
+        return false;
+    }
+
+    for (uint16_t sector = 0; sector < sectors; ++sector) {
+        const uint16_t st_block = get_sector_trailer_block_from_sector(sector);
+        if (!write_perso_block(st_block, block)) {
+            return false;
+        }
+    }
+
+    uint8_t commit_cmd[1]{m5::stl::to_underlying(Command::COMMIT_PERSO)};
+    uint8_t rx[1]{};
+    uint16_t rx_len{sizeof(rx)};
+    if (!_isoDEP.transceiveINF(rx, rx_len, commit_cmd, sizeof(commit_cmd)) || !rx_len || rx[0] != 0x90) {
+        M5_LIB_LOGE("commit perso failed %u %02X", rx_len, rx[0]);
+        return false;
+    }
+
+    _activePICC.security_level = 1;
     return true;
 }
 
@@ -1511,7 +1618,7 @@ bool NFCLayerA::mifare_get_version_L3(uint8_t ver[8])
     return _impl->transceive(ver, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION);
 }
 
-bool NFCLayerA::mifare_get_version_L4(uint8_t* ver, uint16_t& ver_len)
+bool NFCLayerA::mifare_get_version_L4_wrapped(uint8_t* ver, uint16_t& ver_len)
 {
     auto org_ver_len = ver_len;
     ver_len          = 0;
@@ -1572,6 +1679,95 @@ bool NFCLayerA::mifare_get_version_L4(uint8_t* ver, uint16_t& ver_len)
         return true;
     }
     return false;
+}
+
+bool NFCLayerA::mifare_get_version_L4_raw(uint8_t* ver, uint16_t& ver_len)
+{
+    auto org_ver_len = ver_len;
+    ver_len          = 0;
+
+    if (!ver || org_ver_len < 8) {  // Skip check valid (Since it targets unconfirmed items)
+        return false;
+    }
+
+    // GetVersion (L4) raw ISO-DEP (native command)
+    uint8_t cmd[] = {m5::stl::to_underlying(Command::GET_VERSION)};
+    uint8_t rx[128]{};
+    uint16_t rx_len = sizeof(rx);
+
+    auto cfg         = _isoDEP.config();
+    const auto saved = cfg.fwt_ms;
+    cfg.fwt_ms       = TIMEOUT_GET_VERSION;
+    cfg.rx_crc       = true;
+    _isoDEP.config(cfg);
+
+    std::vector<uint8_t> acc{};
+    acc.reserve(org_ver_len);
+
+    if (!_isoDEP.transceiveINF(rx, rx_len, cmd, sizeof(cmd)) || (rx_len < 1)) {
+        M5_LIB_LOGD("Failed to GetVersionL4 %u", rx_len);
+        cfg.fwt_ms = saved;
+        _isoDEP.config(cfg);
+        return false;
+    }
+
+    constexpr uint8_t MAX_AF_FOLLOW{32};
+    uint8_t af_follow{};
+    while (true) {
+        if (rx_len < 1) {
+            break;
+        }
+        // M5_LIB_LOGE("GetVersion L4 raw rx_len=%u", rx_len);
+        // M5_DUMPE(rx, rx_len);
+
+        // Some Plus SL1 cards return status at head: [AF|00] + payload.
+        const bool status_head = (rx_len >= 2) && ((rx[0] == 0xAF) || (rx[0] == 0x00));
+        uint8_t status         = status_head ? rx[0] : rx[rx_len - 1];
+        const uint8_t* payload = status_head ? (rx + 1) : rx;
+        uint16_t pay_len       = status_head ? (rx_len - 1) : ((rx_len > 1) ? (rx_len - 1) : 0);
+        // Some cards return 90 00 at head with payload after it.
+        if (!status_head && rx_len >= 2 && rx[0] == 0x90 && rx[1] == 0x00) {
+            status  = 0x00;
+            payload = rx + 2;
+            pay_len = rx_len - 2;
+        }
+        // Some cards append ISO7816-style status (90 00) at tail, strip it.
+        if (pay_len >= 2 && payload[pay_len - 2] == 0x90 && payload[pay_len - 1] == 0x00) {
+            pay_len -= 2;
+        }
+
+        if (pay_len > 0) {
+            acc.insert(acc.end(), payload, payload + pay_len);
+        }
+        if (status != 0xAF) {
+            break;
+        }
+        if (++af_follow > MAX_AF_FOLLOW) {
+            break;
+        }
+        // More response please!
+        const uint8_t cmd_af[] = {0xAF};
+        rx_len                 = sizeof(rx);
+        if (!_isoDEP.transceiveINF(rx, rx_len, cmd_af, sizeof(cmd_af)) || (rx_len < 1)) {
+            break;
+        }
+        if (acc.size() > org_ver_len) {
+            break;
+        }
+    }
+    cfg.fwt_ms = saved;
+    _isoDEP.config(cfg);
+
+    if (acc.size() > org_ver_len) {
+        acc.resize(org_ver_len);
+    }
+    ver_len = acc.size();
+    std::memcpy(ver, acc.data(), ver_len);
+
+    // M5_LIB_LOGE("VERL4-====");
+    // M5_DUMPE(acc.data(), acc.size());
+
+    return ver_len >= 6;
 }
 
 bool NFCLayerA::ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)

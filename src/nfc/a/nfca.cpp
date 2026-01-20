@@ -89,6 +89,13 @@ constexpr char name_sub_desfire_ev3[]          = "EV3";
 constexpr const char* name_sub_desfire_table[] = {name_sub_desfire_none, name_sub_desfire_ev1, name_sub_desfire_ev2,
                                                   name_sub_desfire_ev3};
 
+//
+constexpr char name_sl0[]             = "SL0";
+constexpr char name_sl1[]             = "SL1 Classic compatible";
+constexpr char name_sl2[]             = "SL2";
+constexpr char name_sl3[]             = "SL3";
+constexpr const char* name_sl_table[] = {name_sl0, name_sl1, name_sl2, name_sl3};
+
 // included system area
 constexpr uint16_t max_block_table[] = {0,                                 // Unknown
                                         20,  64,  128, 256,                // Classic
@@ -130,7 +137,7 @@ constexpr uint8_t user_block_table[][2] = {
     {0, 0},
     // 14443-4
     {0, 0},
-    // Plus
+    // Plus (SL1)
     {1, 126},
     {1, 254},
     {1, 62},
@@ -142,24 +149,20 @@ constexpr uint8_t user_block_table[][2] = {
     // NTAG 4xx
     {0, 0},
     //
-    {0, 0},
-};
+    {0, 0}};
 
-constexpr uint8_t max_sector_table[] = {
-    0,                        // Unknown
-    5,  16, 32, 40,           // Classic
-    0,  0,  0,  0,  0,        // Light
-    0,  0,  0,  0,  0, 0, 0,  // NTAG
-    0,  0,  0,  0,            // ST25TA
-    0,                        //
-    32, 40, 16,               // Plus
-    0,  0,  0,  0,            // Desfire
-    0,                        // NTAG 4xx
-    0,
-};
+constexpr uint8_t max_sector_table[] = {0,                        // Unknown
+                                        5,  16, 32, 40,           // Classic
+                                        0,  0,  0,  0,  0,        // Light
+                                        0,  0,  0,  0,  0, 0, 0,  // NTAG
+                                        0,  0,  0,  0,            // ST25TA
+                                        0,                        //
+                                        32, 40, 16,               // Plus
+                                        0,  0,  0,  0,            // Desfire
+                                        0,                        // NTAG 4xx
+                                        0};
 
 constexpr uint16_t user_area_size_table[] = {
-    // bytes
     0,                                      // Unknown
     240,  752,  1504, 3440,                 // Classic
     48,   48,   128,  40,   144,            // Light
@@ -169,10 +172,9 @@ constexpr uint16_t user_area_size_table[] = {
     1504, 3440, 752,                        // Plus
     2048, 4096, 8192, 256,                  // Desfire, Light:The total is 512, but the maximum per file is 256
     0,                                      // NTAG 4xx
-    0,
-};
+    0};
 
-// TODO Support DESFire Light
+// TODO Support DESFire Light (type4)
 constexpr NFCForumTag nfc_forum_tag_table[] = {
     NFCForumTag::None,                                                                                   //
     NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                       // Classic
@@ -184,7 +186,7 @@ constexpr NFCForumTag nfc_forum_tag_table[] = {
     NFCForumTag::None,  NFCForumTag::None,  NFCForumTag::None,                                           // Plus
     NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::Type4, NFCForumTag::None,                       // DESFire
     NFCForumTag::Type4,                                                                                  // NTAG 4xx
-    NFCForumTag::None,                                                                                   //
+    NFCForumTag::None                                                                                    //
 };
 
 struct EmulationSetting {
@@ -202,7 +204,7 @@ constexpr EmulationSetting emulation_settings[] = {
     {0x0000, 0x20}, {0x0000, 0x20}, {0x0000, 0x20},                                  // Plus
     {0x0344, 0x20}, {0x0344, 0x20}, {0x0344, 0x20}, {0x0344, 0x20},                  // DESFire
     {0x0000, 0x20},                                                                  //
-    {0x0000, 0x00},                                                                  //
+    {0x0000, 0x00}                                                                   //
 };
 
 struct Historical {
@@ -247,17 +249,41 @@ constexpr const uint8_t* emu_ver3_table[] = {
     nullptr, nullptr,        nullptr,                                                                    // Plus
     nullptr, nullptr,        nullptr,       nullptr,                                                     // DESFire
     nullptr,                                                                                             //
-    nullptr,                                                                                             //
+    nullptr                                                                                              //
 };
 
 Type historical_bytes_to_type_sak18(uint8_t& sub, const uint8_t* bytes, const uint8_t len)
 {
-    return Type::Unknown;
+    Type t = Type::Unknown;
+    sub    = 0;
+
+    if (bytes && len >= 7) {
+        for (auto&& h : historical_table_sak18) {
+            if (memcmp(h.h.data(), bytes, h.h.size()) == 0) {
+                t   = h.t;
+                sub = m5::stl::to_underlying(h.sub);
+                break;
+            }
+        }
+    }
+    return t;
 }
 
 Type historical_bytes_to_type_sak08(uint8_t& sub, const uint8_t* bytes, const uint8_t len)
 {
-    return Type::Unknown;
+    Type t = Type::Unknown;
+    sub    = 0;
+
+    if (bytes && len >= 7) {
+        for (auto&& h : historical_table_sak08) {
+            if (memcmp(h.h.data(), bytes, h.h.size()) == 0) {
+                t   = h.t;
+                sub = m5::stl::to_underlying(h.sub);
+                break;
+            }
+        }
+    }
+    return t;
 }
 
 Type historical_bytes_to_type_sak20(uint8_t& sub, const uint16_t atqa, const uint8_t* bytes, const uint8_t len)
@@ -577,21 +603,27 @@ std::string PICC::uidAsString() const
 std::string PICC::typeAsString() const
 {
     auto idx = m5::stl::to_underlying(this->type);
-    auto s   = std::string((this->size && idx <= m5::stl::size(name_table)) ? name_table[idx] : name_unknown);
+    auto s   = std::string((this->size && idx < m5::stl::size(name_table)) ? name_table[idx] : name_unknown);
 
     if (isMifarePlus()) {
-        idx = m5::stl::to_underlying(sub_type_plus);
-        auto ss =
-            std::string((this->size && idx <= m5::stl::size(name_sub_plus_table)) ? name_sub_plus_table[idx] : "");
+        idx     = m5::stl::to_underlying(sub_type_plus);
+        auto ss = std::string((this->size && idx < m5::stl::size(name_sub_plus_table)) ? name_sub_plus_table[idx] : "");
         if (ss[0]) {
             s += " ";
             s += ss;
         }
+        auto sl = std::string((this->size && this->security_level < m5::stl::size(name_sl_table))
+                                  ? name_sl_table[this->security_level]
+                                  : "");
+        if (sl[0]) {
+            s += " ";
+            s += sl;
+        }
     }
     if (isMifareDESFire()) {
-        idx     = m5::stl::to_underlying(sub_type_desfire);
-        auto ss = std::string((this->size && idx <= m5::stl::size(name_sub_desfire_table)) ? name_sub_desfire_table[idx]
-                                                                                           : "");
+        idx = m5::stl::to_underlying(sub_type_desfire);
+        auto ss =
+            std::string((this->size && idx < m5::stl::size(name_sub_desfire_table)) ? name_sub_desfire_table[idx] : "");
         if (ss[0]) {
             s += " ";
             s += ss;

@@ -21,10 +21,6 @@ namespace a {
   @brief For MIFARE
  */
 namespace mifare {
-/*!
-  @namespace classic
-  @brief For MIFARE classic
- */
 
 ///@name Historical bytes for identiy type
 ///@{
@@ -36,6 +32,10 @@ constexpr std::array<uint8_t, 7> historical_bytes_mifare_plus_se2 = {0xC1, 0x05,
                                                                      0x00, 0x77, 0xC1};  // Unofficial?
 ///@}
 
+/*!
+  @namespace classic
+  @brief For MIFARE classic
+ */
 namespace classic {
 /*!
   @typedef Key
@@ -44,7 +44,6 @@ namespace classic {
 using Key = std::array<uint8_t, 6>;
 
 //! @brief Default key for MIFARE classic
-// extern const Key DEFAULT_KEY;
 constexpr Key DEFAULT_KEY{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 ///@name Access bit
@@ -180,6 +179,60 @@ inline bool decode_access_bits(uint8_t permissions[4], const uint8_t abits[3])
 }
 
 }  // namespace classic
+
+/*!
+  @namespace plus
+  @brief For MIFARE Plus
+ */
+namespace plus {
+
+/*!
+  @typedef AESKey
+  @brief MIFARE Plus SL2/3 Key (AES)
+*/
+using AESKey = std::array<uint8_t, 16>;
+//! @brief Default key for MIFARE Plus
+constexpr AESKey DEFAULT_KEY{}; // All 0x00
+
+
+/*!
+  @struct Keys
+  @brief MIFARE Plus key set for SL upgrade and authentication
+ */
+struct Keys {
+    static constexpr size_t MAX_SECTORS{40};  //!< @brief Maximum number of sectors for MIFARE Plus 4K
+    //! @brief Default AES key (all 0x00)
+    static constexpr std::array<uint8_t, 16> DEFAULT_AES_KEY{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    //! @brief Default CRYPTO1 key (all 0xFF)
+    static constexpr std::array<uint8_t, 6> DEFAULT_CLASSIC_KEY{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+    std::array<uint8_t, 16> card_config_key{};                           //!< Card Configuration Key
+    std::array<uint8_t, 16> card_master_key{};                           //!< Card Master Key
+    std::array<uint8_t, 16> l3_switch_key{};                             //!< Level 3 Switch Key
+    std::array<std::array<uint8_t, 16>, MAX_SECTORS> aes_sector_keys{};  //!< AES sector keys
+    std::array<std::array<uint8_t, 6>, MAX_SECTORS> classic_key_a{};     //!< Crypto1 Key A per sector
+    std::array<std::array<uint8_t, 6>, MAX_SECTORS> classic_key_b{};     //!< Crypto1 Key B per sector
+
+    //! @brief Construct with default keys (AES=0x00, CRYPTO1=0xFF)
+    Keys() noexcept
+    {
+        card_config_key = DEFAULT_AES_KEY;
+        card_master_key = DEFAULT_AES_KEY;
+        l3_switch_key   = DEFAULT_AES_KEY;
+        for (auto& key : aes_sector_keys) {
+            key = DEFAULT_AES_KEY;
+        }
+        for (auto& key : classic_key_a) {
+            key = DEFAULT_CLASSIC_KEY;
+        }
+        for (auto& key : classic_key_b) {
+            key = DEFAULT_CLASSIC_KEY;
+        }
+    }
+};
+}  // namespace plus
+
 }  // namespace mifare
 }  // namespace a
 }  // namespace nfc

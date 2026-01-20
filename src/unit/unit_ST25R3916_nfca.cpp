@@ -437,6 +437,11 @@ bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, con
         picc.sak  = sak;
         picc.type =
             sak_to_type(sak);  // WARNING: This is a preliminary diagnosis; a more accurate diagnosis is required
+        // Only the Plus X SL2 can be confirmed with sak
+        if(picc.type == Type::MIFARE_Plus_2K || picc.type == Type::MIFARE_Plus_4K){
+            picc.sub_type_plus = SubTypePlus::X;
+            picc.security_level = 2;
+        }
         picc.blocks = get_number_of_blocks(picc.type);
         completed   = true;
     }

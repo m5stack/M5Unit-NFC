@@ -395,7 +395,11 @@ public:
       @pre The specified block must be a value block
      */
     bool mifareClassicRestoreValueBlock(const uint8_t block);
+    ///@}
 
+    ///@note For activated PICC
+    ///@name For MIFARE ultralight
+    ///@{
     /*!
       @brief Write change to NFC Type-2 (NDEF) format for MIFARE Ultralight/C
       @return True if successful
@@ -405,7 +409,6 @@ public:
       @warning If the relevant area has already been overwritten, changes may not be possible
     */
     bool mifareUltralightChangeFormatToNDEF();
-
     ///@}
 
     ///@note For activated PICC
@@ -415,6 +418,28 @@ public:
       @brief Authentication for MIFARE UltralightC
      */
     bool mifareUltralightCAuthenticate(const uint8_t key[16]);
+    ///@}
+
+    ///@note For activated PICC
+    ///@name For MIFARE Plus
+    ///@{
+    /*!
+      @brief Upgrade security level to SL1 (Classic compatibility mode)
+      @param card_config_key Card Configuration Key (AES)
+      @param card_master_key Card Master Key (AES)
+      @param l3_switch_key Level 3 Switch Key (AES)
+      @param key_a Crypto1 Key A (applies to all sectors)
+      @param key_b Crypto1 Key B (applies to all sectors)
+      @warning This operation is irreversible
+      @warning Access bits will be reset to the transport configuration
+     */
+    bool mifarePlusUpgradeSecurityLevel1(
+        const m5::nfc::a::mifare::plus::AESKey& card_config_key = m5::nfc::a::mifare::plus::DEFAULT_KEY,
+        const m5::nfc::a::mifare::plus::AESKey& card_master_key = m5::nfc::a::mifare::plus::DEFAULT_KEY,
+        const m5::nfc::a::mifare::plus::AESKey& l3_switch_key   = m5::nfc::a::mifare::plus::DEFAULT_KEY,
+        const m5::nfc::a::mifare::classic::Key& key_a           = m5::nfc::a::mifare::classic::DEFAULT_KEY,
+        const m5::nfc::a::mifare::classic::Key& key_b           = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+
     ///@}
 
     ///@note For activated PICC
@@ -513,7 +538,8 @@ protected:
     bool nfca_deselect();
 
     bool mifare_get_version_L3(uint8_t ver[8]);
-    bool mifare_get_version_L4(uint8_t* ver, uint16_t& ver_len);
+    bool mifare_get_version_L4_raw(uint8_t* ver, uint16_t& ver_len);
+    bool mifare_get_version_L4_wrapped(uint8_t* ver, uint16_t& ver_len);
     bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
     bool mifare_ultralightC_authenticate1(uint8_t ek[8]);
     bool mifare_ultralightC_authenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16]);
