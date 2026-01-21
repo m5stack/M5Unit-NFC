@@ -79,6 +79,7 @@ enum class SubTypePlus : uint8_t {
     EV2,
     S,
     X,
+    X_OR_EV,
 };
 
 enum SubTypeDESFire : uint8_t {

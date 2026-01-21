@@ -249,13 +249,12 @@ public:
                const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
 
     /*!
-      @brief Dump all blocks
-      @param key MIFARE classic key
+      @brief Dump all blocks/files
+      @param key MIFARE classic key for Classic
       @return True if successful
       @pre All blocks must be authenticatable using the specified key if MIFARE classic
      */
     bool dump(const m5::nfc::a::mifare::classic::Key& mkey = m5::nfc::a::mifare::classic::DEFAULT_KEY);
-    bool dump(const m5::nfc::a::mifare::plus::AESKey& key);
     /*!
       @brief Dump 1 block
       @param addr Block address
@@ -594,6 +593,7 @@ private:
         uint16_t w_ctr{};
         uint8_t frame_num{};
         std::array<uint8_t, 4> ti{};
+        std::array<uint8_t, 16> kenc{};
         std::array<uint8_t, 16> kmac{};
     };
 

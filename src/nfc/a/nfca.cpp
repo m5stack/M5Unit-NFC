@@ -79,8 +79,9 @@ constexpr char name_sub_plus_ev1[]          = "EV1";
 constexpr char name_sub_plus_ev2[]          = "EV2";
 constexpr char name_sub_plus_s[]            = "S";
 constexpr char name_sub_plus_x[]            = "X";
+constexpr char name_sub_plus_x_or_ev[]      = "X/EV";
 constexpr const char* name_sub_plus_table[] = {name_sub_plus_none, name_sub_plus_ev1, name_sub_plus_ev2,
-                                               name_sub_plus_s, name_sub_plus_x};
+                                               name_sub_plus_s,    name_sub_plus_x,   name_sub_plus_x_or_ev};
 //
 constexpr char name_sub_desfire_none[]         = "";
 constexpr char name_sub_desfire_ev1[]          = "EV1";
@@ -213,19 +214,19 @@ struct Historical {
     const SubTypePlus sub;
 };
 constexpr Historical historical_table_sak18[] = {
-    {historical_bytes_mifare_plus_s, Type::MIFARE_Plus_4K, SubTypePlus::S},  // S 4K SL1
-    {historical_bytes_mifare_plus_x, Type::MIFARE_Plus_4K, SubTypePlus::X},  // X 4K SL1
+    {historical_bytes_mifare_plus_s, Type::MIFARE_Plus_4K, SubTypePlus::S},     // S 4K SL1
+    {historical_bytes_mifare_plus_x_ev, Type::MIFARE_Plus_4K, SubTypePlus::X},  // X 4K SL1
 };
 constexpr Historical historical_table_sak08[] = {
-    {historical_bytes_mifare_plus_s, Type::MIFARE_Plus_2K, SubTypePlus::S},  // S 2K SL1
-    {historical_bytes_mifare_plus_x, Type::MIFARE_Plus_2K, SubTypePlus::X},  // X 2K SL1
+    {historical_bytes_mifare_plus_s, Type::MIFARE_Plus_2K, SubTypePlus::S},     // S 2K SL1
+    {historical_bytes_mifare_plus_x_ev, Type::MIFARE_Plus_2K, SubTypePlus::X},  // X 2K SL1
 };
 constexpr Historical historical_table_sak20[] = {
-    {historical_bytes_mifare_plus_s, Type::MIFARE_Plus_2K, SubTypePlus::S},       // S 2K/4K SL1
-    {historical_bytes_mifare_plus_x, Type::MIFARE_Plus_2K, SubTypePlus::X},       // X 2K/4K SL1
-    {historical_bytes_mifare_plus_se0, Type::MIFARE_Plus_SE, SubTypePlus::None},  // SE
-    {historical_bytes_mifare_plus_se1, Type::MIFARE_Plus_SE, SubTypePlus::None},  // SE
-    {historical_bytes_mifare_plus_se2, Type::MIFARE_Plus_SE, SubTypePlus::None},  // SE
+    {historical_bytes_mifare_plus_s, Type::MIFARE_Plus_2K, SubTypePlus::S},           // S 2K/4K SL3
+    {historical_bytes_mifare_plus_x_ev, Type::MIFARE_Plus_2K, SubTypePlus::X_OR_EV},  // X or EV1/2 2K/4K SL3
+    {historical_bytes_mifare_plus_se0, Type::MIFARE_Plus_SE, SubTypePlus::None},      // SE
+    {historical_bytes_mifare_plus_se1, Type::MIFARE_Plus_SE, SubTypePlus::None},      // SE
+    {historical_bytes_mifare_plus_se2, Type::MIFARE_Plus_SE, SubTypePlus::None},      // SE
 };
 
 // GetVersionL3 response for emulation

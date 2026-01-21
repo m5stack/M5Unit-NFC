@@ -81,6 +81,138 @@ uint16_t mifare_plus_key_no(const uint8_t sector, const bool key_b)
     return static_cast<uint16_t>(0x4000 + sector * 2 + (key_b ? 1 : 0));
 }
 
+void cmac_subkeys(const uint8_t key[16], uint8_t k1[16], uint8_t k2[16])
+{
+    uint8_t l[16]{};
+    uint8_t zero[16]{};
+    mbedtls_aes_context aes{};
+    mbedtls_aes_init(&aes);
+    mbedtls_aes_setkey_enc(&aes, key, 128);
+    mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, zero, l);
+    mbedtls_aes_free(&aes);
+
+    uint8_t msb = l[0] & 0x80;
+    for (int i = 0; i < 15; ++i) {
+        k1[i] = (uint8_t)((l[i] << 1) | (l[i + 1] >> 7));
+    }
+    k1[15] = (uint8_t)(l[15] << 1);
+    if (msb) {
+        k1[15] ^= 0x87;
+    }
+
+    msb = k1[0] & 0x80;
+    for (int i = 0; i < 15; ++i) {
+        k2[i] = (uint8_t)((k1[i] << 1) | (k1[i + 1] >> 7));
+    }
+    k2[15] = (uint8_t)(k1[15] << 1);
+    if (msb) {
+        k2[15] ^= 0x87;
+    }
+}
+
+void cmac_aes_128_8(const uint8_t* key, const uint8_t* msg, size_t msg_len, uint8_t out[8])
+{
+    uint8_t k1[16]{};
+    uint8_t k2[16]{};
+    cmac_subkeys(key, k1, k2);
+
+    const bool complete = (msg_len > 0 && (msg_len % 16 == 0));
+    const size_t blocks = (msg_len + 15) / 16;
+    uint8_t last[16]{};
+    if (blocks == 0) {
+        last[0] = 0x80;
+        for (int i = 0; i < 16; ++i) {
+            last[i] ^= k2[i];
+        }
+    } else {
+        const uint8_t* tail = msg + 16 * (blocks - 1);
+        if (complete) {
+            memcpy(last, tail, 16);
+            for (int i = 0; i < 16; ++i) {
+                last[i] ^= k1[i];
+            }
+        } else {
+            const size_t rem = msg_len % 16;
+            memcpy(last, tail, rem);
+            last[rem] = 0x80;
+            for (int i = 0; i < 16; ++i) {
+                last[i] ^= k2[i];
+            }
+        }
+    }
+
+    uint8_t x[16]{};
+    uint8_t y[16]{};
+    mbedtls_aes_context aes{};
+    mbedtls_aes_init(&aes);
+    mbedtls_aes_setkey_enc(&aes, key, 128);
+    for (size_t i = 0; i + 1 < blocks; ++i) {
+        const uint8_t* blk = msg + 16 * i;
+        for (int j = 0; j < 16; ++j) {
+            y[j] = x[j] ^ blk[j];
+        }
+        mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, y, x);
+    }
+    for (int j = 0; j < 16; ++j) {
+        y[j] = x[j] ^ last[j];
+    }
+    mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, y, x);
+    mbedtls_aes_free(&aes);
+
+    for (int i = 0; i < 8; ++i) {
+        out[i] = x[i * 2 + 1];
+    }
+}
+
+enum class MfpMacType {
+    ReadCmd,
+    ReadResp,
+    WriteCmd,
+    WriteResp,
+};
+
+bool mifare_plus_calculate_mac(const uint8_t kmac[16], const uint8_t ti[4], const uint16_t r_ctr, const uint16_t w_ctr,
+                               const MfpMacType type, const uint8_t block, const uint8_t count, const uint8_t* data,
+                               const size_t data_len, uint8_t out[8])
+{
+    if (!kmac || !ti || !data || data_len == 0 || !out) {
+        return false;
+    }
+
+    uint16_t ctr = r_ctr;
+    if (type == MfpMacType::WriteCmd || type == MfpMacType::WriteResp) {
+        ctr = w_ctr;
+    }
+
+    uint8_t macdata[2049]{};
+    macdata[0] = data[0];
+    macdata[1] = (uint8_t)(ctr & 0xFF);
+    macdata[2] = (uint8_t)(ctr >> 8);
+    macdata[3] = 0x00;
+    memcpy(&macdata[3], ti, 4);
+
+    size_t mac_len = data_len + 6;
+    switch (type) {
+        case MfpMacType::ReadCmd:
+            memcpy(&macdata[7], &data[1], data_len - 1);
+            break;
+        case MfpMacType::ReadResp:
+            macdata[7] = block;
+            macdata[8] = 0x00;
+            macdata[9] = count;
+            memcpy(&macdata[10], &data[1], data_len - 1);
+            mac_len = data_len + 9;
+            break;
+        case MfpMacType::WriteCmd:
+        case MfpMacType::WriteResp:
+            memcpy(&macdata[7], &data[1], data_len - 1);
+            break;
+    }
+
+    cmac_aes_128_8(kmac, macdata, mac_len, out);
+    return true;
+}
+
 constexpr int8_t kAccessDenied{-1};
 constexpr int8_t kAccessFree{-2};
 int8_t required_read_key_no_from_access_rights(const uint16_t access_rights)
@@ -173,14 +305,14 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
-        M5_LIB_LOGE("ATQA:%04X", picc.atqa);
+        M5_LIB_LOGV("ATQA:%04X", picc.atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
 
-        M5_LIB_LOGE("Detect:ATQA:%04X SAK:%02X %s (%s)", picc.atqa, picc.sak, picc.uidAsString().c_str(),
+        M5_LIB_LOGV("Detect:ATQA:%04X SAK:%02X %s (%s)", picc.atqa, picc.sak, picc.uidAsString().c_str(),
                     picc.typeAsString().c_str());
 
         // Hlt
@@ -216,9 +348,9 @@ bool NFCLayerA::activate(const PICC& picc, const bool force_rats)
 {
     _activePICC = PICC{};
     if (_impl->activate(picc)) {
-        M5_LIB_LOGE(" >>>> SEL");
+        // M5_LIB_LOGE(" >>>> SEL");
         if (force_rats || (picc.isISO14443_4() && !picc.isMifareClassicCompatible())) {
-            M5_LIB_LOGE("   >>>> RATS");
+            // M5_LIB_LOGE("   >>>> RATS");
             ATS discard{};
             if (!nfca_request_ats(discard)) {
                 M5_LIB_LOGE("Failed to RATS");
@@ -290,15 +422,15 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
         uint8_t ver4[64]{};
         uint16_t ver_len = sizeof(ver4);
         if (mifare_get_version_L4_wrapped(ver4, ver_len)) {
-            // Plus,DESFire,NTAG4xx
-            M5_LIB_LOGE(">>>> GetVerionL4 OK %02X/%04X", picc.sak, picc.atqa);
-            m5::utility::log::dump(ver4, ver_len, false);
+            // Plus EV(SL3),DESFire,NTAG4xx
+            // M5_LIB_LOGE(">>>> GetVerionL4 OK %02X/%04X", picc.sak, picc.atqa);
+            // m5::utility::log::dump(ver4, ver_len, false);
             type = version4_to_type(picc.sub_type, ver4);
         } else {
-            // Plus,ST25TA
+            // Plus S/X (SL3),ST25TA
             //  Check historical bytes
-            M5_LIB_LOGE(">>>> Check historical bytes %02X/%04X", picc.sak, picc.atqa);
-            m5::utility::log::dump(picc.ats.historical.data(), picc.ats.historical_len, false);
+            // M5_LIB_LOGE(">>>> Check historical bytes %02X/%04X", picc.sak, picc.atqa);
+            // m5::utility::log::dump(picc.ats.historical.data(), picc.ats.historical_len, false);
             type = historical_bytes_to_type(picc.sub_type, picc.atqa, picc.sak, picc.ats.historical.data(),
                                             picc.ats.historical_len);
         }
@@ -362,7 +494,7 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
                                                 ats.historical_len);
             }
             if (!nfca_deselect()) {
-                M5_LIB_LOGE("Failed to deselect after RATS for Plus SL1");
+                M5_LIB_LOGD("Failed to deselect after RATS for Plus SL1");
             }
             if (is_mifare_plus(type)) {
                 picc.type           = type;
@@ -507,13 +639,11 @@ bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t add
 bool NFCLayerA::read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t addr,
                                   const m5::nfc::a::mifare::classic::Key& key)
 {
-    // const Type t        = _activePICC.type;
     uint16_t need_block = ((rx_len + 15) >> 4);
     uint16_t last       = get_last_user_block(_activePICC.type);
-    //    uint16_t from       = std::min<uint16_t>(last, std::max<uint16_t>(addr, get_first_user_block(t)));
-    uint16_t from   = addr;
-    uint16_t to     = std::min<uint16_t>(from + need_block - 1, last);
-    uint16_t blocks = to - from + 1;
+    uint16_t from       = addr;
+    uint16_t to         = std::min<uint16_t>(from + need_block - 1, last);
+    uint16_t blocks     = to - from + 1;
 
     uint16_t read_size = blocks << 4;  // 16 byte unit
     if (read_size > rx_len) {
@@ -711,23 +841,10 @@ bool NFCLayerA::dump(const Key& mkey)
     if (_activePICC.valid()) {
         if (_activePICC.isMifareClassic()) {
             return dump_sector_structure(_activePICC, mkey);
-        } else if (_activePICC.isMifarePlus() && _activePICC.security_level == 2) {
-            return dump_mifare_plus_sl2(m5::nfc::a::mifare::plus::DEFAULT_KEY);
         } else if (_activePICC.supportsNFC()) {
             return dump_page_structure(_activePICC.blocks);
         } else if (_activePICC.isMifareDESFire()) {
             return _activePICC.type == Type::MIFARE_DESFire_Light ? dump_desfire_light() : dump_desfire();
-        }
-        M5_LIB_LOGW("Not supported %s", _activePICC.typeAsString().c_str());
-    }
-    return false;
-}
-
-bool NFCLayerA::dump(const m5::nfc::a::mifare::plus::AESKey& key)
-{
-    if (_activePICC.valid()) {
-        if (_activePICC.isMifarePlus() && _activePICC.security_level == 2) {
-            return dump_mifare_plus_sl2(key);
         }
         M5_LIB_LOGW("Not supported %s", _activePICC.typeAsString().c_str());
     }
@@ -1320,38 +1437,105 @@ bool NFCLayerA::mifare_plus_read_plain_nomac(const uint16_t block, const uint8_t
     return true;
 }
 
-bool NFCLayerA::dump_mifare_plus_sl2(const m5::nfc::a::mifare::plus::AESKey& key)
+bool NFCLayerA::mifare_plus_read_plain_mac(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out)
 {
-    uint8_t sectors = get_number_of_sectors(_activePICC.type);
-    if (!sectors) {
+    out.clear();
+    if (!_mfp_session.authenticated || count == 0 || count > 3 || block > 0xFF) {
         return false;
     }
-    puts(
-        "Sec[Blk]:00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F [Access]\n"
-        "-----------------------------------------------------------------");
 
-    for (uint8_t sector = 0; sector < sectors; ++sector) {
-        const uint8_t blocks  = (sector < 32) ? 4U : 16U;
-        const uint16_t base   = (sector < 32) ? sector * blocks : 128U + (sector - 32) * blocks;
-        const uint16_t key_no = mifare_plus_key_no(sector, false);
-        if (!mifare_plus_authenticateAES(key_no, key)) {
-            M5_LIB_LOGE("SL2 auth failed sector %u key_no %04X", sector, key_no);
+    const uint16_t r_ctr = _mfp_session.r_ctr;
+    const uint16_t w_ctr = _mfp_session.w_ctr;
+
+    const bool plain    = false;
+    const bool nomaccmd = false;
+    const bool nomacres = false;
+    uint8_t cmd         = 0x31;
+    if (nomacres) {
+        cmd ^= 0x01;
+    }
+    if (plain) {
+        cmd ^= 0x02;
+    }
+    if (nomaccmd) {
+        cmd ^= 0x04;
+    }
+
+    uint8_t rcmd1[4] = {cmd, (uint8_t)(block & 0xFF), 0x00, count};
+    uint8_t mac[8]{};
+    if (!nomaccmd) {
+        if (!mifare_plus_calculate_mac(_mfp_session.kmac.data(), _mfp_session.ti.data(), r_ctr, w_ctr,
+                                       MfpMacType::ReadCmd, (uint8_t)block, count, rcmd1, sizeof(rcmd1), mac)) {
             return false;
         }
+    }
 
-        for (uint8_t i = 0; i < blocks; i += 3) {
-            const uint16_t block = base + i;
-            const uint8_t cnt    = std::min<uint8_t>(3U, blocks - i);
-            std::vector<uint8_t> data{};
-            if (!mifare_plus_read_plain_nomac(block, cnt, data)) {
-                M5_LIB_LOGE("SL2 read failed block %u", block);
-                return false;
-            }
-            for (uint8_t j = 0; j < cnt; ++j) {
-                print_block(data.data() + j * 16, block + j, (j == 0) ? sector : -1, 0x00, false, false);
-            }
+    uint8_t tx[12]{};
+    memcpy(tx, rcmd1, sizeof(rcmd1));
+    if (!nomaccmd) {
+        memcpy(tx + sizeof(rcmd1), mac, sizeof(mac));
+    }
+    M5_LIB_LOGE("SL2 read cmd:");
+    m5::utility::log::dump(tx, nomaccmd ? sizeof(rcmd1) : sizeof(tx), false);
+
+    uint8_t rx[128]{};
+    const size_t data_len = (size_t)count * 16;
+    uint16_t rx_len       = sizeof(rx);
+    const uint16_t tx_len = nomaccmd ? sizeof(rcmd1) : sizeof(tx);
+    if (!mifare_plus_transceive_raw(rx, rx_len, tx, tx_len) || rx_len < 1) {
+        M5_LIB_LOGE("SL2 read transceive failed len=%u", rx_len);
+        return false;
+    }
+    if (rx[0] != 0x90) {
+        M5_LIB_LOGE("SL2 read status error len=%u st=%02X", rx_len, rx[0]);
+        m5::utility::log::dump(rx, rx_len, false);
+        return false;
+    }
+
+    if (rx_len < 1 + data_len) {
+        return false;
+    }
+
+    size_t status_len = 0;
+    if (rx_len >= 1 + data_len + 2 && rx[rx_len - 2] == 0x90 && rx[rx_len - 1] == 0x00) {
+        status_len = 2;
+    }
+    size_t mac_len = 0;
+    if (!nomacres && rx_len >= 1 + data_len + status_len + 8) {
+        mac_len = 8;
+    }
+
+    _mfp_session.r_ctr++;
+
+    if (mac_len == 8) {
+        uint8_t mac_resp[8]{};
+        mifare_plus_calculate_mac(_mfp_session.kmac.data(), _mfp_session.ti.data(), r_ctr, w_ctr, MfpMacType::ReadResp,
+                                  (uint8_t)block, count, rx, 1 + data_len, mac_resp);
+        if (memcmp(rx + 1 + data_len, mac_resp, sizeof(mac_resp)) != 0) {
+            M5_LIB_LOGW("SL2 mac mismatch");
         }
     }
+
+    std::vector<uint8_t> payload(rx + 1, rx + 1 + data_len);
+    if (!plain) {
+        mbedtls_aes_context aes{};
+        mbedtls_aes_init(&aes);
+        mbedtls_aes_setkey_dec(&aes, _mfp_session.kenc.data(), 128);
+        for (uint8_t i = 0; i < count; ++i) {
+            uint8_t iv[16]{};
+            const uint8_t ctr = (uint8_t)(r_ctr & 0xFF);
+            iv[0]             = ctr;
+            iv[4]             = ctr;
+            iv[8]             = ctr;
+            memcpy(&iv[12], _mfp_session.ti.data(), 4);
+            uint8_t* blk = payload.data() + i * 16;
+            mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, blk, blk);
+        }
+        mbedtls_aes_free(&aes);
+    }
+
+    out.insert(out.end(), payload.begin(), payload.end());
+    _mfp_session.r_ctr++;
     return true;
 }
 
@@ -1990,7 +2174,57 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
         M5_LIB_LOGE("AuthAES rndA mismatch");
         return false;
     }
+    uint8_t kenc[16]{};
+    memcpy(kenc, rndA + 11, 5);
+    memcpy(kenc + 5, rndB + 11, 5);
+    for (int i = 0; i < 5; ++i) {
+        kenc[10 + i] = rndA[4 + i] ^ rndB[4 + i];
+    }
+    kenc[15] = 0x11;
+
+    uint8_t kmac[16]{};
+    memcpy(kmac, rndA + 7, 5);
+    memcpy(kmac + 5, rndB + 7, 5);
+    for (int i = 0; i < 5; ++i) {
+        kmac[10 + i] = rndA[i] ^ rndB[i];
+    }
+    kmac[15] = 0x22;
+
+    {
+        uint8_t iv[16]{};
+        mbedtls_aes_context aes{};
+        mbedtls_aes_init(&aes);
+        mbedtls_aes_setkey_enc(&aes, key.data(), 128);
+        mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, sizeof(kenc), iv, kenc, kenc);
+        memset(iv, 0, sizeof(iv));
+        mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, sizeof(kmac), iv, kmac, kmac);
+        mbedtls_aes_free(&aes);
+    }
+
+    _mfp_session.authenticated = true;
+    _mfp_session.key_no        = key_no;
+    _mfp_session.r_ctr         = 0;
+    _mfp_session.w_ctr         = 0;
+    _mfp_session.frame_num     = 0;
+    memcpy(_mfp_session.ti.data(), ab_resp, 4);
+    memcpy(_mfp_session.kenc.data(), kenc, sizeof(kenc));
+    memcpy(_mfp_session.kmac.data(), kmac, sizeof(kmac));
+    M5_LIB_LOGE("SL2 session: key_no=%04X rctr=%u wctr=%u ti=%02X%02X%02X%02X", _mfp_session.key_no, _mfp_session.r_ctr,
+                _mfp_session.w_ctr, _mfp_session.ti[0], _mfp_session.ti[1], _mfp_session.ti[2], _mfp_session.ti[3]);
+    M5_LIB_LOGE("SL2 session: kenc:");
+    m5::utility::log::dump(_mfp_session.kenc.data(), _mfp_session.kenc.size(), false);
+    M5_LIB_LOGE("SL2 session: kmac:");
+    m5::utility::log::dump(_mfp_session.kmac.data(), _mfp_session.kmac.size(), false);
     return true;
+}
+
+bool NFCLayerA::mifare_plus_transceive_raw(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len)
+{
+    if (!tx || !tx_len || !_activePICC.valid()) {
+        return false;
+    }
+    constexpr uint32_t timeout_mfp_raw = 1500;
+    return _impl->transceive(rx, rx_len, tx, tx_len, timeout_mfp_raw);
 }
 
 bool NFCLayerA::ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)
