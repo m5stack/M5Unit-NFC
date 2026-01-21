@@ -121,6 +121,12 @@ inline bool is_mifare_plus(const Type t)
     return t >= Type::MIFARE_Plus_2K && t <= Type::MIFARE_Plus_SE;
 }
 
+//! @brief Is type MIFARE classic compatible? (Plus SL1)
+inline bool is_mifare_classic_compatible(const Type t, const uint8_t sl)
+{
+    return is_mifare_plus(t) && (sl == 1);
+}
+
 //! @brief Is type MIFARE DESFire?
 inline bool is_mifare_desfire(const Type t)
 {
@@ -349,10 +355,10 @@ struct PICC {
     {
         return is_mifare(type);
     }
-    //! @brief Is MIFARE classic? (include Plus SL1)
+    //! @brief Is MIFARE classic? (include Plus compatible SL)
     inline bool isMifareClassic() const
     {
-        return is_mifare_classic(type) || (is_mifare_plus(type) && security_level == 1);
+        return is_mifare_classic(type) || isMifareClassicCompatible();
     }
     //! @brief Is MIFARE Ultralight series?
     inline bool isMifareUltralight() const
@@ -363,6 +369,20 @@ struct PICC {
     inline bool isMifarePlus() const
     {
         return is_mifare_plus(type);
+    }
+    //! @brief Is MIFARE Plus X?
+    inline bool isMifarePlusX() const
+    {
+        return is_mifare_plus(type) && sub_type_plus == SubTypePlus::X;
+    }
+    //! @brief Is MIFARE Plus S?
+    inline bool isMifarePlusS() const
+    {
+        return is_mifare_plus(type) && sub_type_plus == SubTypePlus::S;
+    }
+    inline bool isMifareClassicCompatible() const
+    {
+        return is_mifare_classic_compatible(type, security_level);
     }
     //! @brief Is MIFARE DESFire?
     inline bool isMifareDESFire() const

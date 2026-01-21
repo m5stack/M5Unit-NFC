@@ -33,10 +33,7 @@ inline uint16_t fsci_to_fsc(const uint8_t fsci)
 
 struct config_t {
 #if 0
-    // PICCが受けられる最大INF（FSC）
     uint16_t fsc{256};
-    // PCD側の送受信制約（Unit依存: FIFO/内部バッファ）
-    // ISO-DEP フレーム全体(PCB+CID/NAD+INF)をこのサイズ以内に収める
     uint16_t pcd_max_frame_tx{256};
     uint16_t pcd_max_frame_rx{256};
 #else
@@ -44,11 +41,10 @@ struct config_t {
     uint16_t pcd_max_frame_tx{64};
     uint16_t pcd_max_frame_rx{64};
 #endif
-    // 待ち（FWT/WTX）は後で詰められるように一旦msで持つ
     uint32_t fwt_ms{100};
     uint32_t wtx_max_ms{5000};
 
-    // ISO-DEPオプション
+    // optios
     bool use_cid{};
     uint8_t cid{};
     bool use_nad{};

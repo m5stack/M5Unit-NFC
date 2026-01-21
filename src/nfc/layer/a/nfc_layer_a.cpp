@@ -15,6 +15,7 @@
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
+#include <mbedtls/aes.h>
 #include <esp_random.h>
 
 using namespace m5::nfc;
@@ -73,6 +74,11 @@ void rotate_byte_left(uint8_t out[8], const uint8_t in[8])
         out[i] = in[i + 1];
     }
     out[7] = in[0];
+}
+
+uint16_t mifare_plus_key_no(const uint8_t sector, const bool key_b)
+{
+    return static_cast<uint16_t>(0x4000 + sector * 2 + (key_b ? 1 : 0));
 }
 
 constexpr int8_t kAccessDenied{-1};
@@ -195,7 +201,7 @@ bool NFCLayerA::select(m5::nfc::a::PICC& picc)
 {
     _activePICC = PICC{};
     if (_impl->select(picc)) {
-        if (picc.isISO14443_4() && !(picc.isMifarePlus() && picc.security_level == 1)) {
+        if (picc.isISO14443_4() && !picc.isMifareClassicCompatible()) {
             if (!nfca_request_ats(picc.ats)) {
                 return false;
             }
@@ -206,11 +212,13 @@ bool NFCLayerA::select(m5::nfc::a::PICC& picc)
     return false;
 }
 
-bool NFCLayerA::activate(const PICC& picc)
+bool NFCLayerA::activate(const PICC& picc, const bool force_rats)
 {
     _activePICC = PICC{};
     if (_impl->activate(picc)) {
-        if (picc.isISO14443_4() && !(picc.isMifarePlus() && picc.security_level == 1)) {
+        M5_LIB_LOGE(" >>>> SEL");
+        if (force_rats || (picc.isISO14443_4() && !picc.isMifareClassicCompatible())) {
+            M5_LIB_LOGE("   >>>> RATS");
             ATS discard{};
             if (!nfca_request_ats(discard)) {
                 M5_LIB_LOGE("Failed to RATS");
@@ -225,7 +233,7 @@ bool NFCLayerA::activate(const PICC& picc)
     return false;
 }
 
-bool NFCLayerA::reactivate(const PICC& picc)
+bool NFCLayerA::reactivate(const PICC& picc, const bool force_rats)
 {
     PICC tmp = picc;
     if (_activePICC.valid()) {
@@ -239,7 +247,7 @@ bool NFCLayerA::reactivate(const PICC& picc)
         M5_LIB_LOGE("Failed to wakeup");
         return false;
     }
-    if (!activate(tmp)) {
+    if (!activate(tmp, force_rats)) {
         M5_LIB_LOGE("Failed to activate");
         return false;
     }
@@ -252,7 +260,7 @@ bool NFCLayerA::deactivate()
     _activePICC = PICC{};
 
     auto ret = false;
-    if (tmp.isMifarePlus() && tmp.security_level == 1) {
+    if (tmp.isMifareClassicCompatible()) {
         ret = _impl->hlt();
     } else {
         ret = tmp.isISO14443_4() ? nfca_deselect() : _impl->hlt();
@@ -703,10 +711,23 @@ bool NFCLayerA::dump(const Key& mkey)
     if (_activePICC.valid()) {
         if (_activePICC.isMifareClassic()) {
             return dump_sector_structure(_activePICC, mkey);
+        } else if (_activePICC.isMifarePlus() && _activePICC.security_level == 2) {
+            return dump_mifare_plus_sl2(m5::nfc::a::mifare::plus::DEFAULT_KEY);
         } else if (_activePICC.supportsNFC()) {
             return dump_page_structure(_activePICC.blocks);
         } else if (_activePICC.isMifareDESFire()) {
             return _activePICC.type == Type::MIFARE_DESFire_Light ? dump_desfire_light() : dump_desfire();
+        }
+        M5_LIB_LOGW("Not supported %s", _activePICC.typeAsString().c_str());
+    }
+    return false;
+}
+
+bool NFCLayerA::dump(const m5::nfc::a::mifare::plus::AESKey& key)
+{
+    if (_activePICC.valid()) {
+        if (_activePICC.isMifarePlus() && _activePICC.security_level == 2) {
+            return dump_mifare_plus_sl2(key);
         }
         M5_LIB_LOGW("Not supported %s", _activePICC.typeAsString().c_str());
     }
@@ -1007,7 +1028,9 @@ bool NFCLayerA::mifareUltralightCAuthenticate(const uint8_t key[16])
 
 bool NFCLayerA::mifarePlusUpgradeSecurityLevel1(const mifare::plus::AESKey& card_config_key,
                                                 const mifare::plus::AESKey& card_master_key,
+                                                const mifare::plus::AESKey& l2_switch_key,
                                                 const mifare::plus::AESKey& l3_switch_key,
+                                                const mifare::plus::AESKey& aes_sector_key,
                                                 const mifare::classic::Key& key_a, const mifare::classic::Key& key_b)
 {
     if (!_activePICC.valid() || !_activePICC.isMifarePlus() || _activePICC.security_level != 0) {
@@ -1053,8 +1076,24 @@ bool NFCLayerA::mifarePlusUpgradeSecurityLevel1(const mifare::plus::AESKey& card
     if (!write_perso_block(0x9000, card_master_key.data())) {
         return false;
     }
+    if ((_activePICC.sub_type == m5::stl::to_underlying(SubTypePlus::EV2) ||
+         _activePICC.sub_type == m5::stl::to_underlying(SubTypePlus::X)) &&
+        !write_perso_block(0x9002, l2_switch_key.data())) {
+        return false;
+    }
     if (!write_perso_block(0x9003, l3_switch_key.data())) {
         return false;
+    }
+
+    for (uint16_t sector = 0; sector < sectors; ++sector) {
+        const uint16_t key_a_no = mifare_plus_key_no((uint8_t)sector, false);
+        const uint16_t key_b_no = mifare_plus_key_no((uint8_t)sector, true);
+        if (!write_perso_block(key_a_no, aes_sector_key.data())) {
+            return false;
+        }
+        if (!write_perso_block(key_b_no, aes_sector_key.data())) {
+            return false;
+        }
     }
 
     for (uint16_t sector = 0; sector < sectors; ++sector) {
@@ -1073,6 +1112,24 @@ bool NFCLayerA::mifarePlusUpgradeSecurityLevel1(const mifare::plus::AESKey& card
     }
 
     _activePICC.security_level = 1;
+    return true;
+}
+
+bool NFCLayerA::mifarePlusUpgradeSecurityLevel2(const mifare::plus::AESKey& sl2_switch_key)
+{
+    if (!_activePICC.valid() || !_activePICC.isMifarePlus() || _activePICC.security_level != 1) {
+        return false;
+    }
+    if (!(_activePICC.sub_type == m5::stl::to_underlying(SubTypePlus::EV2) ||
+          _activePICC.sub_type == m5::stl::to_underlying(SubTypePlus::X))) {
+        return false;
+    }
+
+    if (!mifare_plus_authenticateAES(0x9002, sl2_switch_key)) {
+        M5_LIB_LOGE("SL2 auth failed");
+        return false;
+    }
+    _activePICC.security_level = 2;
     return true;
 }
 
@@ -1235,6 +1292,67 @@ bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)
         printf("[%3d/%02X] ERROR\n", from + off, from + off);
     }
     return false;
+}
+
+bool NFCLayerA::mifare_plus_read_plain_nomac(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out)
+{
+    out.clear();
+    if (count == 0 || count > 3) {
+        return false;
+    }
+    uint8_t tx[] = {0x36, (uint8_t)(block & 0xFF), (uint8_t)((block >> 8) & 0xFF), count};
+    uint8_t rx[64]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!_isoDEP.transceiveINF(rx, rx_len, tx, sizeof(tx)) || rx_len < 1) {
+        return false;
+    }
+
+    const bool has_status  = (rx[0] == 0x90 || rx[0] == 0xAF);
+    const uint8_t* payload = has_status ? rx + 1 : rx;
+    size_t pay_len         = has_status ? (rx_len - 1) : rx_len;
+    if (pay_len >= 2 && payload[pay_len - 2] == 0x90 && payload[pay_len - 1] == 0x00) {
+        pay_len -= 2;
+    }
+    if (pay_len < static_cast<size_t>(count) * 16) {
+        return false;
+    }
+    out.insert(out.end(), payload, payload + (size_t)count * 16);
+    return true;
+}
+
+bool NFCLayerA::dump_mifare_plus_sl2(const m5::nfc::a::mifare::plus::AESKey& key)
+{
+    uint8_t sectors = get_number_of_sectors(_activePICC.type);
+    if (!sectors) {
+        return false;
+    }
+    puts(
+        "Sec[Blk]:00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F [Access]\n"
+        "-----------------------------------------------------------------");
+
+    for (uint8_t sector = 0; sector < sectors; ++sector) {
+        const uint8_t blocks  = (sector < 32) ? 4U : 16U;
+        const uint16_t base   = (sector < 32) ? sector * blocks : 128U + (sector - 32) * blocks;
+        const uint16_t key_no = mifare_plus_key_no(sector, false);
+        if (!mifare_plus_authenticateAES(key_no, key)) {
+            M5_LIB_LOGE("SL2 auth failed sector %u key_no %04X", sector, key_no);
+            return false;
+        }
+
+        for (uint8_t i = 0; i < blocks; i += 3) {
+            const uint16_t block = base + i;
+            const uint8_t cnt    = std::min<uint8_t>(3U, blocks - i);
+            std::vector<uint8_t> data{};
+            if (!mifare_plus_read_plain_nomac(block, cnt, data)) {
+                M5_LIB_LOGE("SL2 read failed block %u", block);
+                return false;
+            }
+            for (uint8_t j = 0; j < cnt; ++j) {
+                print_block(data.data() + j * 16, block + j, (j == 0) ? sector : -1, 0x00, false, false);
+            }
+        }
+    }
+    return true;
 }
 
 bool NFCLayerA::dump_desfire()
@@ -1768,6 +1886,111 @@ bool NFCLayerA::mifare_get_version_L4_raw(uint8_t* ver, uint16_t& ver_len)
     // M5_DUMPE(acc.data(), acc.size());
 
     return ver_len >= 6;
+}
+
+bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare::plus::AESKey& key)
+{
+    uint8_t rx[256]{};
+    uint16_t rx_len{};
+
+    // Step 1: 0x70 KeyNo LSB/MSB 0x00
+    uint8_t cmd1[] = {0x70, (uint8_t)(key_no & 0xFF), (uint8_t)(key_no >> 8), 0x00};
+    rx_len         = sizeof(rx);
+    if (!_isoDEP.transceiveINF(rx, rx_len, cmd1, sizeof(cmd1)) || rx_len < 1) {
+        M5_LIB_LOGE("AuthAES step1 transceive failed");
+        return false;
+    }
+    if ((rx[0] != 0x90 && rx[0] != 0xAF) || rx_len < 17) {
+        M5_LIB_LOGE("AuthAES step1 invalid response len=%u st=%02X", rx_len, rx[0]);
+        m5::utility::log::dump(rx, rx_len, false);
+        return false;
+    }
+
+    const bool step1_has_status  = (rx[0] == 0x90 || rx[0] == 0xAF);
+    const uint8_t* step1_payload = step1_has_status ? rx + 1 : rx;
+    size_t step1_len             = step1_has_status ? (rx_len - 1) : rx_len;
+    if (step1_len >= 2 && step1_payload[step1_len - 2] == 0x90 && step1_payload[step1_len - 1] == 0x00) {
+        step1_len -= 2;
+    }
+    if (step1_len < 16) {
+        M5_LIB_LOGE("AuthAES step1 payload too short len=%u", (unsigned)step1_len);
+        return false;
+    }
+
+    uint8_t rndB[16]{};
+    {
+        uint8_t iv[16]{};
+        mbedtls_aes_context aes{};
+        mbedtls_aes_init(&aes);
+        mbedtls_aes_setkey_dec(&aes, key.data(), 128);
+        mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, sizeof(rndB), iv, step1_payload, rndB);
+        mbedtls_aes_free(&aes);
+    }
+
+    uint8_t rndA[16]{};
+    for (auto& b : rndA) {
+        b = (uint8_t)(esp_random() & 0xFF);
+    }
+
+    uint8_t rndB_rot[16]{};
+    memcpy(rndB_rot, rndB + 1, 15);
+    rndB_rot[15] = rndB[0];
+
+    uint8_t ab_plain[32]{};
+    memcpy(ab_plain, rndA, 16);
+    memcpy(ab_plain + 16, rndB_rot, 16);
+
+    uint8_t cmd2[33]{};
+    cmd2[0] = 0x72;
+    {
+        uint8_t iv[16]{};
+        mbedtls_aes_context aes{};
+        mbedtls_aes_init(&aes);
+        mbedtls_aes_setkey_enc(&aes, key.data(), 128);
+        mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, sizeof(ab_plain), iv, ab_plain, cmd2 + 1);
+        mbedtls_aes_free(&aes);
+    }
+
+    rx_len = sizeof(rx);
+    if (!_isoDEP.transceiveINF(rx, rx_len, cmd2, sizeof(cmd2)) || rx_len < 1) {
+        M5_LIB_LOGE("AuthAES step2 transceive failed");
+        return false;
+    }
+    if ((rx[0] != 0x90 && rx[0] != 0xAF) || rx_len < 33) {
+        M5_LIB_LOGE("AuthAES step2 invalid response len=%u st=%02X", rx_len, rx[0]);
+        m5::utility::log::dump(rx, rx_len, false);
+        return false;
+    }
+
+    const bool step2_has_status  = (rx[0] == 0x90 || rx[0] == 0xAF);
+    const uint8_t* step2_payload = step2_has_status ? rx + 1 : rx;
+    size_t step2_len             = step2_has_status ? (rx_len - 1) : rx_len;
+    if (step2_len >= 2 && step2_payload[step2_len - 2] == 0x90 && step2_payload[step2_len - 1] == 0x00) {
+        step2_len -= 2;
+    }
+    if (step2_len < 32) {
+        M5_LIB_LOGE("AuthAES step2 payload too short len=%u", (unsigned)step2_len);
+        return false;
+    }
+
+    uint8_t ab_resp[32]{};
+    {
+        uint8_t iv[16]{};
+        mbedtls_aes_context aes{};
+        mbedtls_aes_init(&aes);
+        mbedtls_aes_setkey_dec(&aes, key.data(), 128);
+        mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, sizeof(ab_resp), iv, step2_payload, ab_resp);
+        mbedtls_aes_free(&aes);
+    }
+
+    uint8_t rndA_rot[16]{};
+    memcpy(rndA_rot, rndA + 1, 15);
+    rndA_rot[15] = rndA[0];
+    if (memcmp(ab_resp + 4, rndA_rot, 16) != 0) {
+        M5_LIB_LOGE("AuthAES rndA mismatch");
+        return false;
+    }
+    return true;
 }
 
 bool NFCLayerA::ntag_read_page(uint8_t* rx, uint16_t& rx_len, const uint8_t spage, const uint8_t epage)

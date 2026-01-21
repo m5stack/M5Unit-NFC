@@ -192,8 +192,10 @@ namespace plus {
 */
 using AESKey = std::array<uint8_t, 16>;
 //! @brief Default key for MIFARE Plus
-constexpr AESKey DEFAULT_KEY{}; // All 0x00
-
+constexpr AESKey DEFAULT_KEY{};  // All 0x00
+//! @brief Default AES sector key (as classic DEFAULT_KEY)
+constexpr AESKey DEFAULT_FF_KEY = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                                   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 /*!
   @struct Keys

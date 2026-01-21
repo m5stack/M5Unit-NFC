@@ -131,18 +131,20 @@ public:
     /*!
       @brief Activate a specific PICC  (anti-collision against the given PICC)
       @param picc PICC
+      @param force_rats Force Request_rats (For Plus SL1/2)
       @return True if successful
       @pre PICC is READY state
       @post PICC transitions: READY -> ACTIVE on successful response
      */
-    bool activate(const m5::nfc::a::PICC& picc);
+    bool activate(const m5::nfc::a::PICC& picc, const bool force_rats = false);
     /*!
       @brief Wake and activate a specific PICC by PICC
       @param picc Target PICC
+      @param force_rats Force Request_rats (For Plus SL1/2)
       @return True if successful
       @post PICC transitions: IDLE/HALT -> READY -> ACTIVE on a successful sequence
      */
-    bool reactivate(const m5::nfc::a::PICC& picc);
+    bool reactivate(const m5::nfc::a::PICC& picc, const bool force_rats = false);
     /*!
       @brief Reactivate the previously selected PICC
       @details This function attempts to recover communication with the currently stored
@@ -253,6 +255,7 @@ public:
       @pre All blocks must be authenticatable using the specified key if MIFARE classic
      */
     bool dump(const m5::nfc::a::mifare::classic::Key& mkey = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+    bool dump(const m5::nfc::a::mifare::plus::AESKey& key);
     /*!
       @brief Dump 1 block
       @param addr Block address
@@ -427,7 +430,9 @@ public:
       @brief Upgrade security level to SL1 (Classic compatibility mode)
       @param card_config_key Card Configuration Key (AES)
       @param card_master_key Card Master Key (AES)
-      @param l3_switch_key Level 3 Switch Key (AES)
+      @param l2_switch_key Level 2 Switch Key (AES, for MIFARE Plus X/EV2 SL2 only)
+      @param l3_switch_key Level 3 Switch Key (AES, for SL3)
+      @param aes_sector_key AES sector key (for SL2/SL3, written to 0x4000+)
       @param key_a Crypto1 Key A (applies to all sectors)
       @param key_b Crypto1 Key B (applies to all sectors)
       @warning This operation is irreversible
@@ -436,9 +441,19 @@ public:
     bool mifarePlusUpgradeSecurityLevel1(
         const m5::nfc::a::mifare::plus::AESKey& card_config_key = m5::nfc::a::mifare::plus::DEFAULT_KEY,
         const m5::nfc::a::mifare::plus::AESKey& card_master_key = m5::nfc::a::mifare::plus::DEFAULT_KEY,
+        const m5::nfc::a::mifare::plus::AESKey& l2_switch_key   = m5::nfc::a::mifare::plus::DEFAULT_KEY,
         const m5::nfc::a::mifare::plus::AESKey& l3_switch_key   = m5::nfc::a::mifare::plus::DEFAULT_KEY,
+        const m5::nfc::a::mifare::plus::AESKey& aes_sector_key  = m5::nfc::a::mifare::plus::DEFAULT_FF_KEY,
         const m5::nfc::a::mifare::classic::Key& key_a           = m5::nfc::a::mifare::classic::DEFAULT_KEY,
         const m5::nfc::a::mifare::classic::Key& key_b           = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+    /*!
+      @brief Upgrade security level to SL2 (AES over CRYPTO1)
+      @param sl2_switch_key SL2 Switch Key (AES)
+      @warning This operation is irreversible
+      @note Only supported on MIFARE Plus X / EV2
+     */
+    bool mifarePlusUpgradeSecurityLevel2(
+        const m5::nfc::a::mifare::plus::AESKey& sl2_switch_key = m5::nfc::a::mifare::plus::DEFAULT_KEY);
 
     ///@}
 
@@ -540,7 +555,14 @@ protected:
     bool mifare_get_version_L3(uint8_t ver[8]);
     bool mifare_get_version_L4_raw(uint8_t* ver, uint16_t& ver_len);
     bool mifare_get_version_L4_wrapped(uint8_t* ver, uint16_t& ver_len);
+
+    bool mifare_plus_authenticateAES(const uint16_t key_no, const m5::nfc::a::mifare::plus::AESKey& key);
+    bool mifare_plus_authenticateAES_L3(const uint16_t key_no, const m5::nfc::a::mifare::plus::AESKey& key);
+    bool mifare_plus_read_plain_nomac(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out);
+    bool mifare_plus_read_plain_mac(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out);
+
     bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
+
     bool mifare_ultralightC_authenticate1(uint8_t ek[8]);
     bool mifare_ultralightC_authenticate2(uint8_t rx_ek[8], const uint8_t tx_ek[16]);
 
@@ -551,6 +573,7 @@ protected:
     bool dump_sector(const uint8_t sector);
     bool dump_page_structure(const uint16_t maxPage);
     bool dump_page(const uint8_t page, const uint16_t maxPage);
+    bool dump_mifare_plus_sl2(const m5::nfc::a::mifare::plus::AESKey& key);
     bool dump_desfire();
     bool dump_desfire_light();
 
@@ -562,6 +585,19 @@ protected:
     m5::nfc::isodep::IsoDEP _isoDEP;
 
 private:
+    bool mifare_plus_transceive_raw(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len);
+
+    struct MifarePlusSession {
+        bool authenticated{};
+        uint16_t key_no{};
+        uint16_t r_ctr{};
+        uint16_t w_ctr{};
+        uint8_t frame_num{};
+        std::array<uint8_t, 4> ti{};
+        std::array<uint8_t, 16> kmac{};
+    };
+
+    MifarePlusSession _mfp_session{};
     std::unique_ptr<Adapter> _impl;
 };
 
