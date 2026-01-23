@@ -165,12 +165,12 @@ constexpr uint8_t max_sector_table[] = {0,                        // Unknown
 
 constexpr uint16_t user_area_size_table[] = {
     0,                                      // Unknown
-    240,  752,  1504, 3440,                 // Classic
+    240,  752,  1520, 3440,                 // Classic
     48,   48,   128,  40,   144,            // Light
     144,  48,   144,  208,  144, 504, 888,  // NTAG
     64,   256,  2048, 8192,                 // ST25
     0,                                      //
-    1504, 3440, 752,                        // Plus
+    1520, 3440, 752,                        // Plus
     2048, 4096, 8192, 256,                  // Desfire, Light:The total is 512, but the maximum per file is 256
     0,                                      // NTAG 4xx
     0};
@@ -361,7 +361,7 @@ uint16_t get_last_user_block(const Type t)
 bool is_user_block(const Type t, const uint16_t block)
 {
     if (is_mifare_classic(t)) {
-        return (block != 0) &&                     // Not Manufacturer block
+        return (block != 0) &&                     // Not Manufactur block
                !is_sector_trailer_block(block) &&  // Not Sector trailer
                block <= get_last_user_block(t);    // In range
     } else if (supports_NFC(t)) {
@@ -375,6 +375,8 @@ file_system_feature_t get_file_system_feature(const Type t)
     if (is_mifare_desfire(t)) {
         return (t == Type::MIFARE_DESFire_Light ? FILE_SYSTEM_DESFIRE_LIGHT : FILE_SYSTEM_DESFIRE) |
                FILE_SYSTEM_ISO7816_4;
+    } else if (is_mifare_plus(t)) {
+        return FILE_SYSTEM_FLAT_MEMORY;
     } else if (is_st25ta(t) || is_iso14443_4(t)) {
         return FILE_SYSTEM_ISO7816_4;
     } else if (t != Type::Unknown) {

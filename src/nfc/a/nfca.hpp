@@ -466,10 +466,19 @@ struct PICC {
         return valid() && has_fast_read(type);
     }
     //! @brief File system features
-    file_system_feature_t fileSystemFeature() const
+    inline file_system_feature_t fileSystemFeature() const
     {
         return valid() ? get_file_system_feature(type) : 0;
     }
+    inline bool isFileSystemFlatMemory() const
+    {
+        return valid() && (get_file_system_feature(type) & FILE_SYSTEM_FLAT_MEMORY);
+    }
+    inline bool isFileSystemFile() const
+    {
+        return valid() && is_file_base_file_system(type);
+    }
+
     ///@}
 };
 

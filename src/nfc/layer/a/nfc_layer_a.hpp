@@ -43,7 +43,7 @@ namespace nfc {
 class NFCLayerA : public m5::nfc::NFCLayerInterface {
 public:
     struct Adapter;
-    explicit NFCLayerA(m5::unit::UnitMFRC522& u);  //  The implementation of this function is located in M5Unit-RFID
+    explicit NFCLayerA(m5::unit::UnitMFRC522& u);  // The implementation of this function is located in M5Unit-RFID
     explicit NFCLayerA(m5::unit::UnitWS1850S& u);  // The implementation of this function is located in M5Unit-RFID
     explicit NFCLayerA(m5::unit::UnitST25R3916& u);
     explicit NFCLayerA(m5::unit::CapST25R3916& u);
@@ -52,8 +52,8 @@ public:
     ///@{
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms) override;
-    virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) override;
-    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) override;
+    // virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) override;
+    // virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) override;
     virtual m5::nfc::NFCForumTag supportsNFCTag() const override;
     virtual file_system_feature_t supportsFilesystem() const override;
     virtual m5::nfc::isodep::IsoDEP* isoDEP() override
@@ -209,6 +209,17 @@ public:
     */
     bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
               const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+    /*!
+      @brief Read any bytes from user area (MIFARE Plus SL3)
+      @param rx Buffer
+      @param[in/out] rx_len in:buffer size, out:actual read size
+      @param saddr Reading start block address
+      @param key AES sector key (for MIFARE Plus SL3)
+      @return True if successful
+      @warning The rx is in 16-byte units
+      @pre Target blocks must be authenticatable using the specified key
+    */
+    bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr, const m5::nfc::a::mifare::plus::AESKey& key);
 
     /*!
       @brief Write the 1 page (4 bytes)
@@ -247,6 +258,18 @@ public:
     */
     bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len,
                const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
+    /*!
+      @brief Write any bytes to user area (MIFARE Plus SL3)
+      @param addr Writing start block address
+      @param tx Buffer
+      @param tx_len Buffer size
+      @param key AES sector key (for MIFARE Plus SL3)
+      @return True if successful
+      @warning The tx is in 16-byte units
+      @pre Target blocks must be authenticatable using the specified key
+     */
+    bool write(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len,
+               const m5::nfc::a::mifare::plus::AESKey& key);
 
     /*!
       @brief Dump all blocks/files
@@ -260,7 +283,7 @@ public:
       @param addr Block address
       @return True if successful
       @note The sector to which the block belongs is dumped
-      @pre The block must be authenticated if MIFARE classic
+      @pre The block must be authenticated if MIFARE classic/PlusS3
     */
     bool dump(const uint8_t block);
     ///@}
@@ -453,6 +476,14 @@ public:
      */
     bool mifarePlusUpgradeSecurityLevel2(
         const m5::nfc::a::mifare::plus::AESKey& sl2_switch_key = m5::nfc::a::mifare::plus::DEFAULT_KEY);
+    /*!
+      @brief Upgrade security level to SL3 (AES)
+      @param l3_switch_key Level 3 Switch Key (AES)
+      @warning This operation is irreversible
+      @note For Plus X/EV2, the PICC must be in SL2; otherwise SL1 is required
+     */
+    bool mifarePlusUpgradeSecurityLevel3(
+        const m5::nfc::a::mifare::plus::AESKey& l3_switch_key = m5::nfc::a::mifare::plus::DEFAULT_KEY);
 
     ///@}
 
@@ -540,6 +571,7 @@ protected:
 
     bool identify_picc(m5::nfc::a::PICC& picc);
     m5::nfc::a::Type identify_picc_st25ta();
+    uint8_t identify_plus_sl03();
 
     bool read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr);
     bool read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr,
@@ -559,6 +591,8 @@ protected:
     bool mifare_plus_authenticateAES_L3(const uint16_t key_no, const m5::nfc::a::mifare::plus::AESKey& key);
     bool mifare_plus_read_plain_nomac(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out);
     bool mifare_plus_read_plain_mac(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out);
+    bool mifare_plus_read_mac_l4(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out, const bool plain);
+    bool mifare_plus_write_mac_l4(const uint16_t block, const uint8_t* data, const uint16_t data_len, const bool plain);
 
     bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
 
@@ -570,9 +604,10 @@ protected:
 
     bool dump_sector_structure(const m5::nfc::a::PICC& picc, const m5::nfc::a::mifare::classic::Key& key);
     bool dump_sector(const uint8_t sector);
+    bool dump_sector_mifare_plus_sl3(const uint8_t sector);
     bool dump_page_structure(const uint16_t maxPage);
     bool dump_page(const uint8_t page, const uint16_t maxPage);
-    bool dump_mifare_plus_sl2(const m5::nfc::a::mifare::plus::AESKey& key);
+    bool dump_mifare_plus_sl3(const m5::nfc::a::mifare::plus::AESKey& key);
     bool dump_desfire();
     bool dump_desfire_light();
 

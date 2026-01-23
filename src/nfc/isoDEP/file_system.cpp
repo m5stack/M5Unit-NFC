@@ -194,8 +194,8 @@ bool FileSystem::updateBinary(const uint16_t offset, const uint8_t* data, const 
 
     const uint8_t p1 = static_cast<uint8_t>((offset >> 8) & 0xFF);
     const uint8_t p2 = static_cast<uint8_t>(offset & 0xFF);
-    const bool sfi   = (p1 & 0x80) != 0;
-    // M5_LIB_LOGE("UPDATE BINARY off:%u p1:%02X p2:%02X len:%u sfi:%u", offset, p1, p2, data_len, sfi ? 1 : 0);
+    // const bool sfi   = (p1 & 0x80) != 0;
+    //  M5_LIB_LOGE("UPDATE BINARY off:%u p1:%02X p2:%02X len:%u sfi:%u", offset, p1, p2, data_len, sfi ? 1 : 0);
 
     auto cmd = make_apdu_case3(0x00, m5::stl::to_underlying(INS::UPDATE_BINARY), p1, p2, data, data_len);
     // m5::utility::log::dump(cmd.data(), cmd.size(), false);

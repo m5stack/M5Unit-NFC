@@ -195,12 +195,24 @@ uint32_t fwi_to_ms(const uint8_t fwi, const float fc)
     return (fwt_ms != 0) ? fwt_ms : 1;
 }
 
+#define ENABLE_PRINT_ERROR
+#if defined(ENABLE_PRINT_ERROR)
+#define PRINT_ERROR(...) M5_LIB_LOGE(__VA_ARGS__)
+#else
+#define PRINT_ERROR(...) /* Nop */
+#endif
+
 bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t* tx_inf, const uint16_t tx_inf_len,
                            RxInfo* pinfo)
 {
+    const uint16_t rx_inf_len_org = rx_inf_len;
     RxInfo infoTmp{};
     RxInfo* info = pinfo ? pinfo : &infoTmp;
     *info        = {};
+    rx_inf_len   = 0;
+    if (!rx_inf || !rx_inf_len_org || !tx_inf || !tx_inf_len) {
+        return false;
+    }
 
     // Calculate the maximum amount of INF that can fit within the frame
     const uint16_t overhead     = 1 + (_cfg.use_cid ? 1 : 0) + (_cfg.use_nad ? 1 : 0);
@@ -246,7 +258,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
             // Send I-Block and receive first frame
             if (!_layer.transceive(rx_buf, rlen, tx_buf, tpos, timeout_ms)) {
                 if (retries++ < _cfg.max_retries) continue;
-                // M5_LIB_LOGE(">>>>ERROR 1");
+                PRINT_ERROR(">>>>ERROR 1");
                 return false;
             }
 
@@ -257,7 +269,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                         // resend I-Block
                         break;
                     }
-                    // M5_LIB_LOGE(">>>>ERROR 2");
+                    PRINT_ERROR(">>>>ERROR 2");
                     return false;
                 }
                 if (_cfg.rx_crc && rlen >= 3) {
@@ -270,7 +282,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                         // resend I-Block
                         break;
                     }
-                    // M5_LIB_LOGE(">>>>ERROR 3");
+                    PRINT_ERROR(">>>>ERROR 3");
                     return false;
                 }
 
@@ -284,13 +296,13 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                         if (retries++ < _cfg.max_retries) {
                             break;  // resend I-Block
                         }
-                        // M5_LIB_LOGE(">>>>ERROR 4");
+                        PRINT_ERROR(">>>>ERROR 4");
                         return false;
                     }
 
                     const uint8_t wtxm = get_wtxm(rx_buf[rx_overhead_min]);
                     if (!is_valid_wtxm(wtxm)) {
-                        // M5_LIB_LOGE(">>>>ERROR 5");
+                        PRINT_ERROR(">>>>ERROR 5");
                         return false;
                     }
 
@@ -308,7 +320,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                         if (retries++ < _cfg.max_retries) {
                             break;  // resend I-Block
                         }
-                        // M5_LIB_LOGE(">>>>ERROR 6");
+                        PRINT_ERROR(">>>>ERROR 6");
                         return false;
                     }
                     // Parse the newly received frame in the same loop
@@ -320,7 +332,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                     if (retries++ < _cfg.max_retries) {
                         break;  // resend I-Block
                     }
-                    // M5_LIB_LOGE(">>>>ERROR 7");
+                    PRINT_ERROR(">>>>ERROR 7");
                     return false;
                 }
 
@@ -330,7 +342,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                         if (retries++ < _cfg.max_retries) {
                             break;  // resend I-Block
                         }
-                        // M5_LIB_LOGE(">>>>ERROR 8");
+                        PRINT_ERROR(">>>>ERROR 8");
                         return false;
                     }
 
@@ -338,7 +350,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                         if (retries++ < _cfg.max_retries) {
                             break;  // resend I-Block
                         }
-                        // M5_LIB_LOGE(">>>>ERROR 9");
+                        PRINT_ERROR(">>>>ERROR 9");
                         return false;
                     }
 
@@ -352,7 +364,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                     if (retries++ < _cfg.max_retries) {
                         break;
                     }
-                    // M5_LIB_LOGE(">>>>ERROR 10");
+                    PRINT_ERROR(">>>>ERROR 10");
                     return false;
                 }
 
@@ -362,13 +374,13 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                     if (_cfg.use_cid) idx++;
                     if (_cfg.use_nad) idx++;
                     if (rlen < idx) {
-                        // M5_LIB_LOGE(">>>>ERROR 11");
+                        PRINT_ERROR(">>>>ERROR 11");
                         return false;
                     }
 
                     const uint16_t inf_len = (uint16_t)(rlen - idx);
-                    if (rx_written + inf_len > rx_inf_len) {
-                        // M5_LIB_LOGE("rx_written %u inf_len %u rx_inf_len %u", rx_written, inf_len, rx_inf_len);
+                    if (rx_written + inf_len > rx_inf_len_org) {
+                        PRINT_ERROR("rx_written %u inf_len %u rx_inf_len %u", rx_written, inf_len, rx_inf_len_org);
                         // m5::utility::log::dump(rx_inf, rx_written, false);
                         return false;
                     }
@@ -388,7 +400,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
 
                         uint16_t rlen2 = sizeof(rx_buf);
                         if (!_layer.transceive(rx_buf, rlen2, r_ack, rp, _cfg.fwt_ms)) {
-                            // M5_LIB_LOGE(">>>>ERROR 12");
+                            PRINT_ERROR(">>>>ERROR 12");
                             return false;
                         }
 
@@ -401,7 +413,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                             // If any S-Block other than WTX exists within the chain,
                             // it shall be treated as unsupported and result in failure.
                             if (is_s_block(pcb2) && !is_s_wtx(pcb2)) {
-                                // M5_LIB_LOGE(">>>>ERROR 13");
+                                PRINT_ERROR(">>>>ERROR 13");
                                 return false;
                             }
 
@@ -423,7 +435,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
 
                                 rlen2 = sizeof(rx_buf);
                                 if (!_layer.transceive(rx_buf, rlen2, s_ack, sp, wtx_timeout)) {
-                                    // M5_LIB_LOGE(">>>>ERROR 14");
+                                    PRINT_ERROR(">>>>ERROR 14");
                                     return false;
                                 }
                                 continue;
@@ -436,7 +448,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                                 // ACK: receive again
                                 rlen2 = sizeof(rx_buf);
                                 if (!_layer.receive(rx_buf, rlen2, _cfg.fwt_ms)) {
-                                    // M5_LIB_LOGE(">>>>ERROR 15");
+                                    PRINT_ERROR(">>>>ERROR 15");
                                     return false;
                                 }
                                 continue;
@@ -448,9 +460,9 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                             if (rlen2 < idx2) return false;
 
                             const uint16_t inf_len2 = (uint16_t)(rlen2 - idx2);
-                            if (rx_written + inf_len2 > rx_inf_len) {
-                                // M5_LIB_LOGE("rx_written %u inf_len2 %u rx_inf_len %u", rx_written, inf_len2,
-                                //             rx_inf_len);
+                            if (rx_written + inf_len2 > rx_inf_len_org) {
+                                PRINT_ERROR("rx_written %u inf_len2 %u rx_inf_len %u", rx_written, inf_len2,
+                                            rx_inf_len);
                                 // m5::utility::log::dump(rx_inf, rx_written, false);
 
                                 return false;
