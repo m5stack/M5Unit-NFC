@@ -19,6 +19,62 @@ class IsoDEP;
 }
 
 /*!
+  @struct FCP
+  @brief File Control Parameters
+  @todo Add more item
+*/
+struct FCP {
+    uint16_t fid{};                 //!< @brief File ID (FID)
+    uint16_t file_size{};           //!< @brief File size in bytes
+    uint8_t file_descriptor{0x01};  //!< @brief File descriptor (default: transparent EF)
+    uint8_t file_size_tag{0x80};    //!< //! @brief File size TLV tag (default: 0x80)
+
+    /*!
+      @brief Build FCP TLV (tag 0x62)
+      @return Encoded FCP
+     */
+    std::vector<uint8_t> to_tlv() const
+    {
+        std::vector<uint8_t> fcp;
+        fcp.reserve(16);
+
+        // File Descriptor (0x82)
+        fcp.push_back(0x82);
+        fcp.push_back(1);
+        fcp.push_back(file_descriptor);
+
+        // File ID (0x83)
+        fcp.push_back(0x83);
+        fcp.push_back(2);
+        fcp.push_back(static_cast<uint8_t>((fid >> 8) & 0xFF));
+        fcp.push_back(static_cast<uint8_t>(fid & 0xFF));
+
+        // File Size (tag: file_size_tag)
+        fcp.push_back(file_size_tag);
+        fcp.push_back(2);
+        fcp.push_back(static_cast<uint8_t>((file_size >> 8) & 0xFF));
+        fcp.push_back(static_cast<uint8_t>(file_size & 0xFF));
+
+        //
+        std::vector<uint8_t> out;
+        out.reserve(fcp.size() + 2);
+        out.push_back(0x62);
+        out.push_back(static_cast<uint8_t>(fcp.size()));
+        out.insert(out.end(), fcp.begin(), fcp.end());
+        return out;
+    }
+};
+
+/*!
+  @brief Parse FCI (tag 0x6F) and fill FCP
+  @param data FCI data
+  @param len FCI length
+  @param[out] fcp Output FCP
+  @return True if FCI parsed, false otherwise
+ */
+bool parseFCI(FCP& fcp, const uint8_t* data, const uint32_t len);
+
+/*!
   @class FileSystem
   @brief  ISO/IEC 7816-4 file system
  */
@@ -31,6 +87,27 @@ public:
 
     ///@name ISO/IEC 7816-4 Standard commands
     ///@{
+
+    /*!
+      @brief CREATE FILE
+      @param fcp File control parameters
+      @param fcp_len fcp length
+      @return True if successful
+     */
+    bool createFile(const uint8_t* fcp, const uint16_t fcp_len);
+    /*!
+      @brief CREATE FILE
+      @param fcp File control parameters
+      @return True if successful
+     */
+    bool createFile(const FCP& fcp);
+    /*!
+      @brief CREATE FILE
+      @param fid FileID
+      @param file_size File size
+      @return True if successful
+     */
+    bool createFile(const uint16_t fid, const uint16_t file_size);
 
     /*!
       @brief SELECT FILE (generic)
@@ -157,8 +234,18 @@ public:
     bool updateBinary(const uint16_t offset, const uint8_t* data, const uint16_t data_len);
     ///@}
 
+    /*!
+      @brief Last SELECT response data (SW excluded)
+      @return Response data
+     */
+    inline const std::vector<uint8_t>& lastSelectData() const
+    {
+        return _last_select_fci;
+    }
+
 protected:
     m5::nfc::isodep::IsoDEP& _isoDEP;
+    std::vector<uint8_t> _last_select_fci{};
 };
 
 }  // namespace nfc

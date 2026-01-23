@@ -164,26 +164,6 @@ int8_t required_key_no_from_access_rights(const uint16_t access_rights)
     return kAccessDenied;
 }
 
-inline bool is_file_system_ISO(const file_system_feature_t fsf)
-{
-    return (fsf & FILE_SYSTEM_ISO7816_4);
-}
-
-inline bool is_file_system_desfire(const file_system_feature_t fsf)
-{
-    return (fsf & (FILE_SYSTEM_DESFIRE | FILE_SYSTEM_DESFIRE_LIGHT));
-}
-
-inline bool is_file_system_desfire_ev(const file_system_feature_t fsf)
-{
-    return (fsf & FILE_SYSTEM_DESFIRE);
-}
-
-inline bool is_file_system_desfire_light(const file_system_feature_t fsf)
-{
-    return (fsf & FILE_SYSTEM_DESFIRE_LIGHT);
-}
-
 }  // namespace
 
 namespace m5 {
@@ -501,7 +481,7 @@ bool NDEFLayer::prepare_desfire(const uint32_t max_ndef_size)
     if (!max_ndef_size) {
         return false;
     }
-    if (!is_file_system_desfire_ev(_interface.supportsFilesystem())) {
+    if (!is_file_system_desfire_normal(_interface.supportsFilesystem())) {
         return false;
     }
     auto* dep = _interface.isoDEP();
@@ -703,8 +683,8 @@ bool NDEFLayer::readAttributeBlock(m5::nfc::ndef::type3::AttributeBlock& ab)
 
 bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type4::CapabilityContainer& cc)
 {
-    return is_file_system_desfire_ev(_interface.supportsFilesystem()) ? read_capability_container_type4_desfire(cc)
-                                                                      : read_capability_container_type4_iso7816(cc);
+    return is_file_system_desfire_normal(_interface.supportsFilesystem()) ? read_capability_container_type4_desfire(cc)
+                                                                          : read_capability_container_type4_iso7816(cc);
 }
 
 bool NDEFLayer::read_capability_container_type4_iso7816(m5::nfc::ndef::type4::CapabilityContainer& cc)
@@ -955,8 +935,8 @@ skip:
 bool NDEFLayer::read_type4(std::vector<m5::nfc::ndef::TLV>& tlvs,
                            const m5::nfc::ndef::type4::FileControlTagBits fc_bits)
 {
-    return is_file_system_desfire_ev(_interface.supportsFilesystem()) ? read_type4_desfire(tlvs, fc_bits)
-                                                                      : read_type4_iso7816(tlvs, fc_bits);
+    return is_file_system_desfire_normal(_interface.supportsFilesystem()) ? read_type4_desfire(tlvs, fc_bits)
+                                                                          : read_type4_iso7816(tlvs, fc_bits);
 }
 
 namespace {
@@ -1510,8 +1490,8 @@ bool NDEFLayer::write_type4(const std::vector<m5::nfc::ndef::TLV>& tlvs)
         M5_LIB_LOGE("Failed to readCapabilityContainer");
         return false;
     }
-    return is_file_system_desfire_ev(_interface.supportsFilesystem()) ? write_type4_desfire(tlvs, cc, *dep)
-                                                                      : write_type4_iso7816(tlvs, cc, *dep);
+    return is_file_system_desfire_normal(_interface.supportsFilesystem()) ? write_type4_desfire(tlvs, cc, *dep)
+                                                                          : write_type4_iso7816(tlvs, cc, *dep);
 }
 
 bool NDEFLayer::write_type4_desfire(const std::vector<m5::nfc::ndef::TLV>& tlvs, const type4::CapabilityContainer& cc,

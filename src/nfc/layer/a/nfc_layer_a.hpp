@@ -591,7 +591,8 @@ protected:
     bool mifare_plus_authenticateAES_L3(const uint16_t key_no, const m5::nfc::a::mifare::plus::AESKey& key);
     bool mifare_plus_read_plain_nomac(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out);
     bool mifare_plus_read_plain_mac(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out);
-    bool mifare_plus_read_mac_l4(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out, const bool plain);
+    bool mifare_plus_read_mac_l4(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out,
+                                 const bool plain);
     bool mifare_plus_write_mac_l4(const uint16_t block, const uint8_t* data, const uint16_t data_len, const bool plain);
 
     bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);

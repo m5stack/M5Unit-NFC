@@ -58,6 +58,7 @@ inline bool is_response_OK(const uint8_t sw1, const uint8_t sw2)
 enum class INS : uint8_t {
     // ISO/IEC 7816-4
     SELECT_FILE = 0xA4,
+    CREATE_FILE = 0xE0,
 
     READ_BINARY   = 0xB0,
     WRITE_BINARY  = 0xD0,

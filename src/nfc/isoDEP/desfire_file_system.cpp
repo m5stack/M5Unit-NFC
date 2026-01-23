@@ -633,8 +633,8 @@ m5::stl::expected<void, uint8_t> DESFireFileSystem::createApplication(const uint
 
     auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_CREATE_APPLICATION), data.data(), data.size());
 
-    //M5_LIB_LOGE("cmd:");
-    //m5::utility::log::dump(cmd.data(), cmd.size(), false);
+    // M5_LIB_LOGE("cmd:");
+    // m5::utility::log::dump(cmd.data(), cmd.size(), false);
 
     uint8_t rx[16]{};
     uint16_t rx_len = sizeof(rx);
@@ -699,6 +699,9 @@ bool DESFireFileSystem::readData(std::vector<uint8_t>& out, const uint8_t file_n
 {
     out.clear();
 
+    // M5_LIB_LOGI("readData: file_no=%u offset=%lu length=%lu", file_no, static_cast<unsigned long>(offset),
+    //             static_cast<unsigned long>(length));
+
     uint8_t data[1 + 3 + 3]{};
     uint8_t* p = data;
     *p++       = file_no;
@@ -709,16 +712,36 @@ bool DESFireFileSystem::readData(std::vector<uint8_t>& out, const uint8_t file_n
 
     auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_READ_DATA), data, sizeof(data));
 
-    const size_t rx_cap = length ? static_cast<size_t>(length + 2) : static_cast<size_t>(DEFAULT_RX_LEN);
+    const size_t rx_cap = length ? std::max(static_cast<size_t>(DEFAULT_RX_LEN), static_cast<size_t>(length + 2))
+                                 : static_cast<size_t>(DEFAULT_RX_LEN);
     std::vector<uint8_t> rx(rx_cap);
     uint16_t rx_len = static_cast<uint16_t>(rx.size());
     if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
+        M5_LIB_LOGE("readData: transceive failed rx_len=%u tx_len=%u", rx_len, static_cast<unsigned>(cmd.size()));
+        M5_DUMPE(cmd.data(), cmd.size());
         return false;
     }
     if (!is_successful(rx.data(), rx_len)) {
+        M5_LIB_LOGE("readData: status error (%02X) rx_len=%u", status_code(rx.data(), rx_len), rx_len);
         return false;
     }
-    out.assign(rx.begin(), rx.begin() + (rx_len - 2));
+    const size_t payload_len = static_cast<size_t>(rx_len - 2);
+    size_t out_len           = payload_len;
+    if (length > 0) {
+        if (payload_len == static_cast<size_t>(length + 8)) {
+            // M5_LIB_LOGI("readData: mac detected payload_len=%u", static_cast<unsigned>(payload_len));
+            out_len = static_cast<size_t>(length);
+        } else if (payload_len < static_cast<size_t>(length)) {
+            M5_LIB_LOGE("readData: short payload_len=%u length=%lu", static_cast<unsigned>(payload_len),
+                        static_cast<unsigned long>(length));
+            return false;
+        } else if (payload_len > static_cast<size_t>(length)) {
+            // M5_LIB_LOGW("readData: unexpected payload_len=%u length=%lu", static_cast<unsigned>(payload_len),
+            //             static_cast<unsigned long>(length));
+            out_len = static_cast<size_t>(length);
+        }
+    }
+    out.assign(rx.begin(), rx.begin() + out_len);
     return true;
 }
 
@@ -913,8 +936,8 @@ bool DESFireFileSystem::writeDataLightEV2(const uint8_t file_no, const uint32_t 
         p += 3;
         pack_le24(p, chunk);
 
-        if (!transceive_sm_mac(_isoDEP, m5::stl::to_underlying(INS::DF_WRITE_DATA), cmd_header, sizeof(cmd_header),
-                               data + written, chunk, ctx, nullptr)) {
+        if (!transceive_sm_mac(_isoDEP, DESFIRE_LIGHT_INS_WRITE_DATA, cmd_header, sizeof(cmd_header), data + written,
+                               chunk, ctx, nullptr)) {
             return false;
         }
         written += chunk;
@@ -953,8 +976,8 @@ bool DESFireFileSystem::writeDataLightEV2Full(const uint8_t file_no, const uint3
         p += 3;
         pack_le24(p, chunk);
 
-        if (!transceive_sm_full(_isoDEP, m5::stl::to_underlying(INS::DF_WRITE_DATA), cmd_header, sizeof(cmd_header),
-                                data + written, chunk, ctx, nullptr)) {
+        if (!transceive_sm_full(_isoDEP, DESFIRE_LIGHT_INS_WRITE_DATA, cmd_header, sizeof(cmd_header), data + written,
+                                chunk, ctx, nullptr)) {
             return false;
         }
         written += chunk;
@@ -1286,10 +1309,10 @@ bool DESFireFileSystem::getFileSettings(FileSettings& out, const uint8_t file_no
     const uint8_t file_type = rx[0];
     if (file_type == 0x05) {  // TransactionMAC file
         const uint8_t file_option = rx[1];
-        out.file_type     = file_type;
-        out.comm_mode     = (file_option & 0x03);
-        out.access_rights = static_cast<uint16_t>(rx[2]) | (static_cast<uint16_t>(rx[3]) << 8);
-        out.file_size     = 0;
+        out.file_type             = file_type;
+        out.comm_mode             = (file_option & 0x03);
+        out.access_rights         = static_cast<uint16_t>(rx[2]) | (static_cast<uint16_t>(rx[3]) << 8);
+        out.file_size             = 0;
         return true;
     }
     if (data_len < 7) {
@@ -1319,10 +1342,10 @@ bool DESFireFileSystem::getFileSettingsEV2(FileSettings& out, const uint8_t file
     const uint8_t file_type = resp[0];
     if (file_type == 0x05) {  // TransactionMAC file
         const uint8_t file_option = resp[1];
-        out.file_type     = file_type;
-        out.comm_mode     = (file_option & 0x03);
-        out.access_rights = static_cast<uint16_t>(resp[2]) | (static_cast<uint16_t>(resp[3]) << 8);
-        out.file_size     = 0;
+        out.file_type             = file_type;
+        out.comm_mode             = (file_option & 0x03);
+        out.access_rights         = static_cast<uint16_t>(resp[2]) | (static_cast<uint16_t>(resp[3]) << 8);
+        out.file_size             = 0;
         return true;
     }
     if (resp.size() < 7) {
@@ -1349,10 +1372,10 @@ bool DESFireFileSystem::getFileSettingsEV2Full(FileSettings& out, const uint8_t 
     const uint8_t file_type = resp[0];
     if (file_type == 0x05) {  // TransactionMAC file
         const uint8_t file_option = resp[1];
-        out.file_type     = file_type;
-        out.comm_mode     = (file_option & 0x03);
-        out.access_rights = static_cast<uint16_t>(resp[2]) | (static_cast<uint16_t>(resp[3]) << 8);
-        out.file_size     = 0;
+        out.file_type             = file_type;
+        out.comm_mode             = (file_option & 0x03);
+        out.access_rights         = static_cast<uint16_t>(resp[2]) | (static_cast<uint16_t>(resp[3]) << 8);
+        out.file_size             = 0;
         return true;
     }
     if (resp.size() < 7) {

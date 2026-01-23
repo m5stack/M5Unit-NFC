@@ -18,9 +18,99 @@ using namespace m5::nfc::apdu;
 namespace m5 {
 namespace nfc {
 
+bool parseFCI(FCP& fcp, const uint8_t* data, const uint32_t len)
+{
+    if (!data || len < 2) {
+        return false;
+    }
+
+    const auto tlvs    = parse_tlv(data, len);
+    const TLV* fci_tlv = nullptr;
+    for (const auto& tlv : tlvs) {
+        if (tlv.tag == 0x6F) {
+            fci_tlv = &tlv;
+            break;
+        }
+    }
+    if (!fci_tlv) {
+        return false;
+    }
+
+    const auto fci_inner = parse_tlv(fci_tlv->v, fci_tlv->len);
+    const TLV* fcp_tlv   = nullptr;
+    for (const auto& tlv : fci_inner) {
+        if (tlv.tag == 0x62) {
+            fcp_tlv = &tlv;
+            break;
+        }
+    }
+    if (!fcp_tlv) {
+        return false;
+    }
+
+    bool have_fid        = false;
+    bool have_size       = false;
+    const auto fcp_inner = parse_tlv(fcp_tlv->v, fcp_tlv->len);
+    for (const auto& tlv : fcp_inner) {
+        if (tlv.tag == 0x82 && tlv.len == 1) {
+            fcp.file_descriptor = tlv.v[0];
+            continue;
+        }
+        if (tlv.tag == 0x83 && tlv.len >= 2) {
+            fcp.fid  = static_cast<uint16_t>((tlv.v[0] << 8) | tlv.v[1]);
+            have_fid = true;
+            continue;
+        }
+        if ((tlv.tag == 0x80 || tlv.tag == 0x81 || tlv.tag == 0x83 || (tlv.tag == 0x82 && tlv.len >= 2)) &&
+            tlv.len >= 2) {
+            fcp.file_size_tag = static_cast<uint8_t>(tlv.tag & 0xFF);
+            fcp.file_size     = static_cast<uint16_t>((tlv.v[0] << 8) | tlv.v[1]);
+            have_size         = true;
+        }
+    }
+
+    return have_fid && have_size;
+}
+
+bool FileSystem::createFile(const uint8_t* fcp, const uint16_t fcp_len)
+{
+    auto cmd = make_apdu_case3(0x00, m5::stl::to_underlying(INS::CREATE_FILE), 0x00, 0x00, fcp, fcp_len);
+
+    uint8_t rx[2]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!_isoDEP.transceiveAPDU(rx, rx_len, cmd.data(), static_cast<uint16_t>(cmd.size())) || rx_len < 2) {
+        M5_LIB_LOGE("CREATE FILE failed (transport) %u", rx_len);
+        return false;
+    }
+    if (!is_response_OK(rx + rx_len - 2)) {
+        M5_LIB_LOGE("Response error SW:%02X:%02X", rx[rx_len - 2], rx[rx_len - 1]);
+        return false;
+    }
+    return true;
+}
+
+bool FileSystem::createFile(const FCP& fcp)
+{
+    const auto tlv = fcp.to_tlv();
+    if (tlv.empty()) {
+        return false;
+    }
+    return createFile(tlv.data(), tlv.size());
+}
+
+bool FileSystem::createFile(const uint16_t fid, const uint16_t file_size)
+{
+    FCP fcp{};
+    fcp.fid       = fid;
+    fcp.file_size = file_size;
+    return createFile(fcp);
+}
+
 bool FileSystem::selectFile(const m5::nfc::apdu::SelectBy by, const m5::nfc::apdu::SelectOccurrence occ,
                             const m5::nfc::apdu::SelectResponse res, const uint8_t* param, const uint8_t param_len)
 {
+    _last_select_fci.clear();
+
     if (!param || !param_len) {
         return false;
     }
@@ -57,6 +147,11 @@ bool FileSystem::selectFile(const m5::nfc::apdu::SelectBy by, const m5::nfc::apd
         //  M5_DUMPE(cmd.data(), cmd.size());
         return false;
     }
+
+    if (res == SelectResponse::FCI) {
+        _last_select_fci.assign(rx, rx + rx_len - 2);
+    }
+
     return true;
 }
 

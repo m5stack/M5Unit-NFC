@@ -959,8 +959,8 @@ bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const
             M5_LIB_LOGW("Write has been rejected out of user block range %u-%u", addr, addr + blocks - 1);
             return false;
         }
-        b += (1 + !is_user_block(t, addr + b));  //  Skip sector trailer
-                                                 //        b += (1 + is_not_user_block(addr + b));
+        //        b += (1 + !is_user_block(t, addr + b));  //  Skip sector trailer
+        b += (1 + is_not_user_block(addr + b));
     }
 
     uint8_t cur = addr;
@@ -988,7 +988,7 @@ bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const
         }
 
         uint16_t sz = std::min<uint16_t>(16, tx_len - written);
-        M5_LIB_LOGV("  WRITE:%u %u %u/%u", cur, sz, written, tx_len);
+        M5_LIB_LOGE("  WRITE:%u %u %u/%u", cur, sz, written, tx_len);
         if (!write16(cur, data, sz)) {
             M5_LIB_LOGE("write failed %u", cur);
             break;
@@ -997,8 +997,6 @@ bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const
         data += sz;
         ++cur;
     }
-    M5_LIB_LOGE(">>>>%u %u", written, tx_len);
-
     return written == tx_len;
 }
 
@@ -2256,7 +2254,7 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
     }
     if ((rx[0] != 0x90 && rx[0] != 0xAF) || rx_len < 17) {
         M5_LIB_LOGE("AuthAES step1 invalid response len=%u st=%02X", rx_len, rx[0]);
-        m5::utility::log::dump(rx, rx_len, false);
+        M5_DUMPE(rx, rx_len);
         return false;
     }
 
@@ -2312,7 +2310,7 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
     }
     if ((rx[0] != 0x90 && rx[0] != 0xAF) || rx_len < 33) {
         M5_LIB_LOGE("AuthAES step2 invalid response len=%u st=%02X", rx_len, rx[0]);
-        m5::utility::log::dump(rx, rx_len, false);
+        M5_DUMPE(rx, rx_len);
         return false;
     }
 
@@ -2464,8 +2462,8 @@ bool NFCLayerA::mifare_plus_read_plain_mac(const uint16_t block, const uint8_t c
     if (!nomaccmd) {
         memcpy(tx + sizeof(rcmd1), mac, sizeof(mac));
     }
-    M5_LIB_LOGE("read cmd:");
-    m5::utility::log::dump(tx, nomaccmd ? sizeof(rcmd1) : sizeof(tx), false);
+    // M5_LIB_LOGE("read cmd:");
+    // m5::utility::log::dump(tx, nomaccmd ? sizeof(rcmd1) : sizeof(tx), false);
 
     uint8_t rx[128]{};
     const size_t data_len = (size_t)count * 16;

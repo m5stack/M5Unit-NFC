@@ -337,7 +337,7 @@ uint16_t get_user_area_size(const Type t)
 
 uint16_t get_unit_size(const Type t)
 {
-    return is_file_base_file_system(t) ? 0 : (supports_NFC(t) ? 4 : (is_mifare(t) ? 16 : 0));
+    return is_file_system_file(t) ? 0 : (supports_NFC(t) ? 4 : (is_mifare(t) ? 16 : 0));
 }
 
 uint16_t get_number_of_sectors(const Type t)

@@ -224,8 +224,13 @@ bool is_user_block(const Type t, const uint16_t block);
 
 //! @brief Get file system fearure bits
 file_system_feature_t get_file_system_feature(const Type t);
+//! @brief Memory file system?
+inline bool is_file_system_memory(const Type t)
+{
+    return (get_file_system_feature(t) & FILE_SYSTEM_FLAT_MEMORY);
+}
 //! @brief File base file system?
-inline bool is_file_base_file_system(const Type t)
+inline bool is_file_system_file(const Type t)
 {
     return get_file_system_feature(t) & (FILE_SYSTEM_ISO7816_4 | FILE_SYSTEM_DESFIRE);
 }
@@ -328,7 +333,7 @@ struct PICC {
     inline bool valid() const
     {
         return (size == 4 || size == 7 || size == 10) && (type != Type::Unknown) &&
-               (is_file_base_file_system(type) || blocks);
+               (is_file_system_file(type) || blocks);
     }
     //! @brief Retrieve the last 4 bytes of UID
     void tail4(uint8_t buf[4]) const
@@ -385,7 +390,7 @@ struct PICC {
     {
         return is_mifare_classic_compatible(type, security_level);
     }
-    //! @brief Is MIFARE DESFire?
+    //! @brief Is MIFARE DESFire? (include Light)
     inline bool isMifareDESFire() const
     {
         return is_mifare_desfire(type);
@@ -470,15 +475,14 @@ struct PICC {
     {
         return valid() ? get_file_system_feature(type) : 0;
     }
-    inline bool isFileSystemFlatMemory() const
+    inline bool isFileSystemMemory() const
     {
-        return valid() && (get_file_system_feature(type) & FILE_SYSTEM_FLAT_MEMORY);
+        return valid() && is_file_system_memory(type);
     }
     inline bool isFileSystemFile() const
     {
-        return valid() && is_file_base_file_system(type);
+        return valid() && is_file_system_file(type);
     }
-
     ///@}
 };
 

@@ -57,7 +57,6 @@ enum class Bitrate : uint8_t {
     Invalid = 0xFF,
 };
 
-
 ///@name File system (bits)
 ///@{
 using file_system_feature_t = uint8_t;                            //!< Alias for file_system_feature_t
@@ -67,6 +66,35 @@ constexpr file_system_feature_t FILE_SYSTEM_DESFIRE{0x04};        //!< MIFARE DE
 constexpr file_system_feature_t FILE_SYSTEM_DESFIRE_LIGHT{0x08};  //!< MIFARE DESFire light (single file base)
 ///@}
 
+inline bool is_file_system_memory(const file_system_feature_t fsf)
+{
+    return (fsf & FILE_SYSTEM_FLAT_MEMORY);
+}
+
+inline bool is_file_system_file(const file_system_feature_t fsf)
+{
+    return (fsf & (FILE_SYSTEM_ISO7816_4 | FILE_SYSTEM_DESFIRE | FILE_SYSTEM_DESFIRE_LIGHT));
+}
+
+inline bool is_file_system_ISO(const file_system_feature_t fsf)
+{
+    return (fsf & FILE_SYSTEM_ISO7816_4);
+}
+
+inline bool is_file_system_desfire(const file_system_feature_t fsf)
+{
+    return (fsf & (FILE_SYSTEM_DESFIRE | FILE_SYSTEM_DESFIRE_LIGHT));
+}
+
+inline bool is_file_system_desfire_normal(const file_system_feature_t fsf)
+{
+    return (fsf & FILE_SYSTEM_DESFIRE);
+}
+
+inline bool is_file_system_desfire_light(const file_system_feature_t fsf)
+{
+    return (fsf & FILE_SYSTEM_DESFIRE_LIGHT);
+}
 
 }  // namespace nfc
 }  // namespace m5
