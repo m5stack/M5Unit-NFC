@@ -35,6 +35,7 @@
 #include <M5UnitUnifiedRFID.h>
 #endif
 
+using namespace m5::nfc;
 using namespace m5::nfc::a;
 using namespace m5::nfc::a::mifare;
 
@@ -62,6 +63,46 @@ constexpr classic::Key keyA = classic::DEFAULT_KEY;  // Default as 0xFFFFFFFFFFF
 // AES KeyA that can authenticate all blocks (Plus SL3)
 // If it's a different key value, change it
 constexpr plus::AESKey aesKeyA = plus::DEFAULT_FF_KEY;  // all 0xFF
+
+constexpr int8_t kAccessDenied{-1};
+constexpr int8_t kAccessFree{-2};
+int8_t required_key_no_for_read(const uint16_t access_rights)
+{
+    const uint8_t read_key = (access_rights >> 12) & 0x0F;  // Read
+    const uint8_t rw_key   = (access_rights >> 4) & 0x0F;   // Read/Write
+    if (read_key == 0x0E) {
+        return kAccessFree;
+    }
+    if (read_key != 0x0F) {
+        return read_key;
+    }
+    if (rw_key == 0x0E) {
+        return kAccessFree;
+    }
+    if (rw_key != 0x0F) {
+        return rw_key;
+    }
+    return kAccessDenied;
+}
+
+int8_t required_key_no_for_write(const uint16_t access_rights)
+{
+    const uint8_t write_key = (access_rights >> 8) & 0x0F;  // Write
+    const uint8_t rw_key    = (access_rights >> 4) & 0x0F;  // Read/Write
+    if (write_key == 0x0E) {
+        return kAccessFree;
+    }
+    if (write_key != 0x0F) {
+        return write_key;
+    }
+    if (rw_key == 0x0E) {
+        return kAccessFree;
+    }
+    if (rw_key != 0x0F) {
+        return rw_key;
+    }
+    return kAccessDenied;
+}
 
 constexpr char long_msg[] =
     "This is a sample message buffer used for testing NFC page writes and data integrity verification purposes.";
@@ -116,9 +157,14 @@ static ReadWriteOps select_rw_ops()
     return {"Default", read_default, write_default, dump_default};
 }
 
+#if 0
 void read_all_user_area()
 {
     auto& picc = nfc_a.activatedPICC();
+
+    if (!picc.isFileSystemMemory()) {
+        return;
+    }
 
     static uint8_t buf[4096]{};
     uint16_t rx_len{4096};
@@ -134,6 +180,7 @@ void read_all_user_area()
         M5_LOGE("Failed to read");
     }
 }
+#endif
 
 // Using read/write for all
 bool read_write(const uint8_t sblock, const char* msg)
@@ -263,9 +310,332 @@ void read_write_page_structure(const PICC& picc, const uint8_t page)
     nfc_a.dump(aligned_page);
 }
 
-// For file base system (DESFire, ST25TA etc...)
-bool read_write_file_base()
+// For DESFire
+bool read_write_desfire()
 {
+    constexpr uint8_t aid[3]{0x00, 0x00, 0x02};
+    constexpr uint8_t file_no{0x05};
+    constexpr uint16_t iso_fid{0xF005};
+    constexpr uint8_t comm_mode{0x00};
+    constexpr uint16_t access_rights{0xEEEE};
+    constexpr char data[]        = "aBcDeFg";
+    constexpr uint32_t file_size = sizeof(data);
+
+    std::vector<uint8_t> rbuf{};
+
+    auto isoDEP = nfc_a.isoDEP();
+    if (!isoDEP) {
+        return false;
+    }
+    // M5_LOGI("DESFire RW: aid=%02X%02X%02X file_no=%u iso_fid=%04X size=%lu", aid[0], aid[1], aid[2], file_no,
+    // iso_fid,
+    //        static_cast<unsigned long>(file_size));
+
+    desfire::DESFireFileSystem dfs(nfc_a);
+    // Select PICC
+    if (!dfs.selectApplication()) {
+        M5_LOGE("Failed to select PICC application");
+        return false;
+    }
+
+    // PICC Auth
+    const uint8_t* default_key = m5::nfc::ndef::type4::DESFIRE_DEFAULT_KEY;
+    bool picc_auth_des         = dfs.authenticateDES(0x00, default_key);
+    bool picc_auth_iso         = !picc_auth_des && dfs.authenticateISO(0x00, default_key);
+    bool picc_auth_aes         = (!picc_auth_des && !picc_auth_iso) && dfs.authenticateAES(0x00, default_key);
+    bool picc_auth_ok          = picc_auth_des || picc_auth_iso || picc_auth_aes;
+    if (!picc_auth_ok) {
+        M5_LOGE("PICC master auth failed");
+        return false;
+    }
+    // M5_LOGI("PICC master auth: %s", picc_auth_des ? "DES" : picc_auth_iso ? "ISO" : "AES");
+
+    // Select app
+    if (!dfs.selectApplication(aid)) {
+        auto created = dfs.createApplication(aid, 0x09, 0x21);
+        if (!created.has_value()) {
+            M5_LOGE("create application failed (0x%02X)", created.error());
+            return false;
+        }
+        // M5_LOGI("create application: OK");
+        if (!dfs.selectApplication(aid)) {
+            M5_LOGE("Failed to select application");
+            return false;
+        }
+    }
+
+    // App auth
+    bool app_auth_des = dfs.authenticateDES(0x00, default_key);
+    bool app_auth_iso = !app_auth_des && dfs.authenticateISO(0x00, default_key);
+    bool app_auth_aes = (!app_auth_des && !app_auth_iso) && dfs.authenticateAES(0x00, default_key);
+    bool app_auth_ok  = app_auth_des || app_auth_iso || app_auth_aes;
+    if (!app_auth_ok) {
+        M5_LOGE("App master auth failed");
+        return false;
+    }
+    // M5_LOGI("App master auth: %s", app_auth_des ? "DES" : app_auth_iso ? "ISO" : "AES");
+
+    // Is file exist?
+    bool have_file = false;
+    std::vector<uint8_t> file_ids;
+    if (dfs.getFileIDs(file_ids)) {
+        // M5_LOGI("getFileIDs: %u", static_cast<unsigned>(file_ids.size()));
+        for (auto id : file_ids) {
+            // M5_LOGI("  file_id: %u", id);
+            if (id == file_no) {
+                have_file = true;
+                break;
+            }
+        }
+    } else {
+        M5_LOGE("getFileIDs failed");
+    }
+
+    // Check settings
+    if (have_file) {
+        desfire::FileSettings settings{};
+        if (!dfs.getFileSettings(settings, file_no)) {
+            M5_LOGE("Failed to getFileSettings %u", file_no);
+            return false;
+        }
+        // M5_LOGI("getFileSettings: comm=%u ar=%04X size=%lu", settings.comm_mode, settings.access_rights,
+        //         static_cast<unsigned long>(settings.file_size));
+        if (settings.access_rights != access_rights || settings.comm_mode != comm_mode) {
+            M5_LOGE("File settings not compatible (ar:%04X comm:%u)", settings.access_rights, settings.comm_mode);
+            return false;
+        }
+    }
+
+    // create STD file if not exists
+    if (!have_file &&
+        !dfs.createStdDataFile(file_no, iso_fid, comm_mode, access_rights, static_cast<uint32_t>(file_size))) {
+        M5_LOGE("Failed to createStdDataFile %u", file_no);
+        return false;
+    }
+    if (!have_file) {
+        // M5_LOGI("createStdDataFile: OK");
+    }
+
+    // Write
+    M5.Log.printf("================================ WRITE DESFire %02X len:%lu\n", file_no,
+                  static_cast<unsigned long>(file_size));
+    if (!dfs.writeData(file_no, 0, reinterpret_cast<const uint8_t*>(data), static_cast<uint32_t>(file_size))) {
+        M5_LOGE("Failed to write");
+        return false;
+    }
+    lcd.fillScreen(TFT_ORANGE);
+
+    // Read
+    if (!dfs.selectApplication(aid)) {
+        M5_LOGE("Re-select application failed before read");
+        return false;
+    }
+    if (!(dfs.authenticateDES(0x00, default_key) || dfs.authenticateISO(0x00, default_key) ||
+          dfs.authenticateAES(0x00, default_key))) {
+        M5_LOGE("Re-auth failed before read");
+        return false;
+    }
+    // M5_LOGI("readData: file_no=%u offset=0 len=%lu", file_no, static_cast<unsigned long>(file_size));
+
+    if (!dfs.readData(rbuf, file_no, 0, static_cast<uint32_t>(file_size))) {
+        M5_LOGE("Failed to read");
+        return false;
+    }
+    lcd.fillScreen(TFT_BLUE);
+
+    bool compare = (rbuf.size() == file_size) && (memcmp(rbuf.data(), data, file_size) == 0);
+    M5.Log.printf("================================ VERIFY:%s\n", compare ? "OK" : "NG");
+    if (!compare) {
+        M5_LOGE("VERIFY NG!!");
+    }
+    m5::utility::log::dump(rbuf.data(), rbuf.size(), false);
+
+    // Clear (write 0x00...)
+    const uint8_t clear[sizeof(data)]{};
+    lcd.fillScreen(TFT_MAGENTA);
+    if (!dfs.writeData(file_no, 0, clear, sizeof(clear))) {
+        M5_LOGE("Failed to write(clear)");
+        return false;
+    }
+
+    M5.Log.printf("================================ CLEAR\n");
+    if (!dfs.readData(rbuf, file_no, 0, static_cast<uint32_t>(file_size))) {
+        M5_LOGE("Failed to read");
+        return false;
+    }
+    m5::utility::log::dump(rbuf.data(), rbuf.size(), false);
+
+    return true;
+}
+
+bool read_write_desfire_light()
+{
+    constexpr uint8_t file_no{0x04};            // StdFile
+    constexpr uint32_t default_file_size{256};  // Fixed size 256
+    constexpr char data[]       = "aBcDeFg";
+    constexpr uint32_t data_len = sizeof(data);
+    std::vector<uint8_t> rbuf{};
+
+    auto isoDEP = nfc_a.isoDEP();
+    if (!isoDEP) {
+        return false;
+    }
+
+    desfire::DESFireFileSystem dfs(nfc_a);
+
+    const uint8_t* default_key = m5::nfc::ndef::type4::DESFIRE_DEFAULT_KEY;
+    desfire::Ev2Context ev2_ctx{};
+    bool ev2_ok        = false;
+    uint8_t ev2_key_no = 0x00;
+    auto ensure_ev2    = [&]() -> bool {
+        if (ev2_ok) {
+            return true;
+        }
+        ev2_ok = dfs.authenticateEV2First(ev2_key_no, default_key, ev2_ctx);
+        // M5_LOGI("Light auth EV2: key=%u %s", ev2_key_no, ev2_ok ? "OK" : "NG");
+        return ev2_ok;
+    };
+
+    desfire::FileSettings fs{};
+    bool settings_ok = false;
+    if (ensure_ev2()) {
+        settings_ok = dfs.getFileSettingsEV2(fs, file_no, ev2_ctx);
+        if (!settings_ok) {
+            settings_ok = dfs.getFileSettingsEV2Full(fs, file_no, ev2_ctx);
+        }
+    }
+    if (!settings_ok) {
+        if (!dfs.selectDfNameAuto(m5::nfc::ndef::type4::NDEF_AID, sizeof(m5::nfc::ndef::type4::NDEF_AID))) {
+            dfs.selectDfNameAuto(m5::nfc::ndef::type4::DESFIRE_LIGHT_DF_NAME,
+                                 sizeof(m5::nfc::ndef::type4::DESFIRE_LIGHT_DF_NAME));
+        }
+        ev2_ok = false;
+        if (ensure_ev2()) {
+            settings_ok = dfs.getFileSettingsEV2(fs, file_no, ev2_ctx);
+            if (!settings_ok) {
+                settings_ok = dfs.getFileSettingsEV2Full(fs, file_no, ev2_ctx);
+            }
+        }
+    }
+    if (!settings_ok) {
+        M5_LOGE("Failed to get file settings");
+        return false;
+    }
+    const uint32_t file_size = fs.file_size ? fs.file_size : default_file_size;
+    // M5_LOGI("Light file settings: comm=%u ar=%04X size=%lu", fs.comm_mode, fs.access_rights,
+    //         static_cast<unsigned long>(file_size));
+    fs.file_size = file_size;
+
+    if (data_len > file_size) {
+        M5_LOGE("Data too large for file size");
+        return false;
+    }
+
+    const uint32_t offset = file_size - data_len;
+
+    const bool use_ev2     = fs.comm_mode != 0;
+    const bool use_full    = fs.comm_mode == 3;
+    const int8_t read_key  = required_key_no_for_read(fs.access_rights);
+    const int8_t write_key = required_key_no_for_write(fs.access_rights);
+    if (read_key == kAccessDenied || write_key == kAccessDenied) {
+        M5_LOGE("Access denied for file (read=%d write=%d)", read_key, write_key);
+        return false;
+    }
+
+    auto auth_with_key = [&](const int8_t key) -> bool {
+        if (key == kAccessDenied) {
+            return false;
+        }
+        if (key == kAccessFree && !use_ev2) {
+            return true;
+        }
+        const uint8_t desired_key = (key == kAccessFree) ? 0x00 : static_cast<uint8_t>(key);
+        if (!ev2_ok || ev2_key_no != desired_key) {
+            ev2_ok     = false;
+            ev2_key_no = desired_key;
+        }
+        return ensure_ev2();
+    };
+
+    M5.Log.printf("================================ WRITE DESFire Light %02X len:%lu offset:%lu\n", file_no,
+                  static_cast<unsigned long>(data_len), static_cast<unsigned long>(offset));
+    if (!auth_with_key(write_key)) {
+        return false;
+    }
+    bool write_ok = false;
+    if (!use_ev2) {
+        write_ok = dfs.writeDataLight(file_no, offset, reinterpret_cast<const uint8_t*>(data), data_len);
+    } else if (use_full) {
+        write_ok =
+            dfs.writeDataLightEV2Full(file_no, offset, reinterpret_cast<const uint8_t*>(data), data_len, ev2_ctx);
+    } else {
+        write_ok = dfs.writeDataLightEV2(file_no, offset, reinterpret_cast<const uint8_t*>(data), data_len, ev2_ctx);
+    }
+    if (!write_ok) {
+        M5_LOGE("Failed to write");
+        return false;
+    }
+    lcd.fillScreen(TFT_ORANGE);
+
+    bool read_ok = false;
+    if (!auth_with_key(read_key)) {
+        return false;
+    }
+    if (!use_ev2) {
+        read_ok = dfs.readDataLight(rbuf, file_no, offset, data_len);
+    } else if (use_full) {
+        read_ok = dfs.readDataLightEV2Full(rbuf, file_no, offset, data_len, ev2_ctx);
+    } else {
+        read_ok = dfs.readDataLightEV2(rbuf, file_no, offset, data_len, ev2_ctx);
+    }
+    if (!read_ok) {
+        M5_LOGE("Failed to read");
+        return false;
+    }
+    lcd.fillScreen(TFT_BLUE);
+
+    bool compare = (rbuf.size() == data_len) && (memcmp(rbuf.data(), data, data_len) == 0);
+    M5.Log.printf("================================ VERIFY:%s\n", compare ? "OK" : "NG");
+    if (!compare) {
+        M5_LOGE("VERIFY NG!!");
+    }
+    m5::utility::log::dump(rbuf.data(), rbuf.size(), false);
+
+    const uint8_t clear[sizeof(data)]{};
+    lcd.fillScreen(TFT_MAGENTA);
+    bool clear_ok = false;
+    if (!auth_with_key(write_key)) {
+        return false;
+    }
+    if (!use_ev2) {
+        clear_ok = dfs.writeDataLight(file_no, offset, clear, sizeof(clear));
+    } else if (use_full) {
+        clear_ok = dfs.writeDataLightEV2Full(file_no, offset, clear, sizeof(clear), ev2_ctx);
+    } else {
+        clear_ok = dfs.writeDataLightEV2(file_no, offset, clear, sizeof(clear), ev2_ctx);
+    }
+    if (!clear_ok) {
+        M5_LOGE("Failed to write(clear)");
+        return false;
+    }
+
+    M5.Log.printf("================================ CLEAR\n");
+    if (!auth_with_key(read_key)) {
+        return false;
+    }
+    if (!use_ev2) {
+        read_ok = dfs.readDataLight(rbuf, file_no, offset, data_len);
+    } else if (use_full) {
+        read_ok = dfs.readDataLightEV2Full(rbuf, file_no, offset, data_len, ev2_ctx);
+    } else {
+        read_ok = dfs.readDataLightEV2(rbuf, file_no, offset, data_len, ev2_ctx);
+    }
+    if (!read_ok) {
+        M5_LOGE("Failed to read");
+        return false;
+    }
+    m5::utility::log::dump(rbuf.data(), rbuf.size(), false);
+
     return true;
 }
 
@@ -330,20 +700,19 @@ void loop()
             if (nfc_a.identify(picc) && nfc_a.reactivate(picc)) {
                 M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
                               picc.userAreaSize(), picc.totalSize());
-                bool file_system_flat_memory = picc.isFileSystemFlatMemory();
                 if (clicked) {
                     M5.Speaker.tone(2000, 30);
-                    if (file_system_flat_memory) {
+                    if (picc.isFileSystemMemory()) {
                         // read_all_user_area();
                         auto ret = read_write(picc.firstUserBlock(), picc.userAreaSize() >= 120 ? long_msg : short_msg);
                         lcd.fillScreen(ret ? 0 : TFT_RED);
-                    } else {
-                        auto ret = read_write_file_base();
+                    } else if (picc.isMifareDESFire()) {
+                        auto ret =
+                            picc.type == Type::MIFARE_DESFire_Light ? read_write_desfire_light() : read_write_desfire();
                         lcd.fillScreen(ret ? 0 : TFT_RED);
                     }
                 } else if (held) {
                     nfc_a.dump();
-#if 0
                     M5.Speaker.tone(4000, 30);
                     if (picc.isMifareClassic()) {
                         read_write_sector_structure(picc.blocks - 2);
@@ -352,7 +721,6 @@ void loop()
                     } else {
                         M5_LOGE("No example");
                     }
-#endif
                 }
                 nfc_a.deactivate();
             } else {
