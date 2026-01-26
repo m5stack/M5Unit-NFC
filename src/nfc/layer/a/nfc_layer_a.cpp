@@ -330,14 +330,14 @@ bool NFCLayerA::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
-        M5_LIB_LOGE("ATQA:%04X", picc.atqa);
+        M5_LIB_LOGV("ATQA:%04X", picc.atqa);
 
         // Select
         if (!select(picc)) {
             return false;
         }
 
-        M5_LIB_LOGE("Detect:ATQA:%04X SAK:%02X %s (%s)", picc.atqa, picc.sak, picc.uidAsString().c_str(),
+        M5_LIB_LOGV("Detect:ATQA:%04X SAK:%02X %s (%s)", picc.atqa, picc.sak, picc.uidAsString().c_str(),
                     picc.typeAsString().c_str());
 
         // Hlt
@@ -375,12 +375,12 @@ bool NFCLayerA::activate(const PICC& picc, const bool force_rats)
     if (_impl->activate(picc)) {
         // M5_LIB_LOGE(" >>>> SEL");
         if (force_rats || (picc.isISO14443_4() && !picc.isMifareClassicCompatible())) {
-            // M5_LIB_LOGE("   >>>> RATS");
             ATS discard{};
             if (!nfca_request_ats(discard)) {
                 M5_LIB_LOGE("Failed to RATS");
                 return false;
             }
+            // M5_LIB_LOGE("   >>>> RATS");
         }
         _activePICC = picc;
         M5_LIB_LOGV("ACTIVATED %s %u", _activePICC.uidAsString().c_str(), _activePICC.isISO14443_4());
@@ -459,13 +459,7 @@ bool NFCLayerA::identify_picc(m5::nfc::a::PICC& picc)
             type = historical_bytes_to_type(picc.sub_type, picc.atqa, picc.sak, picc.ats.historical.data(),
                                             picc.ats.historical_len);
             if (picc.sak == 0x20 && is_mifare_plus(type)) {
-                uint16_t discard{};
-                if (nfca_deselect() && wakeup(discard) && _impl->activate(picc)) {
-                    // Plus SL0/3
-                    picc.security_level = identify_plus_sl03();
-                    _impl->hlt();
-                    _activePICC = {};
-                }
+                picc.security_level = identify_plus_sl03();
             }
         }
         if (type != Type::Unknown) {
@@ -594,9 +588,10 @@ uint8_t NFCLayerA::identify_plus_sl03()
     uint8_t sl0_probe[] = {0xA8, 0x90, 0x90, 0x00};
     uint8_t rx[16]{};
     uint16_t rx_len = sizeof(rx);
-    //    if (_isoDEP.transceiveINF(rx, rx_len, sl0_probe, sizeof(sl0_probe)) && rx_len >= 1) {
-    _impl->transceive(rx, rx_len, sl0_probe, sizeof(sl0_probe), 10);
-    return rx_len ? 0 : 3;  // SL0 if there is a response
+    _isoDEP.transceiveINF(rx, rx_len, sl0_probe, sizeof(sl0_probe));
+    //    _impl->transceive(rx, rx_len, sl0_probe, sizeof(sl0_probe), 10);
+    //    return rx_len ? 0 : 3;  // SL0 if there is the response
+    return !rx_len ? 3 : (rx[0] == 0x0C) ? 0 : 3;
 }
 
 bool NFCLayerA::read4(uint8_t rx[4], const uint8_t addr)
@@ -668,9 +663,9 @@ bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t addr, const m5
         if (sec != last_sec) {
             last_sec        = sec;
             uint16_t key_no = mifare_plus_key_no(sec, false);
-            M5_LIB_LOGV("   AUTH:%u/%u", cur, sec);
+            M5_LIB_LOGV("   AUTH:%u %u/%u", key_no, cur, sec);
             if (!mifare_plus_authenticateAES(key_no, key)) {
-                M5_LIB_LOGE("Failed to AUTH %u", sec);
+                M5_LIB_LOGE("Failed to AUTH %u %u/%u", key_no, cur, sec);
                 return false;
             }
         }
@@ -897,8 +892,9 @@ bool NFCLayerA::write(const uint8_t addr, const uint8_t* tx, const uint16_t tx_l
             continue;
         }
         uint16_t sz = std::min<uint16_t>(16, tx_len - written);
-        M5_LIB_LOGV("  WRITE:%u %u %u/%u", cur, sz, written, tx_len);
+        M5_LIB_LOGE("  WRITE:%u %u %u/%u", cur, sz, written, tx_len);
         if (!mifare_plus_write_mac_l4(cur, data, sz, false)) {
+            // M5_LIB_LOGE("mifare_plus_write_mac_l4 failed");
             break;
         }
         written += sz;
@@ -988,7 +984,7 @@ bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const
         }
 
         uint16_t sz = std::min<uint16_t>(16, tx_len - written);
-        M5_LIB_LOGE("  WRITE:%u %u %u/%u", cur, sz, written, tx_len);
+        M5_LIB_LOGV("  WRITE:%u %u %u/%u", cur, sz, written, tx_len);
         if (!write16(cur, data, sz)) {
             M5_LIB_LOGE("write failed %u", cur);
             break;
@@ -1880,50 +1876,6 @@ bool NFCLayerA::dump_sector_mifare_plus_sl3(const uint8_t sector)
     return true;
 }
 
-#if 0    
-    for (uint16_t sector = 0; sector < sectors; ++sector) {
-        const uint16_t key_no = mifare_plus_key_no((uint8_t)sector, false);
-        if (!mifare_plus_authenticateAES(key_no, key)) {
-            M5_LIB_LOGE("SL3 auth failed sector %u key_no %04X", sector, key_no);
-            return false;
-        }
-
-        const uint8_t blocks         = (sector < 32) ? 4U : 16U;
-        const uint16_t base_block    = (sector < 32) ? sector * blocks : 128U + (sector - 32) * blocks;
-        const uint16_t trailer_block = base_block + blocks - 1;
-
-        uint8_t trailer[16]{};
-        std::vector<uint8_t> data;
-        if (!mifare_plus_read_mac_l4(trailer_block, 1, data, false) || data.size() < sizeof(trailer)) {
-            M5_LIB_LOGE("SL3 read failed trailer block %u", trailer_block);
-            return false;
-        }
-        memcpy(trailer, data.data(), sizeof(trailer));
-
-        uint8_t permissions[4]{};
-        const bool ab_error = !decode_access_bits(permissions, trailer + 6);
-
-        for (uint8_t i = 0; i < blocks - 1; ++i) {
-            const uint16_t block = base_block + i;
-            data.clear();
-            if (!mifare_plus_read_mac_l4(block, 1, data, false) || data.size() < 16) {
-                M5_LIB_LOGE("SL3 read failed block %u", block);
-                return false;
-            }
-            const uint8_t poffset      = (blocks == 4) ? i : i / 5;
-            const uint8_t permission   = permissions[poffset];
-            const bool show_permission = (blocks == 4) ? true : (i % 5) == 0;
-            print_block(data.data(), block, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, ab_error,
-                        can_value_block_permission(permission));
-        }
-
-        print_block(trailer, trailer_block, -1, permissions[3], ab_error);
-    }
-
-    return true;
-}
-#endif
-
 bool NFCLayerA::push_back_picc(std::vector<m5::nfc::a::PICC>& v, const m5::nfc::a::PICC& picc)
 {
     // Keep unique valid PICC
@@ -2069,8 +2021,12 @@ bool NFCLayerA::nfca_request_ats(m5::nfc::a::ATS& ats, const uint8_t fsdi, const
         }
         cfg.use_cid = (cid != 0) && ats.supportsCID();
         cfg.cid     = cid & 0x0F;
+
+        cfg.pcd_max_frame_rx = _impl->max_fifo_depth();
+        cfg.pcd_max_frame_tx = _impl->max_fifo_depth();
+
         _isoDEP.config(cfg);
-        M5_LIB_LOGE("ISO-DEP cfg: FSCI:%u FSC:%u FWT:%u CID:%u tx:%u rx:%u", ats.fsci(), cfg.fsc, cfg.fwt_ms,
+        M5_LIB_LOGV("ISO-DEP cfg: FSCI:%u FSC:%u FWT:%u CID:%u tx:%u rx:%u", ats.fsci(), cfg.fsc, cfg.fwt_ms,
                     cfg.use_cid, cfg.pcd_max_frame_tx, cfg.pcd_max_frame_rx);
     }
 
@@ -2248,6 +2204,7 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
     // Step 1: 0x70 KeyNo LSB/MSB 0x00
     uint8_t cmd1[] = {0x70, (uint8_t)(key_no & 0xFF), (uint8_t)(key_no >> 8), 0x00};
     rx_len         = sizeof(rx);
+
     if (!_isoDEP.transceiveINF(rx, rx_len, cmd1, sizeof(cmd1)) || rx_len < 1) {
         M5_LIB_LOGE("AuthAES step1 transceive failed");
         return false;

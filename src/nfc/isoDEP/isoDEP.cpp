@@ -195,7 +195,7 @@ uint32_t fwi_to_ms(const uint8_t fwi, const float fc)
     return (fwt_ms != 0) ? fwt_ms : 1;
 }
 
-#define ENABLE_PRINT_ERROR
+// #define ENABLE_PRINT_ERROR
 #if defined(ENABLE_PRINT_ERROR)
 #define PRINT_ERROR(...) M5_LIB_LOGE(__VA_ARGS__)
 #else
@@ -257,8 +257,14 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
 
             // Send I-Block and receive first frame
             if (!_layer.transceive(rx_buf, rlen, tx_buf, tpos, timeout_ms)) {
-                if (retries++ < _cfg.max_retries) continue;
-                PRINT_ERROR(">>>>ERROR 1");
+                M5_LIB_LOGE("transceive failed, rlen=%u", rlen);
+                if (rlen > 0) {
+                    M5_LIB_LOGE("RX: %02X %02X %02X %02X", rx_buf[0], rx_buf[1], rx_buf[2], rx_buf[3]);
+                }
+                // if (retries++ < _cfg.max_retries) continue;
+                rx_inf_len = rlen;
+                memcpy(rx_inf, rx_buf, rlen);
+                PRINT_ERROR(">>>>ERROR 1 %u %02X", rlen, rx_buf[0]);
                 return false;
             }
 

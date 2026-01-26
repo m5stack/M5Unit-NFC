@@ -30,7 +30,7 @@ struct PollerST25R3916ForA final : NFCLayerA::Adapter {
     {
     }
 
-    inline virtual uint16_t max_fifo_depth() override
+    inline virtual uint16_t max_fifo_depth() const override
     {
         return m5::unit::st25r3916::MAX_FIFO_DEPTH;
     }

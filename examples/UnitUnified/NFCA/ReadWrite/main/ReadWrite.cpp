@@ -702,7 +702,8 @@ void loop()
                               picc.userAreaSize(), picc.totalSize());
                 if (clicked) {
                     M5.Speaker.tone(2000, 30);
-                    if (picc.isFileSystemMemory()) {
+                    if (picc.isFileSystemMemory() &&
+                        (picc.isMifarePlus() ? (picc.security_level == 1 || picc.security_level == 3) : true)) {
                         // read_all_user_area();
                         auto ret = read_write(picc.firstUserBlock(), picc.userAreaSize() >= 120 ? long_msg : short_msg);
                         lcd.fillScreen(ret ? 0 : TFT_RED);
@@ -710,6 +711,8 @@ void loop()
                         auto ret =
                             picc.type == Type::MIFARE_DESFire_Light ? read_write_desfire_light() : read_write_desfire();
                         lcd.fillScreen(ret ? 0 : TFT_RED);
+                    } else {
+                        M5.Log.printf("This example is not supported\n");
                     }
                 } else if (held) {
                     nfc_a.dump();
@@ -719,7 +722,7 @@ void loop()
                     } else if (picc.supportsNFC()) {
                         read_write_page_structure(picc, 10);
                     } else {
-                        M5_LOGE("No example");
+                        M5.Log.printf("This example is not supported\n");
                     }
                 }
                 nfc_a.deactivate();
