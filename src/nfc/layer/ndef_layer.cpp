@@ -448,8 +448,6 @@ bool NDEFLayer::prepare_desfire_light()
             // Note: Delete may fail if TMAC file doesn't exist - that's OK
         }
     }
-
-    M5_LIB_LOGE("done");
     return true;
 }
 
@@ -703,11 +701,11 @@ bool NDEFLayer::read_capability_container_type4_iso7816(m5::nfc::ndef::type4::Ca
 
 bool NDEFLayer::read_capability_container_type4_desfire(m5::nfc::ndef::type4::CapabilityContainer& cc)
 {
-    using type4::CapabilityContainer;
     using desfire::DESFIRE_CC_FILE_NO;
     using desfire::DESFIRE_LIGHT_CC_FILE_NO;
     using desfire::DESFIRE_LIGHT_DF_NAME;
     using desfire::DESFIRE_NDEF_APP_ID;
+    using type4::CapabilityContainer;
     using type4::NDEF_AID;
 
     cc = CapabilityContainer{};
@@ -1109,11 +1107,11 @@ bool read_type4_proprietary(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc
 bool NDEFLayer::read_type4_desfire(std::vector<m5::nfc::ndef::TLV>& tlvs,
                                    const m5::nfc::ndef::type4::FileControlTagBits fc_bits)
 {
-    using type4::CapabilityContainer;
     using desfire::DESFIRE_LIGHT_DF_NAME;
     using desfire::DESFIRE_LIGHT_NDEF_FILE_NO;
     using desfire::DESFIRE_NDEF_APP_ID;
     using desfire::DESFIRE_NDEF_FILE_NO;
+    using type4::CapabilityContainer;
     using type4::FileControlTag;
     using type4::NDEF_AID;
 

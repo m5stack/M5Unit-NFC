@@ -163,7 +163,7 @@ bool UnitST25R3916::begin()
     }
 
     // Antenna Settings
-    uint8_t txd{};
+    // uint8_t txd{};
     //    if (!readTXDriver(txd) || !writeTXDriver((txd & 0x0F) | ((_cfg.tx_am_modulation & 0x0F) << 4))) {
     if (!writeTXDriver((_cfg.tx_am_modulation & 0x0F) << 4)) {  // d_rat, Use automatically, man slow
         M5_LIB_LOGE("Failed to TXDriver");

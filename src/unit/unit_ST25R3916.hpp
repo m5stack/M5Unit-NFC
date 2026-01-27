@@ -15,7 +15,7 @@
 #include "nfc/nfc.hpp"
 #include "nfc/a/nfca.hpp"
 #include "nfc/a/mifare.hpp"
-#include "nfc/a/mifare_classic_crypto1.hpp"
+#include "nfc/crypto/mifare_classic_crypto1.hpp"
 #include "nfc/b/nfcb.hpp"
 #include "nfc/f/nfcf.hpp"
 #include "nfc/v/nfcv.hpp"
@@ -47,12 +47,6 @@ public:
     }
     virtual ~UnitST25R3916() = default;
 
-    static constexpr uint16_t MIFARE_CLASSIC_MAX_TX_LEN{32};
-    static constexpr uint16_t MIFARE_CLASSIC_MAX_RX_LEN{32};
-    static constexpr uint16_t MIFARE_CLASSIC_MAX_TX_WITH_CRC{MIFARE_CLASSIC_MAX_TX_LEN + 2};
-    static constexpr uint16_t MIFARE_CLASSIC_MAX_RX_WITH_CRC{MIFARE_CLASSIC_MAX_RX_LEN + 2};
-    static constexpr uint16_t MIFARE_CLASSIC_MAX_BITSTREAM_LEN{
-        (9 * MIFARE_CLASSIC_MAX_TX_WITH_CRC + 7) / 8};
 
     virtual bool begin() override;
     virtual void update(const bool force = false) override;

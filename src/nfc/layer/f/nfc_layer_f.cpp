@@ -509,7 +509,7 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
     }
 
     const uint16_t batch_size = get_maxumum_read_blocks(_activePICC.type);
-    uint8_t rbuf[16 * batch_size]{};
+    std::vector<uint8_t> rbuf(16 * batch_size);
     block_t block{start};
     auto out = rx;
     uint16_t read_count{};
@@ -524,10 +524,10 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
         }
         // M5_LIB_LOGE("rx_len:%u block_list_num:%u", actual, num);
 
-        if (!read(rbuf, actual, block_list, num, &sc, 1) || actual != 16 * num) {
+        if (!read(rbuf.data(), actual, block_list, num, &sc, 1) || actual != 16 * num) {
             return false;
         }
-        memcpy(out, rbuf, actual);
+        memcpy(out, rbuf.data(), actual);
         out += actual;
         read_count += actual;
         block.number += num;

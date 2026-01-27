@@ -10,6 +10,8 @@
 #include "desfire_file_system.hpp"
 #include "nfc/layer/a/nfc_layer_a.hpp"
 #include "nfc/isoDEP/isoDEP.hpp"
+#include "nfc/crypto/aes.hpp"
+#include "nfc/crypto/secure_zero.hpp"
 #include "nfc/ndef/ndef.hpp"
 #include "nfc/apdu/apdu.hpp"
 #include <cassert>
@@ -27,12 +29,23 @@ using namespace m5::nfc::ndef;
 
 namespace {
 
-constexpr uint16_t DEFAULT_RX_LEN{1024};
+constexpr uint16_t DEFAULT_RX_LEN{256};
+
+using m5::nfc::crypto::aes_cbc_crypt;
+using m5::nfc::crypto::aes_ecb_encrypt;
+using m5::nfc::crypto::cmac_aes_128;
 
 inline uint16_t clamp_u16_size(const size_t size)
 {
     constexpr size_t max_u16 = std::numeric_limits<uint16_t>::max();
     return static_cast<uint16_t>(size > max_u16 ? max_u16 : size);
+}
+
+inline uint16_t default_rx_capacity(const IsoDEP& dep)
+{
+    const uint16_t cfg_rx = dep.config().max_frame_size_rx();
+    const uint16_t base   = cfg_rx ? cfg_rx : DEFAULT_RX_LEN;
+    return std::max<uint16_t>(DEFAULT_RX_LEN, base);
 }
 
 bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, const uint8_t key[16])
@@ -50,7 +63,7 @@ bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, c
     uint8_t auth_key_no[1] = {key_no};
     auto cmd               = make_native_wrap_command(ins, auth_key_no, 1);
 
-    std::vector<uint8_t> rx(DEFAULT_RX_LEN);
+    std::vector<uint8_t> rx(default_rx_capacity(dep));
     uint16_t rx_len = clamp_u16_size(rx.size());
     if (!dep.transceiveINF(rx.data(), rx_len, cmd.data(), cmd.size(), nullptr) || rx_len < 2) {
         M5_LIB_LOGE("Failed to auth step1 %u", rx_len);
@@ -88,9 +101,18 @@ bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, c
     std::memcpy(plain_AB + 8, rndB_rot, 8);
 
     uint8_t ek_AB[16]{};
+    auto wipe = [&]() {
+        m5::nfc::crypto::secure_zero(ek_rndB, sizeof(ek_rndB));
+        m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+        m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+        m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+        m5::nfc::crypto::secure_zero(plain_AB, sizeof(plain_AB));
+        m5::nfc::crypto::secure_zero(ek_AB, sizeof(ek_AB));
+    };
     {
         TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_rndB};
         if (!des.encrypt(ek_AB, plain_AB, sizeof(plain_AB), key16)) {
+            wipe();
             return false;
         }
     }
@@ -98,10 +120,12 @@ bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, c
     auto cmd2 = make_native_wrap_command(0xAF, ek_AB, sizeof(ek_AB));
     rx_len    = clamp_u16_size(rx.size());
     if (!dep.transceiveINF(rx.data(), rx_len, cmd2.data(), cmd2.size(), nullptr) || rx_len < 2) {
+        wipe();
         M5_LIB_LOGE("Failed to auth step2 %u", rx_len);
         return false;
     }
     if (!is_successful(rx.data(), rx_len) || rx_len < 10) {
+        wipe();
         M5_LIB_LOGE("Unexpected auth step2 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
         return false;
     }
@@ -110,6 +134,8 @@ bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, c
     {
         TripleDES des{TripleDES::Mode::CBC, TripleDES::Padding::None, ek_AB + 8};
         if (!des.decrypt(rndA_rot_from_card, rx.data(), 8, key16)) {
+            m5::nfc::crypto::secure_zero(rndA_rot_from_card, sizeof(rndA_rot_from_card));
+            wipe();
             return false;
         }
     }
@@ -119,18 +145,12 @@ bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, c
         rndA_rot[i] = rndA[i + 1];
     }
     rndA_rot[7] = rndA[0];
-    return std::memcmp(rndA_rot, rndA_rot_from_card, 8) == 0;
+    const bool ok = std::memcmp(rndA_rot, rndA_rot_from_card, 8) == 0;
+    m5::nfc::crypto::secure_zero(rndA_rot_from_card, sizeof(rndA_rot_from_card));
+    m5::nfc::crypto::secure_zero(rndA_rot, sizeof(rndA_rot));
+    wipe();
+    return ok;
 }
-
-/*
-void rotate_byte_left(uint8_t out[8], const uint8_t in[8])
-{
-    for (int i = 0; i < 7; ++i) {
-        out[i] = in[i + 1];
-    }
-    out[7] = in[0];
-}
-*/
 
 inline void pack_le24(uint8_t out[3], const uint32_t value)
 {
@@ -149,137 +169,6 @@ inline void pack_be24(uint8_t out[3], const uint32_t value)
 inline uint32_t unpack_le24(const uint8_t in[3])
 {
     return static_cast<uint32_t>(in[0]) | (static_cast<uint32_t>(in[1]) << 8) | (static_cast<uint32_t>(in[2]) << 16);
-}
-
-bool aes_ecb_encrypt(uint8_t out[16], const uint8_t key[16], const uint8_t in[16])
-{
-    mbedtls_aes_context aes;
-    mbedtls_aes_init(&aes);
-    if (mbedtls_aes_setkey_enc(&aes, key, 128) != 0) {
-        M5_LIB_LOGE("AES setkey_enc failed");
-        std::memset(out, 0, 16);
-        mbedtls_aes_free(&aes);
-        return false;
-    }
-    if (mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, in, out) != 0) {
-        M5_LIB_LOGE("AES crypt_ecb failed");
-        std::memset(out, 0, 16);
-        mbedtls_aes_free(&aes);
-        return false;
-    }
-    mbedtls_aes_free(&aes);
-    return true;
-}
-
-bool aes_cbc_crypt(uint8_t* out, const uint8_t key[16], const uint8_t iv_in[16], const uint8_t* in, const size_t len,
-                   const bool encrypt)
-{
-    mbedtls_aes_context aes;
-    mbedtls_aes_init(&aes);
-    if (encrypt) {
-        if (mbedtls_aes_setkey_enc(&aes, key, 128) != 0) {
-            M5_LIB_LOGE("AES setkey_enc failed");
-            std::memset(out, 0, len);
-            mbedtls_aes_free(&aes);
-            return false;
-        }
-    } else {
-        if (mbedtls_aes_setkey_dec(&aes, key, 128) != 0) {
-            M5_LIB_LOGE("AES setkey_dec failed");
-            std::memset(out, 0, len);
-            mbedtls_aes_free(&aes);
-            return false;
-        }
-    }
-    uint8_t iv[16]{};
-    std::memcpy(iv, iv_in, sizeof(iv));
-    if (mbedtls_aes_crypt_cbc(&aes, encrypt ? MBEDTLS_AES_ENCRYPT : MBEDTLS_AES_DECRYPT, len, iv, in, out) != 0) {
-        M5_LIB_LOGE("AES crypt_cbc failed");
-        std::memset(out, 0, len);
-        mbedtls_aes_free(&aes);
-        return false;
-    }
-    mbedtls_aes_free(&aes);
-    return true;
-}
-
-void left_shift_128(const uint8_t in[16], uint8_t out[16])
-{
-    uint8_t carry = 0;
-    for (int i = 15; i >= 0; --i) {
-        uint8_t next = static_cast<uint8_t>(in[i] << 1);
-        out[i]       = static_cast<uint8_t>(next | carry);
-        carry        = (in[i] & 0x80) ? 0x01 : 0x00;
-    }
-}
-
-bool cmac_subkeys(uint8_t k1[16], uint8_t k2[16], const uint8_t key[16])
-{
-    static constexpr uint8_t desfire_rb = 0x87;
-    uint8_t l[16]{};
-    uint8_t zero[16]{};
-    if (aes_ecb_encrypt(l, key, zero)) {
-        left_shift_128(l, k1);
-        if (l[0] & 0x80) {
-            k1[15] ^= desfire_rb;
-        }
-        left_shift_128(k1, k2);
-        if (k1[0] & 0x80) {
-            k2[15] ^= desfire_rb;
-        }
-        return true;
-    }
-    return false;
-}
-
-bool cmac_aes_128(uint8_t out[16], const uint8_t key[16], const uint8_t* msg, const size_t msg_len)
-{
-    uint8_t k1[16]{};
-    uint8_t k2[16]{};
-    if (!cmac_subkeys(k1, k2, key)) {
-        return false;
-    }
-
-    const size_t n           = (msg_len + 15) / 16;
-    const bool last_complete = (msg_len != 0) && (msg_len % 16 == 0);
-
-    uint8_t last_block[16]{};
-    if (n == 0) {
-        last_block[0] = 0x80;
-        for (int i = 0; i < 16; ++i) {
-            last_block[i] ^= k2[i];
-        }
-    } else {
-        const uint8_t* last = msg + (n - 1) * 16;
-        if (last_complete) {
-            std::memcpy(last_block, last, 16);
-            for (int i = 0; i < 16; ++i) {
-                last_block[i] ^= k1[i];
-            }
-        } else {
-            const size_t rem = msg_len - (n - 1) * 16;
-            std::memcpy(last_block, last, rem);
-            last_block[rem] = 0x80;
-            for (int i = 0; i < 16; ++i) {
-                last_block[i] ^= k2[i];
-            }
-        }
-    }
-
-    uint8_t x[16]{};
-    uint8_t y[16]{};
-    for (size_t i = 0; i + 1 < n; ++i) {
-        for (int j = 0; j < 16; ++j) {
-            y[j] = static_cast<uint8_t>(x[j] ^ msg[i * 16 + j]);
-        }
-        if (!aes_ecb_encrypt(x, key, y)) {
-            return false;
-        }
-    }
-    for (int j = 0; j < 16; ++j) {
-        y[j] = static_cast<uint8_t>(x[j] ^ last_block[j]);
-    }
-    return aes_ecb_encrypt(out, key, y);
 }
 
 void truncate_mac_even_bytes(const uint8_t in[16], uint8_t out[8])
@@ -407,7 +296,7 @@ bool transceive_sm_full(m5::nfc::isodep::IsoDEP& iso_dep, const uint8_t cmd, con
     m5::utility::log::dump(mac_input.data(), mac_input.size(), false);
     */
 
-    std::vector<uint8_t> rx(DEFAULT_RX_LEN);
+    std::vector<uint8_t> rx(default_rx_capacity(iso_dep));
     uint16_t rx_len = clamp_u16_size(rx.size());
     if (!iso_dep.transceiveINF(rx.data(), rx_len, apdu.data(), apdu.size(), nullptr) || rx_len < 2) {
         return false;
@@ -519,7 +408,7 @@ bool transceive_sm_mac(m5::nfc::isodep::IsoDEP& iso_dep, const uint8_t cmd, cons
 
     auto apdu = m5::nfc::a::mifare::desfire::make_native_wrap_command(cmd, cmd_data_sm.data(),
                                                                       static_cast<uint16_t>(cmd_data_sm.size()));
-    std::vector<uint8_t> rx(DEFAULT_RX_LEN);
+    std::vector<uint8_t> rx(default_rx_capacity(iso_dep));
     uint16_t rx_len = clamp_u16_size(rx.size());
     if (!iso_dep.transceiveINF(rx.data(), rx_len, apdu.data(), apdu.size(), nullptr) || rx_len < 2) {
         return false;
@@ -725,8 +614,9 @@ bool DESFireFileSystem::readData(std::vector<uint8_t>& out, const uint8_t file_n
 
     auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_READ_DATA), data, sizeof(data));
 
-    const size_t rx_cap = length ? std::max(static_cast<size_t>(DEFAULT_RX_LEN), static_cast<size_t>(length + 2))
-                                 : static_cast<size_t>(DEFAULT_RX_LEN);
+    const size_t rx_cap =
+        length ? std::max(static_cast<size_t>(default_rx_capacity(_isoDEP)), static_cast<size_t>(length + 2))
+               : static_cast<size_t>(default_rx_capacity(_isoDEP));
     std::vector<uint8_t> rx(rx_cap);
     uint16_t rx_len = clamp_u16_size(rx.size());
     if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
@@ -773,7 +663,7 @@ bool DESFireFileSystem::readDataLight(std::vector<uint8_t>& out, const uint8_t f
 
     auto cmd = make_apdu_command(DESFIRE_APDU_CLA, DESFIRE_LIGHT_INS_READ_DATA, 0x00, 0x00, data, sizeof(data), 256);
 
-    const size_t rx_cap = length ? static_cast<size_t>(length + 2) : static_cast<size_t>(DEFAULT_RX_LEN);
+    const size_t rx_cap = length ? static_cast<size_t>(length + 2) : static_cast<size_t>(default_rx_capacity(_isoDEP));
     std::vector<uint8_t> rx(rx_cap);
     uint16_t rx_len = clamp_u16_size(rx.size());
     if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
@@ -1476,7 +1366,7 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
     uint8_t auth_key_no[1] = {key_no};
     auto cmd               = make_native_wrap_command(m5::stl::to_underlying(INS::DF_AUTHENTICATE_AES), auth_key_no, 1);
 
-    std::vector<uint8_t> rx(DEFAULT_RX_LEN);
+    std::vector<uint8_t> rx(default_rx_capacity(_isoDEP));
     uint16_t rx_len = clamp_u16_size(rx.size());
     if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd.data(), cmd.size(), nullptr) || rx_len < 2) {
         M5_LIB_LOGE("Failed to auth AES step1 %u", rx_len);
@@ -1491,45 +1381,56 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
     std::memcpy(ek_rndB, rx.data(), 16);
 
     uint8_t rndB[16]{};
+    uint8_t rndB_rot[16]{};
+    uint8_t rndA[16]{};
+    uint8_t plain_AB[32]{};
+    uint8_t ek_AB[32]{};
+    auto wipe = [&]() {
+        m5::nfc::crypto::secure_zero(ek_rndB, sizeof(ek_rndB));
+        m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+        m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+        m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+        m5::nfc::crypto::secure_zero(plain_AB, sizeof(plain_AB));
+        m5::nfc::crypto::secure_zero(ek_AB, sizeof(ek_AB));
+    };
     {
         mbedtls_aes_context aes;
         mbedtls_aes_init(&aes);
         if (mbedtls_aes_setkey_dec(&aes, key, 128) != 0) {
             M5_LIB_LOGE("AuthAES setkey_dec failed");
             mbedtls_aes_free(&aes);
+            wipe();
             return false;
         }
         uint8_t iv[16]{};
         if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, ek_rndB, rndB) != 0) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
             mbedtls_aes_free(&aes);
+            wipe();
             return false;
         }
         mbedtls_aes_free(&aes);
     }
 
-    uint8_t rndB_rot[16]{};
     for (int i = 0; i < 15; ++i) {
         rndB_rot[i] = rndB[i + 1];
     }
     rndB_rot[15] = rndB[0];
 
-    uint8_t rndA[16]{};
     for (auto& r : rndA) {
         r = static_cast<uint8_t>(esp_random());
     }
 
-    uint8_t plain_AB[32]{};
     std::memcpy(plain_AB, rndA, 16);
     std::memcpy(plain_AB + 16, rndB_rot, 16);
 
-    uint8_t ek_AB[32]{};
     {
         mbedtls_aes_context aes;
         mbedtls_aes_init(&aes);
         if (mbedtls_aes_setkey_enc(&aes, key, 128) != 0) {
             M5_LIB_LOGE("AuthAES setkey_enc failed");
             mbedtls_aes_free(&aes);
+            wipe();
             return false;
         }
         uint8_t iv[16]{};
@@ -1537,6 +1438,7 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
         if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, sizeof(plain_AB), iv, plain_AB, ek_AB) != 0) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
             mbedtls_aes_free(&aes);
+            wipe();
             return false;
         }
         mbedtls_aes_free(&aes);
@@ -1546,10 +1448,12 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
     rx_len    = clamp_u16_size(rx.size());
     if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd2.data(), cmd2.size(), nullptr) || rx_len < 2) {
         M5_LIB_LOGE("Failed to auth AES step2 %u", rx_len);
+        wipe();
         return false;
     }
     if (!is_successful(rx.data(), rx_len) || rx_len < 18) {
         M5_LIB_LOGE("Unexpected auth AES step2 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
+        wipe();
         return false;
     }
 
@@ -1560,6 +1464,7 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
         if (mbedtls_aes_setkey_dec(&aes, key, 128) != 0) {
             M5_LIB_LOGE("AuthAES setkey_dec failed");
             mbedtls_aes_free(&aes);
+            wipe();
             return false;
         }
         uint8_t iv[16]{};
@@ -1567,6 +1472,7 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
         if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, rx.data(), rndA_rot_from_card) != 0) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
             mbedtls_aes_free(&aes);
+            wipe();
             return false;
         }
         mbedtls_aes_free(&aes);
@@ -1578,7 +1484,11 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
     }
     rndA_rot[15] = rndA[0];
 
-    return std::memcmp(rndA_rot, rndA_rot_from_card, 16) == 0;
+    const bool ok = std::memcmp(rndA_rot, rndA_rot_from_card, 16) == 0;
+    m5::nfc::crypto::secure_zero(rndA_rot_from_card, sizeof(rndA_rot_from_card));
+    m5::nfc::crypto::secure_zero(rndA_rot, sizeof(rndA_rot));
+    wipe();
+    return ok;
 }
 
 bool DESFireFileSystem::authenticateEV2First(const uint8_t key_no, const uint8_t key[16], Ev2Context& ctx)
@@ -1593,7 +1503,7 @@ bool DESFireFileSystem::authenticateEV2First(const uint8_t key_no, const uint8_t
 
     auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_AUTHENTICATE_EV2), data, sizeof(data));
 
-    std::vector<uint8_t> rx(DEFAULT_RX_LEN);
+    std::vector<uint8_t> rx(default_rx_capacity(_isoDEP));
     uint16_t rx_len = clamp_u16_size(rx.size());
     if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd.data(), cmd.size(), nullptr) || rx_len < 2) {
         M5_LIB_LOGE("Failed to auth EV2 step1 %u", rx_len);
@@ -1619,6 +1529,8 @@ bool DESFireFileSystem::authenticateEV2First(const uint8_t key_no, const uint8_t
     uint8_t rndB[16]{};
     uint8_t iv0[16]{};
     if (!aes_cbc_crypt(rndB, key, iv0, ek_rndB, sizeof(rndB), false)) {
+        m5::nfc::crypto::secure_zero(ek_rndB, sizeof(ek_rndB));
+        m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
         return false;
     }
 
@@ -1638,7 +1550,16 @@ bool DESFireFileSystem::authenticateEV2First(const uint8_t key_no, const uint8_t
     std::memcpy(plain_AB + 16, rndB_rot, 16);
 
     uint8_t ek_AB[32]{};
+    auto wipe_ab = [&]() {
+        m5::nfc::crypto::secure_zero(ek_rndB, sizeof(ek_rndB));
+        m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+        m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+        m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+        m5::nfc::crypto::secure_zero(plain_AB, sizeof(plain_AB));
+        m5::nfc::crypto::secure_zero(ek_AB, sizeof(ek_AB));
+    };
     if (!aes_cbc_crypt(ek_AB, key, iv0, plain_AB, sizeof(plain_AB), true)) {
+        wipe_ab();
         return false;
     }
 
@@ -1646,20 +1567,24 @@ bool DESFireFileSystem::authenticateEV2First(const uint8_t key_no, const uint8_t
     rx_len    = clamp_u16_size(rx.size());
     if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd2.data(), cmd2.size(), nullptr) || rx_len < 2) {
         M5_LIB_LOGE("Failed to auth EV2 step2 %u", rx_len);
+        wipe_ab();
         return false;
     }
     if (!is_successful(rx.data(), rx_len)) {
         M5_LIB_LOGE("Unexpected auth EV2 step2 status %02X %02X", rx[rx_len - 2], rx[rx_len - 1]);
+        wipe_ab();
         return false;
     }
     const uint16_t data_len2 = static_cast<uint16_t>(rx_len - 2);
     if (data_len2 != 32) {
         M5_LIB_LOGE("auth EV2 step2 data length %u", data_len2);
+        wipe_ab();
         return false;
     }
 
     uint8_t plain_resp[32]{};
     if (!aes_cbc_crypt(plain_resp, key, iv0, rx.data(), sizeof(plain_resp), false)) {
+        wipe_ab();
         return false;
     }
 
@@ -1668,6 +1593,9 @@ bool DESFireFileSystem::authenticateEV2First(const uint8_t key_no, const uint8_t
     std::memcpy(rndA_rot_from_card, plain_resp + 4, 16);
     for (int i = 0; i < 16; ++i) {
         if (rndA_rot_from_card[i] != rndA[(i + 1) % 16]) {
+            m5::nfc::crypto::secure_zero(plain_resp, sizeof(plain_resp));
+            m5::nfc::crypto::secure_zero(rndA_rot_from_card, sizeof(rndA_rot_from_card));
+            wipe_ab();
             return false;
         }
     }
@@ -1678,11 +1606,26 @@ bool DESFireFileSystem::authenticateEV2First(const uint8_t key_no, const uint8_t
     build_sv(0xA5, 0x5A, rndA, rndB, sv1);
     build_sv(0x5A, 0xA5, rndA, rndB, sv2);
     if (!cmac_aes_128(ctx.ses_enc_key, key, sv1, sizeof(sv1))) {
+        m5::nfc::crypto::secure_zero(sv1, sizeof(sv1));
+        m5::nfc::crypto::secure_zero(sv2, sizeof(sv2));
+        m5::nfc::crypto::secure_zero(plain_resp, sizeof(plain_resp));
+        m5::nfc::crypto::secure_zero(rndA_rot_from_card, sizeof(rndA_rot_from_card));
+        wipe_ab();
         return false;
     }
     if (!cmac_aes_128(ctx.ses_mac_key, key, sv2, sizeof(sv2))) {
+        m5::nfc::crypto::secure_zero(sv1, sizeof(sv1));
+        m5::nfc::crypto::secure_zero(sv2, sizeof(sv2));
+        m5::nfc::crypto::secure_zero(plain_resp, sizeof(plain_resp));
+        m5::nfc::crypto::secure_zero(rndA_rot_from_card, sizeof(rndA_rot_from_card));
+        wipe_ab();
         return false;
     }
+    m5::nfc::crypto::secure_zero(sv1, sizeof(sv1));
+    m5::nfc::crypto::secure_zero(sv2, sizeof(sv2));
+    m5::nfc::crypto::secure_zero(plain_resp, sizeof(plain_resp));
+    m5::nfc::crypto::secure_zero(rndA_rot_from_card, sizeof(rndA_rot_from_card));
+    wipe_ab();
     return true;
 }
 

@@ -12,6 +12,8 @@
 #include "nfc/ndef/ndef_tlv.hpp"
 #include "nfc/isoDEP/file_system.hpp"
 #include "nfc/isoDEP/desfire_file_system.hpp"
+#include "nfc/crypto/aes.hpp"
+#include "nfc/crypto/secure_zero.hpp"
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
@@ -91,152 +93,23 @@ uint16_t mifare_plus_key_no(const uint8_t sector, const bool key_b)
     return static_cast<uint16_t>(0x4000 + sector * 2 + (key_b ? 1 : 0));
 }
 
-bool cmac_subkeys(uint8_t k1[16], uint8_t k2[16], const uint8_t key[16])
-{
-    if (!k1 || !k2 || !key) {
-        return false;
-    }
-
-    uint8_t l[16]{};
-    uint8_t zero[16]{};
-    mbedtls_aes_context aes{};
-    mbedtls_aes_init(&aes);
-    if (mbedtls_aes_setkey_enc(&aes, key, 128) != 0) {
-        M5_LIB_LOGE("AES setkey_enc failed");
-        std::memset(k1, 0, 16);
-        std::memset(k2, 0, 16);
-        mbedtls_aes_free(&aes);
-        return false;
-    }
-    if (mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, zero, l) != 0) {
-        M5_LIB_LOGE("AES crypt_ecb failed");
-        std::memset(k1, 0, 16);
-        std::memset(k2, 0, 16);
-        mbedtls_aes_free(&aes);
-        return false;
-    }
-    mbedtls_aes_free(&aes);
-
-    uint8_t msb = l[0] & 0x80;
-    for (int i = 0; i < 15; ++i) {
-        k1[i] = (uint8_t)((l[i] << 1) | (l[i + 1] >> 7));
-    }
-    k1[15] = (uint8_t)(l[15] << 1);
-    if (msb) {
-        k1[15] ^= 0x87;
-    }
-
-    msb = k1[0] & 0x80;
-    for (int i = 0; i < 15; ++i) {
-        k2[i] = (uint8_t)((k1[i] << 1) | (k1[i + 1] >> 7));
-    }
-    k2[15] = (uint8_t)(k1[15] << 1);
-    if (msb) {
-        k2[15] ^= 0x87;
-    }
-    return true;
-}
-
 bool mifare_plus_data_crypt_block(uint8_t out[16], const uint8_t key[16], const uint8_t iv_in[16], const uint8_t in[16],
                                   const bool decrypt)
 {
-    uint8_t iv[16]{};
-    memcpy(iv, iv_in, sizeof(iv));
-    mbedtls_aes_context aes{};
-    mbedtls_aes_init(&aes);
-    if (decrypt) {
-        if (mbedtls_aes_setkey_dec(&aes, key, 128) != 0) {
-            M5_LIB_LOGE("AES setkey_dec failed");
-            std::memset(out, 0, 16);
-            mbedtls_aes_free(&aes);
-            return false;
-        }
-    } else {
-        if (mbedtls_aes_setkey_enc(&aes, key, 128) != 0) {
-            M5_LIB_LOGE("AES setkey_enc failed");
-            std::memset(out, 0, 16);
-            mbedtls_aes_free(&aes);
-            return false;
-        }
-    }
-    if (mbedtls_aes_crypt_cbc(&aes, decrypt ? MBEDTLS_AES_DECRYPT : MBEDTLS_AES_ENCRYPT, 16, iv, in, out) != 0) {
-        M5_LIB_LOGE("AES crypt_cbc failed");
-        std::memset(out, 0, 16);
-        mbedtls_aes_free(&aes);
-        return false;
-    }
-    mbedtls_aes_free(&aes);
-    return true;
+    return m5::nfc::crypto::aes_cbc_crypt(out, key, iv_in, in, 16, !decrypt);
 }
 
 bool cmac_aes_128_8(uint8_t out[8], const uint8_t* key, const uint8_t* msg, const uint32_t msg_len)
 {
-    uint8_t k1[16]{};
-    uint8_t k2[16]{};
-    if (!cmac_subkeys(k1, k2, key)) {
+    if (!out || !key || (!msg && msg_len)) {
         return false;
     }
-
-    const bool complete = (msg_len > 0 && (msg_len % 16 == 0));
-    const size_t blocks = (msg_len + 15) / 16;
-    uint8_t last[16]{};
-    if (blocks == 0) {
-        last[0] = 0x80;
-        for (int i = 0; i < 16; ++i) {
-            last[i] ^= k2[i];
-        }
-    } else {
-        const uint8_t* tail = msg + 16 * (blocks - 1);
-        if (complete) {
-            memcpy(last, tail, 16);
-            for (int i = 0; i < 16; ++i) {
-                last[i] ^= k1[i];
-            }
-        } else {
-            const size_t rem = msg_len % 16;
-            memcpy(last, tail, rem);
-            last[rem] = 0x80;
-            for (int i = 0; i < 16; ++i) {
-                last[i] ^= k2[i];
-            }
-        }
-    }
-
-    uint8_t x[16]{};
-    uint8_t y[16]{};
-    mbedtls_aes_context aes{};
-    mbedtls_aes_init(&aes);
-    if (mbedtls_aes_setkey_enc(&aes, key, 128) != 0) {
-        M5_LIB_LOGE("AES setkey_enc failed");
-        std::memset(out, 0, 8);
-        mbedtls_aes_free(&aes);
+    uint8_t mac_full[16]{};
+    if (!m5::nfc::crypto::cmac_aes_128(mac_full, key, msg, msg_len)) {
         return false;
     }
-    for (size_t i = 0; i + 1 < blocks; ++i) {
-        const uint8_t* blk = msg + 16 * i;
-        for (int j = 0; j < 16; ++j) {
-            y[j] = x[j] ^ blk[j];
-        }
-        if (mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, y, x) != 0) {
-            M5_LIB_LOGE("AES crypt_ecb failed");
-            std::memset(out, 0, 8);
-            mbedtls_aes_free(&aes);
-            return false;
-        }
-    }
-    for (int j = 0; j < 16; ++j) {
-        y[j] = x[j] ^ last[j];
-    }
-    if (mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, y, x) != 0) {
-        M5_LIB_LOGE("AES crypt_ecb failed");
-        std::memset(out, 0, 8);
-        mbedtls_aes_free(&aes);
-        return false;
-    }
-    mbedtls_aes_free(&aes);
-
     for (int i = 0; i < 8; ++i) {
-        out[i] = x[i * 2 + 1];
+        out[i] = mac_full[i * 2 + 1];
     }
     return true;
 }
@@ -288,7 +161,9 @@ bool mifare_plus_calculate_mac(const uint8_t kmac[16], const uint8_t ti[4], cons
             break;
     }
 
-    return cmac_aes_128_8(out, kmac, macdata.data(), mac_len);
+    const bool ok = cmac_aes_128_8(out, kmac, macdata.data(), mac_len);
+    m5::nfc::crypto::secure_zero(macdata.data(), macdata.size());
+    return ok;
 }
 
 using desfire::access_denied;
@@ -2273,11 +2148,13 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
         if (mbedtls_aes_setkey_dec(&aes, key.data(), 128) != 0) {
             M5_LIB_LOGE("AuthAES setkey_dec failed");
             mbedtls_aes_free(&aes);
+            m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
             return false;
         }
         if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, sizeof(rndB), iv, step1_payload, rndB) != 0) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
             mbedtls_aes_free(&aes);
+            m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
             return false;
         }
         mbedtls_aes_free(&aes);
@@ -2305,11 +2182,19 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
         if (mbedtls_aes_setkey_enc(&aes, key.data(), 128) != 0) {
             M5_LIB_LOGE("AuthAES setkey_enc failed");
             mbedtls_aes_free(&aes);
+            m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+            m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+            m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+            m5::nfc::crypto::secure_zero(ab_plain, sizeof(ab_plain));
             return false;
         }
         if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, sizeof(ab_plain), iv, ab_plain, cmd2 + 1) != 0) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
             mbedtls_aes_free(&aes);
+            m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+            m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+            m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+            m5::nfc::crypto::secure_zero(ab_plain, sizeof(ab_plain));
             return false;
         }
         mbedtls_aes_free(&aes);
@@ -2318,11 +2203,19 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
     rx_len = sizeof(rx);
     if (!_isoDEP.transceiveINF(rx, rx_len, cmd2, sizeof(cmd2)) || rx_len < 1) {
         M5_LIB_LOGE("AuthAES step2 transceive failed");
+        m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+        m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+        m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+        m5::nfc::crypto::secure_zero(ab_plain, sizeof(ab_plain));
         return false;
     }
     if ((rx[0] != 0x90 && rx[0] != 0xAF) || rx_len < 33) {
         M5_LIB_LOGE("AuthAES step2 invalid response len=%u st=%02X", rx_len, rx[0]);
         M5_DUMPE(rx, rx_len);
+        m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+        m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+        m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+        m5::nfc::crypto::secure_zero(ab_plain, sizeof(ab_plain));
         return false;
     }
 
@@ -2334,6 +2227,10 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
     }
     if (step2_len < 32) {
         M5_LIB_LOGE("AuthAES step2 payload too short len=%u", (unsigned)step2_len);
+        m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+        m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+        m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+        m5::nfc::crypto::secure_zero(ab_plain, sizeof(ab_plain));
         return false;
     }
 
@@ -2345,11 +2242,21 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
         if (mbedtls_aes_setkey_dec(&aes, key.data(), 128) != 0) {
             M5_LIB_LOGE("AuthAES setkey_dec failed");
             mbedtls_aes_free(&aes);
+            m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+            m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+            m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+            m5::nfc::crypto::secure_zero(ab_plain, sizeof(ab_plain));
+            m5::nfc::crypto::secure_zero(ab_resp, sizeof(ab_resp));
             return false;
         }
         if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, sizeof(ab_resp), iv, step2_payload, ab_resp) != 0) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
             mbedtls_aes_free(&aes);
+            m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+            m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+            m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+            m5::nfc::crypto::secure_zero(ab_plain, sizeof(ab_plain));
+            m5::nfc::crypto::secure_zero(ab_resp, sizeof(ab_resp));
             return false;
         }
         mbedtls_aes_free(&aes);
@@ -2360,6 +2267,12 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
     rndA_rot[15] = rndA[0];
     if (memcmp(ab_resp + 4, rndA_rot, 16) != 0) {
         M5_LIB_LOGE("AuthAES rndA mismatch");
+        m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+        m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+        m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+        m5::nfc::crypto::secure_zero(ab_plain, sizeof(ab_plain));
+        m5::nfc::crypto::secure_zero(ab_resp, sizeof(ab_resp));
+        m5::nfc::crypto::secure_zero(rndA_rot, sizeof(rndA_rot));
         return false;
     }
     uint8_t kenc[16]{};
@@ -2385,17 +2298,23 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
         if (mbedtls_aes_setkey_enc(&aes, key.data(), 128) != 0) {
             M5_LIB_LOGE("AuthAES setkey_enc failed");
             mbedtls_aes_free(&aes);
+            m5::nfc::crypto::secure_zero(kenc, sizeof(kenc));
+            m5::nfc::crypto::secure_zero(kmac, sizeof(kmac));
             return false;
         }
         if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, sizeof(kenc), iv, kenc, kenc) != 0) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
             mbedtls_aes_free(&aes);
+            m5::nfc::crypto::secure_zero(kenc, sizeof(kenc));
+            m5::nfc::crypto::secure_zero(kmac, sizeof(kmac));
             return false;
         }
         memset(iv, 0, sizeof(iv));
         if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, sizeof(kmac), iv, kmac, kmac) != 0) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
             mbedtls_aes_free(&aes);
+            m5::nfc::crypto::secure_zero(kenc, sizeof(kenc));
+            m5::nfc::crypto::secure_zero(kmac, sizeof(kmac));
             return false;
         }
         mbedtls_aes_free(&aes);
@@ -2409,6 +2328,15 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
     memcpy(_mfp_session.ti.data(), ab_resp, 4);
     memcpy(_mfp_session.kenc.data(), kenc, sizeof(kenc));
     memcpy(_mfp_session.kmac.data(), kmac, sizeof(kmac));
+
+    m5::nfc::crypto::secure_zero(rndA, sizeof(rndA));
+    m5::nfc::crypto::secure_zero(rndB, sizeof(rndB));
+    m5::nfc::crypto::secure_zero(rndB_rot, sizeof(rndB_rot));
+    m5::nfc::crypto::secure_zero(ab_plain, sizeof(ab_plain));
+    m5::nfc::crypto::secure_zero(ab_resp, sizeof(ab_resp));
+    m5::nfc::crypto::secure_zero(rndA_rot, sizeof(rndA_rot));
+    m5::nfc::crypto::secure_zero(kenc, sizeof(kenc));
+    m5::nfc::crypto::secure_zero(kmac, sizeof(kmac));
 
 #if 0    
     M5_LIB_LOGE("session: key_no=%04X rctr=%u wctr=%u ti=%02X%02X%02X%02X", _mfp_session.key_no, _mfp_session.r_ctr,

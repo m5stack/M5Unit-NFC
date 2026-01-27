@@ -37,6 +37,13 @@ constexpr std::array<uint8_t, 7> historical_bytes_mifare_plus_se2  = {0xC1, 0x05
   @brief For MIFARE classic
  */
 namespace classic {
+
+constexpr uint16_t MIFARE_CLASSIC_MAX_TX_LEN{32};
+constexpr uint16_t MIFARE_CLASSIC_MAX_RX_LEN{32};
+constexpr uint16_t MIFARE_CLASSIC_MAX_TX_WITH_CRC{MIFARE_CLASSIC_MAX_TX_LEN + 2};
+constexpr uint16_t MIFARE_CLASSIC_MAX_RX_WITH_CRC{MIFARE_CLASSIC_MAX_RX_LEN + 2};
+constexpr uint16_t MIFARE_CLASSIC_MAX_BITSTREAM_LEN{(9 * MIFARE_CLASSIC_MAX_TX_WITH_CRC + 7) / 8};
+
 /*!
   @typedef Key
   @brief MIFARE classic Key
