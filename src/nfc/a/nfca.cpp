@@ -218,8 +218,11 @@ constexpr Historical historical_table_sak18[] = {
     {historical_bytes_mifare_plus_x_ev, Type::MIFARE_Plus_4K, SubTypePlus::X},  // X 4K SL1
 };
 constexpr Historical historical_table_sak08[] = {
-    {historical_bytes_mifare_plus_s, Type::MIFARE_Plus_2K, SubTypePlus::S},     // S 2K SL1
-    {historical_bytes_mifare_plus_x_ev, Type::MIFARE_Plus_2K, SubTypePlus::X},  // X 2K SL1
+    {historical_bytes_mifare_plus_s, Type::MIFARE_Plus_2K, SubTypePlus::S},       // S 2K SL1
+    {historical_bytes_mifare_plus_x_ev, Type::MIFARE_Plus_2K, SubTypePlus::X},    // X 2K SL1
+    {historical_bytes_mifare_plus_se0, Type::MIFARE_Plus_SE, SubTypePlus::None},  // SE
+    {historical_bytes_mifare_plus_se1, Type::MIFARE_Plus_SE, SubTypePlus::None},  // SE
+    {historical_bytes_mifare_plus_se2, Type::MIFARE_Plus_SE, SubTypePlus::None},  // SE
 };
 constexpr Historical historical_table_sak20[] = {
     {historical_bytes_mifare_plus_s, Type::MIFARE_Plus_2K, SubTypePlus::S},           // S 2K/4K SL3
