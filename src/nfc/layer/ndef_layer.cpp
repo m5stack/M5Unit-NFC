@@ -10,6 +10,7 @@
 #include "ndef_layer.hpp"
 #include "nfc/ndef/ndef.hpp"
 #include "nfc/ndef/ndef_tlv.hpp"
+#include "nfc/a/mifare.hpp"
 #include "nfc/isoDEP/file_system.hpp"
 #include "nfc/isoDEP/desfire_file_system.hpp"
 #include "nfc/ndef/ndef_record.hpp"
@@ -21,6 +22,7 @@
 
 using namespace m5::nfc;
 using namespace m5::nfc::ndef;
+namespace desfire = m5::nfc::a::mifare::desfire;
 
 namespace {
 type4::FileControlTagBits tag_bits_to_file_control_tag_bits(const TagBits tb)
@@ -68,26 +70,26 @@ bool read_cc_common(const std::function<bool(std::vector<uint8_t>& out, uint16_t
 bool build_type4_cc(std::vector<uint8_t>& out, const uint16_t ndef_fid, const uint16_t ndef_size,
                     const uint8_t read_access, const uint8_t write_access)
 {
-    constexpr uint16_t kCcLen         = 0x000F;
-    constexpr uint8_t kMappingVersion = 0x20;
-    //    constexpr uint16_t kMle           = 0x003A;
-    //    constexpr uint16_t kMlc           = 0x0034;
+    constexpr uint16_t cc_len         = 0x000F;
+    constexpr uint8_t mapping_version = 0x20;
+    //    constexpr uint16_t mle           = 0x003A;
+    //    constexpr uint16_t mlc           = 0x0034;
 
-    constexpr uint16_t kMle = 120;
-    constexpr uint16_t kMlc = 120;
+    constexpr uint16_t mle = 120;
+    constexpr uint16_t mlc = 120;
 
     out.clear();
     if (!ndef_fid || !ndef_size) {
         return false;
     }
-    out.reserve(kCcLen);
-    out.push_back(static_cast<uint8_t>((kCcLen >> 8) & 0xFF));
-    out.push_back(static_cast<uint8_t>(kCcLen & 0xFF));
-    out.push_back(kMappingVersion);
-    out.push_back(static_cast<uint8_t>((kMle >> 8) & 0xFF));
-    out.push_back(static_cast<uint8_t>(kMle & 0xFF));
-    out.push_back(static_cast<uint8_t>((kMlc >> 8) & 0xFF));
-    out.push_back(static_cast<uint8_t>(kMlc & 0xFF));
+    out.reserve(cc_len);
+    out.push_back(static_cast<uint8_t>((cc_len >> 8) & 0xFF));
+    out.push_back(static_cast<uint8_t>(cc_len & 0xFF));
+    out.push_back(mapping_version);
+    out.push_back(static_cast<uint8_t>((mle >> 8) & 0xFF));
+    out.push_back(static_cast<uint8_t>(mle & 0xFF));
+    out.push_back(static_cast<uint8_t>((mlc >> 8) & 0xFF));
+    out.push_back(static_cast<uint8_t>(mlc & 0xFF));
     out.push_back(0x04);
     out.push_back(0x06);
     out.push_back(static_cast<uint8_t>((ndef_fid >> 8) & 0xFF));
@@ -143,26 +145,9 @@ bool build_desfire_cc(std::vector<uint8_t>& out, uint16_t& ndef_fid, uint16_t& n
     return out.size() >= 7;
 }
 
-constexpr int8_t kAccessDenied{-1};
-constexpr int8_t kAccessFree{-2};
-int8_t required_key_no_from_access_rights(const uint16_t access_rights)
-{
-    const uint8_t write_key = (access_rights >> 8) & 0x0F;  // Write
-    const uint8_t rw_key    = (access_rights >> 4) & 0x0F;  // Read/Write
-    if (write_key == 0x0E) {
-        return kAccessFree;
-    }
-    if (write_key != 0x0F) {
-        return write_key;
-    }
-    if (rw_key == 0x0E) {
-        return kAccessFree;
-    }
-    if (rw_key != 0x0F) {
-        return rw_key;
-    }
-    return kAccessDenied;
-}
+using desfire::access_denied;
+using desfire::access_free;
+using desfire::required_write_key_no_from_access_rights;
 
 }  // namespace
 
@@ -219,11 +204,11 @@ bool NDEFLayer::isValidFormat(bool& valid, const m5::nfc::NFCForumTag ftag)
 
 bool NDEFLayer::prepare_desfire_light()
 {
-    using type4::DESFIRE_DEFAULT_KEY;
-    using type4::DESFIRE_LIGHT_CC_FILE_NO;
-    using type4::DESFIRE_LIGHT_DF_NAME;
-    using type4::DESFIRE_LIGHT_NDEF_FILE_NO;
-    using type4::DESFIRE_LIGHT_NDEF_FILE_SIZE;
+    using desfire::DESFIRE_DEFAULT_KEY;
+    using desfire::DESFIRE_LIGHT_CC_FILE_NO;
+    using desfire::DESFIRE_LIGHT_DF_NAME;
+    using desfire::DESFIRE_LIGHT_NDEF_FILE_NO;
+    using desfire::DESFIRE_LIGHT_NDEF_FILE_SIZE;
     using type4::NDEF_AID;
     using type4::NDEF_APP_FID;
     using type4::NDEF_FILE_ID;
@@ -310,26 +295,26 @@ bool NDEFLayer::prepare_desfire_light()
         }
     };
 
-    constexpr uint16_t kFreeAccessRights{0xEEEE};  // All free access (No auth)
-    constexpr uint8_t kPlainCommMode{0x00};        // Plain
-    constexpr uint8_t file_option = (kPlainCommMode & 0x03);
-    if (cc_settings.access_rights != kFreeAccessRights || cc_settings.comm_mode != kPlainCommMode) {
-        if (!change_file_settings_mode(DESFIRE_LIGHT_CC_FILE_NO, file_option, kFreeAccessRights,
+    constexpr uint16_t free_access_rights{0xEEEE};  // All free access (No auth)
+    constexpr uint8_t plain_comm_mode{0x00};        // Plain
+    constexpr uint8_t file_option = (plain_comm_mode & 0x03);
+    if (cc_settings.access_rights != free_access_rights || cc_settings.comm_mode != plain_comm_mode) {
+        if (!change_file_settings_mode(DESFIRE_LIGHT_CC_FILE_NO, file_option, free_access_rights,
                                        cc_settings.access_rights)) {
             M5_LIB_LOGE("changeFileSettings CC failed");
             return false;
         }
-        cc_settings.access_rights = kFreeAccessRights;
-        cc_settings.comm_mode     = kPlainCommMode;
+        cc_settings.access_rights = free_access_rights;
+        cc_settings.comm_mode     = plain_comm_mode;
     }
-    if (ndef_settings.access_rights != kFreeAccessRights || ndef_settings.comm_mode != kPlainCommMode) {
-        if (!change_file_settings_mode(DESFIRE_LIGHT_NDEF_FILE_NO, file_option, kFreeAccessRights,
+    if (ndef_settings.access_rights != free_access_rights || ndef_settings.comm_mode != plain_comm_mode) {
+        if (!change_file_settings_mode(DESFIRE_LIGHT_NDEF_FILE_NO, file_option, free_access_rights,
                                        ndef_settings.access_rights)) {
             M5_LIB_LOGE("changeFileSettings NDEF failed");
             return false;
         }
-        ndef_settings.access_rights = kFreeAccessRights;
-        ndef_settings.comm_mode     = kPlainCommMode;
+        ndef_settings.access_rights = free_access_rights;
+        ndef_settings.comm_mode     = plain_comm_mode;
     }
 
     // Write CC/empty NDEF
@@ -351,8 +336,8 @@ bool NDEFLayer::prepare_desfire_light()
     if (!build_type4_cc(cc, NDEF_FILE_ID, DESFIRE_LIGHT_NDEF_FILE_SIZE, 0x00, 0x00)) {
         return false;
     }
-    const int cc_key = required_key_no_from_access_rights(cc_settings.access_rights);
-    if (cc_key == kAccessDenied ||
+    const int cc_key = required_write_key_no_from_access_rights(cc_settings.access_rights);
+    if (cc_key == access_denied ||
         (cc_key >= 0 && !dfs.authenticateEV2First(static_cast<uint8_t>(cc_key), DESFIRE_DEFAULT_KEY, ctx))) {
         M5_LIB_LOGE("auth EV2 failed (CC key %d)", cc_key);
         return false;
@@ -364,8 +349,8 @@ bool NDEFLayer::prepare_desfire_light()
     }
 
     const uint8_t nlen0[2] = {0x00, 0x00};
-    const int ndef_key     = required_key_no_from_access_rights(ndef_settings.access_rights);
-    if (ndef_key == kAccessDenied ||
+    const int ndef_key     = required_write_key_no_from_access_rights(ndef_settings.access_rights);
+    if (ndef_key == access_denied ||
         (ndef_key >= 0 && !dfs.authenticateEV2First(static_cast<uint8_t>(ndef_key), DESFIRE_DEFAULT_KEY, ctx))) {
         M5_LIB_LOGE("auth EV2 failed (NDEF key %d)", ndef_key);
         return false;
@@ -399,11 +384,11 @@ bool NDEFLayer::prepare_desfire_light()
                             fci_settings.comm_mode, fci_settings.access_rights, fci_settings.file_size);
 
                 // Change to free access and plain mode if needed
-                if (fci_settings.access_rights != kFreeAccessRights || fci_settings.comm_mode != kPlainCommMode) {
-                    if (dfs.changeFileSettingsEV2Full(DESFIRE_LIGHT_FCI_FILE_NO, file_option, kFreeAccessRights,
+                if (fci_settings.access_rights != free_access_rights || fci_settings.comm_mode != plain_comm_mode) {
+                    if (dfs.changeFileSettingsEV2Full(DESFIRE_LIGHT_FCI_FILE_NO, file_option, free_access_rights,
                                                       ctx_fci)) {
-                        fci_settings.access_rights = kFreeAccessRights;
-                        fci_settings.comm_mode     = kPlainCommMode;
+                        fci_settings.access_rights = free_access_rights;
+                        fci_settings.comm_mode     = plain_comm_mode;
                         // Re-authenticate after changing settings
                         dfs.authenticateEV2First(0x00, DESFIRE_DEFAULT_KEY, ctx_fci);
                     }
@@ -471,9 +456,9 @@ bool NDEFLayer::prepare_desfire_light()
 bool NDEFLayer::prepare_desfire(const uint32_t max_ndef_size)
 {
     using a::mifare::desfire::NdefFormatOptions;
-    using type4::DESFIRE_CC_FILE_NO;
-    using type4::DESFIRE_DEFAULT_KEY;
-    using type4::DESFIRE_NDEF_FILE_NO;
+    using desfire::DESFIRE_CC_FILE_NO;
+    using desfire::DESFIRE_DEFAULT_KEY;
+    using desfire::DESFIRE_NDEF_FILE_NO;
     using type4::NDEF_AID;
     using type4::NDEF_APP_FID;
     using type4::NDEF_FILE_ID;
@@ -497,12 +482,12 @@ bool NDEFLayer::prepare_desfire(const uint32_t max_ndef_size)
         const uint32_t overhead = 64 + 15;  // App header + CC file
         uint32_t available      = (free_mem > overhead) ? (free_mem - overhead) : 0;
         if (free_mem >= 7936) {
-            constexpr uint32_t kAllocUnit = 256;
-            if (available > kAllocUnit) {
+            constexpr uint32_t alloc_unit = 256;
+            if (available > alloc_unit) {
                 // Reserve one allocation unit for the CC file on 8K+ devices.
-                available -= kAllocUnit;
+                available -= alloc_unit;
             }
-            available = (available / kAllocUnit) * kAllocUnit;
+            available = (available / alloc_unit) * alloc_unit;
         }
         ndef_file_size = static_cast<uint16_t>(std::min<uint32_t>(max_ndef_size, available));
         M5_LIB_LOGV("Free memory: %u, NDEF size: %u", free_mem, ndef_file_size);
@@ -643,8 +628,11 @@ bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type2::CapabilityContaine
     cc = CapabilityContainer{};
 
     const uint16_t block_size = _interface.unit_size_read();
+    if (!block_size || block_size > NDEF_MAX_UNIT_SIZE_READ) {
+        return false;
+    }
 
-    uint8_t rx[block_size]{};
+    uint8_t rx[NDEF_MAX_UNIT_SIZE_READ]{};
     uint16_t rx_len = block_size;
     uint8_t ccb     = (block_size == 4) ? TYPE2_CC_BLOCK : 0 /* 0-3 page*/;
     if (!_interface.read(rx, rx_len, ccb) || (rx_len != block_size)) {
@@ -716,10 +704,10 @@ bool NDEFLayer::read_capability_container_type4_iso7816(m5::nfc::ndef::type4::Ca
 bool NDEFLayer::read_capability_container_type4_desfire(m5::nfc::ndef::type4::CapabilityContainer& cc)
 {
     using type4::CapabilityContainer;
-    using type4::DESFIRE_CC_FILE_NO;
-    using type4::DESFIRE_LIGHT_CC_FILE_NO;
-    using type4::DESFIRE_LIGHT_DF_NAME;
-    using type4::DESFIRE_NDEF_APP_ID;
+    using desfire::DESFIRE_CC_FILE_NO;
+    using desfire::DESFIRE_LIGHT_CC_FILE_NO;
+    using desfire::DESFIRE_LIGHT_DF_NAME;
+    using desfire::DESFIRE_NDEF_APP_ID;
     using type4::NDEF_AID;
 
     cc = CapabilityContainer{};
@@ -768,9 +756,12 @@ bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContaine
     while (cc_block_size < 8) {  // Support 8 byte CC
         cc_block_size <<= 1;
     }
+    if (cc_block_size > NDEF_MAX_CC_BLOCK_SIZE) {
+        return false;
+    }
 
     // Read CC
-    uint8_t rx[cc_block_size]{};
+    uint8_t rx[NDEF_MAX_CC_BLOCK_SIZE]{};
     uint16_t rx_len = sizeof(rx);
     if (!_interface.read(rx, rx_len, cc_block) || rx_len != cc_block_size) {
         return false;
@@ -821,7 +812,6 @@ bool NDEFLayer::read_type2(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc:
     }
 
     bool ret{};
-    uint8_t* buf{};
     uint16_t block      = _interface.first_user_block();
     uint16_t last_block = _interface.last_user_block();
     if (block == 0xFFFF || last_block == 0xFFFF) {
@@ -829,25 +819,23 @@ bool NDEFLayer::read_type2(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc:
     }
 
     const uint16_t buf_size = _interface.user_area_size();
-
-    buf = static_cast<uint8_t*>(malloc(buf_size));
-    if (!buf) {
-        M5_LIB_LOGE("Failed to allocate memory %u", buf_size);
+    if (!buf_size) {
         return false;
     }
+    std::vector<uint8_t> buf(buf_size);
 
     // Read TLV
     uint16_t actual{buf_size};
-    if (!_interface.read(buf, actual, block) || actual == 0) {
+    if (!_interface.read(buf.data(), actual, block) || actual == 0) {
         M5_LIB_LOGE("Failed to read %u %u", block, actual);
-        goto skip;
+        return false;
     }
 
     {
         uint32_t offset{}, idx{};
         TLV tlv{};
         do {
-            auto decoded = tlv.decode(buf + offset, actual > offset ? actual - offset : 0);
+            auto decoded = tlv.decode(buf.data() + offset, actual > offset ? actual - offset : 0);
             // Even if decoding fails, return the results up to that point and treat it as a success
             if (!decoded) {
                 M5_LIB_LOGE("Failed to decode [%3u]:%02X", idx, tlv.tag());
@@ -864,9 +852,6 @@ bool NDEFLayer::read_type2(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc:
         } while (!tlv.isTerminatorTLV() && !tlv.isNullTLV());
         ret = true;
     }
-
-skip:
-    free(buf);
     return ret;
 }
 
@@ -892,20 +877,20 @@ bool NDEFLayer::read_type3(m5::nfc::ndef::TLV& tlv)
     }
 
     // Read NDEF Records
-    uint16_t buf_size = ((ab.current_ndef_message_length() + 15) >> 4) << 4;
-    uint8_t* buf{};
+    uint16_t buf_size       = ((ab.current_ndef_message_length() + 15) >> 4) << 4;
+    const uint16_t max_size = _interface.user_area_size();
+    if (buf_size > max_size) {
+        M5_LIB_LOGW("Clamp NDEF length %u->%u", buf_size, max_size);
+        buf_size = max_size;
+    }
+    std::vector<uint8_t> buf{};
 
     if (buf_size) {
-        buf = static_cast<uint8_t*>(malloc(buf_size));
-
-        if (!buf) {
-            M5_LIB_LOGE("Failed to allocate memory %u", buf_size);
-            return false;
-        }
+        buf.resize(buf_size);
         uint16_t actual = buf_size;
-        if (!_interface.read(buf, actual, block + 1) || actual != buf_size) {
+        if (!_interface.read(buf.data(), actual, block + 1) || actual != buf_size) {
             M5_LIB_LOGE("Failed to read %u/%u", actual, buf_size);
-            goto skip;
+            return false;
         }
 
         {
@@ -913,10 +898,10 @@ bool NDEFLayer::read_type3(m5::nfc::ndef::TLV& tlv)
             uint16_t idx{};
             while (decoded < ab.current_ndef_message_length()) {
                 Record r{};
-                auto len = r.decode(buf + decoded, actual - decoded);
+                auto len = r.decode(buf.data() + decoded, actual - decoded);
                 if (!len) {
                     M5_LIB_LOGE("Failed to decode %u", idx);
-                    goto skip;
+                    return false;
                 }
                 tmp.push_back(r);
                 decoded += len;
@@ -927,8 +912,6 @@ bool NDEFLayer::read_type3(m5::nfc::ndef::TLV& tlv)
     }
     ret = true;
 
-skip:
-    free(buf);
     return ret;
 }
 
@@ -1127,10 +1110,10 @@ bool NDEFLayer::read_type4_desfire(std::vector<m5::nfc::ndef::TLV>& tlvs,
                                    const m5::nfc::ndef::type4::FileControlTagBits fc_bits)
 {
     using type4::CapabilityContainer;
-    using type4::DESFIRE_LIGHT_DF_NAME;
-    using type4::DESFIRE_LIGHT_NDEF_FILE_NO;
-    using type4::DESFIRE_NDEF_APP_ID;
-    using type4::DESFIRE_NDEF_FILE_NO;
+    using desfire::DESFIRE_LIGHT_DF_NAME;
+    using desfire::DESFIRE_LIGHT_NDEF_FILE_NO;
+    using desfire::DESFIRE_NDEF_APP_ID;
+    using desfire::DESFIRE_NDEF_FILE_NO;
     using type4::FileControlTag;
     using type4::NDEF_AID;
 
@@ -1262,46 +1245,37 @@ bool NDEFLayer::read_type5(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc:
 
     // Read CC + TLV
     const uint16_t buf_size = _interface.user_area_size();
-    uint8_t* buf            = static_cast<uint8_t*>(malloc(buf_size));
-    if (!buf) {
-        M5_LIB_LOGE("Failed to allocate memory %u", buf_size);
+    std::vector<uint8_t> buf(buf_size);
+    uint16_t actual = buf_size;
+    if (!_interface.read(buf.data(), actual, block) || actual != buf_size) {
+        M5_LIB_LOGE("Failed to read %u %u/%u", block, actual, buf_size);
         return false;
     }
 
-    if (buf) {
-        uint16_t actual = buf_size;
-        if (!_interface.read(buf, actual, block) || actual != buf_size) {
-            M5_LIB_LOGE("Failed to read %u %u/%u", block, actual, buf_size);
-            goto skip;
-        }
+    {
+        uint32_t offset = cc.size();
+        uint32_t idx{};
+        TLV tlv{};
+        do {
+            auto decoded = tlv.decode(buf.data() + offset, actual > offset ? actual - offset : 0);
+            // Even if decoding fails, return the results up to that point and treat it as a success
+            if (!decoded) {
+                M5_LIB_LOGW("Failed to decode [%3u]:%02X", idx, tlv.tag());
+                ret = true;
+                break;
+            }
+            offset += decoded;
+            ++idx;
+            M5_LIB_LOGV("Decoded:%u %02X", decoded, tlv.tag());
 
-        {
-            uint32_t offset = cc.size();
-            uint32_t idx{};
-            TLV tlv{};
-            do {
-                auto decoded = tlv.decode(buf + offset, actual > offset ? actual - offset : 0);
-                // Even if decoding fails, return the results up to that point and treat it as a success
-                if (!decoded) {
-                    M5_LIB_LOGW("Failed to decode [%3u]:%02X", idx, tlv.tag());
-                    ret = true;
-                    break;
-                }
-                offset += decoded;
-                ++idx;
-                M5_LIB_LOGV("Decoded:%u %02X", decoded, tlv.tag());
+            if (contains_tag(tagBits, tlv.tag())) {
+                tlvs.push_back(tlv);
+            }
 
-                if (contains_tag(tagBits, tlv.tag())) {
-                    tlvs.push_back(tlv);
-                }
-
-            } while (!tlv.isTerminatorTLV() && !tlv.isNullTLV());
-            ret = true;
-        }
+        } while (!tlv.isTerminatorTLV() && !tlv.isNullTLV());
+        ret = true;
     }
 
-skip:
-    free(buf);
     return ret;
 }
 
@@ -1359,35 +1333,29 @@ bool NDEFLayer::write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
     }
 
     // Encode
-    uint8_t* buf = static_cast<uint8_t*>(malloc(encoded_size));
-    if (!buf) {
-        M5_LIB_LOGE("Failed to allocate memory %u", encoded_size);
-        return false;
-    }
+    std::vector<uint8_t> buf(encoded_size);
 
     uint32_t offset{};
     uint32_t idx{};
     for (auto&& m : tmp) {
-        const auto esz = m.encode(buf + offset, encoded_size - offset);
+        const auto esz = m.encode(buf.data() + offset, encoded_size - offset);
         M5_LIB_LOGV("   [%3u] Tag:%02X %u %u", idx, m.tag(), esz, m.required());
         if (!esz) {
             M5_LIB_LOGE("encode failed %u %02X", idx, m.tag());
-            goto skip;
+            return false;
         }
         offset += esz;
         ++idx;
     }
     if (offset > encoded_size) {
         M5_LIB_LOGE("Internal error %u/%u", offset, encoded_size);
-        goto skip;
+        return false;
     }
 
     // Write
     // M5_LIB_LOGE(">>>>ndef write %u %u", _interface.first_user_block(), encoded_size);
-    ret = _interface.write(_interface.first_user_block(), buf, encoded_size);
+    ret = _interface.write(_interface.first_user_block(), buf.data(), encoded_size);
 
-skip:
-    free(buf);
     return ret;
 }
 
@@ -1420,19 +1388,15 @@ bool NDEFLayer::write_type3(const m5::nfc::ndef::TLV& tlv)
     }
 
     // Encode
-    uint8_t* buf = static_cast<uint8_t*>(malloc(record_size));
-    if (!buf) {
-        M5_LIB_LOGE("Failed to allocate memory %u", record_size);
-        return false;
-    }
+    std::vector<uint8_t> buf(record_size);
 
     uint32_t idx{};
     uint32_t encoded{};
     for (auto&& r : tlv.records()) {
-        auto len = r.encode(buf + encoded, record_size - encoded);
+        auto len = r.encode(buf.data() + encoded, record_size - encoded);
         if (!len) {
             M5_LIB_LOGE("Failed to encode %u", idx);
-            goto skip;
+            return false;
         }
         encoded += len;
         ++idx;
@@ -1453,23 +1417,21 @@ bool NDEFLayer::write_type3(const m5::nfc::ndef::TLV& tlv)
 
         // 1) Write AB (In progress)
         if (!_interface.write(first_block, ab.block, sizeof(ab.block))) {
-            goto skip;
+            return false;
         }
         // 2) Write records
-        if (!_interface.write(first_block + 1, buf, record_size)) {
-            goto skip;
+        if (!_interface.write(first_block + 1, buf.data(), record_size)) {
+            return false;
         }
         // 3) Write AB again (Done)
         ab.write_flag(AttributeBlock::WriteFlag::Done);  // done
         ab.update_check_sum();
         if (!_interface.write(first_block, ab.block, sizeof(ab.block))) {
-            goto skip;
+            return false;
         }
         ret = true;
     }
 
-skip:
-    free(buf);
     return ret;
 }
 
@@ -1499,9 +1461,9 @@ bool NDEFLayer::write_type4_desfire(const std::vector<m5::nfc::ndef::TLV>& tlvs,
 {
     (void)cc;
 
-    using type4::DESFIRE_DEFAULT_KEY;
-    using type4::DESFIRE_LIGHT_DF_NAME;
-    using type4::DESFIRE_LIGHT_NDEF_FILE_NO;
+    using desfire::DESFIRE_DEFAULT_KEY;
+    using desfire::DESFIRE_LIGHT_DF_NAME;
+    using desfire::DESFIRE_LIGHT_NDEF_FILE_NO;
     using type4::NDEF_AID;
 
     const TLV* src = find_message_tlv(tlvs);
@@ -1523,15 +1485,15 @@ bool NDEFLayer::write_type4_desfire(const std::vector<m5::nfc::ndef::TLV>& tlvs,
         if (!dfs.selectDfNameAuto(NDEF_AID, sizeof(NDEF_AID))) {
             return false;
         }
-        return dfs.writeDataLight(type4::DESFIRE_LIGHT_NDEF_FILE_NO, 0, payload.data(),
+        return dfs.writeDataLight(desfire::DESFIRE_LIGHT_NDEF_FILE_NO, 0, payload.data(),
                                   static_cast<uint32_t>(payload.size()));
     }
 
     // DESFire
-    if (!dfs.selectApplication(type4::DESFIRE_NDEF_APP_ID)) {
+    if (!dfs.selectApplication(desfire::DESFIRE_NDEF_APP_ID)) {
         return false;
     }
-    return dfs.writeData(type4::DESFIRE_NDEF_FILE_NO, 0, payload.data(), static_cast<uint32_t>(payload.size()));
+    return dfs.writeData(desfire::DESFIRE_NDEF_FILE_NO, 0, payload.data(), static_cast<uint32_t>(payload.size()));
 }
 
 bool NDEFLayer::write_type4_iso7816(const std::vector<m5::nfc::ndef::TLV>& tlvs, const type4::CapabilityContainer& cc,
@@ -1652,14 +1614,10 @@ bool NDEFLayer::write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
     }
 
     // Encode
-    uint8_t* buf = static_cast<uint8_t*>(malloc(buf_size));
-    if (!buf) {
-        M5_LIB_LOGE("Failed to allocate memory %u", buf_size);
-        return false;
-    }
-    memcpy(buf, cc.block, cc.size());
+    std::vector<uint8_t> buf(buf_size);
+    memcpy(buf.data(), cc.block, cc.size());
 
-    uint8_t* tlv_buf = buf + cc.size();
+    uint8_t* tlv_buf = buf.data() + cc.size();
     uint32_t offset{};
     uint32_t idx{};
     for (auto&& m : tmp) {
@@ -1667,21 +1625,19 @@ bool NDEFLayer::write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
         M5_LIB_LOGD("   [%3u] Tag:%02X %u %u", idx, m.tag(), esz, m.required());
         if (!esz) {
             M5_LIB_LOGE("encode failed %u %02X", idx, m.tag());
-            goto skip;
+            return false;
         }
         offset += esz;
         ++idx;
     }
     if (offset > encoded_size) {
         M5_LIB_LOGE("Internal error %u/%u", offset, encoded_size);
-        goto skip;
+        return false;
     }
 
     // Write
-    ret = _interface.write(_interface.first_user_block(), buf, buf_size);
+    ret = _interface.write(_interface.first_user_block(), buf.data(), buf_size);
 
-skip:
-    free(buf);
     return ret;
 }
 

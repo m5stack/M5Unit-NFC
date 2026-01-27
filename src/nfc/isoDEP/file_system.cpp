@@ -11,9 +11,21 @@
 #include "nfc/isoDEP/isoDEP.hpp"
 #include "nfc/apdu/apdu.hpp"
 #include <M5Utility.hpp>
+#include <algorithm>
+#include <limits>
 
 using namespace m5::nfc::isodep;
 using namespace m5::nfc::apdu;
+
+namespace {
+
+inline uint16_t clamp_u16_size(const size_t size)
+{
+    constexpr size_t max_u16 = std::numeric_limits<uint16_t>::max();
+    return static_cast<uint16_t>(size > max_u16 ? max_u16 : size);
+}
+
+}  // namespace
 
 namespace m5 {
 namespace nfc {
@@ -266,7 +278,7 @@ bool FileSystem::readBinary(std::vector<uint8_t>& out, const uint16_t offset,
     std::vector<uint8_t> rx;
     rx.resize(le + 2 + 16);
 
-    uint16_t rx_len = static_cast<uint16_t>(rx.size());
+    uint16_t rx_len = clamp_u16_size(rx.size());
     if (!_isoDEP.transceiveAPDU(rx.data(), rx_len, cmd.data(), static_cast<uint16_t>(cmd.size())) || rx_len < 2) {
         M5_LIB_LOGE("READ BINARY failed (transport) %u", rx_len);
         return false;

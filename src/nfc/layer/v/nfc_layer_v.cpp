@@ -219,12 +219,12 @@ bool NFCLayerV::read(uint8_t* rx, uint16_t& rx_len, const uint8_t sblock)
 
 bool NFCLayerV::writeBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len)
 {
-    if (!tx || !tx_len || tx_len > 32 || !_activePICC.valid()) {
+    if (!tx || !tx_len || tx_len > MAX_BLOCK_SIZE || !_activePICC.valid()) {
         return false;
     }
     const bool need_opt = _activePICC.manufacturerCode() == 0x07;  // TI needs option flag
 
-    uint8_t frame[2 + 1 + tx_len]{};
+    uint8_t frame[2 + 1 + MAX_BLOCK_SIZE]{};
     make_frame(frame, select_flag | data_rate_flag | (need_opt ? option_flag : 0),
                m5::stl::to_underlying(Command::WriteSingleBlock));
 
@@ -270,12 +270,12 @@ bool NFCLayerV::write(const uint8_t sblock, const uint8_t* tx, const uint16_t tx
 
     // M5_LIB_LOGE(">>>>WRITE %u %p %u (%u-%u) ", sblock, tx, tx_len, sblock, last);
 
-    if (!_activePICC.valid() || !tx || !tx_len) {
+    if (!_activePICC.valid() || !tx || !tx_len || !block_size || block_size > MAX_BLOCK_SIZE) {
         return false;
     }
 
     uint16_t written{};
-    uint8_t wtmp[block_size]{};
+    uint8_t wtmp[MAX_BLOCK_SIZE]{};
     for (uint_fast16_t block = sblock; block <= last; ++block) {
         const uint16_t wsize = std::min<uint16_t>(tx_len - written, block_size);
         // M5_LIB_LOGE("    write:%02X %u", block, wsize);

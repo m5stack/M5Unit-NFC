@@ -7,8 +7,8 @@
   @file ndef_tlv.hpp
   @brief NDEF TLV
 */
-#ifndef M5_UNIT_NFC_NDEF_NFC_NDEF_TLV_HPP
-#define M5_UNIT_NFC_NDEF_NFC_NDEF_TLV_HPP
+#ifndef M5_UNIT_UNIFIED_NFC_NDEF_NDEF_TLV_HPP
+#define M5_UNIT_UNIFIED_NFC_NDEF_NDEF_TLV_HPP
 
 #include "ndef.hpp"
 #include "ndef_record.hpp"

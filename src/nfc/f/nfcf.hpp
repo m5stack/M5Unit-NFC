@@ -368,6 +368,12 @@ constexpr uint16_t NODE_SYSTEM_KEY{0xFFFF};   //!< Retrieving the System Key Ver
 constexpr uint16_t KEY_VERIOSN_NONE{0xFFFF};  //!< No key version exists
 ///@}
 
+constexpr uint8_t FELICA_ID_LENGTH{8};
+constexpr uint8_t FELICA_MAX_BLOCKS{8};
+constexpr uint16_t FELICA_MAX_PACKET_LENGTH_REQUEST_SERVICE{1 + 8 + 1 + 2 * 255};
+constexpr uint16_t FELICA_MAX_PACKET_LENGTH_REQUEST_RESPONSE{1 + 8 + 1};
+constexpr uint16_t FELICA_MAX_PACKET_LENGTH_REQUEST_SYSTEM_CODE{1 + 8 + 1 + 2 * 255};
+
 /*!
   @struct PICC
   @brief PICC information for NFC-F
@@ -376,8 +382,8 @@ struct PICC {
     union {
         uint8_t m[16]{};
         struct {
-            uint8_t idm[8];  //!< Manufacture ID
-            uint8_t pmm[8];  //!< Manufacture Parameter
+            uint8_t idm[FELICA_ID_LENGTH];  //!< Manufacture ID
+            uint8_t pmm[FELICA_ID_LENGTH];  //!< Manufacture Parameter
         };
     };
     uint16_t request_data{};     //!< Any request data if exists
@@ -450,7 +456,8 @@ struct PICC {
       @param sc Sysetem code
       @return True if successful
      */
-    bool emulate(const Type t, const uint8_t idm[8], const uint8_t pmm[8], const uint16_t sc = 0);
+    bool emulate(const Type t, const uint8_t idm[FELICA_ID_LENGTH], const uint8_t pmm[FELICA_ID_LENGTH],
+                 const uint16_t sc = 0);
 
     //! @brief Gets the IDm string
     std::string idmAsString() const;

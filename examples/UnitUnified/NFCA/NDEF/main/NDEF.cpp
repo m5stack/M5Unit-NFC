@@ -108,7 +108,7 @@ void format_desfire()
             M5_LOGW("DESFire light can NOT format");
             return;
         } else {
-            if (!dfs.formatPICC(type4::DESFIRE_DEFAULT_KEY)) {
+            if (!dfs.formatPICC(desfire::DESFIRE_DEFAULT_KEY)) {
                 M5_LOGE("Failed to formatPICC");
                 return;
             }
@@ -247,7 +247,7 @@ void write_ndef()
         lcd.fillScreen(TFT_RED);
         return;
     }
-    // nfc_a.dump();
+    M5.Log.printf("Write NDEF OK!\n");
 }
 
 }  // namespace

@@ -329,7 +329,10 @@ bool NFCLayerF::requestService(uint16_t key_version[], const uint16_t* node_code
         *p++ = node_code[i] >> 8;
     }
 
-    uint8_t rbuf[packet.size() + 1 /*LEN*/]{};
+    if (packet.size() + 1 > FELICA_MAX_PACKET_LENGTH_REQUEST_SERVICE + 1) {
+        return false;
+    }
+    uint8_t rbuf[FELICA_MAX_PACKET_LENGTH_REQUEST_SERVICE + 1]{};
     uint16_t rx_len = sizeof(rbuf);
 
     // m5::utility::log::dump(packet.data(), packet.size(), false);
@@ -364,7 +367,10 @@ bool NFCLayerF::request_response_impl(const m5::nfc::f::PICC& picc, m5::nfc::f::
     packet[0] = m5::stl::to_underlying(CommandCode::RequestResponse);
     memcpy(packet.data() + 1, picc.idm, 8);
 
-    uint8_t rbuf[packet.size() + 1 /*LEN*/ + 1]{};
+    if (packet.size() + 2 > FELICA_MAX_PACKET_LENGTH_REQUEST_RESPONSE + 2) {
+        return false;
+    }
+    uint8_t rbuf[FELICA_MAX_PACKET_LENGTH_REQUEST_RESPONSE + 2]{};
     uint16_t rx_len = sizeof(rbuf);
 
     // m5::utility::log::dump(packet.data(), packet.size(), false);
@@ -436,7 +442,8 @@ bool NFCLayerF::read_without_encryption_impl(uint8_t* rx, uint16_t& rx_len, cons
     auto rx_org_len = rx_len;
     rx_len          = 0;
 
-    if (!rx || !rx_org_len || !block_list || !block_num || !service_code || !service_num || service_num > 16) {
+    if (!rx || !rx_org_len || !block_list || !block_num || !service_code || !service_num || service_num > 16 ||
+        block_num > FELICA_MAX_BLOCKS) {
         return false;
     }
 
@@ -462,7 +469,7 @@ bool NFCLayerF::read_without_encryption_impl(uint8_t* rx, uint16_t& rx_len, cons
 
     // m5::utility::log::dump(packet.data(), packet.size(), false);
 
-    uint8_t rbuf[1 + 1 + 8 + 1 + 1 + 1 + 16 * block_num]{};
+    uint8_t rbuf[1 + 1 + 8 + 1 + 1 + 1 + 16 * FELICA_MAX_BLOCKS]{};
     uint16_t actual = sizeof(rbuf);
     if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 11) ||
         rbuf[1] != m5::stl::to_underlying(ResponseCode::ReadWithoutEncryption) ||  //
@@ -492,6 +499,9 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
     if (blocks == 0) {
         return false;
     }
+    if (blocks > FELICA_MAX_BLOCKS) {
+        return false;
+    }
     uint16_t last   = std::min<uint16_t>(_activePICC.lastUserBlock(), start + blocks - 1);
     if (!_activePICC.valid() || !rx || !rx_org_len || !_activePICC.isUserBlock(sblock) ||
         !_activePICC.isUserBlock(last)) {
@@ -507,7 +517,7 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
         uint16_t num = std::min<uint16_t>(last - block.block() + 1, batch_size);
 
         uint16_t actual = 16 * num;
-        block_t block_list[blocks]{};
+        block_t block_list[FELICA_MAX_BLOCKS]{};
         for (uint_fast16_t i = 0; i < num; ++i) {
             block_list[i] = block_t(block.block() + i);
             // M5_LIB_LOGE("  BL[%u]:%02X", i, block_list[i].block());

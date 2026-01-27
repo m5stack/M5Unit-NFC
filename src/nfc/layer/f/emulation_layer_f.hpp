@@ -14,8 +14,8 @@
 
   @note In NFC Forum (NDEF) context, a PICC is often called a "Tag"
 */
-#ifndef M5_UNIT_NFC_NFC_LAYER_A_EMULATION_LAYER_F_HPP
-#define M5_UNIT_NFC_NFC_LAYER_A_EMULATION_LAYER_F_HPP
+#ifndef M5_UNIT_NFC_NFC_LAYER_F_EMULATION_LAYER_F_HPP
+#define M5_UNIT_NFC_NFC_LAYER_F_EMULATION_LAYER_F_HPP
 
 #include "nfc/f/nfcf.hpp"
 #include <vector>

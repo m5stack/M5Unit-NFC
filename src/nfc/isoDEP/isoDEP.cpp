@@ -11,7 +11,9 @@
 #include "nfc/layer/nfc_layer.hpp"
 #include "nfc/apdu/apdu.hpp"
 #include <M5Utility.hpp>
+#include <algorithm>
 #include <cstring>
+#include <limits>
 
 using namespace m5::nfc::apdu;
 
@@ -190,8 +192,8 @@ uint32_t fwi_to_ms(const uint8_t fwi, const float fc)
     }
     const uint8_t fwi_eff = (fwi == 0) ? 1 : fwi;
     const float base_us   = (4096.0f / fc) * 1e6f;
-    const double fwt_us   = base_us * static_cast<float>(1u << fwi_eff);
-    uint32_t fwt_ms       = static_cast<uint32_t>(fwt_us / 1000.0);
+    const float fwt_us    = base_us * static_cast<float>(1u << fwi_eff);
+    uint32_t fwt_ms       = static_cast<uint32_t>(fwt_us / 1000.f);
     return (fwt_ms != 0) ? fwt_ms : 1;
 }
 
@@ -215,18 +217,22 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
     }
 
     // Calculate the maximum amount of INF that can fit within the frame
-    const uint16_t overhead     = 1 + (_cfg.use_cid ? 1 : 0) + (_cfg.use_nad ? 1 : 0);
-    const uint16_t tx_frame_cap = (_cfg.pcd_max_frame_tx > (overhead + 2)) ? (_cfg.pcd_max_frame_tx - overhead - 2) : 0;
-    const uint16_t max_inf_per_frame = (tx_frame_cap < _cfg.fsc) ? tx_frame_cap : _cfg.fsc;
+    // FSC is the max frame size (including prologue: PCB, CID, NAD) the card can receive
+    const uint16_t tx_frame_cap      = _cfg.max_frame_cap_tx();
+    const uint16_t max_frame_size_rx = _cfg.max_frame_size_rx();
+    // FSC includes prologue, so max INF = FSC - overhead
+    const uint16_t fsc_inf_cap       = _cfg.fsc_inf_cap();
+    const uint16_t max_inf_per_frame = std::min(tx_frame_cap, fsc_inf_cap);
+
+    M5_LIB_LOGV(">>>> cap:%u fcs:%u per:%u", tx_frame_cap, fsc_inf_cap, max_inf_per_frame);
+
     if (max_inf_per_frame == 0) {
         return false;
     }
 
-    const uint16_t rx_overhead_min = overhead;
-
-    uint8_t tx_buf[_cfg.pcd_max_frame_tx]{};
-    uint8_t rx_buf[_cfg.pcd_max_frame_rx]{};
-
+    const uint16_t rx_overhead_min = _cfg.overhead();
+    uint8_t tx_buf[MAX_FRAME_SIZE]{};
+    uint8_t rx_buf[MAX_FRAME_SIZE]{};
     uint16_t tx_off{};
     uint16_t rx_written{};
 
@@ -252,10 +258,13 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
         uint8_t retries = 0;
 
         while (!chunk_done) {
-            uint16_t rlen       = sizeof(rx_buf);
-            uint32_t timeout_ms = _cfg.fwt_ms;
+            // Note: FSC is the card's receive limit, not its send limit.
+            // The card can send frames larger than FSC, so use full PCD receive capacity.
+            uint16_t rlen             = max_frame_size_rx;
+            const uint32_t timeout_ms = _cfg.fwt_ms;
 
             // Send I-Block and receive first frame
+            // M5_LIB_LOGE("I-Block TX: %u bytes, timeout=%u", tpos, timeout_ms);
             if (!_layer.transceive(rx_buf, rlen, tx_buf, tpos, timeout_ms)) {
                 M5_LIB_LOGE("transceive failed, rlen=%u", rlen);
                 if (rlen > 0) {
@@ -535,7 +544,7 @@ bool IsoDEP::transceiveAPDU(uint8_t* rx, uint16_t& rx_len, const uint8_t* cmd, c
     for (;;) {
         std::vector<uint8_t> tmp;
         tmp.resize(rx_len);
-        uint16_t tmp_len = tmp.size();
+        uint16_t tmp_len = static_cast<uint16_t>(std::min<size_t>(tmp.size(), std::numeric_limits<uint16_t>::max()));
 
         if (!transceiveINF(tmp.data(), tmp_len, cur_cmd.data(), cur_cmd.size(), nullptr)) {
             return false;

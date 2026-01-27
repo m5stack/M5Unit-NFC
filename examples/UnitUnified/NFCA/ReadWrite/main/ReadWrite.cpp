@@ -64,25 +64,25 @@ constexpr classic::Key keyA = classic::DEFAULT_KEY;  // Default as 0xFFFFFFFFFFF
 // If it's a different key value, change it
 constexpr plus::AESKey aesKeyA = plus::DEFAULT_FF_KEY;  // all 0xFF
 
-constexpr int8_t kAccessDenied{-1};
-constexpr int8_t kAccessFree{-2};
+constexpr int8_t access_denied{-1};
+constexpr int8_t access_free{-2};
 int8_t required_key_no_for_read(const uint16_t access_rights)
 {
     const uint8_t read_key = (access_rights >> 12) & 0x0F;  // Read
     const uint8_t rw_key   = (access_rights >> 4) & 0x0F;   // Read/Write
     if (read_key == 0x0E) {
-        return kAccessFree;
+        return access_free;
     }
     if (read_key != 0x0F) {
         return read_key;
     }
     if (rw_key == 0x0E) {
-        return kAccessFree;
+        return access_free;
     }
     if (rw_key != 0x0F) {
         return rw_key;
     }
-    return kAccessDenied;
+    return access_denied;
 }
 
 int8_t required_key_no_for_write(const uint16_t access_rights)
@@ -90,18 +90,18 @@ int8_t required_key_no_for_write(const uint16_t access_rights)
     const uint8_t write_key = (access_rights >> 8) & 0x0F;  // Write
     const uint8_t rw_key    = (access_rights >> 4) & 0x0F;  // Read/Write
     if (write_key == 0x0E) {
-        return kAccessFree;
+        return access_free;
     }
     if (write_key != 0x0F) {
         return write_key;
     }
     if (rw_key == 0x0E) {
-        return kAccessFree;
+        return access_free;
     }
     if (rw_key != 0x0F) {
         return rw_key;
     }
-    return kAccessDenied;
+    return access_denied;
 }
 
 constexpr char long_msg[] =
@@ -339,7 +339,7 @@ bool read_write_desfire()
     }
 
     // PICC Auth
-    const uint8_t* default_key = m5::nfc::ndef::type4::DESFIRE_DEFAULT_KEY;
+    const uint8_t* default_key = desfire::DESFIRE_DEFAULT_KEY;
     bool picc_auth_des         = dfs.authenticateDES(0x00, default_key);
     bool picc_auth_iso         = !picc_auth_des && dfs.authenticateISO(0x00, default_key);
     bool picc_auth_aes         = (!picc_auth_des && !picc_auth_iso) && dfs.authenticateAES(0x00, default_key);
@@ -483,7 +483,7 @@ bool read_write_desfire_light()
 
     desfire::DESFireFileSystem dfs(nfc_a);
 
-    const uint8_t* default_key = m5::nfc::ndef::type4::DESFIRE_DEFAULT_KEY;
+    const uint8_t* default_key = desfire::DESFIRE_DEFAULT_KEY;
     desfire::Ev2Context ev2_ctx{};
     bool ev2_ok        = false;
     uint8_t ev2_key_no = 0x00;
@@ -506,8 +506,7 @@ bool read_write_desfire_light()
     }
     if (!settings_ok) {
         if (!dfs.selectDfNameAuto(m5::nfc::ndef::type4::NDEF_AID, sizeof(m5::nfc::ndef::type4::NDEF_AID))) {
-            dfs.selectDfNameAuto(m5::nfc::ndef::type4::DESFIRE_LIGHT_DF_NAME,
-                                 sizeof(m5::nfc::ndef::type4::DESFIRE_LIGHT_DF_NAME));
+            dfs.selectDfNameAuto(desfire::DESFIRE_LIGHT_DF_NAME, sizeof(desfire::DESFIRE_LIGHT_DF_NAME));
         }
         ev2_ok = false;
         if (ensure_ev2()) {
@@ -537,19 +536,19 @@ bool read_write_desfire_light()
     const bool use_full    = fs.comm_mode == 3;
     const int8_t read_key  = required_key_no_for_read(fs.access_rights);
     const int8_t write_key = required_key_no_for_write(fs.access_rights);
-    if (read_key == kAccessDenied || write_key == kAccessDenied) {
+    if (read_key == access_denied || write_key == access_denied) {
         M5_LOGE("Access denied for file (read=%d write=%d)", read_key, write_key);
         return false;
     }
 
     auto auth_with_key = [&](const int8_t key) -> bool {
-        if (key == kAccessDenied) {
+        if (key == access_denied) {
             return false;
         }
-        if (key == kAccessFree && !use_ev2) {
+        if (key == access_free && !use_ev2) {
             return true;
         }
-        const uint8_t desired_key = (key == kAccessFree) ? 0x00 : static_cast<uint8_t>(key);
+        const uint8_t desired_key = (key == access_free) ? 0x00 : static_cast<uint8_t>(key);
         if (!ev2_ok || ev2_key_no != desired_key) {
             ev2_ok     = false;
             ev2_key_no = desired_key;
@@ -715,7 +714,7 @@ void loop()
                         M5.Log.printf("This example is not supported\n");
                     }
                 } else if (held) {
-                    nfc_a.dump();
+                    //nfc_a.dump();
                     M5.Speaker.tone(4000, 30);
                     if (picc.isMifareClassic()) {
                         read_write_sector_structure(picc.blocks - 2);

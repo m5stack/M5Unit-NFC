@@ -7,8 +7,8 @@
   @file ndef_record.hpp
   @brief NDEF record
 */
-#ifndef M5_UNIT_NFC_NDEF_NFC_NDEF_RECORD_HPP
-#define M5_UNIT_NFC_NDEF_NFC_NDEF_RECORD_HPP
+#ifndef M5_UNIT_UNIFIED_NFC_NDEF_NDEF_RECORD_HPP
+#define M5_UNIT_UNIFIED_NFC_NDEF_NDEF_RECORD_HPP
 
 #include "ndef.hpp"
 #include <vector>

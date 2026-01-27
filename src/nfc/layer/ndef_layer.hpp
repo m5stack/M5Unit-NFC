@@ -7,8 +7,8 @@
   @file ndef_layer.hpp
   @brief Common layer for NDEF related
 */
-#ifndef M5_UNIT_NFC_NFC_LAYER_NDEFC_LAYER_HPP
-#define M5_UNIT_NFC_NFC_LAYER_NDEFC_LAYER_HPP
+#ifndef M5_UNIT_NFC_NFC_LAYER_NDEF_LAYER_HPP
+#define M5_UNIT_NFC_NFC_LAYER_NDEF_LAYER_HPP
 
 #include "nfc_layer.hpp"
 #include "nfc/ndef/ndef.hpp"
@@ -24,6 +24,9 @@ namespace ndef {
 
 class TLV;
 class Record;
+
+constexpr uint8_t NDEF_MAX_UNIT_SIZE_READ{32};
+constexpr uint8_t NDEF_MAX_CC_BLOCK_SIZE{32};
 
 /*!
   @class NDEFLayer

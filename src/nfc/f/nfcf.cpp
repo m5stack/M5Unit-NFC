@@ -36,7 +36,10 @@ constexpr uint8_t ff_all[8]{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 std::string to_string(const uint8_t* p, const uint8_t size)
 {
-    char buf[2 * size + 1]{};
+    if (size > m5::nfc::f::FELICA_ID_LENGTH) {
+        return std::string{};
+    }
+    char buf[2 * m5::nfc::f::FELICA_ID_LENGTH + 1]{};
     if (p && size) {
         uint8_t left{};
         for (uint_fast8_t i = 0; i < size; ++i) {
@@ -235,7 +238,7 @@ std::string PICC::typeAsString() const
     return std::string((idx <= m5::stl::size(name_table)) ? name_table[idx] : name_unknown);
 }
 
-bool PICC::emulate(const Type t, const uint8_t idm[8], const uint8_t pmm[8],
+bool PICC::emulate(const Type t, const uint8_t idm[FELICA_ID_LENGTH], const uint8_t pmm[FELICA_ID_LENGTH],
                    const uint16_t sc /*Options for the future*/)
 {
     (void)sc;

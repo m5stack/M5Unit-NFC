@@ -10,6 +10,7 @@
 #ifndef M5_UNIT_UNIFIED_NFC_NFC_ISODEP_DESFIRE_FILE_SYSTEM_HPP
 #define M5_UNIT_UNIFIED_NFC_NFC_ISODEP_DESFIRE_FILE_SYSTEM_HPP
 #include "file_system.hpp"
+#include "nfc/a/mifare.hpp"
 #include "nfc/ndef/ndef.hpp"
 #include <m5_utility/stl/expected.hpp>
 #include <array>
@@ -99,10 +100,10 @@ enum class AuthMode : uint8_t {
  */
 struct NdefFormatOptions {
     m5::nfc::ndef::type4::CapabilityContainer cc;  //!< CC contents
-    uint8_t aid[3]{m5::nfc::ndef::type4::DESFIRE_NDEF_AID[0], m5::nfc::ndef::type4::DESFIRE_NDEF_AID[1],
-                   m5::nfc::ndef::type4::DESFIRE_NDEF_AID[2]};         //!< NDEF Tag Application AID
-    uint8_t cc_file_no{m5::nfc::ndef::type4::DESFIRE_CC_FILE_NO};      //!< CC file number (DESFire)
-    uint8_t ndef_file_no{m5::nfc::ndef::type4::DESFIRE_NDEF_FILE_NO};  //!< NDEF file number (DESFire)
+    uint8_t aid[3]{m5::nfc::a::mifare::desfire::DESFIRE_NDEF_AID[0], m5::nfc::a::mifare::desfire::DESFIRE_NDEF_AID[1],
+                   m5::nfc::a::mifare::desfire::DESFIRE_NDEF_AID[2]};         //!< NDEF Tag Application AID
+    uint8_t cc_file_no{m5::nfc::a::mifare::desfire::DESFIRE_CC_FILE_NO};      //!< CC file number (DESFire)
+    uint8_t ndef_file_no{m5::nfc::a::mifare::desfire::DESFIRE_NDEF_FILE_NO};  //!< NDEF file number (DESFire)
     uint16_t cc_file_size{0x000F};                                     //!< CC file size (bytes)
     uint16_t ndef_file_size{2048};                                     //!< NDEF file size (bytes)
     uint8_t comm_mode{0x00};                                           //!< Plain communication

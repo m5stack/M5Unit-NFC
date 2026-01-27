@@ -218,7 +218,12 @@ bool UnitST25R3916::configure_emulation_a()
 uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                        const uint32_t timeout_ms)
 {
-    return nfcaTransmit(tx, tx_len, timeout_ms) && nfcaReceive(rx, rx_len, timeout_ms);
+    if (!nfcaTransmit(tx, tx_len, timeout_ms)) {
+        M5_LIB_LOGE("nfcaTransmit FAILED tx_len=%u", tx_len);
+        return false;
+    }
+    M5_LIB_LOGD("nfcaTransmit OK tx_len=%u", tx_len);
+    return nfcaReceive(rx, rx_len, timeout_ms);
 }
 
 bool UnitST25R3916::nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
@@ -233,6 +238,7 @@ bool UnitST25R3916::nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const
         !writeSettingsISO14443A(0x00 /*standard*/) || !clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||  //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||                      //
         !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
+        M5_LIB_LOGE("nfcaTransmit failed tx_len=%u timeout_ms=%u", tx_len, timeout_ms);
         return false;
     }
     return true;
@@ -249,6 +255,7 @@ bool UnitST25R3916::nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
     }
 
     if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
+        M5_LIB_LOGE("nfcaReceive timeout rx_len=%u timeout_ms=%u", rx_len_org, timeout_ms);
         M5_LIB_LOGD("Timeout");
         return false;
     }
@@ -256,7 +263,7 @@ bool UnitST25R3916::nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
     uint16_t actual{};
     auto bb = readFIFO(actual, rx, rx_len_org);
     if (!bb) {
-        M5_LIB_LOGD("Failed to readFIFO %u/%u", actual, rx_len_org);
+        M5_LIB_LOGE("Failed to readFIFO %u/%u", actual, rx_len_org);
         return false;
     }
 
@@ -588,12 +595,12 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
 // -------------------------------- For MIFARE classic
 bool UnitST25R3916::mifare_classic_send_encrypt(const uint8_t* tx, const uint16_t tx_len)
 {
-    if (!tx || !tx_len || tx_len > 32) {
+    if (!tx || !tx_len || tx_len > MIFARE_CLASSIC_MAX_TX_LEN) {
         return false;
     }
 
     // Send
-    uint8_t tmp_tx[tx_len + 2 /*CRC*/]{};
+    uint8_t tmp_tx[MIFARE_CLASSIC_MAX_TX_WITH_CRC]{};
     memcpy(tmp_tx, tx, tx_len);
 
     m5::utility::CRC16 crc16(0xC6C6, 0x1021, true, true, 0);
@@ -601,20 +608,22 @@ bool UnitST25R3916::mifare_classic_send_encrypt(const uint8_t* tx, const uint16_
     tmp_tx[tx_len]     = crc & 0xFF;
     tmp_tx[tx_len + 1] = crc >> 8;
 
-    uint8_t enc_tx[tx_len + 2]{};
-    uint32_t parity = _crypto1.encrypt(enc_tx, tmp_tx, sizeof(tmp_tx));
+    uint8_t enc_tx[MIFARE_CLASSIC_MAX_TX_WITH_CRC]{};
+    const uint16_t tx_with_crc = tx_len + 2;
+    uint32_t parity            = _crypto1.encrypt(enc_tx, tmp_tx, tx_with_crc);
 
-    uint16_t total_bits = 9 * (tx_len + 2);
+    uint16_t total_bits = 9 * tx_with_crc;
+    uint16_t bitstream_len = (total_bits + 7) >> 3;
 
-    uint8_t bitstream[(total_bits + 7) >> 3]{};
-    append_parity(bitstream, sizeof(bitstream), enc_tx, sizeof(enc_tx), parity);
+    uint8_t bitstream[MIFARE_CLASSIC_MAX_BITSTREAM_LEN]{};
+    append_parity(bitstream, bitstream_len, enc_tx, tx_with_crc, parity);
 
     uint8_t sbytes = total_bits >> 3;
     uint8_t sbits  = total_bits & 0x07;
 
     if (!writeSettingsISO14443A(no_tx_par) ||                                                         //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) ||                                  //
-        !writeFIFO(bitstream, sizeof(bitstream)) || !writeNumberOfTransmittedBytes(sbytes, sbits) ||  //
+        !writeFIFO(bitstream, bitstream_len) || !writeNumberOfTransmittedBytes(sbytes, sbits) ||      //
         !writeDirectCommand(CMD_TRANSMIT_WITHOUT_CRC)) {
         M5_LIB_LOGD("Failed to send");
         return false;
@@ -626,7 +635,8 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
                                                       const uint16_t tx_len, const uint32_t timeout_ms,
                                                       const bool include_crc, const bool decrypt)
 {
-    if (!rx || !rx_len || !tx || !tx_len || tx_len > 32) {
+    if (!rx || !rx_len || !tx || !tx_len || tx_len > MIFARE_CLASSIC_MAX_TX_LEN ||
+        rx_len > MIFARE_CLASSIC_MAX_RX_LEN) {
         return false;
     }
 
@@ -639,15 +649,18 @@ bool UnitST25R3916::mifare_classic_transceive_encrypt(uint8_t* rx, uint16_t& rx_
 
     // Read
     const uint32_t rlen = rx_len + (include_crc ? 2 : 0 /* CRC */);
+    if (rlen > MIFARE_CLASSIC_MAX_RX_WITH_CRC) {
+        return false;
+    }
 
     if (!wait_for_FIFO(timeout_ms, rlen)) {
         M5_LIB_LOGD("Timeout");
         return false;
     }
 
-    uint8_t rbuf[rlen]{};
+    uint8_t rbuf[MIFARE_CLASSIC_MAX_RX_WITH_CRC]{};
     uint16_t actual{};
-    if (!readFIFO(actual, rbuf, sizeof(rbuf)) || actual != rlen) {
+    if (!readFIFO(actual, rbuf, rlen) || actual != rlen) {
         M5_LIB_LOGD("Failed to readFIFO %u/%u", actual, rlen);
         M5_DUMPE(rbuf, actual);
         return false;

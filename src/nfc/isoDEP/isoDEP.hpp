@@ -24,6 +24,8 @@ namespace isodep {
 //! @brief Calculate waiting time(ms) by fwi and fc
 uint32_t fwi_to_ms(const uint8_t fwi, const float fc);
 
+constexpr uint16_t MAX_FRAME_SIZE{256};
+
 //! @brief Convert FSCI to FSC (ISO/IEC 14443-4)
 inline uint16_t fsci_to_fsc(const uint8_t fsci)
 {
@@ -32,15 +34,9 @@ inline uint16_t fsci_to_fsc(const uint8_t fsci)
 }
 
 struct config_t {
-#if 0
-    uint16_t fsc{256};
-    uint16_t pcd_max_frame_tx{256};
-    uint16_t pcd_max_frame_rx{256};
-#else
-    uint16_t fsc{64};
-    uint16_t pcd_max_frame_tx{64};
-    uint16_t pcd_max_frame_rx{64};
-#endif
+    uint16_t fsc{MAX_FRAME_SIZE};
+    uint16_t pcd_max_frame_tx{MAX_FRAME_SIZE};
+    uint16_t pcd_max_frame_rx{MAX_FRAME_SIZE};
     uint32_t fwt_ms{100};
     uint32_t wtx_max_ms{5000};
 
@@ -52,6 +48,24 @@ struct config_t {
 
     uint8_t max_retries{2};
     bool rx_crc{true};  // Remove CRC if true in INF
+
+    inline uint16_t max_frame_cap_tx() const
+    {
+        const auto max_frame = std::min<uint16_t>(pcd_max_frame_tx, fsc);
+        return (max_frame > (overhead() + 2)) ? (max_frame - overhead() - 2) : 0;
+    }
+    inline uint16_t max_frame_size_rx() const
+    {
+        return std::min<uint16_t>(pcd_max_frame_rx, fsc);
+    }
+    inline uint16_t fsc_inf_cap() const
+    {
+        return (fsc > overhead()) ? static_cast<uint16_t>(fsc - overhead()) : 0;
+    }
+    inline uint16_t overhead() const
+    {
+        return 1 + (use_cid ? 1 : 0) + (use_nad ? 1 : 0);
+    }
 };
 
 struct RxInfo {
