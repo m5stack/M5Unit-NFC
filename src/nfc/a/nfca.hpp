@@ -295,6 +295,21 @@ struct ATS {
     {
         return validTB() ? (TB & 0x0F) : 0x00;
     }
+    inline uint32_t sfgt_fc() const
+    {
+        const uint8_t v = sfgi();
+        return (v == 0 || v == 15) ? 0u : (256u * 16u * (1u << v));
+    }
+    inline uint32_t sfgt_ms(const float fc) const
+    {
+        const uint32_t sfgt = sfgt_fc();
+        if (!sfgt || fc <= 0.0f) {
+            return 0;
+        }
+        const float us   = (static_cast<float>(sfgt) / fc) * 1e6f;
+        uint32_t ms      = static_cast<uint32_t>(us / 1000.f);
+        return ms ? ms : 1;
+    }
     inline bool supportsNAD() const
     {
         return validTC() && (TC & 0x01);
