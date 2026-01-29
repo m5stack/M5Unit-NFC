@@ -391,7 +391,8 @@ struct are_all_fc : std::true_type { /**/
 };
 template <typename T, typename... Ts>
 struct are_all_fc<T, Ts...>
-    : std::integral_constant<bool, std::is_same<FileControlTag, T>::value && are_all_fc<Ts...>::value> {};
+    : std::integral_constant<bool, std::is_same<FileControlTag, T>::value && are_all_fc<Ts...>::value> { /**/
+};
 
 constexpr FileControlTagBits make_fc_bits_impl(FileControlTagBits acc)
 {
