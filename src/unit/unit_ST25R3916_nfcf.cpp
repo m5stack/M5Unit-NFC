@@ -64,26 +64,6 @@ bool UnitST25R3916::configure_nfc_f()
            writeCorrelatorConfiguration2(0x00) &&  //
            writeMaskInterrupts(0) &&               //
            nfc_initial_field_on();
-
-#if 0
-    if (ret) {
-        uint8_t reg = 0x00;
-        for (auto&& v : val_table) {
-            //            if (reg < 0x3F) {
-            // if(reg <= 0x20){ // OK
-            //            if(reg <= 0x10){ // NG
-            // if(reg <= 0x18){ // OK
-            // if(reg <= 0x14){ // NG
-            // if(reg <= 0x16){ // OK
-            // if(reg <= 0x15){  // NG
-            if (reg >= 0x16 && reg <= 0x19) {
-                write_register8(reg, v);
-            }
-            ++reg;
-        }
-    }
-    return true;
-#endif
 }
 
 bool UnitST25R3916::configure_emulation_f()

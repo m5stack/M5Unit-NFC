@@ -40,6 +40,8 @@ public:
     explicit NFCLayerF(m5::unit::UnitST25R3916& u);
     explicit NFCLayerF(m5::unit::CapST25R3916& u);
 
+    virtual uint16_t maximum_fifo_depth() const override;
+
     /*!
       @brief Is the specified PICC currently active?
       @param picc PICC to check

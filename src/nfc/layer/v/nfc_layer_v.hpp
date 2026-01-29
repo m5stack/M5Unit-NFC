@@ -39,6 +39,8 @@ public:
     explicit NFCLayerV(m5::unit::UnitST25R3916& u);
     explicit NFCLayerV(m5::unit::CapST25R3916& u);
 
+    virtual uint16_t maximum_fifo_depth() const override;
+
     /*!
       @brief Is the specified PICC currently active?
       @param picc PICC to check
@@ -234,7 +236,7 @@ private:
 ///@cond
 // Impl for units
 struct NFCLayerV::Adapter {
-    virtual ~Adapter() = default;
+    virtual ~Adapter()                      = default;
     virtual uint16_t max_fifo_depth() const = 0;
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,

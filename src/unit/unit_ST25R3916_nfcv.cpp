@@ -79,86 +79,47 @@ bool UnitST25R3916::configure_nfc_v()
     constexpr uint8_t h80{0x02};
     constexpr uint8_t z12k{0x01};
     // Low-pass 600Khz, First stage zero 12Khz, third stage zero 80Khz
-    writeReceiverConfiguration1(lp0 | h80 | z12k);
     constexpr uint8_t sqm_dyn{0x20};
     constexpr uint8_t agc_en{0x08};
     constexpr uint8_t agc_m{0x04};
     constexpr uint8_t agc6_3{0x01};
-    writeReceiverConfiguration2(sqm_dyn | agc_en | agc_m | agc6_3);
-    writeReceiverConfiguration3(0x00);
-    writeReceiverConfiguration4(0x00);
 
-    writeTXDriver(0x70);  // modulation 40%
+    if (!writeReceiverConfiguration1(lp0 | h80 | z12k) ||
+        !writeReceiverConfiguration2(sqm_dyn | agc_en | agc_m | agc6_3) || !writeReceiverConfiguration3(0x00) ||
+        !writeReceiverConfiguration4(0x00)) {
+        return false;
+    }
 
-    writeIOConfiguration1(0x07);  // No LF clock on MCU_CLK, Disabled MCU clock
-    set_bit_register8(REG_IO_CONFIGURATION_2, aat_en);
-    set_bit_register8(REG_OPERATION_CONTROL, en_fd_c1 | en_fd_c0);
-    writeStreamModeDefinition(0x38);  // fc32/424KHz, Num of pulse 2(BPSK only)
-    writeAuxiliaryDefinition(0x02);
+    if (!writeTXDriver(0x70)) {  // modulation 40%
+        return false;
+    }
+
+    if (!writeIOConfiguration1(0x07) ||  // No LF clock on MCU_CLK, Disabled MCU clock
+        !set_bit_register8(REG_IO_CONFIGURATION_2, aat_en) ||
+        !set_bit_register8(REG_OPERATION_CONTROL, en_fd_c1 | en_fd_c0) ||
+        !writeStreamModeDefinition(0x38) ||  // fc32/424KHz, Num of pulse 2(BPSK only)
+        !writeAuxiliaryDefinition(0x02)) {
+        return false;
+    }
 
     // Space-B
-    writeEMDSuppressionConfiguration(0x40);
-    writeSubcarrierStartTimer(0x14);
-    writeP2PReceiverConfiguration(0x0C);
     constexpr uint8_t corr_s4{0x10};  // RX bit rate 106kb/s = 33, RX bit rates 212 to 848 kb/s = 17
     constexpr uint8_t corr_s1{0x02};  // Collision detection level
     constexpr uint8_t corr_s0{0x01};  // 11 : 53%
-    writeCorrelatorConfiguration1(corr_s4 | corr_s1 | corr_s0);
     constexpr uint8_t corr_s8{0x01};  // 1: 424 kHz subcarrier stream mode
-    writeCorrelatorConfiguration2(corr_s8);
-    writeSquelchTimer(0x00);
-    writeNFCFieldOnGuardTimer(0x00);
-    writeAuxiliaryModulationSetting(0x10);
-    writeTXDriverTiming(0x7C);
-    writeResistiveAMModulation(0x80);
+
+    if (!writeEMDSuppressionConfiguration(0x40) || !writeSubcarrierStartTimer(0x14) ||
+        !writeP2PReceiverConfiguration(0x0C) || !writeCorrelatorConfiguration1(corr_s4 | corr_s1 | corr_s0) ||
+        !writeCorrelatorConfiguration2(corr_s8) || !writeSquelchTimer(0x00) || !writeNFCFieldOnGuardTimer(0x00) ||
+        !writeAuxiliaryModulationSetting(0x10) || !writeTXDriverTiming(0x7C) || !writeResistiveAMModulation(0x80)) {
+        return false;
+    }
 
     //
-    writeModeDefinition(0x70);  // Sub carrier stream mode
-
-#if 0
-    uint8_t reg = 0x00;
-    for (auto&& v : val_table) {
-        //        write_register8(reg, v);
-        if (v != mine[reg]) {
-            M5_LIB_LOGE("REG %02X: %02X %08o %02X %08o", reg, v, OCB(v), mine[reg], OCB(mine[reg]));
-        }
-        ++reg;
+    if (!writeModeDefinition(0x70)) {  // Sub carrier stream mode
+        return false;
     }
-
-    if (0) {
-        uint16_t r{};
-        r = 0x05;
-        writeRegister8(r, 0x40);
-        r = 0x06;
-        writeRegister8(r, 0x14);
-        r = 0x0B;
-        writeRegister8(r, 0x0C);
-        r = 0x0C;
-        writeRegister8(r, 0x13);
-        r = 0x0D;
-        writeRegister8(r, 0x01);
-        r = 0x0F;
-        writeRegister8(r, 0x00);
-        r = 0x15;
-        writeRegister8(r, 0x00);
-        r = 0x28;
-        writeRegister8(r, 0x10);
-        r = 0x29;
-        writeRegister8(r, 0x7C);
-        r = 0x2A;
-        writeRegister8(r, 0x80);
-        // r = 0x2B;
-        // writeRegister8(r, 0x04);
-        //  r = 0x2C;
-        // writeRegister8(r, 0xD0);
-    }
-#endif
-
-    //    dumpRegister();
-
-    nfc_initial_field_on();
-
-    return true;
+    return nfc_initial_field_on();
 }
 
 bool UnitST25R3916::nfcvTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,

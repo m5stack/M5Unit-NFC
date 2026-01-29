@@ -79,6 +79,11 @@ const uint8_t* make_rc(uint8_t rc[16])
 namespace m5 {
 namespace nfc {
 
+uint16_t NFCLayerF::maximum_fifo_depth() const
+{
+    return _impl->max_fifo_depth();
+}
+
 bool NFCLayerF::polling(m5::nfc::f::PICC& picc, const uint16_t system_code, const m5::nfc::f::RequestCode request_code,
                         const m5::nfc::f::TimeSlot time_slot)
 {
@@ -502,7 +507,7 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
     if (blocks > FELICA_MAX_BLOCKS) {
         return false;
     }
-    uint16_t last   = std::min<uint16_t>(_activePICC.lastUserBlock(), start + blocks - 1);
+    uint16_t last = std::min<uint16_t>(_activePICC.lastUserBlock(), start + blocks - 1);
     if (!_activePICC.valid() || !rx || !rx_org_len || !_activePICC.isUserBlock(sblock) ||
         !_activePICC.isUserBlock(last)) {
         return false;

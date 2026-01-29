@@ -71,6 +71,11 @@ constexpr char dump_line[] =
 namespace m5 {
 namespace nfc {
 
+uint16_t NFCLayerV::maximum_fifo_depth() const
+{
+    return _impl->max_fifo_depth();
+}
+
 bool NFCLayerV::detect(PICC& picc, const uint32_t timeout_ms)
 {
     std::vector<PICC> piccs;
