@@ -47,7 +47,6 @@ public:
     }
     virtual ~UnitST25R3916() = default;
 
-
     virtual bool begin() override;
     virtual void update(const bool force = false) override;
 

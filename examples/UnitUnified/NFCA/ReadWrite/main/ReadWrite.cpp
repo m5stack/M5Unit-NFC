@@ -714,7 +714,7 @@ void loop()
                         M5.Log.printf("This example is not supported\n");
                     }
                 } else if (held) {
-                    //nfc_a.dump();
+                    // nfc_a.dump();
                     M5.Speaker.tone(4000, 30);
                     if (picc.isMifareClassic()) {
                         read_write_sector_structure(picc.blocks - 2);

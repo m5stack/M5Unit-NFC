@@ -225,7 +225,7 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
     const uint16_t fsc_inf_cap       = _cfg.fsc_inf_cap();
     const uint16_t max_inf_per_frame = std::min(tx_frame_cap, fsc_inf_cap);
 
-    //M5_LIB_LOGV("cap:%u fcs:%u per:%u", tx_frame_cap, fsc_inf_cap, max_inf_per_frame);
+    // M5_LIB_LOGV("cap:%u fcs:%u per:%u", tx_frame_cap, fsc_inf_cap, max_inf_per_frame);
 
     if (max_inf_per_frame == 0) {
         return false;

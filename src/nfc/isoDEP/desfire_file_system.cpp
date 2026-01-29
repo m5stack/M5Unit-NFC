@@ -144,7 +144,7 @@ bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, c
     for (int i = 0; i < 7; ++i) {
         rndA_rot[i] = rndA[i + 1];
     }
-    rndA_rot[7] = rndA[0];
+    rndA_rot[7]   = rndA[0];
     const bool ok = std::memcmp(rndA_rot, rndA_rot_from_card, 8) == 0;
     m5::nfc::crypto::secure_zero(rndA_rot_from_card, sizeof(rndA_rot_from_card));
     m5::nfc::crypto::secure_zero(rndA_rot, sizeof(rndA_rot));

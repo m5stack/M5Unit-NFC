@@ -62,13 +62,13 @@ void dump()
     // ********************************************
     // // Password (YOU MUST CHANGE IT!) as string
     // ********************************************
-    constexpr char pass[] = "XXXX";  
+    constexpr char pass[] = "XXXX";
     if (!fs.verifyGlobal((uint8_t*)pass, 4)) {
         M5_LOGE("Failed to verify");
         return;
     }
 
-    constexpr uint8_t EF2[] = {0x00, 0x02}; // Name etc...
+    constexpr uint8_t EF2[] = {0x00, 0x02};  // Name etc...
     if (!fs.selectFile(m5::nfc::apdu::SelectBy::EfUnderCurrentDf, m5::nfc::apdu::SelectOccurrence::FirstOrOnly,
                        m5::nfc::apdu::SelectResponse::None, EF2, sizeof(EF2))) {
         M5_LOGE("Failed to select EF2");

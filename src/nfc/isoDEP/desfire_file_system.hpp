@@ -104,10 +104,10 @@ struct NdefFormatOptions {
                    m5::nfc::a::mifare::desfire::DESFIRE_NDEF_AID[2]};         //!< NDEF Tag Application AID
     uint8_t cc_file_no{m5::nfc::a::mifare::desfire::DESFIRE_CC_FILE_NO};      //!< CC file number (DESFire)
     uint8_t ndef_file_no{m5::nfc::a::mifare::desfire::DESFIRE_NDEF_FILE_NO};  //!< NDEF file number (DESFire)
-    uint16_t cc_file_size{0x000F};                                     //!< CC file size (bytes)
-    uint16_t ndef_file_size{2048};                                     //!< NDEF file size (bytes)
-    uint8_t comm_mode{0x00};                                           //!< Plain communication
-    uint16_t access_rights{0xEEEE};                                    //!< DESFire access rights
+    uint16_t cc_file_size{0x000F};                                            //!< CC file size (bytes)
+    uint16_t ndef_file_size{2048};                                            //!< NDEF file size (bytes)
+    uint8_t comm_mode{0x00};                                                  //!< Plain communication
+    uint16_t access_rights{0xEEEE};                                           //!< DESFire access rights
     uint8_t key_settings1{0x09};              //!< AN11004: Create/Delete requires auth, Get* requires auth
     uint8_t key_settings2{0x21};              //!< ISO FID support(bit5) + NumKeys=1 + DES/3DES
     const uint8_t* picc_master_key{nullptr};  //!< DES/3DES master key (PICC), or nullptr to skip auth

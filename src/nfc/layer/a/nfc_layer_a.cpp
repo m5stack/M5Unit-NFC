@@ -2345,8 +2345,8 @@ bool NFCLayerA::mifare_plus_authenticateAES(const uint16_t key_no, const mifare:
     m5::nfc::crypto::secure_zero(kenc, sizeof(kenc));
     m5::nfc::crypto::secure_zero(kmac, sizeof(kmac));
 
-    //M5_LIB_LOGE("MFP auth OK: key_no=%04X ti=%02X%02X%02X%02X", _mfp_session.key_no, _mfp_session.ti[0],
-    //            _mfp_session.ti[1], _mfp_session.ti[2], _mfp_session.ti[3]);
+    // M5_LIB_LOGE("MFP auth OK: key_no=%04X ti=%02X%02X%02X%02X", _mfp_session.key_no, _mfp_session.ti[0],
+    //             _mfp_session.ti[1], _mfp_session.ti[2], _mfp_session.ti[3]);
     return true;
 }
 

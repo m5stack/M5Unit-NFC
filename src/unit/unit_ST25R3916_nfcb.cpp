@@ -42,65 +42,50 @@ bool UnitST25R3916::configure_nfc_b()
     }
 
     // 2. NFCIP-1 and Stream mode (required for NFC-B)
-    if(!writeNFCIP1PassiveTargetDefinition(0x5D)||  // fdel, d_ac_ap2p, d_212_424_1r, d_106_ac_a
-       !writeStreamModeDefinition(0x38)){
+    if (!writeNFCIP1PassiveTargetDefinition(0x5D) ||  // fdel, d_ac_ap2p, d_212_424_1r, d_106_ac_a
+        !writeStreamModeDefinition(0x38)) {
         return false;
     }
 
     // 3. Auxiliary definition
-    if(!writeAuxiliaryDefinition(0x00)){
+    if (!writeAuxiliaryDefinition(0x00)) {
         return false;
     }
 
     // 4. Receiver configuration for NFC-B (106kbps)
-    if(!writeReceiverConfiguration1(0x04)||  // No z600k filter
-    !writeReceiverConfiguration2(sqm_dyn | agc_en | agc_m | agc6_3)||  // 0x3D
-    !writeReceiverConfiguration3(0x00)||
-       !writeReceiverConfiguration4(0x00)){
+    if (!writeReceiverConfiguration1(0x04) ||                               // No z600k filter
+        !writeReceiverConfiguration2(sqm_dyn | agc_en | agc_m | agc6_3) ||  // 0x3D
+        !writeReceiverConfiguration3(0x00) || !writeReceiverConfiguration4(0x00)) {
         return false;
     }
 
     // 5. Timer configuration
-    if(!writeMaskReceiveTimer(0x07)||
-    !writeNoResponseTimer1(0x10)||
-    !writeNoResponseTimer2(0x0D)||
-    !writeTimerAndEMVControl(0x23)||
-    !writeGeneralPurposeTimer1(0x00)||
-    !writeGeneralPurposeTimer2(0x58)||
-       !writePPON2FieldWaiting(0x80)){
+    if (!writeMaskReceiveTimer(0x07) || !writeNoResponseTimer1(0x10) || !writeNoResponseTimer2(0x0D) ||
+        !writeTimerAndEMVControl(0x23) || !writeGeneralPurposeTimer1(0x00) || !writeGeneralPurposeTimer2(0x58) ||
+        !writePPON2FieldWaiting(0x80)) {
         return false;
     }
 
     // 6. Interrupt masks
-    if(!writeMaskMainInterrupt(0x85)||
-    !writeMaskTimerAndNFCInterrupt(0xA6)||
-    !writeMaskErrorAndWakeupInterrupt(0x0F)||
-       !writeMaskPassiveTargetInterrupt(0x7B)){
+    if (!writeMaskMainInterrupt(0x85) || !writeMaskTimerAndNFCInterrupt(0xA6) ||
+        !writeMaskErrorAndWakeupInterrupt(0x0F) || !writeMaskPassiveTargetInterrupt(0x7B)) {
         return false;
     }
 
     // 7. TX Driver and antenna
-    if(
-    !writeTXDriver(0x70)||
-    !writePassiveTargetModulation(0x5F)||
-    !writeExternalFieldDetectorActivationThreshold(0x13)||
-    !writeExternalFieldDetectorDeactivationThreshold(0x02))
-    {
+    if (!writeTXDriver(0x70) || !writePassiveTargetModulation(0x5F) ||
+        !writeExternalFieldDetectorActivationThreshold(0x13) ||
+        !writeExternalFieldDetectorDeactivationThreshold(0x02)) {
         return false;
     }
 
     // 8. Space-B registers for NFC-B
-    if(!write_register8(REG_EMD_SUPPRESSION_CONFIGURATION, 0xC4)||
-    !write_register8(REG_SUBCARRIER_START_TIMER, 0x14)||
-    !write_register8(REG_P2P_RECEIVER_CONFIGURATION, 0x0C)||
-    !writeCorrelatorConfiguration1(0x1B)||
-    !writeCorrelatorConfiguration2(0x00)||
-    !write_register8(REG_SQUELCH_TIMER, 0x00)||
-    !write_register8(REG_NFC_FIELD_ON_GUARD_TIMER, 0x00)||
-    !write_register8(REG_AUXILIARY_MODULATION_SETTING, 0x10)||
-    !write_register8(REG_TX_DRIVER_TIMING, 0x7C)||
-    !write_register8(REG_RESISTIVE_AM_MODULATION, 0x80)||
-       !writeRegulatorVoltageControl(0xD0)){
+    if (!write_register8(REG_EMD_SUPPRESSION_CONFIGURATION, 0xC4) ||
+        !write_register8(REG_SUBCARRIER_START_TIMER, 0x14) || !write_register8(REG_P2P_RECEIVER_CONFIGURATION, 0x0C) ||
+        !writeCorrelatorConfiguration1(0x1B) || !writeCorrelatorConfiguration2(0x00) ||
+        !write_register8(REG_SQUELCH_TIMER, 0x00) || !write_register8(REG_NFC_FIELD_ON_GUARD_TIMER, 0x00) ||
+        !write_register8(REG_AUXILIARY_MODULATION_SETTING, 0x10) || !write_register8(REG_TX_DRIVER_TIMING, 0x7C) ||
+        !write_register8(REG_RESISTIVE_AM_MODULATION, 0x80) || !writeRegulatorVoltageControl(0xD0)) {
         return false;
     }
 

@@ -306,8 +306,8 @@ struct ATS {
         if (!sfgt || fc <= 0.0f) {
             return 0;
         }
-        const float us   = (static_cast<float>(sfgt) / fc) * 1e6f;
-        uint32_t ms      = static_cast<uint32_t>(us / 1000.f);
+        const float us = (static_cast<float>(sfgt) / fc) * 1e6f;
+        uint32_t ms    = static_cast<uint32_t>(us / 1000.f);
         return ms ? ms : 1;
     }
     inline bool supportsNAD() const
