@@ -10,8 +10,6 @@
 #include "unit_ST25R3916.hpp"
 #include <M5Utility.hpp>
 
-using namespace m5::utility::mmh3;
-
 using namespace m5::unit::types;
 using namespace m5::unit::st25r3916;
 using namespace m5::unit::st25r3916::regval;
@@ -31,27 +29,100 @@ using namespace m5::nfc::b;
         }                                              \
     } while (0)
 
-namespace {
+namespace m5 {
+namespace unit {
+// -------------------------------- For NFC-B
+bool UnitST25R3916::configure_nfc_b()
+{
+    // 1. Mode and Bitrate configuration
+    if (!writeInitiatorOperationMode(InitiatorOperationMode::ISO14443B, tr_am) ||
+        !writeBitrate(Bitrate::Bps106K, Bitrate::Bps106K) ||  //
+        !writeSettingsISO14443B(0x00)) {
+        return false;
+    }
 
+    // 2. NFCIP-1 and Stream mode (required for NFC-B)
+    if(!writeNFCIP1PassiveTargetDefinition(0x5D)||  // fdel, d_ac_ap2p, d_212_424_1r, d_106_ac_a
+       !writeStreamModeDefinition(0x38)){
+        return false;
+    }
+
+    // 3. Auxiliary definition
+    if(!writeAuxiliaryDefinition(0x00)){
+        return false;
+    }
+
+    // 4. Receiver configuration for NFC-B (106kbps)
+    if(!writeReceiverConfiguration1(0x04)||  // No z600k filter
+    !writeReceiverConfiguration2(sqm_dyn | agc_en | agc_m | agc6_3)||  // 0x3D
+    !writeReceiverConfiguration3(0x00)||
+       !writeReceiverConfiguration4(0x00)){
+        return false;
+    }
+
+    // 5. Timer configuration
+    if(!writeMaskReceiveTimer(0x07)||
+    !writeNoResponseTimer1(0x10)||
+    !writeNoResponseTimer2(0x0D)||
+    !writeTimerAndEMVControl(0x23)||
+    !writeGeneralPurposeTimer1(0x00)||
+    !writeGeneralPurposeTimer2(0x58)||
+       !writePPON2FieldWaiting(0x80)){
+        return false;
+    }
+
+    // 6. Interrupt masks
+    if(!writeMaskMainInterrupt(0x85)||
+    !writeMaskTimerAndNFCInterrupt(0xA6)||
+    !writeMaskErrorAndWakeupInterrupt(0x0F)||
+       !writeMaskPassiveTargetInterrupt(0x7B)){
+        return false;
+    }
+
+    // 7. TX Driver and antenna
+    if(
+    !writeTXDriver(0x70)||
+    !writePassiveTargetModulation(0x5F)||
+    !writeExternalFieldDetectorActivationThreshold(0x13)||
+    !writeExternalFieldDetectorDeactivationThreshold(0x02))
+    {
+        return false;
+    }
+
+    // 8. Space-B registers for NFC-B
+    if(!write_register8(REG_EMD_SUPPRESSION_CONFIGURATION, 0xC4)||
+    !write_register8(REG_SUBCARRIER_START_TIMER, 0x14)||
+    !write_register8(REG_P2P_RECEIVER_CONFIGURATION, 0x0C)||
+    !writeCorrelatorConfiguration1(0x1B)||
+    !writeCorrelatorConfiguration2(0x00)||
+    !write_register8(REG_SQUELCH_TIMER, 0x00)||
+    !write_register8(REG_NFC_FIELD_ON_GUARD_TIMER, 0x00)||
+    !write_register8(REG_AUXILIARY_MODULATION_SETTING, 0x10)||
+    !write_register8(REG_TX_DRIVER_TIMING, 0x7C)||
+    !write_register8(REG_RESISTIVE_AM_MODULATION, 0x80)||
+       !writeRegulatorVoltageControl(0xD0)){
+        return false;
+    }
+
+    // 9. Field on
+    return nfc_initial_field_on();
+}
+
+#if 0
+// Old implementation using val_table (working reference)
+namespace {
 constexpr uint8_t val_table[] = {
     0x07, 0x3C, 0xCB, 0x14, 0x00, 0x00, 0x00, 0x00, 0x5D, 0x38, 0x00, 0x04, 0x3D, 0x00, 0x00, 0x07,
     0x10, 0x0D, 0x23, 0x00, 0x58, 0x80, 0x85, 0xA6, 0x0F, 0x7B, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00,
     0x00, 0x00, 0x00, 0x48, 0x00, 0xE1, 0x82, 0x82, 0x70, 0x5F, 0x13, 0x02, 0x00, 0xAB, 0x38, 0x00,
     0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
-
 }  // namespace
 
-namespace m5 {
-namespace unit {
-// -------------------------------- For NFC-B
 bool UnitST25R3916::configure_nfc_b()
 {
     uint8_t reg = 0x00;
     for (auto&& v : val_table) {
-        //        if (reg < 2) {
-        //            continue;
-        //        }
         write_register8(reg, v);
         ++reg;
     }
@@ -59,35 +130,36 @@ bool UnitST25R3916::configure_nfc_b()
     {
         uint16_t r{};
         r = 0x05;
-        writeRegister8(r, 0xC4);
+        write_register8(r, 0xC4);
         r = 0x06;
-        writeRegister8(r, 0x14);
+        write_register8(r, 0x14);
         r = 0x0B;
-        writeRegister8(r, 0x0C);
+        write_register8(r, 0x0C);
         r = 0x0C;
-        writeRegister8(r, 0x1B);
+        write_register8(r, 0x1B);
         r = 0x0D;
-        writeRegister8(r, 0x00);
+        write_register8(r, 0x00);
         r = 0x0F;
-        writeRegister8(r, 0x00);
+        write_register8(r, 0x00);
         r = 0x15;
-        writeRegister8(r, 0x00);
+        write_register8(r, 0x00);
         r = 0x28;
-        writeRegister8(r, 0x10);
+        write_register8(r, 0x10);
         r = 0x29;
-        writeRegister8(r, 0x7C);
+        write_register8(r, 0x7C);
         r = 0x2A;
-        writeRegister8(r, 0x80);
+        write_register8(r, 0x80);
         r = 0x2B;
-        writeRegister8(r, 0x04);
+        write_register8(r, 0x04);
         r = 0x2C;
-        writeRegister8(r, 0xD0);
+        write_register8(r, 0xD0);
     }
 
     nfc_initial_field_on();
 
     return true;
 }
+#endif
 
 bool UnitST25R3916::nfcbTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                                    const uint32_t timeout_ms)
@@ -141,7 +213,7 @@ bool UnitST25R3916::nfcbReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
     memcpy(rx, rbuf, rx_len);
 #else
     if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
-        M5_LIB_LOGE("Timeout");
+        M5_LIB_LOGD("Timeout");
         return false;
     }
 
