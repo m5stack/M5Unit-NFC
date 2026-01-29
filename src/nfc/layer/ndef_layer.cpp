@@ -760,13 +760,14 @@ bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContaine
 
     // Read CC
     uint8_t rx[NDEF_MAX_CC_BLOCK_SIZE]{};
-    uint16_t rx_len = sizeof(rx);
+    uint16_t rx_len = cc_block_size;
     if (!_interface.read(rx, rx_len, cc_block) || rx_len != cc_block_size) {
+        M5_LIB_LOGE("Failed to read CC");
         return false;
     }
     memcpy(cc.block, rx, std::min<uint16_t>(rx_len, sizeof(cc.block)));
 
-    M5_LIB_LOGV("CC5:%02X %u.%u %u %02X/%02X %02X", cc.block[0], cc.major_version(), cc.minor_version(), cc.ndef_size(),
+    M5_LIB_LOGE("CC5:%02X %u.%u %u %02X/%02X %02X", cc.block[0], cc.major_version(), cc.minor_version(), cc.ndef_size(),
                 cc.read_access(), cc.write_access(), cc.addtional_feature());
 
     return true;
