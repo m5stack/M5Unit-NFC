@@ -8,6 +8,7 @@
   @brief Common layer for NFC-V
 */
 #include "nfc_layer_v.hpp"
+#include "nfc/manufacturer_id.hpp"
 #include "nfc/ndef/ndef.hpp"
 #include "nfc/ndef/ndef_tlv.hpp"
 #include <inttypes.h>
@@ -50,10 +51,10 @@ inline bool exists_picc(const std::vector<PICC>& v, const PICC& picc)
 
 void print_block(const uint8_t* buf, const uint8_t len, const int16_t block)
 {
-    char tmp[64 + 1] = "      ";
+    char tmp[64 + 1] = "         ";
     uint32_t left{};
     // Block
-    left += snprintf(tmp + left, 10, "[%03u/%02X]:", block, block);
+    left += snprintf(tmp + left, 13, "[%04u/%04X]:", block, block);
     // Data
     for (uint8_t i = 0; i < len; ++i) {
         left += snprintf(tmp + left, 4, "%02X ", buf[i]);
@@ -100,22 +101,46 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
+        //M5_LIB_LOGE("detect");
 
         // Already exists?
         if (exists_picc(piccs, picc)) {
             m5::utility::delay(1);
             continue;
         }
+
         // Get system information
         if (!get_system_information(picc)) {
+            M5_LIB_LOGE("get_system_information failed");
             continue;
         }
+
+         // For ST25DV
+        if (picc.uid[1] == m5::stl::to_underlying(m5::nfc::ManufacturerId::STMicroelectronics)) {
+            if (!get_system_information_ext(picc)) {
+                M5_LIB_LOGE("get_system_information_ext failed");
+                continue;
+            }
+            if (!picc.blocks || !picc.block_size) {
+                if (picc.icRef == 0x26) {
+                    picc.block_size = 4;
+                    uint8_t tmp[32]{};
+                    if (read_block_ext(tmp, picc, 0x0200)) {
+                        picc.blocks = 2048;  // 64K
+                    } else {
+                        picc.blocks = 512;  // 16K
+                    }
+                }
+            }
+        }
+
         picc.type   = identify_type(picc);
         _activePICC = picc;
-        M5_LIB_LOGV("Detect:%s", picc.uidAsString().c_str());
+        M5_LIB_LOGV("Detect:%s %u/%u", picc.uidAsString().c_str(), picc.block_size, picc.blocks);
 
         // To QUIET
         if (!stay_quiet(picc)) {
+            M5_LIB_LOGE("stay quiest failed");
             continue;
         }
         // Append PICC
@@ -170,28 +195,97 @@ bool NFCLayerV::deactivate()
     return false;
 }
 
-bool NFCLayerV::readBlock(uint8_t rx[32], const uint8_t block)
+bool NFCLayerV::readBlock(uint8_t rx[32], const uint16_t block)
 {
     if (!rx || !_activePICC.valid()) {
         return false;
     }
 
+    const bool use_ext = (_activePICC.totalSize() > (_activePICC.block_size * 256u));
+    if (use_ext || block > 0xFF) {
+        return read_block_ext(rx, _activePICC, block);
+    }
+
     uint8_t frame[3]{};
     make_frame(frame, select_flag | data_rate_flag, m5::stl::to_underlying(Command::ReadSingleBlock));
-    frame[2] = block;
+    frame[2] = static_cast<uint8_t>(block & 0xFF);
 
     uint8_t rbuf[32 + 1]{};
     uint16_t rx_len = sizeof(rbuf);
     if (!_impl->transceive(rbuf, rx_len, frame, sizeof(frame), TIMEOUT_READ_SINGLE_BLOCK, modulationMode()) ||
         !rx_len || rbuf[0] != 0x00) {
-        M5_LIB_LOGD("Failed to transcieve %u %02X", rx_len, rbuf[1] /* error code */);
+        M5_LIB_LOGE("Failed to transcieve %u %02X", rx_len, rbuf[1] /* error code */);
         return false;
     }
     memcpy(rx, rbuf + 1, rx_len - 1);
     return true;
 }
 
-bool NFCLayerV::read(uint8_t* rx, uint16_t& rx_len, const uint8_t sblock)
+bool NFCLayerV::read_block_ext(uint8_t rx[32], const m5::nfc::v::PICC& picc, const uint16_t block)
+{
+    if (!rx || picc.uid[0] != 0xE0) {
+        return false;
+    }
+
+    uint8_t frame[2 + 8 + 2]{};
+    make_frame(frame, address_flag | data_rate_flag, m5::stl::to_underlying(Command::ExtendedReadSingleBlock), &picc);
+    frame[10] = static_cast<uint8_t>(block & 0xFF);
+    frame[11] = static_cast<uint8_t>((block >> 8) & 0xFF);
+
+    uint8_t rbuf[32 + 1]{};
+    uint16_t rx_len = sizeof(rbuf);
+    if (!_impl->transceive(rbuf, rx_len, frame, sizeof(frame), TIMEOUT_READ_SINGLE_BLOCK, modulationMode()) ||
+        !rx_len || rbuf[0] != 0x00) {
+        M5_LIB_LOGE("Failed to ext read %u %02X", rx_len, rbuf[1] /* error code */);
+        return false;
+    }
+    memcpy(rx, rbuf + 1, rx_len - 1);
+    return true;
+}
+
+bool NFCLayerV::write_block_ext(const m5::nfc::v::PICC& picc, const uint16_t block, const uint8_t* tx, const uint8_t tx_len)
+{
+    if (!tx || !tx_len || tx_len > MAX_BLOCK_SIZE || picc.uid[0] != 0xE0) {
+        return false;
+    }
+
+    const bool need_opt = picc.manufacturerCode() == 0x07;  // TI needs option flag
+
+    uint8_t frame[2 + 8 + 2 + MAX_BLOCK_SIZE]{};
+    make_frame(frame, address_flag | data_rate_flag | (need_opt ? option_flag : 0),
+               m5::stl::to_underlying(Command::ExtendedWriteSingleBlock), &picc);
+    frame[10] = static_cast<uint8_t>(block & 0xFF);
+    frame[11] = static_cast<uint8_t>((block >> 8) & 0xFF);
+
+    uint32_t offset = 12;
+    memcpy(frame + offset, tx, tx_len);
+    offset += tx_len;
+
+    uint8_t rx[2]{};
+    uint16_t rx_len = sizeof(rx);
+    if (_impl->transceive(rx, rx_len, frame, offset, TIMEOUT_WRITE_SINGLE_BLOCK, modulationMode()) && rx_len &&
+        rx[0] == 0x00) {
+        return true;
+    }
+
+    if (!need_opt) {
+        return false;
+    }
+
+    // Verify
+    {
+        m5::utility::delay(10);
+        uint8_t rx[32]{};
+        if (read_block_ext(rx, picc, block)) {
+            return memcmp(rx, tx, tx_len) == 0;
+        } else {
+            M5_LIB_LOGD("Failed to read for verify (ext)");
+        }
+    }
+    return false;
+}
+
+bool NFCLayerV::read(uint8_t* rx, uint16_t& rx_len, const uint16_t sblock)
 {
     if (!_activePICC.valid()) {
         return false;
@@ -222,10 +316,14 @@ bool NFCLayerV::read(uint8_t* rx, uint16_t& rx_len, const uint8_t sblock)
     return true;
 }
 
-bool NFCLayerV::writeBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len)
+bool NFCLayerV::writeBlock(const uint16_t block, const uint8_t* tx, const uint8_t tx_len)
 {
     if (!tx || !tx_len || tx_len > MAX_BLOCK_SIZE || !_activePICC.valid()) {
         return false;
+    }
+    const bool use_ext = (_activePICC.totalSize() > (_activePICC.block_size * 256u));
+    if (use_ext || block > 0xFF) {
+        return write_block_ext(_activePICC, block, tx, tx_len);
     }
     const bool need_opt = _activePICC.manufacturerCode() == 0x07;  // TI needs option flag
 
@@ -267,7 +365,7 @@ bool NFCLayerV::writeBlock(const uint8_t block, const uint8_t* tx, const uint8_t
     return false;
 }
 
-bool NFCLayerV::write(const uint8_t sblock, const uint8_t* tx, const uint16_t tx_len)
+bool NFCLayerV::write(const uint16_t sblock, const uint8_t* tx, const uint16_t tx_len)
 {
     const uint8_t block_size = _activePICC.block_size;
     const uint16_t blocks    = (tx_len + block_size - 1) / block_size;
@@ -354,8 +452,8 @@ bool NFCLayerV::get_system_information(m5::nfc::v::PICC& picc)
     uint8_t rx[15]{};
     uint16_t rx_len = sizeof(rx);
     if (!_impl->transceive(rx, rx_len, frame, sizeof(frame), TIMEOUT_GET_SYSTEM_INFORMATION, modulationMode()) ||
-        rx_len != sizeof(rx) || rx[0] != 0x00) {
-        M5_LIB_LOGD("Failed to get system information %u %02X", rx_len, rx[1] /* error code */);
+        rx_len < 10 || rx[0] != 0x00) {
+        M5_LIB_LOGE("Failed to get system information %u %02X", rx_len, rx[1] /* error code */);
         return false;
     }
     // m5::utility::log::dump(rx, rx_len, false);
@@ -367,7 +465,8 @@ bool NFCLayerV::get_system_information(m5::nfc::v::PICC& picc)
     if (info_flags & 0x01) {
         if (idx >= rx_len) {
             M5_LIB_LOGW("DSFID flag set but no data");
-            return true;
+            return false;
+            ;
         }
         picc.dsfID = rx[idx++];
     }
@@ -376,7 +475,7 @@ bool NFCLayerV::get_system_information(m5::nfc::v::PICC& picc)
     if (info_flags & 0x02) {
         if (idx >= rx_len) {
             M5_LIB_LOGW("AFI flag set but no data");
-            return true;
+            return false;
         }
         picc.afi = rx[idx++];
     }
@@ -385,7 +484,7 @@ bool NFCLayerV::get_system_information(m5::nfc::v::PICC& picc)
     if (info_flags & 0x04) {
         if (idx + 1 >= rx_len) {
             M5_LIB_LOGW("MemSize flag set but not enough data");
-            return true;
+            return false;
         }
         const uint16_t nb = rx[idx++];  // number of blocks - 1
         const uint8_t bs  = rx[idx++];  // (block size - 1) in bits4..0
@@ -397,11 +496,79 @@ bool NFCLayerV::get_system_information(m5::nfc::v::PICC& picc)
     if (info_flags & 0x08) {
         if (idx >= rx_len) {
             M5_LIB_LOGW("ICRef flag set but no data");
-            return true;
+            return false;
         }
         picc.icRef = rx[idx++];
     }
 
+    return true;
+}
+
+bool NFCLayerV::get_system_information_ext(m5::nfc::v::PICC& picc)
+{
+    if (picc.uid[0] != 0xE0) {
+        return false;
+    }
+
+    constexpr uint8_t request_mem_size = 0x08;  // b3
+    constexpr uint8_t request_ic_ref   = 0x10;  // b4
+    constexpr uint8_t param            = request_mem_size | request_ic_ref;
+
+    uint8_t frame[11]{};
+    frame[0] = address_flag | data_rate_flag;
+    frame[1] = m5::stl::to_underlying(Command::ExtendedGetSystemInfo);
+    frame[2] = param;
+    for (int i = 0; i < 8; ++i) {
+        frame[3 + i] = picc.uid[7 - i];
+    }
+
+    uint8_t rx[32]{};
+    uint16_t rx_len = sizeof(rx);
+    if (!_impl->transceive(rx, rx_len, frame, sizeof(frame), TIMEOUT_GET_SYSTEM_INFORMATION, modulationMode()) ||
+        rx_len < 10 || rx[0] != 0x00) {
+        M5_LIB_LOGE("Failed to ext get system information %u %02X", rx_len, rx[1] /* error code */);
+        return false;
+    }
+
+    const uint8_t info_flags = rx[1];
+    uint32_t idx{2 + 8};
+
+    if (info_flags & 0x01) {
+        if (idx >= rx_len) {
+            M5_LIB_LOGW("DSFID flag set but no data");
+            return false;
+        }
+        picc.dsfID = rx[idx++];
+    }
+
+    if (info_flags & 0x02) {
+        if (idx >= rx_len) {
+            M5_LIB_LOGW("AFI flag set but no data");
+            return false;
+        }
+        picc.afi = rx[idx++];
+    }
+
+    if (info_flags & 0x04) {
+        if (idx + 2 >= rx_len) {
+            M5_LIB_LOGW("MemSize flag set but not enough data");
+            return false;
+        }
+        const uint32_t mem = (uint32_t)rx[idx] | ((uint32_t)rx[idx + 1] << 8) | ((uint32_t)rx[idx + 2] << 16);
+        idx += 3;
+        const uint8_t block_size = (uint8_t)((mem >> 17) & 0x3F) + 1U;
+        const uint16_t blocks    = (uint16_t)((mem >> 1) & 0xFFFF) + 1U;
+        picc.blocks              = blocks;
+        picc.block_size          = block_size;
+    }
+
+    if (info_flags & 0x08) {
+        if (idx >= rx_len) {
+            M5_LIB_LOGW("ICRef flag set but no data");
+            return false;
+        }
+        picc.icRef = rx[idx++];
+    }
     return true;
 }
 
@@ -428,13 +595,14 @@ bool NFCLayerV::reset_to_ready(const PICC* picc)
 bool NFCLayerV::stay_quiet(const m5::nfc::v::PICC& picc)
 {
     if (!picc.valid()) {
+        M5_LIB_LOGE(">>>>>PICC invalid");
         return false;
     }
     uint8_t frame[10]{};
     make_frame(frame, address_flag | data_rate_flag, m5::stl::to_underlying(Command::StayQuiet), &picc);
 
     if (!_impl->transmit(frame, sizeof(frame), TIMEOUT_STAY_QUIET, modulationMode())) {
-        M5_LIB_LOGD("Failed to StayQuiet");
+        M5_LIB_LOGE("Failed to StayQuiet");
         return false;
     }
     // Error If exists response
@@ -449,14 +617,14 @@ bool NFCLayerV::dump()
     return _activePICC.valid() ? dump_all() : false;
 }
 
-bool NFCLayerV::dump(const uint8_t block)
+bool NFCLayerV::dump(const uint16_t block)
 {
     return _activePICC.valid() ? dump_block(block) : false;
 }
 
 bool NFCLayerV::dump_all()
 {
-    const uint8_t blocks = _activePICC.blocks;
+    const uint16_t blocks = _activePICC.blocks;
     if (!blocks) {
         return false;
         ;
@@ -473,7 +641,7 @@ bool NFCLayerV::dump_all()
     return ret;
 }
 
-bool NFCLayerV::dump_block(const uint8_t block)
+bool NFCLayerV::dump_block(const uint16_t block)
 {
     uint8_t rx[32]{};
 

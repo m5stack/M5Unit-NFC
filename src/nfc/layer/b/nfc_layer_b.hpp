@@ -149,11 +149,11 @@ protected:
     bool request_wakeup(uint8_t* atqb, uint16_t& atqb_len, const uint8_t afi, const m5::nfc::b::Require slots,
                         const bool wakeup);
 
-    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override
+    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint16_t saddr) override
     {
         return false;
     }
-    virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override
+    virtual bool write(const uint16_t saddr, const uint8_t* tx, const uint16_t tx_len) override
     {
         return false;
     }

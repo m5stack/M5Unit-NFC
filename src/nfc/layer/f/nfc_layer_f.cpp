@@ -1016,18 +1016,18 @@ bool NFCLayerF::dump_block(m5::nfc::f::block_t block)
 }
 
 //
-bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
+bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const uint16_t saddr)
 {
     if (_activePICC.checkFormat(format_ndef)) {
-        return read(rx, rx_len, block_t(saddr));
+        return read(rx, rx_len, block_t(static_cast<uint8_t>(saddr & 0xFF)));
     }
     M5_LIB_LOGW("PICC Not sopport NDEF");
     rx_len = 0;
     return false;
 }
-bool NFCLayerF::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
+bool NFCLayerF::write(const uint16_t saddr, const uint8_t* tx, const uint16_t tx_len)
 {
-    return _activePICC.checkFormat(format_ndef) && write(block_t(saddr), tx, tx_len);
+    return _activePICC.checkFormat(format_ndef) && write(block_t(static_cast<uint8_t>(saddr & 0xFF)), tx, tx_len);
 }
 
 }  // namespace nfc

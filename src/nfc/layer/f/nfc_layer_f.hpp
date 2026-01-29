@@ -372,8 +372,8 @@ public:
     ///@}
 
 protected:
-    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
-    virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) override;
+    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint16_t saddr) override;
+    virtual bool write(const uint16_t saddr, const uint8_t* tx, const uint16_t tx_len) override;
     inline virtual uint16_t first_user_block() const override
     {
         return _activePICC.firstUserBlock();

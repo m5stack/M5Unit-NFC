@@ -8,6 +8,7 @@
   @brief NFC-V definitions
 */
 #include "nfcv.hpp"
+#include "nfc/manufacturer_id.hpp"
 #include <M5Utility.hpp>
 
 using namespace m5::nfc;
@@ -27,6 +28,7 @@ constexpr char name_tagit_hf_i_pro[]  = "Tag-it HF-I Pro";
 constexpr char name_ti[]              = "TI(Unclassified)";
 constexpr char name_st_lri[]          = "ST LRI";
 constexpr char name_st_st25v[]        = "ST25V";
+constexpr char name_st_st25dv[]       = "ST25DV";
 constexpr char name_st[]              = "ST(Unclassified)";
 constexpr char name_fram[]            = "FRAM";
 constexpr char name_fujitsu[]         = "Fujitsu(Unclassified)";
@@ -48,6 +50,7 @@ constexpr const char* name_table[] = {
     // ST
     name_st_lri,
     name_st_st25v,
+    name_st_st25dv,
     name_st,
     // Others
     name_fram,
@@ -145,7 +148,7 @@ Type identify_type(const PICC& picc)
     // M5_LIB_LOGE("mf:%02X ic:%02X ir:%02X", mf, ic, ir);
 
     // NXP
-    if (mf == 0x04) {
+    if (mf == m5::stl::to_underlying(m5::nfc::ManufacturerId::NXP)) {
         if (ic == 0x01) {
             uint8_t type_indicator_bits = (picc.uid[3] >> 3) & 0x03;
             switch (type_indicator_bits) {
@@ -163,7 +166,7 @@ Type identify_type(const PICC& picc)
     }
 
     // TI
-    if (mf == 0x07) {
+    if (mf == m5::stl::to_underlying(m5::nfc::ManufacturerId::TexasInstruments)) {
         if (ic == 0x80) {
             return Type::TI_TAGIT_2048;
         }
@@ -180,10 +183,14 @@ Type identify_type(const PICC& picc)
     }
 
     // STMicroelectronics
-    if (mf == 0x02) {
+    if (mf == m5::stl::to_underlying(m5::nfc::ManufacturerId::STMicroelectronics)) {
         switch (ir) {
             case 0x23:
-                return Type::ST_ST25DV;  // ST25DV04K / 16K
+                return Type::ST_ST25V;
+            case 0x24:
+                // [falltrough]
+            case 0x26:
+                return Type::ST_ST25DV;  // ST25DV 04K/16K/64K
             case 0x02:
                 return Type::ST_LRI;  // LRI2K
         }
@@ -191,7 +198,7 @@ Type identify_type(const PICC& picc)
     }
 
     // Fujitsu
-    if (mf == 0x47) {
+    if (mf == m5::stl::to_underlying(m5::nfc::ManufacturerId::Fujitsu)) {
         return Type::Fujitsu;
     }
 

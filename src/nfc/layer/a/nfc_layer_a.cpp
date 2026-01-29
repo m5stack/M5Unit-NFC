@@ -1821,23 +1821,25 @@ bool NFCLayerA::mifare_classic_value_block(const m5::nfc::a::Command cmd, const 
 }
 
 // for NDEF
-bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr)
+bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint16_t saddr)
 {
     if (!rx || !rx_len || !_activePICC.valid()) {
         return false;
     }
-    return _activePICC.canFastRead() ? read_using_fast(rx, rx_len, saddr)
-                                     : read_using_read16(rx, rx_len, saddr, DEFAULT_KEY);
+    const uint8_t addr = static_cast<uint8_t>(saddr & 0xFF);
+    return _activePICC.canFastRead() ? read_using_fast(rx, rx_len, addr)
+                                     : read_using_read16(rx, rx_len, addr, DEFAULT_KEY);
 }
 
 // for NDEF
-bool NFCLayerA::write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len)
+bool NFCLayerA::write(const uint16_t saddr, const uint8_t* tx, const uint16_t tx_len)
 {
     if (!tx || !tx_len || !_activePICC.valid()) {
         return false;
     }
-    return _activePICC.supportsNFC() ? write_using_write4(saddr, tx, tx_len)
-                                     : write_using_write16(saddr, tx, tx_len, DEFAULT_KEY);
+    const uint8_t addr = static_cast<uint8_t>(saddr & 0xFF);
+    return _activePICC.supportsNFC() ? write_using_write4(addr, tx, tx_len)
+                                     : write_using_write16(addr, tx, tx_len, DEFAULT_KEY);
 }
 
 //

@@ -62,9 +62,9 @@ public:
     }
 
     //! @brief Read NDEF (block)
-    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) = 0;
+    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint16_t saddr) = 0;
     //! @brief Write NDEF (block)
-    virtual bool write(const uint8_t saddr, const uint8_t* tx, const uint16_t tx_len) = 0;
+    virtual bool write(const uint16_t saddr, const uint8_t* tx, const uint16_t tx_len) = 0;
 
     //! @brief First user block
     virtual uint16_t first_user_block() const = 0;

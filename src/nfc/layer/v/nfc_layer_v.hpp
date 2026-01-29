@@ -123,7 +123,7 @@ public:
       @warning The required size varies depending on the PICC
       @warning The maximum rx size is 32
      */
-    bool readBlock(uint8_t rx[32], const uint8_t block);
+    bool readBlock(uint8_t rx[32], const uint16_t block);
     /*!
       @brief Write single block
       @param block Block address
@@ -132,7 +132,7 @@ public:
       @warning If the tx_len is less than the size of one PICC block, the remaining space is filled with 0x00
       @warning If the tx_len is larger than the size of one PICC block, only the first 4 bytes will be written
      */
-    bool writeBlock(const uint8_t block, const uint8_t* tx, const uint8_t tx_len);
+    bool writeBlock(const uint16_t block, const uint8_t* tx, const uint8_t tx_len);
     /*!
       @brief Read any bytes from user area
       @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
@@ -141,7 +141,7 @@ public:
       @param sblock Reading start block
       @return True if successful
      */
-    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint8_t saddr) override;
+    virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint16_t sblock) override;
     /*!
       @brief Write any bytes to user area
       @details Continue writing only the user area from the first block of the user area until tx_len is satisfied
@@ -151,7 +151,7 @@ public:
       @return True if successful
       @warning The write unit is the size of one block in PICC
      */
-    virtual bool write(const uint8_t sblock, const uint8_t* tx, const uint16_t tx_len) override;
+    virtual bool write(const uint16_t sblock, const uint8_t* tx, const uint16_t tx_len) override;
 
     /*!
       @brief Dump all blocks
@@ -163,7 +163,7 @@ public:
       @param addr Block address
       @return True if successful
     */
-    bool dump(const uint8_t block);
+    bool dump(const uint16_t block);
     ///@}
 
     ///@note For activated PICC
@@ -196,10 +196,13 @@ public:
 
 protected:
     bool dump_all();
-    bool dump_block(const uint8_t block);
+    bool dump_block(const uint16_t block);
 
     bool detect_single(m5::nfc::v::PICC& picc);
     bool get_system_information(m5::nfc::v::PICC& picc);
+    bool get_system_information_ext(m5::nfc::v::PICC& picc);
+    bool read_block_ext(uint8_t rx[32], const m5::nfc::v::PICC& picc, const uint16_t block);
+    bool write_block_ext(const m5::nfc::v::PICC& picc, const uint16_t block, const uint8_t* tx, const uint8_t tx_len);
     bool reset_to_ready(const m5::nfc::v::PICC* picc);
     bool stay_quiet(const m5::nfc::v::PICC& picc);
 
