@@ -593,7 +593,7 @@ bool NFCLayerA::read(uint8_t* rx, uint16_t& rx_len, const uint8_t addr, const m5
         }
         M5_LIB_LOGV("   READ:%u %u/%u", cur, actual, blocks);
         std::vector<uint8_t> data{};
-        const bool use_plain = _activePICC.isMifarePlusS();
+        const bool use_plain = _activePICC.requiresPlusSL3PlainRead();
         if (!mifare_plus_read_mac_l4(cur, 1, data, use_plain) || data.size() < 16) {
             M5_LIB_LOGE("Failed to read block:%u", cur);
             return false;
@@ -811,7 +811,7 @@ bool NFCLayerA::write(const uint8_t addr, const uint8_t* tx, const uint16_t tx_l
         }
         uint16_t sz = std::min<uint16_t>(16, tx_len - written);
         M5_LIB_LOGV("  WRITE:%u %u %u/%u", cur, sz, written, tx_len);
-        const bool use_plain = _activePICC.isMifarePlusS();
+        const bool use_plain = _activePICC.requiresPlusSL3PlainRead();
         if (!mifare_plus_write_mac_l4(cur, data, sz, use_plain)) {
             // M5_LIB_LOGE("mifare_plus_write_mac_l4 failed");
             break;
@@ -1766,7 +1766,7 @@ bool NFCLayerA::dump_sector_mifare_plus_sl3(const uint8_t sector)
 
     uint8_t trailer[16]{};
     std::vector<uint8_t> data;
-    const bool use_plain = _activePICC.isMifarePlusS();  // Plus S may need plain mode
+    const bool use_plain = _activePICC.requiresPlusSL3PlainRead();  // Plus S/SE require plain mode
     if (!mifare_plus_read_mac_l4(trailer_block, 1, data, use_plain) || data.size() < sizeof(trailer)) {
         M5_LIB_LOGE("SL3 read failed trailer block %u", trailer_block);
         return false;

@@ -401,6 +401,16 @@ struct PICC {
     {
         return is_mifare_plus(type) && sub_type_plus == SubTypePlus::S;
     }
+    //! @brief Is MIFARE Plus SE?
+    inline bool isMifarePlusSE() const
+    {
+        return type == Type::MIFARE_Plus_SE;
+    }
+    //! @brief Requires plain mode for SL3 read? (Plus S and SE don't support encrypted read)
+    inline bool requiresPlusSL3PlainRead() const
+    {
+        return isMifarePlusS() || isMifarePlusSE();
+    }
     inline bool isMifareClassicCompatible() const
     {
         return is_mifare_classic_compatible(type, security_level);
