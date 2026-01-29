@@ -5,6 +5,7 @@
  */
 /*!
   @file M5UnitUnifiedNFC.h
+  @brief Main header of M5Unit-NFC using M5UnitUnified
  */
 #ifndef M5_UNIT_UNIFIED_NFC_H
 #define M5_UNIT_UNIFIED_NFC_H

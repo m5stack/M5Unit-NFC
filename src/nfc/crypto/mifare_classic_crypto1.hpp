@@ -19,6 +19,10 @@ namespace mifare {
 namespace classic {
 
 using MLFSR48 = m5::utility::FibonacciLFSR_Left<48, 5, 6, 7, 9, 13, 19, 21, 23, 24, 29, 31, 33, 34, 36, 38, 39, 43, 48>;
+/*!
+  @class Crypto1
+  @brief Crypto1 for MIFARE Classic
+ */
 class Crypto1 : public MLFSR48 {
 public:
     Crypto1() noexcept : MLFSR48(0)

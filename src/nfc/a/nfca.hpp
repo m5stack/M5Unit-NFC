@@ -73,6 +73,10 @@ enum class Type : uint8_t {
     //    NotCompleted = 0xFF,  //!< SAK indicates UID is not complete
 };
 
+/*!
+  @enum SubTypePlus
+  @brief Sub type for MIFARE Plus
+ */
 enum class SubTypePlus : uint8_t {
     None,
     EV1,
@@ -82,6 +86,10 @@ enum class SubTypePlus : uint8_t {
     X_OR_EV,
 };
 
+/*!
+  @enum SubTypeDESFire
+  @brief Sub type for MIFARE DESFire
+ */
 enum SubTypeDESFire : uint8_t {
     None,
     EV1,

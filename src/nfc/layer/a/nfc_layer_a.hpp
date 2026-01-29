@@ -293,7 +293,7 @@ public:
     ///@name For MIFARE classic
     ///@{
     /*!
-      @brief Authentication by KeyA for MIFARE classsic
+      @brief Authentication by KeyA for MIFARE classic
       @param block Authentication block
       @param key MIFARE classic key
       @param encrypted Is it already in an encrypted state?
@@ -623,6 +623,10 @@ protected:
 private:
     bool mifare_plus_transceive_raw(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len);
 
+    /*!
+      @struct MifarePlusSession
+      @brief Session for MIFARE Plus
+     */
     struct MifarePlusSession {
         bool authenticated{};
         uint16_t key_no{};

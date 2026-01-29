@@ -36,6 +36,10 @@ namespace nfc {
  */
 class EmulationLayerF {
 public:
+    /*!
+      @enum State
+      @brief Emulation state for NFC-F
+     */
     enum class State { None, Off, Communicated, Selected };
 
     struct Adapter;

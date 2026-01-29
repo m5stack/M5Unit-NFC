@@ -33,6 +33,10 @@ inline uint16_t fsci_to_fsc(const uint8_t fsci)
     return (fsci < (sizeof(table) / sizeof(table[0]))) ? table[fsci] : 0;
 }
 
+/*!
+  @struct config_t
+  @brief ISO-DEP configuration
+ */
 struct config_t {
     uint16_t fsc{};
     uint16_t pcd_max_frame_tx{};
@@ -40,7 +44,7 @@ struct config_t {
     uint32_t fwt_ms{100};
     uint32_t wtx_max_ms{5000};
 
-    // optios
+    // options
     bool use_cid{};
     uint8_t cid{};
     bool use_nad{};
@@ -68,11 +72,19 @@ struct config_t {
     }
 };
 
+/*!
+  @struct RxInfo
+  @brief RX information
+ */
 struct RxInfo {
     bool more{};      // Continue chaining?
     bool wtx_seen{};  // WTX?
 };
 
+/*!
+  @class IsoDEP
+  @brief ISO Data Exchange Protocol
+ */
 class IsoDEP {
 public:
     explicit IsoDEP(NFCLayerInterface& layer) : _layer{layer}
@@ -92,12 +104,12 @@ public:
         _block_num = 0;
     }
 
-    //@brief Transceive INF
+    //! @brief Transceive INF
     bool transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t* tx_inf, const uint16_t tx_inf_len,
                        RxInfo* info = nullptr);
-    //@brief Transceive APDU
+    //! @brief Transceive APDU
     bool transceiveAPDU(uint8_t* rx, uint16_t& rx_len, const uint8_t* cmd, const uint16_t cmd_len);
-    //@brief Transceive normal
+    //! @brief Transceive normal
     bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
 
 private:

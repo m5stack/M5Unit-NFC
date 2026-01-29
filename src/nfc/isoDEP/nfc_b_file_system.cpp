@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 /*!
-  @file desfire_file_system.cpp
+  @file nfc_b_file_system.cpp
   @brief File system base using isoDEP for NFC-B
 */
 #include "nfc_b_file_system.hpp"

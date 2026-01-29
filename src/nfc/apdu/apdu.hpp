@@ -159,6 +159,10 @@ inline bool need_select_file_le(const uint8_t param2)
     return (param2 & 0x0C) != 0x0C;
 }
 
+/*!
+  @struct TLV
+  @brief TLV element
+ */
 struct TLV {
     uint32_t tag{};      //!< T (Tag)
     uint32_t len{};      //!< L (length)
@@ -175,7 +179,9 @@ struct TLV {
     }
 };
 
+//! @brief Parse TLV
 std::vector<TLV> parse_tlv(const uint8_t* ptr, const uint32_t len);
+//! @brief Dump TLV
 void dump_tlv(const std::vector<TLV>& tlvs, const uint8_t depth = 0);
 
 /*!
