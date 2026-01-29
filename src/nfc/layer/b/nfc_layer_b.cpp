@@ -48,6 +48,11 @@ constexpr uint8_t required_slots(const Require slots)
 namespace m5 {
 namespace nfc {
 
+uint16_t NFCLayerB::maximum_fifo_depth() const
+{
+    return _impl->max_fifo_depth();
+}
+
 bool NFCLayerB::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                            const uint32_t timeout_ms)
 {

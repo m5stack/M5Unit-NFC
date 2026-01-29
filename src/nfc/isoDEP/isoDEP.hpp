@@ -34,9 +34,9 @@ inline uint16_t fsci_to_fsc(const uint8_t fsci)
 }
 
 struct config_t {
-    uint16_t fsc{MAX_FRAME_SIZE};
-    uint16_t pcd_max_frame_tx{MAX_FRAME_SIZE};
-    uint16_t pcd_max_frame_rx{MAX_FRAME_SIZE};
+    uint16_t fsc{};
+    uint16_t pcd_max_frame_tx{};
+    uint16_t pcd_max_frame_rx{};
     uint32_t fwt_ms{100};
     uint32_t wtx_max_ms{5000};
 

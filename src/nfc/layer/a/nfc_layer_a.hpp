@@ -60,6 +60,7 @@ public:
     {
         return &_isoDEP;
     }
+    virtual uint16_t maximum_fifo_depth() const override;
     ///@}
 
     /*!

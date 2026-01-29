@@ -235,8 +235,7 @@ private:
 // Impl for units
 struct NFCLayerV::Adapter {
     virtual ~Adapter() = default;
-
-    // virtual uint16_t max_fifo_depth() = 0;
+    virtual uint16_t max_fifo_depth() const = 0;
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms, const m5::nfc::v::ModulationMode mode) = 0;

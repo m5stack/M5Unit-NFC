@@ -49,6 +49,7 @@ public:
     {
         return &_isoDEP;
     }
+    virtual uint16_t maximum_fifo_depth() const override;
 
     /*!
       @brief Is the specified PICC currently active?
@@ -190,6 +191,7 @@ private:
 // Impl for units
 struct NFCLayerB::Adapter {
     virtual ~Adapter() = default;
+    virtual uint16_t max_fifo_depth() const = 0;
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms)                                         = 0;

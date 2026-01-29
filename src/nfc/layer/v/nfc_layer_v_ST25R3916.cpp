@@ -24,6 +24,10 @@ struct AdapterST25R3916ForV final : NFCLayerV::Adapter {
     explicit AdapterST25R3916ForV(UnitST25R3916& ref) : _u{ref}
     {
     }
+    inline virtual uint16_t max_fifo_depth() const override
+    {
+        return m5::unit::st25r3916::MAX_FIFO_DEPTH;
+    }
 
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms, const m5::nfc::v::ModulationMode mode) override;
