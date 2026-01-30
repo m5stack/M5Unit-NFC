@@ -75,7 +75,7 @@ Support may be expanded in future updates to cover PICCs not listed here.
 | Tag-it HF-I Standard | Type5 | Yes | Yes | Yes |  |
 | Tag-it HF-I Plus | Type5 | Yes | Yes | Yes |  |
 | Tag-it HF-I Pro | Type5 | Yes | Yes | Yes |  |
-
+| ST25DV | Type5 |  Yes | Yes | Yes |  |
 
 ## Emulation
 
