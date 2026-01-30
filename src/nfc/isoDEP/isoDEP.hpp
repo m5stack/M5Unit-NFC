@@ -1,0 +1,124 @@
+/*
+ * SPDX-FileCopyrightText: 2025 M5Stack Technology CO LTD
+ *
+ * SPDX-License-Identifier: MIT
+ */
+/*!
+  @file isoDEP.hpp
+  @brief ISO Data Exchange Protocol
+*/
+#ifndef M5_UNIT_UNIFIED_NFC_NFC_ISODEP_ISODEP_HPP
+#define M5_UNIT_UNIFIED_NFC_NFC_ISODEP_ISODEP_HPP
+#include <cstdint>
+#include <vector>
+
+namespace m5 {
+namespace nfc {
+class NFCLayerInterface;
+/*!
+  @namespace isodep
+  @brief For ISO-DEP
+ */
+namespace isodep {
+
+//! @brief Calculate waiting time(ms) by fwi and fc
+uint32_t fwi_to_ms(const uint8_t fwi, const float fc);
+
+constexpr uint16_t MAX_FRAME_SIZE{256};
+
+//! @brief Convert FSCI to FSC (ISO/IEC 14443-4)
+inline uint16_t fsci_to_fsc(const uint8_t fsci)
+{
+    static constexpr uint16_t table[] = {16, 24, 32, 40, 48, 64, 96, 128, 256};
+    return (fsci < (sizeof(table) / sizeof(table[0]))) ? table[fsci] : 0;
+}
+
+/*!
+  @struct config_t
+  @brief ISO-DEP configuration
+ */
+struct config_t {
+    uint16_t fsc{};
+    uint16_t pcd_max_frame_tx{};
+    uint16_t pcd_max_frame_rx{};
+    uint32_t fwt_ms{100};
+    uint32_t wtx_max_ms{5000};
+
+    // options
+    bool use_cid{};
+    uint8_t cid{};
+    bool use_nad{};
+    uint8_t nad{};
+
+    uint8_t max_retries{2};
+    bool rx_crc{true};  // Remove CRC if true in INF
+
+    inline uint16_t max_frame_cap_tx() const
+    {
+        const auto max_frame = std::min<uint16_t>(pcd_max_frame_tx, fsc);
+        return (max_frame > (overhead() + 2)) ? (max_frame - overhead() - 2) : 0;
+    }
+    inline uint16_t max_frame_size_rx() const
+    {
+        return std::min<uint16_t>(pcd_max_frame_rx, fsc);
+    }
+    inline uint16_t fsc_inf_cap() const
+    {
+        return (fsc > overhead()) ? static_cast<uint16_t>(fsc - overhead()) : 0;
+    }
+    inline uint16_t overhead() const
+    {
+        return 1 + (use_cid ? 1 : 0) + (use_nad ? 1 : 0);
+    }
+};
+
+/*!
+  @struct RxInfo
+  @brief RX information
+ */
+struct RxInfo {
+    bool more{};      // Continue chaining?
+    bool wtx_seen{};  // WTX?
+};
+
+/*!
+  @class IsoDEP
+  @brief ISO Data Exchange Protocol
+ */
+class IsoDEP {
+public:
+    explicit IsoDEP(NFCLayerInterface& layer) : _layer{layer}
+    {
+    }
+    IsoDEP(NFCLayerInterface& layer, const config_t& c) : _layer{layer}, _cfg{c}
+    {
+    }
+
+    inline config_t config() const
+    {
+        return _cfg;
+    }
+    inline void config(const config_t& cfg)
+    {
+        _cfg       = cfg;
+        _block_num = 0;
+    }
+
+    //! @brief Transceive INF
+    bool transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t* tx_inf, const uint16_t tx_inf_len,
+                       RxInfo* info = nullptr);
+    //! @brief Transceive APDU
+    bool transceiveAPDU(uint8_t* rx, uint16_t& rx_len, const uint8_t* cmd, const uint16_t cmd_len);
+    //! @brief Transceive normal
+    bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
+
+private:
+    NFCLayerInterface& _layer;
+    config_t _cfg{};
+    uint8_t _block_num{};  // I-Block BN (0/1)
+};
+
+}  // namespace isodep
+}  // namespace nfc
+}  // namespace m5
+#endif
