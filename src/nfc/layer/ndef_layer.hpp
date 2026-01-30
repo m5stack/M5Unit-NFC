@@ -100,6 +100,12 @@ public:
       @return True if successful
      */
     bool readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContainer& cc);
+    /*!
+      @brief Write Type5 Capability Container
+      @param[in] cc Capability container
+      @return True if successful
+     */
+    bool writeCapabilityContainer(const m5::nfc::ndef::type5::CapabilityContainer& cc);
 
 protected:
     bool read_capability_container_type4_iso7816(m5::nfc::ndef::type4::CapabilityContainer& cc);
@@ -125,6 +131,27 @@ protected:
 
     std::vector<m5::nfc::ndef::TLV> merge_tlv(std::vector<m5::nfc::ndef::TLV>& old_tlvs,
                                               const std::vector<m5::nfc::ndef::TLV>& tlvs);
+
+    ///@name Byte-level access helpers for NFC-V (Type5)
+    ///@{
+    /*!
+      @brief Read bytes from arbitrary byte offset (for NFC-V)
+      @param[out] rx Output buffer
+      @param offset Byte offset from start of user area
+      @param len Number of bytes to read
+      @return True if successful
+     */
+    bool read_nfcv(uint8_t* rx, const uint16_t offset, const uint16_t len);
+    /*!
+      @brief Write bytes to arbitrary byte offset (for NFC-V)
+      @param offset Byte offset from start of user area
+      @param tx Input buffer
+      @param len Number of bytes to write
+      @return True if successful
+      @note Performs read-modify-write for partial block writes
+     */
+    bool write_nfcv(const uint16_t offset, const uint8_t* tx, const uint16_t len);
+    ///@}
 
 private:
     NFCLayerInterface& _interface;

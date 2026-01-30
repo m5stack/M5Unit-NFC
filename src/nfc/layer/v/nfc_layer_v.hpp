@@ -176,6 +176,18 @@ public:
      */
     bool ndefIsValidFormat(bool& valid);
     /*!
+      @brief Read Type5 Capability Container
+      @param[out] cc Capability container
+      @return True if successful
+     */
+    bool ndefReadCapabilityContainer(m5::nfc::ndef::type5::CapabilityContainer& cc);
+    /*!
+      @brief Write Type5 Capability Container
+      @param[in] cc Capability container
+      @return True if successful
+     */
+    bool ndefWriteCapabilityContainer(const m5::nfc::ndef::type5::CapabilityContainer& cc);
+    /*!
       @brief Read NDEF Message TLV
       @param[out] msg Messgae If it does not exist, a Null TLV is returned
       @return True if successful

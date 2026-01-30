@@ -11,12 +11,87 @@
 #include <M5Utility.hpp>
 #include <numeric>
 #include <cinttypes>
+#include <cstring>
 
 namespace {
 uint32_t calculate_record_size(const std::vector<m5::nfc::ndef::Record>& v)
 {
     return std::accumulate(v.cbegin(), v.cend(), 0U,
                            [](uint32_t acc, const m5::nfc::ndef::Record& r) { return acc + r.required(); });
+}
+
+bool is_smartag1_external_type(const char* type, const uint8_t type_len)
+{
+    static constexpr char smartag_type[] = "st.com:smartag";
+    if (!type || type_len != (sizeof(smartag_type) - 1)) {
+        return false;
+    }
+    return std::memcmp(type, smartag_type, sizeof(smartag_type) - 1) == 0;
+}
+
+bool decode_smartag1_external_record(const uint8_t* payload, const uint32_t payload_len, m5::nfc::ndef::Record& out)
+{
+    if (!payload || payload_len < 3) {
+        return false;
+    }
+
+    constexpr uint8_t mask_sr  = 0x10;
+    constexpr uint8_t mask_il  = 0x08;
+    constexpr uint8_t mask_tnf = 0x07;
+
+    uint32_t idx{};
+    const uint8_t flags    = payload[idx++];
+    const uint8_t type_len = payload[idx++];
+    uint32_t pl_len{};
+    if (flags & mask_sr) {
+        if (idx + 1 > payload_len) {
+            return false;
+        }
+        pl_len = payload[idx++];
+    } else {
+        if (idx + 4 > payload_len) {
+            return false;
+        }
+        pl_len = ((uint32_t)payload[idx] << 24) | ((uint32_t)payload[idx + 1] << 16) |
+                 ((uint32_t)payload[idx + 2] << 8) | payload[idx + 3];
+        idx += 4;
+    }
+
+    uint8_t id_len{};
+    if (flags & mask_il) {
+        if (idx + 1 > payload_len) {
+            return false;
+        }
+        id_len = payload[idx++];
+    }
+
+    if (idx + type_len + id_len > payload_len) {
+        return false;
+    }
+    const char* type_ptr = reinterpret_cast<const char*>(payload + idx);
+    if (!is_smartag1_external_type(type_ptr, type_len)) {
+        return false;
+    }
+    idx += type_len;
+
+    const uint8_t* id_ptr = payload + idx;
+    idx += id_len;
+
+    const uint32_t available = payload_len - idx;
+    const uint32_t use_len   = (pl_len <= available) ? pl_len : available;
+    const uint8_t* pl_ptr    = payload + idx;
+
+    out = m5::nfc::ndef::Record(static_cast<m5::nfc::ndef::TNF>(flags & mask_tnf));
+    out.setType(type_ptr);
+    if (id_len) {
+        out.setIdentifier(id_ptr, id_len);
+    }
+    if (use_len) {
+        out.setPayload(pl_ptr, use_len);
+    }
+    // Keep raw flags (MB/ME/IL/SR/TNF) as in tag data.
+    out.attribute().value = flags;
+    return true;
 }
 
 }  // namespace
@@ -71,16 +146,14 @@ void TLV::pop_back()
 
     const auto n = _records.size();
     if (n == 0) {
-        /* Nop */
-    } else if (n == 1) {
-        // single record → MB=1, ME=1
-        auto& attr = _records[0].attribute();
-        attr.messageBegin(true);
-        attr.messageEnd(true);
-    } else {
-        // 2 or more records → last ME=1
-        auto& attr = _records.back().attribute();
-        attr.messageEnd(true);
+        return;
+    }
+
+    // Normalize MB/ME for all records after removal.
+    for (uint_fast8_t i = 0; i < n; ++i) {
+        auto& attr = _records[i].attribute();
+        attr.messageBegin(i == 0);
+        attr.messageEnd(i + 1 == n);
     }
 }
 
@@ -196,7 +269,15 @@ uint32_t TLV::decode(const uint8_t* buf, const uint32_t len)
             Record r{};
             uint32_t rlen = len - (buf - top);
             auto rec      = r.decode(buf, rlen);
+
             if (!rec) {
+                if (_records.empty()) {
+                    Record sr{};
+                    if (decode_smartag1_external_record(buf, payload_end - buf, sr)) {
+                        _records.push_back(sr);
+                        return payload_end - top;
+                    }
+                }
                 M5_LIB_LOGE("Record decode error");
                 return 0;
             }
@@ -204,6 +285,10 @@ uint32_t TLV::decode(const uint8_t* buf, const uint32_t len)
 
             if (_records.empty()) {
                 if (!r.attribute().messageBegin()) {
+                    if (r.tnf() == TNF::External && is_smartag1_external_type(r.type(), strlen(r.type()))) {
+                        _records.push_back(r);
+                        return payload_end - top;
+                    }
                     M5_LIB_LOGE("First record is not MB");
                     return 0;
                 }

@@ -767,10 +767,18 @@ bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContaine
     }
     memcpy(cc.block, rx, std::min<uint16_t>(rx_len, sizeof(cc.block)));
 
-    M5_LIB_LOGE("CC5:%02X %u.%u %u %02X/%02X %02X", cc.block[0], cc.major_version(), cc.minor_version(), cc.ndef_size(),
+    M5_LIB_LOGV("CC5:%02X %u.%u %u %02X/%02X %02X", cc.block[0], cc.major_version(), cc.minor_version(), cc.ndef_size(),
                 cc.read_access(), cc.write_access(), cc.addtional_feature());
 
     return true;
+}
+
+bool NDEFLayer::writeCapabilityContainer(const m5::nfc::ndef::type5::CapabilityContainer& cc)
+{
+    if (!cc.size()) {
+        return false;
+    }
+    return write_nfcv(0, cc.block, cc.size());
 }
 
 //
@@ -1233,49 +1241,183 @@ bool NDEFLayer::read_type5(std::vector<m5::nfc::ndef::TLV>& tlvs, const m5::nfc:
         return false;
     }
 
-    TLV tmp{Tag::Message};
-    bool ret{};
-
-    uint16_t block            = _interface.first_user_block();
-    const uint16_t last_block = _interface.last_user_block();
-    if (block == 0xFFFF || last_block == 0xFFFF) {
+    // Use CC's ndef_size to determine read size (ndef_size includes CC)
+    const uint16_t user_area_size = _interface.user_area_size();
+    const uint16_t ndef_size      = cc.ndef_size();
+    if (ndef_size == 0 || ndef_size > user_area_size) {
+        M5_LIB_LOGE("Invalid ndef_size %u (user_area:%u)", ndef_size, user_area_size);
         return false;
     }
 
-    // Read CC + TLV
-    const uint16_t buf_size = _interface.user_area_size();
-    std::vector<uint8_t> buf(buf_size);
-    uint16_t actual = buf_size;
-    if (!_interface.read(buf.data(), actual, block) || actual != buf_size) {
-        M5_LIB_LOGE("Failed to read %u %u/%u", block, actual, buf_size);
-        return false;
+    uint32_t offset = cc.size();
+    if (offset >= ndef_size) {
+        return true;
     }
 
-    {
-        uint32_t offset = cc.size();
-        uint32_t idx{};
-        TLV tlv{};
-        do {
-            auto decoded = tlv.decode(buf.data() + offset, actual > offset ? actual - offset : 0);
-            // Even if decoding fails, return the results up to that point and treat it as a success
-            if (!decoded) {
-                M5_LIB_LOGW("Failed to decode [%3u]:%02X", idx, tlv.tag());
-                ret = true;
-                break;
-            }
-            offset += decoded;
-            ++idx;
-            M5_LIB_LOGV("Decoded:%u %02X", decoded, tlv.tag());
+    uint32_t idx{};
+    while (offset < ndef_size) {
+        uint8_t tag{};
+        if (!read_nfcv(&tag, offset, 1)) {
+            return false;
+        }
 
+        // M5_LIB_LOGE("  Tag:%02X", tag);
+        if (!is_valid_tag(tag)) {
+            M5_LIB_LOGW("Invalid tag %02X at offset:%u, stop parsing", tag, offset);
+            break;  // Return the TLVs up to this point
+        }
+
+        // Terminator TLV (single byte)
+        if (is_terminator_tag(tag)) {
+            TLV tlv{Tag::Terminator};
             if (contains_tag(tagBits, tlv.tag())) {
                 tlvs.push_back(tlv);
             }
+            break;
+        }
+        // Null TLV (single byte)
+        if (tag == m5::stl::to_underlying(Tag::Null)) {
+            break;
+        }
 
-        } while (!tlv.isTerminatorTLV() && !tlv.isNullTLV());
-        ret = true;
+        uint8_t len1{};
+        if (offset + 1 >= ndef_size || !read_nfcv(&len1, offset + 1, 1)) {
+            return false;
+        }
+        uint16_t payload_len{};
+        uint8_t len_bytes{1};
+        if (len1 == 0xFF) {
+            uint8_t len2[2]{};
+            if (offset + 3 >= ndef_size || !read_nfcv(len2, offset + 2, 2)) {
+                return false;
+            }
+            payload_len = ((uint16_t)len2[0] << 8) | len2[1];
+            len_bytes   = 3;
+        } else {
+            payload_len = len1;
+        }
+
+        const uint32_t total_len = 1 + len_bytes + payload_len;
+        if (offset + total_len > ndef_size) {
+            M5_LIB_LOGE("TLV out of range offset:%u len:%u ndef:%u", offset, total_len, ndef_size);
+            return false;
+        }
+
+        std::vector<uint8_t> buf(total_len);
+        if (!read_nfcv(buf.data(), offset, total_len)) {
+            return false;
+        }
+
+        TLV tlv{};
+        // M5_LIB_LOGE("---> Tag:%02X Payload:", tag);
+        // m5::utility::log::dump(buf.data(), total_len, false);
+
+        auto decoded = tlv.decode(buf.data(), total_len);
+        // Even if decoding fails, return the results up to that point and treat it as a success
+        if (!decoded) {
+            M5_LIB_LOGW("Failed to decode [%3u]:%02X", idx, tlv.tag());
+            break;
+        }
+        offset += decoded;
+        ++idx;
+        M5_LIB_LOGV("Decoded:%u %02X", decoded, tlv.tag());
+
+        if (contains_tag(tagBits, tlv.tag())) {
+            tlvs.push_back(tlv);
+        }
+
+        if (tlv.isTerminatorTLV() || tlv.isNullTLV()) {
+            break;
+        }
     }
 
-    return ret;
+    return true;
+}
+
+bool NDEFLayer::read_nfcv(uint8_t* rx, const uint16_t offset, const uint16_t len)
+{
+    if (!rx || !len) {
+        return false;
+    }
+
+    const uint16_t block_size = _interface.unit_size_read();
+    if (!block_size || block_size > NDEF_MAX_UNIT_SIZE_READ) {
+        return false;
+    }
+
+    const uint16_t first_block = _interface.first_user_block();
+    const uint16_t start_block = first_block + offset / block_size;
+    const uint8_t start_offset = offset % block_size;
+    const uint16_t end_byte    = offset + len - 1;
+    const uint16_t end_block   = first_block + end_byte / block_size;
+
+    if (end_block > _interface.last_user_block()) {
+        return false;
+    }
+
+    uint16_t written = 0;
+    for (uint16_t block = start_block; block <= end_block; ++block) {
+        uint8_t rbuf[NDEF_MAX_UNIT_SIZE_READ]{};
+        uint16_t rlen = block_size;
+        if (!_interface.read(rbuf, rlen, block) || rlen != block_size) {
+            return false;
+        }
+
+        const uint8_t blk_start = (block == start_block) ? start_offset : 0;
+        const uint8_t blk_end   = (block == end_block) ? (end_byte % block_size) : (block_size - 1);
+        const uint8_t copy_len  = blk_end - blk_start + 1;
+
+        memcpy(rx + written, rbuf + blk_start, copy_len);
+        written += copy_len;
+    }
+    return written == len;
+}
+
+bool NDEFLayer::write_nfcv(const uint16_t offset, const uint8_t* tx, const uint16_t len)
+{
+    if (!tx || !len) {
+        return false;
+    }
+
+    const uint16_t block_size = _interface.unit_size_write();
+    if (!block_size || block_size > NDEF_MAX_UNIT_SIZE_READ) {
+        return false;
+    }
+
+    const uint16_t first_block = _interface.first_user_block();
+    const uint16_t start_block = first_block + offset / block_size;
+    const uint8_t start_offset = offset % block_size;
+    const uint16_t end_byte    = offset + len - 1;
+    const uint16_t end_block   = first_block + end_byte / block_size;
+
+    if (end_block > _interface.last_user_block()) {
+        return false;
+    }
+
+    uint16_t src_offset = 0;
+    for (uint16_t block = start_block; block <= end_block; ++block) {
+        const uint8_t blk_start = (block == start_block) ? start_offset : 0;
+        const uint8_t blk_end   = (block == end_block) ? (end_byte % block_size) : (block_size - 1);
+        const uint8_t copy_len  = blk_end - blk_start + 1;
+
+        uint8_t wbuf[NDEF_MAX_UNIT_SIZE_READ]{};
+
+        // Read-modify-write for partial blocks
+        if (blk_start != 0 || blk_end != block_size - 1) {
+            uint16_t rlen = block_size;
+            if (!_interface.read(wbuf, rlen, block) || rlen != block_size) {
+                return false;
+            }
+        }
+
+        memcpy(wbuf + blk_start, tx + src_offset, copy_len);
+
+        if (!_interface.write(block, wbuf, block_size)) {
+            return false;
+        }
+        src_offset += copy_len;
+    }
+    return src_offset == len;
 }
 
 //
@@ -1555,20 +1697,21 @@ bool NDEFLayer::write_type4_iso7816(const std::vector<m5::nfc::ndef::TLV>& tlvs,
 
 bool NDEFLayer::write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep)
 {
-    bool ret{};
     const uint32_t user_size = _interface.user_area_size();
 
     if (tlvs.empty()) {
         return false;
     }
 
+    // Read CC
+    type5::CapabilityContainer cc{};
+    if (!readCapabilityContainer(cc)) {
+        return false;
+    }
+
     std::vector<TLV> tmp{};
     if (keep) {
-        bool valid{};
-        if (!isValidFormat(valid, NFCForumTag::Type5)) {
-            return false;
-        }
-        if (valid) {
+        if (cc.valid()) {
             // Read all TLV and merge
             if (read_type5(tmp, tagBitsAll)) {
                 tmp = merge_tlv(tmp, tlvs);
@@ -1584,26 +1727,15 @@ bool NDEFLayer::write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
         tmp = tlvs;  // Overwrite
     }
 
-    // Read CC
-    type5::CapabilityContainer cc{};
-    if (!readCapabilityContainer(cc)) {
-        return false;
-    }
-
     // Calculate encoded size
     uint32_t encoded_size =
         std::accumulate(tmp.begin(), tmp.end(), 0U, [](uint32_t acc, const TLV& m) { return acc + m.required(); });
 
-    M5_LIB_LOGD("Encoded size:%u", encoded_size);
-    uint32_t buf_size = encoded_size + (encoded_size > CC4_MAX_NDEF_LENGTH ? 8 : 4);
-    if (buf_size > _interface.user_area_size()) {
-        M5_LIB_LOGE("Not enough area %u/%u", encoded_size, _interface.user_area_size());
-        return false;
-    }
+    M5_LIB_LOGV("Encoded size:%u", encoded_size);
 
     // Make CC
     if (!cc.valid()) {
-        cc.block[0] = (encoded_size > CC4_MAX_NDEF_LENGTH) ? MAGIC_NO_CC8 : MAGIC_NO_CC4;
+        cc.block[0] = (user_size > CC4_MAX_NDEF_LENGTH) ? MAGIC_NO_CC8 : MAGIC_NO_CC4;
         cc.major_version(NDEF_MAJOR_VERSION);
         cc.minor_version(NDEF_MINOR_VERSION);
         cc.ndef_size(user_size);
@@ -1612,32 +1744,59 @@ bool NDEFLayer::write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
         cc.addtional_feature(0);
     }
 
-    // Encode
-    std::vector<uint8_t> buf(buf_size);
-    memcpy(buf.data(), cc.block, cc.size());
+    uint32_t buf_size = encoded_size + cc.size();
+    if (buf_size > cc.ndef_size()) {
+        M5_LIB_LOGE("Not enough area %u/%u/%u", encoded_size, cc.ndef_size(), _interface.user_area_size());
+        return false;
+    }
 
-    uint8_t* tlv_buf = buf.data() + cc.size();
+    // Write CC first
     uint32_t offset{};
+    if (!cc.size()) {
+        return false;
+    }
+    if (!write_nfcv(0, cc.block, cc.size())) {
+        return false;
+    }
+    offset += cc.size();
+
+    // Encode and write each TLV to avoid large heap buffers
+    std::vector<uint8_t> buf{};
     uint32_t idx{};
     for (auto&& m : tmp) {
-        const auto esz = m.encode(tlv_buf + offset, encoded_size - offset);
-        M5_LIB_LOGD("   [%3u] Tag:%02X %u %u", idx, m.tag(), esz, m.required());
+        // M5_LIB_LOGE("Tag:%02x %u", m.tag(), m.required());
+        const uint32_t esz = m.required();
         if (!esz) {
             M5_LIB_LOGE("encode failed %u %02X", idx, m.tag());
+            return false;
+        }
+        if (esz > 0xFFFF || offset + esz > 0xFFFF) {
+            M5_LIB_LOGE("TLV too large %u (offset:%u)", esz, offset);
+            return false;
+        }
+        if (offset + esz > user_size) {
+            M5_LIB_LOGE("Not enough area %u/%u", offset + esz, user_size);
+            return false;
+        }
+        buf.assign(esz, 0);
+        const auto written = m.encode(buf.data(), esz);
+        M5_LIB_LOGD("   [%3u] Tag:%02X %u %u", idx, m.tag(), written, esz);
+        if (!written || written != esz) {
+            M5_LIB_LOGE("encode failed %u %02X %u/%u", idx, m.tag(), written, esz);
+            return false;
+        }
+        if (!write_nfcv(offset, buf.data(), static_cast<uint16_t>(esz))) {
             return false;
         }
         offset += esz;
         ++idx;
     }
-    if (offset > encoded_size) {
-        M5_LIB_LOGE("Internal error %u/%u", offset, encoded_size);
+    if (offset > buf_size) {
+        M5_LIB_LOGE("Internal error %u/%u", offset, buf_size);
         return false;
     }
 
-    // Write
-    ret = _interface.write(_interface.first_user_block(), buf.data(), buf_size);
-
-    return ret;
+    return true;
 }
 
 /*

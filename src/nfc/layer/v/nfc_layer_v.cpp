@@ -63,9 +63,9 @@ void print_block(const uint8_t* buf, const uint8_t len, const int16_t block)
 }
 
 constexpr char dump_header[] =
-    "   Block:00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F ";
+    "      Block:00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F ";
 constexpr char dump_line[] =
-    "---------------------------------------------------------------------------------------------------------";
+    "------------------------------------------------------------------------------------------------------------";
 
 }  // namespace
 
@@ -369,7 +369,7 @@ bool NFCLayerV::write(const uint16_t sblock, const uint8_t* tx, const uint16_t t
 {
     const uint8_t block_size = _activePICC.block_size;
     const uint16_t blocks    = (tx_len + block_size - 1) / block_size;
-    const uint16_t last      = std::min<uint16_t>(_activePICC.lastUserBlock(), blocks - 1);
+    const uint16_t last      = std::min<uint16_t>(_activePICC.lastUserBlock(), sblock + blocks - 1);
 
     // M5_LIB_LOGE(">>>>WRITE %u %p %u (%u-%u) ", sblock, tx, tx_len, sblock, last);
 
@@ -385,8 +385,9 @@ bool NFCLayerV::write(const uint16_t sblock, const uint8_t* tx, const uint16_t t
 
         const uint8_t* wp = tx + written;
         // Adjust by block_size
-        if (tx_len < block_size) {
-            memcpy(wtmp, tx + written, wsize);
+        if (wsize < block_size) {
+            memset(wtmp, 0, block_size);
+            memcpy(wtmp, wp, wsize);
             wp = wtmp;
         }
 
@@ -401,6 +402,16 @@ bool NFCLayerV::write(const uint16_t sblock, const uint8_t* tx, const uint16_t t
 bool NFCLayerV::ndefIsValidFormat(bool& valid)
 {
     return _activePICC.valid() && _ndef.isValidFormat(valid, _activePICC.nfcForumTagType());
+}
+
+bool NFCLayerV::ndefReadCapabilityContainer(m5::nfc::ndef::type5::CapabilityContainer& cc)
+{
+    return _activePICC.valid() && _ndef.readCapabilityContainer(cc);
+}
+
+bool NFCLayerV::ndefWriteCapabilityContainer(const m5::nfc::ndef::type5::CapabilityContainer& cc)
+{
+    return _activePICC.valid() && _ndef.writeCapabilityContainer(cc);
 }
 
 bool NFCLayerV::ndefRead(m5::nfc::ndef::TLV& msg)
@@ -632,8 +643,8 @@ bool NFCLayerV::dump_all()
     }
     const uint8_t block_size = _activePICC.block_size;
 
-    printf("%.*s\n", block_size * 3 + 8, dump_header);
-    printf("%.*s\n", block_size * 3 + 8, dump_line);
+    printf("%.*s\n", block_size * 3 + 11, dump_header);
+    printf("%.*s\n", block_size * 3 + 11, dump_line);
 
     bool ret{true};
     for (uint16_t block = 0; block < blocks; ++block) {
