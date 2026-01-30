@@ -1506,11 +1506,13 @@ bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)
 
 bool NFCLayerA::dump_desfire()
 {
-    const auto cfg         = _isoDEP.config();
-    uint16_t max_chunk_len = std::min<uint16_t>(256, std::min<uint16_t>(cfg.fsc, cfg.pcd_max_frame_rx));
+    const auto cfg               = _isoDEP.config();
+    const uint16_t max_chunk_len = std::min<uint16_t>(16, std::min<uint16_t>(cfg.fsc, cfg.pcd_max_frame_rx));
     if (max_chunk_len == 0) {
-        max_chunk_len = 16;
+        return false;
     }
+    // M5_LIB_LOGE("Max chunk len %u", max_chunk_len);
+
     DESFireFileSystem dfs{_isoDEP};
 
     std::vector<desfire_aid_t> aids;
@@ -1604,10 +1606,10 @@ bool NFCLayerA::dump_desfire()
 
 bool NFCLayerA::dump_desfire_light()
 {
-    const auto cfg         = _isoDEP.config();
-    uint16_t max_chunk_len = std::min<uint16_t>(16, std::min<uint16_t>(cfg.fsc, cfg.pcd_max_frame_rx));
+    const auto cfg               = _isoDEP.config();
+    const uint16_t max_chunk_len = std::min<uint16_t>(16, std::min<uint16_t>(cfg.fsc, cfg.pcd_max_frame_rx));
     if (max_chunk_len == 0) {
-        max_chunk_len = 16;
+        return false;
     }
 
     DESFireFileSystem dfs{_isoDEP};
