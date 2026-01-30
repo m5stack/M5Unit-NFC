@@ -186,18 +186,6 @@ uint16_t NFCLayerA::maximum_fifo_depth() const
     return _impl->max_fifo_depth();
 }
 
-#if 0
-bool NFCLayerA::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
-{
-    return false;
-}
-
-bool NFCLayerA::receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
-{
-    return false;
-}
-#endif
-
 m5::nfc::NFCForumTag NFCLayerA::supportsNFCTag() const
 {
     return _activePICC.nfcForumTagType();
@@ -920,12 +908,14 @@ bool NFCLayerA::dump(const Key& mkey)
     if (_activePICC.valid()) {
         if (_activePICC.isMifareClassic()) {
             return dump_sector_structure(_activePICC, mkey);
-        } else if (_activePICC.isMifarePlus() && _activePICC.security_level == 3) {
-            return dump_mifare_plus_sl3(plus::DEFAULT_FF_KEY);
         } else if (_activePICC.supportsNFC()) {
             return dump_page_structure(_activePICC.blocks);
         } else if (_activePICC.isMifareDESFire()) {
             return _activePICC.type == Type::MIFARE_DESFire_Light ? dump_desfire_light() : dump_desfire();
+        } else if (_activePICC.isMifarePlus() && _activePICC.security_level == 3) {
+            return dump_mifare_plus_sl3(plus::DEFAULT_FF_KEY);
+        } else if (_activePICC.isST25TA()) {
+            return dump_st25ta();
         }
         M5_LIB_LOGW("Not supported %s", _activePICC.typeAsString().c_str());
     }
@@ -1792,6 +1782,99 @@ bool NFCLayerA::dump_sector_mifare_plus_sl3(const uint8_t sector)
     }
     // Sector trailer
     print_block(trailer, saddr, -1, permissions[3], error);
+
+    return true;
+}
+
+bool NFCLayerA::dump_st25ta()
+{
+    FileSystem fs(_isoDEP);
+
+    // Get max frame size from IsoDEP config
+    const auto cfg = _isoDEP.config();
+    // FSC includes protocol overhead, so actual data is less
+    // Use conservative chunk size: min(MLe typical, FSC - overhead, safe default)
+    uint16_t max_chunk_len = cfg.fsc > 5 ? cfg.fsc - 5 : 16;
+    max_chunk_len          = std::min<uint16_t>(max_chunk_len, 0x36);  // ST25TA MLc is often 0x36
+    if (max_chunk_len < 16) {
+        max_chunk_len = 16;
+    }
+    // M5_LIB_LOGD("dump_st25ta: fsc=%u max_chunk_len=%u", cfg.fsc, max_chunk_len);
+
+    // Select NDEF Application
+    if (!fs.selectDfNameAuto(type4::NDEF_AID, sizeof(type4::NDEF_AID))) {
+        M5_LIB_LOGE("selectDfNameAuto(NDEF_AID) failed");
+        return false;
+    }
+
+    // Read CC file
+    puts("= CC File (0xE103)");
+    if (!fs.selectFileIdAuto(type4::CC_FILE_ID)) {
+        M5_LIB_LOGE("selectFileIdAuto(CC_FILE_ID) failed");
+        return false;
+    }
+
+    std::vector<uint8_t> cc_data;
+    uint16_t offset            = 0;
+    constexpr uint16_t CC_SIZE = 15;  // Type 4 CC is typically 15 bytes
+    while (offset < CC_SIZE) {
+        const uint16_t chunk = std::min<uint16_t>(CC_SIZE - offset, max_chunk_len);
+        std::vector<uint8_t> part;
+        if (!fs.readBinary(part, offset, chunk) || part.empty()) {
+            break;
+        }
+        cc_data.insert(cc_data.end(), part.begin(), part.end());
+        offset = static_cast<uint16_t>(offset + part.size());
+    }
+    if (!cc_data.empty()) {
+        m5::utility::log::dump(cc_data.data(), cc_data.size(), false);
+    } else {
+        puts("  (empty or read failed)");
+        return false;
+    }
+
+    // Parse NDEF File ID from CC (bytes 9-10 in NDEF File Control TLV)
+    if (cc_data.size() < 11) {
+        M5_LIB_LOGE("CC too short");
+        return false;
+    }
+    const uint16_t ndef_file_id = (static_cast<uint16_t>(cc_data[9]) << 8) | cc_data[10];
+    printf("NDEF File ID from CC: 0x%04X\n", ndef_file_id);
+
+    // Read NDEF file
+    printf("= NDEF File (0x%04X)\n", ndef_file_id);
+    if (!fs.selectFileIdAuto(ndef_file_id)) {
+        M5_LIB_LOGE("selectFileIdAuto(0x%04X) failed", ndef_file_id);
+        return false;
+    }
+
+    // Read NLEN (first 2 bytes)
+    std::vector<uint8_t> nlen_buf;
+    if (!fs.readBinary(nlen_buf, 0, 2) || nlen_buf.size() < 2) {
+        M5_LIB_LOGE("failed to read NLEN");
+        return false;
+    }
+    const uint16_t nlen = (static_cast<uint16_t>(nlen_buf[0]) << 8) | nlen_buf[1];
+    // Read NDEF message
+    if (nlen > 0) {
+        std::vector<uint8_t> ndef_data;
+        offset               = 0;
+        const uint16_t total = static_cast<uint16_t>(2 + nlen);  // NLEN field + message
+        while (offset < total) {
+            const uint16_t chunk = std::min<uint16_t>(total - offset, max_chunk_len);
+            std::vector<uint8_t> part;
+            if (!fs.readBinary(part, offset, chunk) || part.empty()) {
+                break;
+            }
+            ndef_data.insert(ndef_data.end(), part.begin(), part.end());
+            offset = static_cast<uint16_t>(offset + part.size());
+        }
+        if (!ndef_data.empty()) {
+            m5::utility::log::dump(ndef_data.data(), ndef_data.size(), false);
+        }
+    } else {
+        puts("  (empty NDEF)");
+    }
 
     return true;
 }

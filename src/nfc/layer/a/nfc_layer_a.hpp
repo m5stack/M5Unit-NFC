@@ -612,6 +612,7 @@ protected:
     bool dump_mifare_plus_sl3(const m5::nfc::a::mifare::plus::AESKey& key);
     bool dump_desfire();
     bool dump_desfire_light();
+    bool dump_st25ta();
 
     static bool push_back_picc(std::vector<m5::nfc::a::PICC>& v, const m5::nfc::a::PICC& picc);
 
