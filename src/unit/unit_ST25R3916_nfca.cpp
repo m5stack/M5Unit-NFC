@@ -98,6 +98,7 @@ void append_parity(uint8_t* out, const uint32_t out_len, const uint8_t* in, cons
     }
 }
 
+#if 0
 constexpr uint8_t val_table[] = {
 
     0x07, 0x3C, 0x03, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x5C, 0x00, 0x00, 0x08, 0x2D, 0xD8, 0x00, 0x02,
@@ -106,6 +107,7 @@ constexpr uint8_t val_table[] = {
     0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 
 };
+#endif
 
 inline uint32_t OCB(const uint8_t c)
 {
@@ -138,14 +140,17 @@ bool UnitST25R3916::configure_nfc_a()
     writeCorrelatorConfiguration1(0x47);
     writeCorrelatorConfiguration2(0x00);
 
-#if 1
+#if 0
     // Sensitivity Priority
     constexpr uint8_t recv_3{0x00};
     constexpr uint8_t recv_4{0x00};
-#else
+#endif
+#if 1
     // Stability-focused
     constexpr uint8_t recv_3{0xD8};
     constexpr uint8_t recv_4{0x22};
+#endif
+#if 0
     // Intermediate Settings
     constexpr uint8_t recv_3{0x80};
     constexpr uint8_t recv_4{0x11};
@@ -166,53 +171,10 @@ bool UnitST25R3916::configure_emulation_a()
 {
     _encrypted = false;
 
-    writeModeDefinition(0xC8);                 // target, NFC-A, Bit rate detection mode
-    writeNFCIP1PassiveTargetDefinition(0x5C);  // fdel[7:4], disable d_ac_ap2p.d_214/424_1r, enable d_106_ac
-    writeMaskPassiveTargetInterrupt(0x02);     // mask I_wu_ax
-    writeTimerAndEMVControl(0x08);             // mrt_setp 512
-
-#if 0
-    uint8_t reg = 0x00;
-    for (auto&& v : val_table) {
-        uint8_t rv{};
-        read_register8(reg, rv);
-        if(rv != v){
-            M5_LIB_LOGD("[%02X]:%02X/%02X %08o/%08o", reg, rv,v, OCB(rv), OCB(v));
-            write_register8(reg, v);
-        }
-        ++reg;
-    }
-
-    {
-        uint16_t r{};
-        r = 0x05;
-        writeRegister8(r, 0x40);
-        r = 0x06;
-        writeRegister8(r, 0x00);
-        r = 0x0B;
-        writeRegister8(r, 0x0C);
-        r = 0x0C;
-        writeRegister8(r, 0x93);
-        r = 0x0D;
-        writeRegister8(r, 0x00);
-        r = 0x0F;
-        writeRegister8(r, 0x00);
-        r = 0x15;
-        writeRegister8(r, 0x33);
-        r = 0x28;
-        writeRegister8(r, 0x10);
-        r = 0x29;
-        writeRegister8(r, 0x7C);
-        r = 0x2A;
-        writeRegister8(r, 0x80);
-        r = 0x2B;
-        writeRegister8(r, 0x04);
-        r = 0x2C;
-        writeRegister8(r, 0xB0);
-    }
-#endif
-
-    return true;
+    return writeModeDefinition(0xC8) &&                 // target, NFC-A, Bit rate detection mode
+           writeNFCIP1PassiveTargetDefinition(0x5C) &&  // fdel[7:4], disable d_ac_ap2p.d_214/424_1r, enable d_106_ac
+           writeMaskPassiveTargetInterrupt(0x02) &&     // mask I_wu_ax
+           writeTimerAndEMVControl(0x08);               // mrt_setp 512
 }
 
 uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,

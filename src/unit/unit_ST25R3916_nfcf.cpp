@@ -70,12 +70,10 @@ bool UnitST25R3916::configure_emulation_f()
 {
     _encrypted = false;
 
-    writeModeDefinition(0xE0);                 // target, NFC-F, Bit rate detection mode
-    writeNFCIP1PassiveTargetDefinition(0x5C);  // fdel[7:4], disable d_ac_ap2p.d_214/424_1r, enable d_106_ac
-    writeMaskPassiveTargetInterrupt(0x02);     // mask I_wu_ax
-    writeTimerAndEMVControl(0x08);             // mrt_setp 512
-
-    return true;
+    return writeModeDefinition(0xE0) &&                 // target, NFC-F, Bit rate detection mode
+           writeNFCIP1PassiveTargetDefinition(0x5C) &&  // fdel[7:4], disable d_ac_ap2p.d_214/424_1r, enable d_106_ac
+           writeMaskPassiveTargetInterrupt(0x02) &&     // mask I_wu_ax
+           writeTimerAndEMVControl(0x08);               // mrt_setp 512
 }
 
 bool UnitST25R3916::nfcfTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,

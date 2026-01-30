@@ -1410,11 +1410,11 @@ bool NFCLayerA::dump_sector_structure(const PICC& picc, const Key& key)
         auto sblock = get_sector_trailer_block_from_sector(sector);
         if (mifareClassicAuthenticateA(sblock, key)) {
             if (!dump_sector(sector)) {
-                M5_LIB_LOGD("Failed to dump:%u", sector);
+                M5_LIB_LOGE("Failed to dump:%u", sector);
                 return false;
             }
         } else {
-            M5_LIB_LOGD("Failed to AUTH %u", sblock);
+            M5_LIB_LOGE("Failed to AUTH %u", sblock);
             return false;
         }
     }

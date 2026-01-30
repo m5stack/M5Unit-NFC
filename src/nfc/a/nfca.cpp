@@ -363,7 +363,7 @@ uint16_t get_last_user_block(const Type t)
 
 bool is_user_block(const Type t, const uint16_t block)
 {
-    if (is_mifare_classic(t)) {
+    if (is_mifare_classic(t) || is_mifare_plus(t)) {
         return (block != 0) &&                     // Not Manufactur block
                !is_sector_trailer_block(block) &&  // Not Sector trailer
                block <= get_last_user_block(t);    // In range

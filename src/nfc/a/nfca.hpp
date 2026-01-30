@@ -584,8 +584,8 @@ constexpr uint32_t TIMEOUT_ANTICOLL{8};  // 8
 constexpr uint32_t TIMEOUT_HALT{2};
 constexpr uint32_t TIMEOUT_GET_VERSION{5};  // 5
 constexpr uint32_t TIMEOUT_3DES{10};
-constexpr uint32_t TIMEOUT_AUTH1{2};
-constexpr uint32_t TIMEOUT_AUTH2{10};
+constexpr uint32_t TIMEOUT_AUTH1{4}; // 2
+constexpr uint32_t TIMEOUT_AUTH2{16}; // 10
 constexpr uint32_t TIMEOUT_READ{12};
 constexpr uint32_t TIMEOUT_FAST_READ{2};
 constexpr uint32_t TIMEOUT_FAST_READ_4PAGE{4};    // 3.7
