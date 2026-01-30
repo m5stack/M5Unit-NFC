@@ -92,6 +92,7 @@ void read_ndef()
     // Read NDEF message TLV
     if (!nfc_v.ndefRead(msg)) {
         M5_LOGE("Failed to read");
+        lcd.fillScreen(TFT_RED);
         return;
     }
 
@@ -121,6 +122,14 @@ void read_ndef()
 
 void write_ndef()
 {
+    uint16_t ndef_size = nfc_v.activatedPICC().userAreaSize();
+
+    // Not all user areas may be available. If a CC is already configured, it will be loaded
+    type5::CapabilityContainer cc{};
+    if (nfc_v.ndefReadCapabilityContainer(cc) && cc.valid()) {
+        ndef_size = cc.ndef_size();
+    }
+
     TLV msg{Tag::Message};
     Record r[5] = {};  // Wellknown as default
 
@@ -128,12 +137,12 @@ void write_ndef()
     r[0].setURIPayload("m5stack.com/", URIProtocol::HTTPS);
 
     // Text record with langage type
-    const char* en_data = "Hello M5Stack";
-    r[1].setTextPayload(en_data, "en");
-    const char* ja_data = "こんにちは M5Stack";
-    r[2].setTextPayload(ja_data, "ja");
     const char* zh_data = "你好 M5Stack";
-    r[3].setTextPayload(zh_data, "zh");
+    r[1].setTextPayload(zh_data, "zh");
+    const char* en_data = "Hello M5Stack";
+    r[2].setTextPayload(en_data, "en");
+    const char* ja_data = "こんにちは M5Stack";
+    r[3].setTextPayload(ja_data, "ja");
 
     // MIME record
     Record png{TNF::MIMEMedia};
@@ -141,20 +150,25 @@ void write_ndef()
     png.setPayload(poji_64_png, poji_64_png_len);
     r[4] = png;
 
-    uint32_t max_user_size = nfc_v.activatedPICC().userAreaSize() - 1 /* terminator TLV */;
+    // M5_LOGI("NDEFSIZE:%u", ndef_size);
     for (auto&& rr : r) {
         msg.push_back(rr);
-        if (msg.required() > max_user_size) {
+        if (msg.required() > ndef_size) {
             msg.pop_back();
             break;
         }
     }
 
+    // Write
     if (!nfc_v.ndefWrite(msg)) {
         M5_LOGE("Failed to write");
         return;
     }
-    nfc_v.dump();
+
+    // Dump fist 8 block
+    for (uint_fast16_t i = 0; i < 8; ++i) {
+        nfc_v.dump(i);
+    }
 }
 
 }  // namespace
@@ -167,18 +181,6 @@ void setup()
     auto cfg = unit.config();
     cfg.mode = NFC::V;
     unit.config(cfg);
-
-#if 0
-    //// M5GFX 0.2.15 NG! with HackerCap
-    auto board = M5.getBoard();
-    if (board != lgfx::board_t::board_M5CardputerADV) {
-        M5_LOGE("This is NOT M5Cardputer-ADV %U/%XH", board, board);
-        lcd.fillScreen(TFT_RED);
-        while (true) {
-            m5::utility::delay(10000);
-        }
-    }
-#endif
 
 #if defined(USING_UNIT_NFC)
     auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
@@ -242,6 +244,7 @@ void loop()
                     M5.Speaker.tone(4000, 30);
                     lcd.fillScreen(TFT_YELLOW);
                     write_ndef();
+                    lcd.fillScreen(0);
                 }
                 M5.Log.printf("Please remove the PICC from the reader\n");
                 nfc_v.deactivate();

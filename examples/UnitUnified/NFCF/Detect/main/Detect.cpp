@@ -73,7 +73,7 @@ void setup()
         M5_LOGI("getPin: %d,%d,%d", spi_sclk, spi_mosi, spi_miso);
         SPI.begin(spi_sclk, spi_miso, spi_mosi /* SS is shared SD, CC1101, ST25R3916 */);
     }
-    
+
     SPISettings settings = {10000000, MSBFIRST, SPI_MODE1};
     if (!Units.add(unit, SPI, settings) || !Units.begin()) {
         M5_LOGE("Failed to begin");

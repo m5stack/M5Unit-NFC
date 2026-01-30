@@ -52,18 +52,6 @@ void setup()
     cfg.mode = NFC::V;
     unit.config(cfg);
 
-#if 0
-    //// M5GFX 0.2.15 NG! with HackerCap
-    auto board = M5.getBoard();
-    if (board != lgfx::board_t::board_M5CardputerADV) {
-        M5_LOGE("This is NOT M5Cardputer-ADV %U/%XH", board, board);
-        lcd.fillScreen(TFT_RED);
-        while (true) {
-            m5::utility::delay(10000);
-        }
-    }
-#endif
-
 #if defined(USING_UNIT_NFC)
     auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
     auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
@@ -125,7 +113,7 @@ void loop()
                 nfc_v.dump();
                 nfc_v.deactivate();
             } else {
-                M5_LOGW("FAuled to reactivate");
+                M5_LOGW("Failed to reactivate");
             }
         } else {
             M5.Log.printf("PICC NOT exists\n");
