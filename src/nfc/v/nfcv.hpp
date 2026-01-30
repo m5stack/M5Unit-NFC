@@ -169,15 +169,15 @@ Type identify_type(const PICC& picc);
   @brief ISO/IEC 15693 Command
  */
 enum class Command : uint8_t {
-    Inventory               = 0x01,  //!< IVENTORY
-    StayQuiet               = 0x02,  //!< STAY QUIET
-    Select                  = 0x25,  //!< SELECT
-    ResetToReady            = 0x26,  //!< RESET TO READY
-    GetSystemInformaion     = 0x2B,  //!< GET SYSTEM INFORMATION
-    ExtendedGetSystemInfo   = 0x3B,  //!< EXTENDED GET SYSTEM INFORMATION
-    ReadSingleBlock         = 0x20,  //!< READ SINGLE BLOCK
-    ExtendedReadSingleBlock = 0x30,  //!< EXTENDED READ SINGLE BLOCK
-    WriteSingleBlock        = 0x21,  //!< WRITE SINGLE BLOCK
+    Inventory                = 0x01,  //!< IVENTORY
+    StayQuiet                = 0x02,  //!< STAY QUIET
+    Select                   = 0x25,  //!< SELECT
+    ResetToReady             = 0x26,  //!< RESET TO READY
+    GetSystemInformaion      = 0x2B,  //!< GET SYSTEM INFORMATION
+    ExtendedGetSystemInfo    = 0x3B,  //!< EXTENDED GET SYSTEM INFORMATION
+    ReadSingleBlock          = 0x20,  //!< READ SINGLE BLOCK
+    ExtendedReadSingleBlock  = 0x30,  //!< EXTENDED READ SINGLE BLOCK
+    WriteSingleBlock         = 0x21,  //!< WRITE SINGLE BLOCK
     ExtendedWriteSingleBlock = 0x31,  //!< EXTENDED WRITE SINGLE BLOCK
 };
 
