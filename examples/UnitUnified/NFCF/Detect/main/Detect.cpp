@@ -51,19 +51,6 @@ void setup()
     cfg.mode = NFC::F;
     unit.config(cfg);
 
-#if 0
-    // M5GFX 0.2.15 NG! with HackerCap
-    // Lovyan-san has been notified
-    auto board = M5.getBoard();
-    if (board != lgfx::board_t::board_M5CardputerADV) {
-        M5_LOGE("This is NOT M5Cardputer-ADV %U/%XH", board, board);
-        lcd.fillScreen(TFT_RED);
-        while (true) {
-            m5::utility::delay(10000);
-        }
-    }
-#endif
-
 #if defined(USING_UNIT_NFC)
     auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
     auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
@@ -86,7 +73,7 @@ void setup()
         M5_LOGI("getPin: %d,%d,%d", spi_sclk, spi_mosi, spi_miso);
         SPI.begin(spi_sclk, spi_miso, spi_mosi /* SS is shared SD, CC1101, ST25R3916 */);
     }
-
+    
     SPISettings settings = {10000000, MSBFIRST, SPI_MODE1};
     if (!Units.add(unit, SPI, settings) || !Units.begin()) {
         M5_LOGE("Failed to begin");
