@@ -338,12 +338,13 @@ bool NFCLayerF::requestService(uint16_t key_version[], const uint16_t* node_code
         return false;
     }
     uint8_t rbuf[FELICA_MAX_PACKET_LENGTH_REQUEST_SERVICE + 1]{};
-    uint16_t rx_len = sizeof(rbuf);
+    uint16_t rx_len            = sizeof(rbuf);
+    uint16_t expected_response = packet.size() + 1;  // Response same size as request + LEN
 
     // m5::utility::log::dump(packet.data(), packet.size(), false);
 
     if (!_impl->transceive(rbuf, rx_len, packet.data(), packet.size(), timeout_ms)  //
-        || rx_len < sizeof(rbuf) || rbuf[1] != m5::stl::to_underlying(ResponseCode::RequestService)) {
+        || rx_len < expected_response || rbuf[1] != m5::stl::to_underlying(ResponseCode::RequestService)) {
         M5_LIB_LOGE("Failed to RequestService %u", rx_len);
         return false;
     }
@@ -376,12 +377,13 @@ bool NFCLayerF::request_response_impl(const m5::nfc::f::PICC& picc, m5::nfc::f::
         return false;
     }
     uint8_t rbuf[FELICA_MAX_PACKET_LENGTH_REQUEST_RESPONSE + 2]{};
-    uint16_t rx_len = sizeof(rbuf);
+    uint16_t rx_len            = sizeof(rbuf);
+    uint16_t expected_response = packet.size() + 2;  // Response = LEN + ResponseCode + IDm + Mode
 
     // m5::utility::log::dump(packet.data(), packet.size(), false);
 
     if (!_impl->transceive(rbuf, rx_len, packet.data(), packet.size(), timeout_ms)  //
-        || rx_len < sizeof(rbuf) || rbuf[1] != m5::stl::to_underlying(ResponseCode::RequestResponse)) {
+        || rx_len < expected_response || rbuf[1] != m5::stl::to_underlying(ResponseCode::RequestResponse)) {
         M5_LIB_LOGE("Failed to RequestResponse %u", rx_len);
         return false;
     }
