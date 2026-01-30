@@ -184,7 +184,6 @@ uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint
         M5_LIB_LOGE("nfcaTransmit FAILED tx_len=%u", tx_len);
         return false;
     }
-    M5_LIB_LOGD("nfcaTransmit OK tx_len=%u", tx_len);
     return nfcaReceive(rx, rx_len, timeout_ms);
 }
 
@@ -200,7 +199,7 @@ bool UnitST25R3916::nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const
         !writeSettingsISO14443A(0x00 /*standard*/) || !clear_bit_register8(REG_AUXILIARY_DEFINITION, no_crc_rx) ||  //
         !clearInterrupts() || !writeDirectCommand(CMD_CLEAR_FIFO) || !writeFIFO(tx, tx_len) ||                      //
         !writeNumberOfTransmittedBytes(tx_len, 0) || !writeDirectCommand(CMD_TRANSMIT_WITH_CRC)) {
-        M5_LIB_LOGE("nfcaTransmit failed tx_len=%u timeout_ms=%u", tx_len, timeout_ms);
+        M5_LIB_LOGD("nfcaTransmit failed tx_len=%u timeout_ms=%u", tx_len, timeout_ms);
         return false;
     }
     return true;
@@ -217,7 +216,7 @@ bool UnitST25R3916::nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
     }
 
     if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
-        M5_LIB_LOGE("nfcaReceive timeout rx_len=%u timeout_ms=%u", rx_len_org, timeout_ms);
+        //M5_LIB_LOGE("nfcaReceive timeout rx_len=%u timeout_ms=%u", rx_len_org, timeout_ms);
         M5_LIB_LOGD("Timeout");
         return false;
     }

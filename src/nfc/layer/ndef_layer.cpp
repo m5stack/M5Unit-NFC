@@ -1444,7 +1444,6 @@ bool NDEFLayer::write(const m5::nfc::NFCForumTag ftag, const std::vector<m5::nfc
 
 bool NDEFLayer::write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const bool keep)
 {
-    bool ret{};
     const uint32_t user_size = _interface.user_area_size();
 
     if (tlvs.empty()) {
@@ -1494,10 +1493,8 @@ bool NDEFLayer::write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
     }
 
     // Write
-    // M5_LIB_LOGE(">>>>ndef write %u %u", _interface.first_user_block(), encoded_size);
-    ret = _interface.write(_interface.first_user_block(), buf.data(), encoded_size);
-
-    return ret;
+    // M5_LIB_LOGE("write to %u sz:%u", _interface.first_user_block(), encoded_size);
+    return _interface.write(_interface.first_user_block(), buf.data(), encoded_size);
 }
 
 bool NDEFLayer::write_type3(const m5::nfc::ndef::TLV& tlv)
