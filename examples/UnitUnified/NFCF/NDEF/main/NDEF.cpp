@@ -49,13 +49,14 @@ void read_ndef()
     // Read NDEF message TLV
     if (!nfc_f.ndefRead(msg)) {
         M5_LOGE("Failed to read");
+        lcd.fillScreen(TFT_RED);
         return;
     }
 
     // If it does not exist, a Null TLV is returned
     if (msg.isMessageTLV()) {
         lcd.setCursor(0, lcd.fontHeight());
-        M5.Log.printf("==== MDEF Message %zu records ====\n", msg.records().size());
+        M5.Log.printf("==== NDEF Message %zu records ====\n", msg.records().size());
         for (auto&& r : msg.records()) {
             switch (r.tnf()) {
                 case TNF::Wellknown: {
@@ -78,7 +79,9 @@ void write_ndef()
     TLV msg{Tag::Message};  // NDEF Message TLV
     Record r[4] = {};       // Wellknown as default
 
+    // *********************************************************
     // Change format to support NDEF
+    // *********************************************************
     if (!nfc_f.writeSupportNDEF(true)) {
         M5_LOGE("Failed to writeSupportNDEF");
         return;
@@ -184,12 +187,13 @@ void loop()
                 if (clicked) {
                     M5.Speaker.tone(2000, 30);
                     lcd.fillScreen(TFT_BLUE);
-                    nfc_f.dump();
+                    // nfc_f.dump();
                     read_ndef();
                 } else if (held) {
                     M5.Speaker.tone(4000, 30);
                     lcd.fillScreen(TFT_YELLOW);
                     write_ndef();
+                    lcd.fillScreen(0);
                 }
                 M5.Log.printf("Please remove the PICC from the reader\n");
                 nfc_f.deactivate();
