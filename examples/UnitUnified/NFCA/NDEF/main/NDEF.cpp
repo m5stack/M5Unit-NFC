@@ -320,6 +320,7 @@ void loop()
                         M5.Speaker.tone(4000, 30);
                         lcd.fillScreen(TFT_YELLOW);
                         write_ndef();
+                        lcd.fillScreen(0);
                     }
                     M5.Log.printf("Please remove the PICC from the reader\n");
                 } else {

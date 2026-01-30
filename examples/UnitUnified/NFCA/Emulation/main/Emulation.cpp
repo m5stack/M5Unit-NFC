@@ -174,7 +174,6 @@ void setup()
     M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
     Wire.end();
     Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
-    // Wire.begin(pin_num_sda, pin_num_scl, 1000 * 1000u);
     if (!Units.add(unit, Wire) || !Units.begin()) {
         M5_LOGE("Failed to begin");
         lcd.clear(TFT_RED);
