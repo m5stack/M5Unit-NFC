@@ -46,7 +46,7 @@ constexpr char uri_urn_epc_tag[] = "urn:epc:tag:";
 constexpr char uri_urn_epc_pat[] = "urn:epc:pat:";
 constexpr char uri_urn_epc_raw[] = "urn:epc:raw:";
 constexpr char uri_urn_epc[]     = "urn:epc:";
-constexpr char uri_nfc[]         = "urn:nfc: ";
+constexpr char uri_nfc[]         = "urn:nfc:";
 
 constexpr const char* uri_idc_table[] = {
     uri_na,         uri_http_www,    uri_https_www,   uri_http,        uri_https,    uri_tel,

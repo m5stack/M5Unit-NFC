@@ -592,6 +592,15 @@ bool make_session_key(uint8_t sk[16], const uint8_t ck[16], const uint8_t rc[16]
 bool generate_mac(uint8_t mac[8], const uint8_t* plain, uint32_t plain_len, const uint8_t* block_data,
                   uint32_t block_len, const uint8_t sk1[8], const uint8_t sk2[8], const uint8_t rc[16]);
 
+/*!
+  @brief Generate personalized card key for FeliCa Lite-S
+  @param[out] card_key Personalized card key (16 bytes)
+  @param master_key Personalized master key (24 bytes)
+  @param id_block ID block value (16 bytes)
+  @return True if successful
+*/
+bool make_personalized_card_key_lite_s(uint8_t card_key[16], const uint8_t master_key[24], const uint8_t id_block[16]);
+
 ///@}
 
 }  // namespace f

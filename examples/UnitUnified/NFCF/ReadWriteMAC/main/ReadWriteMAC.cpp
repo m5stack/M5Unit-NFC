@@ -57,7 +57,12 @@ constexpr uint8_t example_master_key[24] = {0xE3, 0x92, 0xCA, 0xC2, 0xF9, 0x21, 
 // For the sake of this example, it's written as source code, but it should actually outside externally (SD, Cloud...)
 constexpr uint16_t example_ckv{0x0509};
 
-// HMAC-SHA256
+// Enable for custom CK derivation (e.g. HMAC-SHA256); otherwise use make_personalized_card_key_lite_s.
+// The official standard algorithm derives the CK from the 16-byte ID block (0x82).
+// A different method is acceptable if it still produces a unique CK per card.
+// #define USE_CUSTOM_CARD_KEY_DERIVATION
+
+// HMAC-SHA256 (custom derivation example)
 void hmac_sha256(uint8_t out[32], const uint8_t* key, const uint32_t key_len, const uint8_t* input,
                  const uint32_t input_len)
 {
@@ -70,10 +75,12 @@ void hmac_sha256(uint8_t out[32], const uint8_t* key, const uint32_t key_len, co
     mbedtls_md_free(&ctx);
 }
 
+#if defined(USE_CUSTOM_CARD_KEY_DERIVATION)
 /*
   Example of Creating a Card Key from the Master Key
-  We are uniquely determining each card's CK from the IDm and master_key
-  If you want a different method, please implement it yourself.
+  We are uniquely determining each card's CK from the IDm and master_key.
+  If you have a non-SONY official method that still produces a unique CK per card,
+  you can use that as a substitute.
 
   CK = first 16 bytes (HMAC-SHA256(master_key, "M5Stack" || CKV || IDm))
 */
@@ -102,6 +109,12 @@ void derive_card_key(uint8_t ck[16], const uint8_t master_key[24], const uint16_
     hmac_sha256(digest, master_key, 24, msg, pos);
     std::memcpy(ck, digest, 16);
 }
+#else
+bool make_card_key_from_id_block(uint8_t ck[16], const uint8_t master_key[24], const uint8_t id_block[16])
+{
+    return make_personalized_card_key_lite_s(ck, master_key, id_block);
+}
+#endif
 
 bool internal_auth()
 {
@@ -111,9 +124,19 @@ bool internal_auth()
     }
 
     uint8_t ck[16]{};
+#if defined(USE_CUSTOM_CARD_KEY_DERIVATION)
     derive_card_key(ck, example_master_key, example_ckv, picc.idm);
-    //    M5.Log.printf("==== CK:\n");
-    //    m5::utility::log::dump(ck, 16, false);
+#else
+    uint8_t id_block[16]{};
+    if (!nfc_f.read16(id_block, lite_s::ID)) {
+        return false;
+    }
+    if (!make_card_key_from_id_block(ck, example_master_key, id_block)) {
+        return false;
+    }
+#endif
+    M5.Log.printf("==== CK:\n");
+    m5::utility::log::dump(ck, 16, false);
 
     // Make random challenge
     uint8_t rc[16]{};
@@ -134,7 +157,17 @@ bool external_auth()
     }
 
     uint8_t ck[16]{};
+#if defined(USE_CUSTOM_CARD_KEY_DERIVATION)
     derive_card_key(ck, example_master_key, example_ckv, picc.idm);
+#else
+    uint8_t id_block[16]{};
+    if (!nfc_f.read16(id_block, lite_s::ID)) {
+        return false;
+    }
+    if (!make_card_key_from_id_block(ck, example_master_key, id_block)) {
+        return false;
+    }
+#endif
     //    M5.Log.printf("==== CK:\n");
     //    m5::utility::log::dump(ck, 16, false);
 
@@ -329,7 +362,19 @@ bool first_issuance_procedue_lite_s(const PICC& picc, const uint8_t master_key[2
     uint8_t wbuf[2]{};
     wbuf[0] = ckv >> 8;
     wbuf[1] = ckv & 0xFF;
+#if defined(USE_CUSTOM_CARD_KEY_DERIVATION)
     derive_card_key(ck, master_key, ckv, picc.idm);
+#else
+    uint8_t id_block[16]{};
+    if (!nfc_f.read16(id_block, lite_s::ID)) {
+        M5_LOGE("Failed to read ID for CK");
+        return false;
+    }
+    if (!make_card_key_from_id_block(ck, master_key, id_block)) {
+        M5_LOGE("Failed to make CK");
+        return false;
+    }
+#endif
 
     //    M5.Log.printf("==== CK:\n");
     //    m5::utility::log::dump(ck, 16, false);

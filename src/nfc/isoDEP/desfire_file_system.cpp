@@ -29,24 +29,11 @@ using namespace m5::nfc::ndef;
 
 namespace {
 
-constexpr uint16_t DEFAULT_RX_LEN{256};
-
 using m5::nfc::crypto::aes_cbc_crypt;
 using m5::nfc::crypto::aes_ecb_encrypt;
 using m5::nfc::crypto::cmac_aes_128;
 
-inline uint16_t clamp_u16_size(const size_t size)
-{
-    constexpr size_t max_u16 = std::numeric_limits<uint16_t>::max();
-    return static_cast<uint16_t>(size > max_u16 ? max_u16 : size);
-}
-
-inline uint16_t default_rx_capacity(const IsoDEP& dep)
-{
-    const uint16_t cfg_rx = dep.config().max_frame_size_rx();
-    const uint16_t base   = cfg_rx ? cfg_rx : DEFAULT_RX_LEN;
-    return std::max<uint16_t>(DEFAULT_RX_LEN, base);
-}
+using namespace m5::nfc::a::mifare::desfire::detail;
 
 bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, const uint8_t key[16])
 {
@@ -150,25 +137,6 @@ bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, c
     m5::nfc::crypto::secure_zero(rndA_rot, sizeof(rndA_rot));
     wipe();
     return ok;
-}
-
-inline void pack_le24(uint8_t out[3], const uint32_t value)
-{
-    out[0] = static_cast<uint8_t>(value & 0xFF);
-    out[1] = static_cast<uint8_t>((value >> 8) & 0xFF);
-    out[2] = static_cast<uint8_t>((value >> 16) & 0xFF);
-}
-
-inline void pack_be24(uint8_t out[3], const uint32_t value)
-{
-    out[0] = static_cast<uint8_t>((value >> 16) & 0xFF);
-    out[1] = static_cast<uint8_t>((value >> 8) & 0xFF);
-    out[2] = static_cast<uint8_t>(value & 0xFF);
-}
-
-inline uint32_t unpack_le24(const uint8_t in[3])
-{
-    return static_cast<uint32_t>(in[0]) | (static_cast<uint32_t>(in[1]) << 8) | (static_cast<uint32_t>(in[2]) << 16);
 }
 
 void truncate_mac_even_bytes(const uint8_t in[16], uint8_t out[8])

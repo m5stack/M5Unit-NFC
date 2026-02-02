@@ -10,7 +10,6 @@
 
 #include "nfcf.hpp"
 #include <M5Utility.hpp>
-#include <mbedtls/des.h>
 #include <algorithm>
 
 namespace {
@@ -33,6 +32,30 @@ constexpr uint8_t user_block_table[][2] = {{0XFF, 0XFF}, {0XFF, 0XFF}, {0x00, 0x
 
 constexpr uint8_t zero_all[8]{};
 constexpr uint8_t ff_all[8]{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+void left_shift_1bit(uint8_t out[8], const uint8_t in[8])
+{
+    uint8_t carry{};
+    for (int i = 7; i >= 0; --i) {
+        uint8_t v = in[i];
+        out[i]    = static_cast<uint8_t>((v << 1) | carry);
+        carry     = static_cast<uint8_t>((v >> 7) & 0x01);
+    }
+}
+
+bool des3_encrypt_block(uint8_t out[8], const uint8_t key[24], const uint8_t in[8])
+{
+    using m5::utility::crypto::TripleDES;
+
+    if (!out || !key || !in) {
+        return false;
+    }
+
+    TripleDES::Key24 key24{};
+    std::memcpy(key24.data(), key, key24.size());
+    TripleDES des(TripleDES::Mode::CBC, TripleDES::Padding::None);
+    return des.encrypt(out, in, 8, key24) == 8;
+}
 
 std::string to_string(const uint8_t* p, const uint8_t size)
 {
@@ -97,6 +120,10 @@ bool make_session_key(uint8_t sk[16], const uint8_t ck[16], const uint8_t rc[16]
     using m5::utility::crypto::TripleDES;
     using Key16 = TripleDES::Key16;
 
+    if (!sk || !ck || !rc) {
+        return false;
+    }
+
     // 1) (CK[7..0] reversed + CK[15..8] reversed)
     Key16 key{};
     for (int i = 0; i < 8; ++i) {
@@ -136,6 +163,9 @@ bool generate_mac(uint8_t mac[8], const uint8_t* plain, uint32_t plain_len, cons
     using m5::utility::crypto::TripleDES;
 
     if (!mac || !block_data || !block_len || !sk1 || !sk2 || !rc) {
+        return false;
+    }
+    if (plain_len && !plain) {
         return false;
     }
 
@@ -184,6 +214,74 @@ bool generate_mac(uint8_t mac[8], const uint8_t* plain, uint32_t plain_len, cons
     for (int i = 0; i < 8; ++i) {
         mac[i] = out[out.size() - 1 - i];
     }
+    return true;
+}
+
+bool make_personalized_card_key_lite_s(uint8_t card_key[16], const uint8_t master_key[24], const uint8_t id_block[16])
+{
+    if (!card_key || !master_key || !id_block) {
+        return false;
+    }
+
+    constexpr uint8_t rb_const[8]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1B};
+    constexpr uint8_t msb_flip[8]{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+    uint8_t zero[8]{};
+    uint8_t l[8]{};
+    if (!des3_encrypt_block(l, master_key, zero)) {
+        return false;
+    }
+
+    uint8_t k1[8]{};
+    left_shift_1bit(k1, l);
+    if (l[0] & 0x80) {
+        for (int i = 0; i < 8; ++i) {
+            k1[i] ^= rb_const[i];
+        }
+    }
+
+    uint8_t m1[8]{};
+    uint8_t m2[8]{};
+    std::memcpy(m1, id_block, 8);
+    std::memcpy(m2, id_block + 8, 8);
+    for (int i = 0; i < 8; ++i) {
+        m2[i] ^= k1[i];
+    }
+
+    uint8_t c1[8]{};
+    if (!des3_encrypt_block(c1, master_key, m1)) {
+        return false;
+    }
+
+    uint8_t t[8]{};
+    uint8_t x[8]{};
+    for (int i = 0; i < 8; ++i) {
+        x[i] = c1[i] ^ m2[i];
+    }
+    if (!des3_encrypt_block(t, master_key, x)) {
+        return false;
+    }
+
+    uint8_t m1p[8]{};
+    for (int i = 0; i < 8; ++i) {
+        m1p[i] = m1[i] ^ msb_flip[i];
+    }
+
+    uint8_t c1p[8]{};
+    if (!des3_encrypt_block(c1p, master_key, m1p)) {
+        return false;
+    }
+
+    uint8_t tp[8]{};
+    for (int i = 0; i < 8; ++i) {
+        x[i] = c1p[i] ^ m2[i];
+    }
+    if (!des3_encrypt_block(tp, master_key, x)) {
+        return false;
+    }
+
+    std::memcpy(card_key, t, 8);
+    std::memcpy(card_key + 8, tp, 8);
     return true;
 }
 
