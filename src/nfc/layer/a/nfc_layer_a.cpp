@@ -1555,8 +1555,8 @@ bool NFCLayerA::dump_desfire()
                 M5_LIB_LOGW("getFileSettings failed file_no %u", file_no);
                 continue;
             }
-            printf("---- [%02u]:file_no %u type=%u comm=%u ar=%04X size=%u\n", idx - 1, file_no, settings.file_type,
-                   settings.comm_mode, settings.access_rights, settings.file_size);
+            printf("---- [%02" PRIu32 "]:file_no %u type=%u comm=%u ar=%04X size=%" PRIu32 "\n", (uint32_t)(idx - 1),
+                   file_no, settings.file_type, settings.comm_mode, settings.access_rights, settings.file_size);
             if (settings.file_size == 0) {
                 continue;
             }
@@ -1670,20 +1670,23 @@ bool NFCLayerA::dump_desfire_light()
 
         switch (settings.file_type) {
             case 0x02:  // Value file
-                printf("---- [%02u]:file_no %u Value file, so it can't be read\n", idx - 1, file_no);
+                printf("---- [%02" PRIu32 "]:file_no %u Value file, so it can't be read\n", (uint32_t)(idx - 1),
+                       file_no);
                 continue;
                 break;
             case 0x04:  // CyclicRecord file
-                printf("---- [%02u]:file_no %u CyclicRecord file, so it can't be read\n", idx - 1, file_no);
+                printf("---- [%02" PRIu32 "]:file_no %u CyclicRecord file, so it can't be read\n", (uint32_t)(idx - 1),
+                       file_no);
                 continue;
                 break;
             case 0x05:  // TMAC file
-                printf("---- [%02u]:file_no %u TMAC, so it can't be read\n", idx - 1, file_no);
+                printf("---- [%02" PRIu32 "]:file_no %u TMAC, so it can't be read\n", (uint32_t)(idx - 1), file_no);
                 continue;
                 break;
             default:
-                printf("---- [%02u]:file_no %u type=%u comm=%u ar=%04X size=%u\n", idx - 1, file_no, settings.file_type,
-                       settings.comm_mode, settings.access_rights, settings.file_size);
+                printf("---- [%02" PRIu32 "]:file_no %u type=%u comm=%u ar=%04X size=%" PRIu32 "\n",
+                       (uint32_t)(idx - 1), file_no, settings.file_type, settings.comm_mode, settings.access_rights,
+                       settings.file_size);
                 break;
         }
 
