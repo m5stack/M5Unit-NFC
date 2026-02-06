@@ -113,98 +113,111 @@ jobs:
           - sketch: Dump
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           - sketch: ValueBlock
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           - sketch: ReadWrite
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           - sketch: NDEF
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           - sketch: Emulation
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
 
           # NFCF Specific sketches
           - sketch: Dump
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           - sketch: NDEF
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           - sketch: Subtract
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           - sketch: ReadWriteMAC
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           - sketch: JapanTransportationICCard
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           - sketch: Emulation
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
 
           # NFCV Specific sketches
           - sketch: Dump
             nfc: NFCV
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           - sketch: NDEF
             nfc: NFCV
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
-            platform-version: 3.0.4
+            platform-version: 3.1.3
             platform: esp32
             archi: esp32
             board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
 
     steps:
       - name: Install dependencies (act only)
