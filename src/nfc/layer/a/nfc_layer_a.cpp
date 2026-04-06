@@ -1448,7 +1448,7 @@ bool NFCLayerA::dump_sector(const uint8_t sector)
             return false;
         }
         const uint8_t poffset      = (blocks == 4) ? i : i / 5;
-        const uint8_t permission   = permissions[poffset];
+        const uint8_t permission   = (poffset < 4) ? permissions[poffset] : 0xFF;
         const bool show_permission = (blocks == 4) ? true : (i % 5) == 0;
         print_block(dbuf, base + i, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, error,
                     can_value_block_permission(permission));
@@ -1555,8 +1555,8 @@ bool NFCLayerA::dump_desfire()
                 M5_LIB_LOGW("getFileSettings failed file_no %u", file_no);
                 continue;
             }
-            printf("---- [%02u]:file_no %u type=%u comm=%u ar=%04X size=%u\n", idx - 1, file_no, settings.file_type,
-                   settings.comm_mode, settings.access_rights, settings.file_size);
+            printf("---- [%02" PRIu32 "]:file_no %u type=%u comm=%u ar=%04X size=%" PRIu32 "\n", (uint32_t)(idx - 1),
+                   file_no, settings.file_type, settings.comm_mode, settings.access_rights, settings.file_size);
             if (settings.file_size == 0) {
                 continue;
             }
@@ -1670,20 +1670,23 @@ bool NFCLayerA::dump_desfire_light()
 
         switch (settings.file_type) {
             case 0x02:  // Value file
-                printf("---- [%02u]:file_no %u Value file, so it can't be read\n", idx - 1, file_no);
+                printf("---- [%02" PRIu32 "]:file_no %u Value file, so it can't be read\n", (uint32_t)(idx - 1),
+                       file_no);
                 continue;
                 break;
             case 0x04:  // CyclicRecord file
-                printf("---- [%02u]:file_no %u CyclicRecord file, so it can't be read\n", idx - 1, file_no);
+                printf("---- [%02" PRIu32 "]:file_no %u CyclicRecord file, so it can't be read\n", (uint32_t)(idx - 1),
+                       file_no);
                 continue;
                 break;
             case 0x05:  // TMAC file
-                printf("---- [%02u]:file_no %u TMAC, so it can't be read\n", idx - 1, file_no);
+                printf("---- [%02" PRIu32 "]:file_no %u TMAC, so it can't be read\n", (uint32_t)(idx - 1), file_no);
                 continue;
                 break;
             default:
-                printf("---- [%02u]:file_no %u type=%u comm=%u ar=%04X size=%u\n", idx - 1, file_no, settings.file_type,
-                       settings.comm_mode, settings.access_rights, settings.file_size);
+                printf("---- [%02" PRIu32 "]:file_no %u type=%u comm=%u ar=%04X size=%" PRIu32 "\n",
+                       (uint32_t)(idx - 1), file_no, settings.file_type, settings.comm_mode, settings.access_rights,
+                       settings.file_size);
                 break;
         }
 
@@ -1777,7 +1780,7 @@ bool NFCLayerA::dump_sector_mifare_plus_sl3(const uint8_t sector)
         }
 
         const uint8_t poffset      = (blocks == 4) ? i : i / 5;
-        const uint8_t permission   = permissions[poffset];
+        const uint8_t permission   = (poffset < 4) ? permissions[poffset] : 0xFF;
         const bool show_permission = (blocks == 4) ? true : (i % 5) == 0;
         print_block(data.data(), base + i, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, error,
                     can_value_block_permission(permission));

@@ -188,7 +188,7 @@ Type identify_type(const PICC& picc)
             case 0x23:
                 return Type::ST_ST25V;
             case 0x24:
-                // [falltrough]
+                // [fallthrough]
             case 0x26:
                 return Type::ST_ST25DV;  // ST25DV 04K/16K/64K
             case 0x02:

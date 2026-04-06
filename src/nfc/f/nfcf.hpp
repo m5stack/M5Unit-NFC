@@ -225,7 +225,7 @@ struct block_t {
 };
 
 /*!
-  @namespacce lite
+  @namespace standard
   @brief For FeliCa Standard
  */
 namespace standard {
@@ -292,7 +292,7 @@ namespace lite_s {
 enum class Mode : uint8_t {
     Mode00,  //!< External authentication incomplete, polling response possible
     Mode01,  //!< External authentication incomplete, polling response not possible
-    Mode10,  //!< External authentication complete, polling response possibl
+    Mode10,  //!< External authentication complete, polling response possible
     Mode11,  //!< External authentication complete, polling response not possible
 };
 
@@ -349,13 +349,13 @@ inline bool is_user_block(const Type t, const uint16_t block)
     return (block >= get_first_user_block(t)) && (block <= get_last_user_block(t));
 }
 //! @brief Maximum number of blocks that can be read simultaneously
-uint8_t get_maxumum_read_blocks(const Type t);
+uint8_t get_maximum_read_blocks(const Type t);
 //! @brief Maximum number of blocks that can be write simultaneously
-uint8_t get_maxumum_write_blocks(const Type t);
+uint8_t get_maximum_write_blocks(const Type t);
 
-//! @breif Is read only block (Permissions are not considered)
+//! @brief Is read only block (Permissions are not considered)
 bool is_read_only_lite(const block_t block);
-//! @breif Is read only block (Permissions are not considered)
+//! @brief Is read only block (Permissions are not considered)
 bool is_read_only_lite_s(const block_t block);
 //! @brief Can the value of the specified block be read? (Permissions are not considered)
 bool can_read_lite(const block_t block);
@@ -423,12 +423,12 @@ struct PICC {
     //! @brief Maximum number of blocks that can be read simultaneously
     inline uint8_t maximumReadBlocks() const
     {
-        return get_maxumum_read_blocks(type);
+        return get_maximum_read_blocks(type);
     }
     //! @brief Maximum number of blocks that can be write simultaneously
     inline uint8_t maximumWriteBlocks() const
     {
-        return get_maxumum_write_blocks(type);
+        return get_maximum_write_blocks(type);
     }
 
     //! @brief Check format
@@ -591,6 +591,15 @@ bool make_session_key(uint8_t sk[16], const uint8_t ck[16], const uint8_t rc[16]
 */
 bool generate_mac(uint8_t mac[8], const uint8_t* plain, uint32_t plain_len, const uint8_t* block_data,
                   uint32_t block_len, const uint8_t sk1[8], const uint8_t sk2[8], const uint8_t rc[16]);
+
+/*!
+  @brief Generate personalized card key for FeliCa Lite-S
+  @param[out] card_key Personalized card key (16 bytes)
+  @param master_key Personalized master key (24 bytes)
+  @param id_block ID block value (16 bytes)
+  @return True if successful
+*/
+bool make_personalized_card_key_lite_s(uint8_t card_key[16], const uint8_t master_key[24], const uint8_t id_block[16]);
 
 ///@}
 

@@ -296,7 +296,6 @@ public:
       @brief Authentication by KeyA for MIFARE classic
       @param block Authentication block
       @param key MIFARE classic key
-      @param encrypted Is it already in an encrypted state?
       @return True if successful
     */
     bool mifareClassicAuthenticateA(
@@ -305,19 +304,18 @@ public:
       @brief Authentication by KeyB for MIFARE classic
       @param block Authentication block
       @param key MIFARE classic key
-      @param encrypted Is it already in an encrypted state?
       @return True if successful
     */
     bool mifareClassicAuthenticateB(
         const uint8_t block, const m5::nfc::a::mifare::classic::Key& key = m5::nfc::a::mifare::classic::DEFAULT_KEY);
 
     /*!
-      @brief Read the specific block access conditons
+      @brief Read the specific block access conditions
       @param[out] c123 Access bits Bit2:C1 Bit1:C2 Bit0:C3
       @param block Block
       @return True if successful
       @details Access conditions for the sector trailer
-      |C1|C2|C3|KeyA read|KeyA write|Access bits read|Access bits write|KeyB raed|KeyB write|
+      |C1|C2|C3|KeyA read|KeyA write|Access bits read|Access bits write|KeyB read|KeyB write|
       |---|---|---|---|---|---|---|---|---|
       |0|0|0|never|keyA |keyA  |never|keyA |keyA |
       |0|1|0|never|never|keyA  |never|keyA |never|
@@ -342,7 +340,7 @@ public:
      */
     bool mifareClassicReadAccessCondition(uint8_t& c123, const uint8_t block);
     /*!
-      @brief Write the specific block access conditons
+      @brief Write the specific block access conditions
       @param block Block
       @param c123 Access bits Bit2:C1 Bit1:C2 Bit0:C3
       @param akey KeyA
@@ -493,7 +491,7 @@ public:
     ///@{
     /*!
       @brief Is the PICC data in NDEF format?
-      @paran[out] valid True if NDEF format
+      @param[out] valid True if NDEF format
       @return True if successful
      */
     bool ndefIsValidFormat(bool& valid);
@@ -510,7 +508,7 @@ public:
     bool ndefPrepareDesfire(const uint32_t max_ndef_size);
     /*!
       @brief Read NDEF Message TLV
-      @param[out] msg Messgae If it does not exist, a Null TLV is returned
+      @param[out] msg Message If it does not exist, a Null TLV is returned
       @return True if successful
       @note If multiple messages of the same type exist, return the first one
       @warning Only PICC cards supporting NDEF are valid
@@ -518,7 +516,7 @@ public:
     bool ndefRead(m5::nfc::ndef::TLV& msg);
     /*!
       @brief Read any NDEF TLV
-      @param[out] msgs Messgae vector
+      @param[out] tlvs Message vector
       @param tagBits Bit indicating the group of NDEF tags to be read
       @return True if successful
       @warning Only PICC cards supporting NDEF are valid
@@ -527,7 +525,7 @@ public:
                   const m5::nfc::ndef::TagBits tagBits = m5::nfc::ndef::tagBitsAll);
     /*!
       @brief Write NDEF message
-      @param msg Messgae (NDEF Message)
+      @param msg Message (NDEF Message)
       @return True if successful
       @note Other existing tags will be preserved
       @warning Existing NDEF message TLVs will be overwritten
@@ -536,7 +534,7 @@ public:
     bool ndefWrite(const m5::nfc::ndef::TLV& msg);
     /*!
       @brief Write any NDEF Messages TLV
-      @param msgs Messgae vector
+      @param tlvs Message vector
       @return True if successful
       @note Write starting from the beginning of the user area
       @warning Existing NDEF Message TLVs will be overwritten,

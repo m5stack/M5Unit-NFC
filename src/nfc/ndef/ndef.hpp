@@ -535,7 +535,7 @@ struct CapabilityContainer {
     {
         return block[1] & 0x03;
     }
-    inline uint8_t addtional_feature() const
+    inline uint8_t additional_feature() const
     {
         return block[3];
     }
@@ -565,7 +565,7 @@ struct CapabilityContainer {
     {
         block[1] = (block[1] & 0xFC) | (a & 0x03);
     }
-    inline void addtional_feature(const uint8_t af)
+    inline void additional_feature(const uint8_t af)
     {
         block[3] = af;
     }

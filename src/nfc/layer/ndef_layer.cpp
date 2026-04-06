@@ -768,7 +768,7 @@ bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type5::CapabilityContaine
     memcpy(cc.block, rx, std::min<uint16_t>(rx_len, sizeof(cc.block)));
 
     M5_LIB_LOGV("CC5:%02X %u.%u %u %02X/%02X %02X", cc.block[0], cc.major_version(), cc.minor_version(), cc.ndef_size(),
-                cc.read_access(), cc.write_access(), cc.addtional_feature());
+                cc.read_access(), cc.write_access(), cc.additional_feature());
 
     return true;
 }
@@ -1458,7 +1458,7 @@ bool NDEFLayer::write_type2(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
         }
         tmp = merge_tlv(tmp, tlvs);
     } else {
-        // Overwirte
+        // Overwrite
         tmp = tlvs;
     }
 
@@ -1738,7 +1738,7 @@ bool NDEFLayer::write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
         cc.ndef_size(user_size);
         cc.read_access(ACCESS_FREE);
         cc.write_access(ACCESS_FREE);
-        cc.addtional_feature(0);
+        cc.additional_feature(0);
     }
 
     uint32_t buf_size = encoded_size + cc.size();

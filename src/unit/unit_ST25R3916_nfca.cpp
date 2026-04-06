@@ -216,7 +216,7 @@ bool UnitST25R3916::nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
     }
 
     if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
-        //M5_LIB_LOGE("nfcaReceive timeout rx_len=%u timeout_ms=%u", rx_len_org, timeout_ms);
+        // M5_LIB_LOGE("nfcaReceive timeout rx_len=%u timeout_ms=%u", rx_len_org, timeout_ms);
         M5_LIB_LOGD("Timeout");
         return false;
     }
@@ -534,10 +534,10 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
                 rx[0] == ACK_NIBBLE) {
                 return true;
             }
-            M5_LIB_LOGD("Faile to WRITE2");
+            M5_LIB_LOGD("Failed to WRITE2");
             return false;
         } else {
-            M5_LIB_LOGD("Faile to WRITE1");
+            M5_LIB_LOGD("Failed to WRITE1");
             return false;
         }
     }
@@ -549,7 +549,7 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
             return true;
         }
     }
-    M5_LIB_LOGD("Faile to WRITE");
+    M5_LIB_LOGD("Failed to WRITE");
     return false;
 }
 

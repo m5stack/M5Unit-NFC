@@ -355,7 +355,7 @@ bool UnitST25R3916::nfc_initial_field_on()
     auto irq = wait_for_interrupt(I_cac32 | I_cat32 | I_apon32, 10);
     M5_LIB_LOGE("IRQ:%08X", irq);
     if (irq & I_cac32) {
-        M5_LIB_LOGE("RF Collison");
+        M5_LIB_LOGE("RF Collision");
     } else if (irq & I_apon32) {
         irq = wait_for_interrupt(I_cat32, 10);
         M5_LIB_LOGE("    IRQ:%08X", irq);
@@ -735,7 +735,7 @@ CapST25R3916::CapST25R3916(const uint8_t cs_pin) : UnitST25R3916(cs_pin)
 
 bool CapST25R3916::begin()
 {
-    // Disbale ST25R3816
+    // Disable ST25R3816
     pinMode(PIN_CS_ST25R3916, OUTPUT);
     digitalWrite(PIN_CS_ST25R3916, HIGH);
 

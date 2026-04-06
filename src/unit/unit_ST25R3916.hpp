@@ -65,12 +65,12 @@ public:
 
     ///@name Settings for begin
     ///@{
-    /*! @brief Gets the configration */
+    /*! @brief Gets the configuration */
     inline config_t config()
     {
         return _cfg;
     }
-    //! @brief Set the configration
+    //! @brief Set the configuration
     inline void config(const config_t& cfg)
     {
         _cfg = cfg;
@@ -1709,7 +1709,7 @@ public:
     ///@name IC identity
     ///@{
     /*!
-      @brief Read th IC identity
+      @brief Read the IC identity
       @param[out] type 5-bit IC type code (00101: ST25R3916/7)
       @param[out] rev 3-bit IC revision code (010: rev 3.1)
       @return True if successful
@@ -1753,7 +1753,7 @@ public:
 
     /*!
       @brief Request for idle PICC
-      @param[out atqa ATQA
+      @param[out] atqa ATQA
       @return True if successful
      */
     inline bool nfcaRequest(uint16_t& atqa)
@@ -1762,7 +1762,7 @@ public:
     }
     /*!
       @brief Wakeup for idle/halt PICC
-      @param[out atqa ATQA
+      @param[out] atqa ATQA
       @return True if successful
      */
     inline bool nfcaWakeup(uint16_t& atqa)
@@ -1839,7 +1839,7 @@ public:
       @brief Operation for the value block
       @param cmd Command
       @param block Block address
-      @param arg Arrgument for command if needs
+      @param arg Argument for command if needs
       @return True if successful
      */
     bool mifareClassicValueBlock(const m5::nfc::a::Command cmd, const uint8_t block, const uint32_t arg = 0);
@@ -1860,7 +1860,7 @@ public:
     bool nfcbTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                         const uint32_t timeout_ms);
     /*!
-      @param Transmit to NFC-B PICC
+      @brief Transmit to NFC-B PICC
       @param tx Send buffer
       @param tx_len Size of send buffer
       @param timeout_ms Timeout(ms)
@@ -1868,7 +1868,7 @@ public:
      */
     bool nfcbTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
     /*!
-      @param Receive from NFC-B PICC
+      @brief Receive from NFC-B PICC
       @param[out] rx Receive buffer
       @param[in/out] rx_len in:Size of receive buffer out:actual read size
       @param timeout_ms Timeout(ms)
@@ -1900,7 +1900,7 @@ public:
      */
     bool nfcfTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
     /*!
-      @param Receive from NFC-F PICC
+      @brief Receive from NFC-F PICC
       @param[out] rx Receive buffer
       @param[in/out] rx_len in:Size of receive buffer out:actual read size
       @param timeout_ms Timeout(ms)
@@ -1937,7 +1937,7 @@ public:
     bool nfcvTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
                       const m5::nfc::v::ModulationMode mode = m5::nfc::v::ModulationMode::OneOf4);
     /*!
-      @param Receive from NFC-F PICC
+      @brief Receive from NFC-V PICC
       @param[out] rx Receive buffer
       @param[in/out] rx_len in:Size of receive buffer out:actual read size
       @param timeout_ms Timeout(ms)
@@ -1985,7 +1985,7 @@ protected:
     bool wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size = 0);
     bool read_FIFO(std::vector<uint8_t>& out);
 
-    // Mode confifuration
+    // Mode configuration
     bool configure_nfc_a();
     bool configure_nfc_b();
     bool configure_nfc_f();

@@ -68,7 +68,7 @@ constexpr uint8_t MAX_BLOCK_SIZE{32};
 
 /*!
   @enum VCDMode
-  @breif VCD encode flag
+  @brief VCD encode flag
  */
 enum class ModulationMode : uint8_t {
     OneOf4,    //!< 1 out of 4 pulse-position modulation
@@ -200,7 +200,7 @@ constexpr uint32_t TIMEOUT_WRITE_SINGLE_BLOCK{30};
   @param length Input buffer length (allow 0)
   @param high_rate High data rate if true
   @param add_crc Append CRC16 if true
-  @return True if successful
+  @return Encoded size in bytes, or 0 on error
   @note Make EOF only if buffer is nullptr and length is 0
  */
 uint32_t encode_VCD(std::vector<uint8_t>& out, const ModulationMode mode, const uint8_t* buffer, const uint32_t length,

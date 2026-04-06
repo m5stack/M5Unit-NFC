@@ -42,7 +42,7 @@ enum class Type : uint8_t {
     MIFARE_Ultralight_Nano,   //!< MIFARE Ultralight Nano
     MIFARE_UltralightC,       //!< MIFARE UltralightC
 
-    NTAG_203,   //!< NATG 203
+    NTAG_203,   //!< NTAG 203
     NTAG_210u,  //!< NTAG 210μ
     NTAG_210,   //!< NTAG 210
     NTAG_212,   //!< NTAG 212
@@ -121,7 +121,7 @@ inline bool is_ntag2(const Type t)
 //! @brief Is type NTAG4xx?
 inline bool is_ntag4(const Type t)
 {
-    return t >= Type::NTAG_4XX;
+    return t == Type::NTAG_4XX;
 }
 
 //! @brief Is type MIFARE Plus?
@@ -543,9 +543,9 @@ enum class Command : uint8_t {
     SELECT_CL1    = 0x93,  //!< Anticollison/Select CL1
     SELECT_CL2    = 0x95,  //!< Anticollison/Select CL2
     SELECT_CL3    = 0x97,  //!< Anticollison/Select CL3
-    SELCT_CL1_OPT = 0x92,  //!< Select CL1 and swich bit rate to fc/64 after receive SAK
-    SELCT_CL2_OPT = 0x94,  //!< Select CL2 and swich bit rate to fc/64 after receive SAK
-    SELCT_CL3_OPT = 0x96,  //!< Select CL3 and swich bit rate to fc/64 after receive SAK
+    SELCT_CL1_OPT = 0x92,  //!< Select CL1 and switch bit rate to fc/64 after receive SAK
+    SELCT_CL2_OPT = 0x94,  //!< Select CL2 and switch bit rate to fc/64 after receive SAK
+    SELCT_CL3_OPT = 0x96,  //!< Select CL3 and switch bit rate to fc/64 after receive SAK
     READ          = 0x30,  //!< Read
     // ISO/IEC 14443-4
     RATS     = 0xE0,  //!< Request for Answer to Select
@@ -584,8 +584,8 @@ constexpr uint32_t TIMEOUT_ANTICOLL{8};  // 8
 constexpr uint32_t TIMEOUT_HALT{2};
 constexpr uint32_t TIMEOUT_GET_VERSION{5};  // 5
 constexpr uint32_t TIMEOUT_3DES{10};
-constexpr uint32_t TIMEOUT_AUTH1{4}; // 2
-constexpr uint32_t TIMEOUT_AUTH2{16}; // 10
+constexpr uint32_t TIMEOUT_AUTH1{4};   // 2
+constexpr uint32_t TIMEOUT_AUTH2{16};  // 10
 constexpr uint32_t TIMEOUT_READ{12};
 constexpr uint32_t TIMEOUT_FAST_READ{2};
 constexpr uint32_t TIMEOUT_FAST_READ_4PAGE{4};    // 3.7

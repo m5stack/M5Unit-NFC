@@ -175,7 +175,7 @@ struct TLV {
     }
     inline bool is_primitive() const
     {
-        return is_constructed();
+        return !is_constructed();
     }
 };
 

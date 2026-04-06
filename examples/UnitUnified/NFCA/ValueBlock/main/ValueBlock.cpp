@@ -12,6 +12,8 @@
 #include <M5UnitUnified.h>
 #include <M5UnitUnifiedNFC.h>
 #include <M5Utility.h>
+#include <Wire.h>
+#include <M5HAL.hpp>  // For NessoN1
 #include <vector>
 
 // *************************************************************
@@ -231,7 +233,7 @@ void rechargeable_value_block(const uint8_t block, const Key& akey, const Key& b
 
     // Auth B
     if (!nfc_a.mifareClassicAuthenticateB(block, bkey)) {
-        M5_LOGE("Failed to AUTH A %u/%u", block, stb);
+        M5_LOGE("Failed to AUTH B %u/%u", block, stb);
         return;
     }
 
@@ -307,6 +309,115 @@ void rechargeable_value_block(const uint8_t block, const Key& akey, const Key& b
     nfc_a.dump(block);
 }
 
+// Scan all sectors and restore any value blocks to normal read/write blocks
+// Also restores sector trailer access bits to default (001)
+// Tries multiple key combinations: KeyA/KeyB may have been changed by previous operations
+void restore_all_value_blocks(const Key& akey, const Key& bkey)
+{
+    auto& picc = nfc_a.activatedPICC();
+    uint8_t st_block{};
+    uint32_t restored{};
+    constexpr Key zero_key = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+    // Try to authenticate with multiple keys
+    // Note: After a failed auth, PICC goes to HALT state. Need reactivate before retry.
+    auto try_auth = [&](uint8_t stb) -> bool {
+        if (nfc_a.mifareClassicAuthenticateA(stb, akey)) {
+            M5_LOGI("Auth KeyA(default) OK for trailer %u", stb);
+            return true;
+        }
+        nfc_a.reactivate();
+        if (nfc_a.mifareClassicAuthenticateA(stb, zero_key)) {
+            M5_LOGI("Auth KeyA(zero) OK for trailer %u", stb);
+            return true;
+        }
+        nfc_a.reactivate();
+        if (nfc_a.mifareClassicAuthenticateB(stb, bkey)) {
+            M5_LOGI("Auth KeyB(default) OK for trailer %u", stb);
+            return true;
+        }
+        nfc_a.reactivate();
+        if (nfc_a.mifareClassicAuthenticateB(stb, zero_key)) {
+            M5_LOGI("Auth KeyB(zero) OK for trailer %u", stb);
+            return true;
+        }
+        nfc_a.reactivate();
+        return false;
+    };
+
+    // Pass 1: Restore sector trailer access bits first
+    // Some access conditions require KeyB for trailer writes
+    for (uint_fast16_t stb = 3; stb < picc.blocks; stb = get_sector_trailer_block(stb + 1)) {
+        if (!try_auth(stb)) {
+            M5_LOGW("Cannot auth sector trailer %u, skip", stb);
+            continue;
+        }
+        // Try with current auth (KeyA)
+        if (nfc_a.mifareClassicWriteAccessCondition(stb, 0x01 /*001*/, akey, bkey)) {
+            M5_LOGI("Restored trailer %u with KeyA", stb);
+            continue;
+        }
+        M5_LOGW("KeyA write failed for trailer %u, trying KeyB...", stb);
+        // KeyA write failed -> need KeyB auth for this trailer
+        nfc_a.reactivate();
+        if (nfc_a.mifareClassicAuthenticateB(stb, bkey)) {
+            if (nfc_a.mifareClassicWriteAccessCondition(stb, 0x01, akey, bkey)) {
+                M5_LOGI("Restored trailer %u with KeyB(default)", stb);
+                continue;
+            }
+        }
+        nfc_a.reactivate();
+        if (nfc_a.mifareClassicAuthenticateB(stb, zero_key)) {
+            if (nfc_a.mifareClassicWriteAccessCondition(stb, 0x01, akey, bkey)) {
+                M5_LOGI("Restored trailer %u with KeyB(zero)", stb);
+                continue;
+            }
+        }
+        M5_LOGE("Cannot restore trailer %u", stb);
+        nfc_a.reactivate();
+    }
+
+    // Pass 2: Find and restore value blocks
+    st_block = 0;
+    for (uint_fast16_t block = 0; block < picc.blocks; ++block) {
+        uint8_t stb = get_sector_trailer_block(block);
+        if (stb != st_block) {
+            st_block = stb;
+            if (!try_auth(stb)) {
+                block = stb;
+                continue;
+            }
+        }
+        if (block == stb || !picc.isUserBlock(block)) {
+            continue;
+        }
+        bool vb{};
+        if (!nfc_a.mifareClassicIsValueBlock(vb, block)) {
+            continue;
+        }
+        if (!vb) {
+            continue;
+        }
+
+        M5.Log.printf("Found value block [%u], restoring...\n", block);
+
+        // Change to read/write block
+        if (!nfc_a.mifareClassicWriteAccessCondition(block, READ_WRITE_BLOCK, akey, bkey)) {
+            M5_LOGE("Failed to change access condition %u", block);
+            continue;
+        }
+        // Clear block data
+        uint8_t c[1]{};
+        if (!nfc_a.write16(block, c, sizeof(c))) {
+            M5_LOGE("Failed to clear %u", block);
+            continue;
+        }
+        ++restored;
+    }
+
+    M5.Log.printf("Restored %u value blocks\n", restored);
+}
+
 }  // namespace
 
 void setup()
@@ -314,16 +425,37 @@ void setup()
     M5.begin();
     M5.setTouchButtonHeightByRatio(100);
 
-#if defined(USING_UNIT_NFC) || defined(USING_UNIT_RFID2)
-    auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
-    auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
-    M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
-    Wire.end();
-    Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
+    // The screen shall be in landscape mode
+    if (lcd.height() > lcd.width()) {
+        lcd.setRotation(1);
+    }
 
-    if (!Units.add(unit, Wire) || !Units.begin()) {
+#if defined(USING_UNIT_NFC) || defined(USING_UNIT_RFID2)
+    auto board = M5.getBoard();
+    bool unit_ready{};
+#if defined(USING_M5DIAL_BUILTIN_WS1850S)
+    // M5Dial builtin WS1850S on In_I2C (G12/G11, shared with RTC8563)
+    M5_LOGI("Using M5.In_I2C for builtin WS1850S");
+    unit_ready = Units.add(unit, M5.In_I2C) && Units.begin();
+#else
+    // NessoN1: port_b (GROVE) uses SoftwareI2C (M5HAL Bus) which causes I2C register
+    //          polling latency too high for MFRC522/WS1850S RF timing requirements.
+    //          Use QWIIC (port_a) with Wire instead. (Requires QWIIC-GROVE conversion cable)
+    if (board == m5::board_t::board_M5NanoC6) {
+        M5_LOGI("Using M5.Ex_I2C");
+        unit_ready = Units.add(unit, M5.Ex_I2C) && Units.begin();
+    } else {
+        auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
+        auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
+        M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
+        Wire.end();
+        Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
+        unit_ready = Units.add(unit, Wire) && Units.begin();
+    }
+#endif  // USING_M5DIAL_BUILTIN_WS1850S
+    if (!unit_ready) {
         M5_LOGE("Failed to begin");
-        lcd.clear(TFT_RED);
+        lcd.fillScreen(TFT_RED);
         while (true) {
             m5::utility::delay(10000);
         }
@@ -346,10 +478,10 @@ void setup()
         }
     }
 #endif
-    M5_LOGI("M5UnitUnified has been begun");
+    M5_LOGI("M5UnitUnified initialized");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
-    lcd.setCursor(0, 0);
+    lcd.setCursor(0, lcd.height() / 2);
     lcd.printf("Please put the PICC and click/hold BtnA");
     M5.Log.printf("Please put the PICC and click/hold BtnA\n");
 }
@@ -373,11 +505,13 @@ void loop()
                         lcd.fillScreen(TFT_BLUE);
                         M5.Log.print("Non rechargeable\n");
                         non_rechargeable_value_block(picc.blocks - 2, keyA, keyB);
+                        // nfc_a.dump(DEFAULT_KEY);
                     } else if (held) {
                         M5.Speaker.tone(4000, 30);
                         lcd.fillScreen(TFT_YELLOW);
                         M5.Log.print("Rechargeable\n");
                         rechargeable_value_block(picc.blocks - 2, keyA, keyB);
+                        // restore_all_value_blocks(DEFAULT_KEY, DEFAULT_KEY);
                     }
                     M5.Log.printf("Please remove the PICC from the reader\n");
                 } else {
@@ -390,7 +524,7 @@ void loop()
         } else {
             M5.Log.printf("PICC NOT exists\n");
         }
-        lcd.setCursor(0, 0);
+        lcd.setCursor(0, lcd.height() / 2);
         lcd.printf("Please put the PICC and click/hold BtnA");
         M5.Log.printf("Please put the PICC and click/hold BtnA\n");
     }

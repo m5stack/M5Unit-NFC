@@ -335,7 +335,7 @@ void TLV::clear()
 void TLV::dump()
 {
     uint32_t payload_len = (_tag == Tag::Message) ? calculate_record_size(_records) : _payload.size();
-    printf("== NDEF Mesage Tag:%02X Payload:%" PRIu32 "\n", m5::stl::to_underlying(_tag),
+    printf("== NDEF Message Tag:%02X Payload:%" PRIu32 "\n", m5::stl::to_underlying(_tag),
            payload_len);  // PRIu32 for compile on NanoC6
 
     if (_tag == Tag::Message) {

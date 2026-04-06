@@ -66,7 +66,7 @@ const uint8_t FRAME_OPTION_CID{0x01};
 
 ///@name ATQB protocol
 ///@{
-//! @breif Get maxumum frame length from protocl bytes
+//! @brief Get maximum frame length from protocol bytes
 uint16_t maximum_frame_length(const uint8_t protocol[3]);
 
 inline uint8_t maximum_frame_length_bits(const uint8_t protocol[3])

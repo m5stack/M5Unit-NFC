@@ -3,7 +3,7 @@
 ## Overview
 
 Library for Unit-NFC series using [M5UnitUnified](https://github.com/m5stack/M5UnitUnified).  
-M5UnitUnfied has a unified API and can control multiple units via PaHub, etc.
+M5UnitUnified has a unified API and can control multiple units via PaHub, etc.
 
 ### SKU:xxx
 
@@ -92,7 +92,7 @@ See examples: [NFCA Emulation](examples/UnitUnified/NFCA/Emulation) and [NFCF Em
 - [Unit NFC & Datasheet](https://docs.m5stack.com/en/----------)
 - [CapHacker & Datasheet](https://docs.m5stack.com/en/---------)
 
-## Required Libraries:
+## Required Libraries
 
 - [M5UnitUnified](https://github.com/m5stack/M5UnitUnified)
 - [M5Utility](https://github.com/m5stack/M5Utility)
@@ -100,11 +100,29 @@ See examples: [NFCA Emulation](examples/UnitUnified/NFCA/Emulation) and [NFCF Em
 
 ## License
 
-- [M5Unit-NFC -MIT](LICENSE)
+- [M5Unit-NFC - MIT](LICENSE)
 
 
 ## Examples
 See also [examples/UnitUnified](examples/UnitUnified)
+
+### For ArduinoIDE
+Each example contains the following block to select the unit:
+
+```cpp
+// For UnitNFC
+// #define USING_UNIT_NFC
+// For CapNFC
+// #define USING_HACKER_CAP
+```
+
+The examples are shared with [M5Unit-RFID](https://github.com/m5stack/M5Unit-RFID), which is why other unit definitions may exist.  
+Uncomment `USING_UNIT_NFC` or `USING_HACKER_CAP`:
+
+```cpp
+#define USING_UNIT_NFC
+// #define USING_HACKER_CAP
+```
 
 ## Doxygen document
 [GitHub Pages](https://m5stack.github.io/M5Unit-NFC/)

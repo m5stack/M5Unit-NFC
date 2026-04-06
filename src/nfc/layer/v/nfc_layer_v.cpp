@@ -54,7 +54,7 @@ void print_block(const uint8_t* buf, const uint8_t len, const int16_t block)
     char tmp[64 + 1] = "         ";
     uint32_t left{};
     // Block
-    left += snprintf(tmp + left, 13, "[%04u/%04X]:", block, block);
+    left += snprintf(tmp + left, 13, "[%04u/%04X]:", (unsigned)block, (unsigned)block);
     // Data
     for (uint8_t i = 0; i < len; ++i) {
         left += snprintf(tmp + left, 4, "%02X ", buf[i]);
@@ -140,7 +140,7 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
 
         // To QUIET
         if (!stay_quiet(picc)) {
-            M5_LIB_LOGE("stay quiest failed");
+            M5_LIB_LOGE("stay quiet failed");
             continue;
         }
         // Append PICC
@@ -368,14 +368,15 @@ bool NFCLayerV::writeBlock(const uint16_t block, const uint8_t* tx, const uint8_
 bool NFCLayerV::write(const uint16_t sblock, const uint8_t* tx, const uint16_t tx_len)
 {
     const uint8_t block_size = _activePICC.block_size;
-    const uint16_t blocks    = (tx_len + block_size - 1) / block_size;
-    const uint16_t last      = std::min<uint16_t>(_activePICC.lastUserBlock(), sblock + blocks - 1);
-
-    // M5_LIB_LOGE(">>>>WRITE %u %p %u (%u-%u) ", sblock, tx, tx_len, sblock, last);
 
     if (!_activePICC.valid() || !tx || !tx_len || !block_size || block_size > MAX_BLOCK_SIZE) {
         return false;
     }
+
+    const uint16_t blocks = (tx_len + block_size - 1) / block_size;
+    const uint16_t last   = std::min<uint16_t>(_activePICC.lastUserBlock(), sblock + blocks - 1);
+
+    // M5_LIB_LOGE(">>>>WRITE %u %p %u (%u-%u) ", sblock, tx, tx_len, sblock, last);
 
     uint16_t written{};
     uint8_t wtmp[MAX_BLOCK_SIZE]{};

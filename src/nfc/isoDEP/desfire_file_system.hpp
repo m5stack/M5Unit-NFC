@@ -14,6 +14,8 @@
 #include "nfc/ndef/ndef.hpp"
 #include <m5_utility/stl/expected.hpp>
 #include <array>
+#include <algorithm>
+#include <limits>
 
 namespace m5 {
 namespace nfc {
@@ -38,6 +40,42 @@ constexpr file_no_t MAXIMUM_FILE_NO{31};  //!< Maximum file number
 ///@}
 
 constexpr uint8_t MAXIMUM_FILES{MAXIMUM_FILE_NO - MINIMUM_FILE_NO + 1};  //!< Files max
+
+namespace detail {
+
+inline uint16_t clamp_u16_size(const size_t size)
+{
+    constexpr size_t max_u16 = std::numeric_limits<uint16_t>::max();
+    return static_cast<uint16_t>(size > max_u16 ? max_u16 : size);
+}
+
+inline uint16_t default_rx_capacity(const m5::nfc::isodep::IsoDEP& dep)
+{
+    const uint16_t cfg_rx = dep.config().max_frame_size_rx();
+    const uint16_t base   = cfg_rx ? cfg_rx : 256;
+    return std::max<uint16_t>(256, base);
+}
+
+inline void pack_le24(uint8_t out[3], const uint32_t value)
+{
+    out[0] = static_cast<uint8_t>(value & 0xFF);
+    out[1] = static_cast<uint8_t>((value >> 8) & 0xFF);
+    out[2] = static_cast<uint8_t>((value >> 16) & 0xFF);
+}
+
+inline void pack_be24(uint8_t out[3], const uint32_t value)
+{
+    out[0] = static_cast<uint8_t>((value >> 16) & 0xFF);
+    out[1] = static_cast<uint8_t>((value >> 8) & 0xFF);
+    out[2] = static_cast<uint8_t>(value & 0xFF);
+}
+
+inline uint32_t unpack_le24(const uint8_t in[3])
+{
+    return static_cast<uint32_t>(in[0]) | (static_cast<uint32_t>(in[1]) << 8) | (static_cast<uint32_t>(in[2]) << 16);
+}
+
+}  // namespace detail
 
 /*!
   @struct FileSettings
@@ -137,7 +175,7 @@ struct Ev2Context {
 };
 /*!
   @brief Make native wrap command
-  @details Something similar to ADPU but different
+  @details Something similar to APDU but different
   @param ins Native INS
   @param data Data
   @param data_len Data length

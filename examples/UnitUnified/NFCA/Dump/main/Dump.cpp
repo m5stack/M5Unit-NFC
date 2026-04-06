@@ -12,6 +12,8 @@
 #include <M5UnitUnified.h>
 #include <M5UnitUnifiedNFC.h>
 #include <M5Utility.h>
+#include <Wire.h>
+#include <M5HAL.hpp>  // For NessoN1
 #include <vector>
 
 // *************************************************************
@@ -62,16 +64,37 @@ void setup()
     M5.begin();
     M5.setTouchButtonHeightByRatio(100);
 
-#if defined(USING_UNIT_NFC) || defined(USING_UNIT_RFID2)
-    auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
-    auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
-    M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
-    Wire.end();
-    Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
+    // The screen shall be in landscape mode
+    if (lcd.height() > lcd.width()) {
+        lcd.setRotation(1);
+    }
 
-    if (!Units.add(unit, Wire) || !Units.begin()) {
+#if defined(USING_UNIT_NFC) || defined(USING_UNIT_RFID2)
+    auto board = M5.getBoard();
+    bool unit_ready{};
+#if defined(USING_M5DIAL_BUILTIN_WS1850S)
+    // M5Dial builtin WS1850S on In_I2C (G12/G11, shared with RTC8563)
+    M5_LOGI("Using M5.In_I2C for builtin WS1850S");
+    unit_ready = Units.add(unit, M5.In_I2C) && Units.begin();
+#else
+    // NessoN1: port_b (GROVE) uses SoftwareI2C (M5HAL Bus) which causes I2C register
+    //          polling latency too high for MFRC522/WS1850S RF timing requirements.
+    //          Use QWIIC (port_a) with Wire instead. (Requires QWIIC-GROVE conversion cable)
+    if (board == m5::board_t::board_M5NanoC6) {
+        M5_LOGI("Using M5.Ex_I2C");
+        unit_ready = Units.add(unit, M5.Ex_I2C) && Units.begin();
+    } else {
+        auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
+        auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
+        M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
+        Wire.end();
+        Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
+        unit_ready = Units.add(unit, Wire) && Units.begin();
+    }
+#endif  // USING_M5DIAL_BUILTIN_WS1850S
+    if (!unit_ready) {
         M5_LOGE("Failed to begin");
-        lcd.clear(TFT_RED);
+        lcd.fillScreen(TFT_RED);
         while (true) {
             m5::utility::delay(10000);
         }
@@ -94,15 +117,12 @@ void setup()
         }
     }
 #endif
-    M5_LOGI("M5UnitUnified has been begun");
+    M5_LOGI("M5UnitUnified initialized");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
-    if (lcd.width() < lcd.height()) {
-        lcd.setRotation(1);
-    }
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(0);
-    lcd.setCursor(0, 0);
+    lcd.fillScreen(TFT_DARKGREEN);
+    lcd.setCursor(0, lcd.height() / 2);
     lcd.printf("Please put the PICC and click BtnA");
     M5.Log.printf("Please put the PICC and click BtnA\n");
 }
@@ -113,19 +133,23 @@ void loop()
     Units.update();
 
     if (M5.BtnA.wasClicked()) {
-        lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
+        lcd.fillScreen(TFT_DARKGREEN);
+        lcd.setCursor(0, lcd.height() / 2);
         PICC picc{};
         if (nfc_a.detect(picc)) {
             if (nfc_a.identify(picc) && nfc_a.reactivate(picc)) {
                 M5.Speaker.tone(3000, 20);
+                lcd.printf("%s\n%s", picc.uidAsString().c_str(), picc.typeAsString().c_str());
                 M5.Log.printf("==== Dump %s %s %u/%u ====\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
                               picc.userAreaSize(), picc.totalSize());
                 nfc_a.dump(keyA);  // Need key if MIFARE classic, Ignore key if not MIFARE classic
                 nfc_a.deactivate();
             } else {
+                lcd.printf("Failed to identify");
                 M5_LOGE("Failed to identify/activate %s", picc.uidAsString().c_str());
             }
         } else {
+            lcd.printf("PICC NOT exists");
             M5.Log.printf("PICC NOT exists\n");
         }
     }

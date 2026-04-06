@@ -51,7 +51,7 @@ public:
     {
         return _tag == Tag::Terminator;
     }
-    //! @brief Is Messgae?
+    //! @brief Is Message?
     inline bool isMessageTLV() const
     {
         return _tag == Tag::Message;

@@ -164,7 +164,7 @@ public:
     bool requestService(uint16_t& key_version, const uint16_t node_code);
     /*!
       @brief Request service
-      @param[out] key_version Key version array (at leaset node_num)
+      @param[out] key_version Key version array (at least node_num)
       @param node_code Node code array
       @param node_num Number of node_code
       @return True if successful
@@ -245,7 +245,7 @@ public:
     bool read(uint8_t* rx, uint16_t& rx_len, const m5::nfc::f::block_t sblock);
 
     /*!
-      @breif Read the specified block list and service codes
+      @brief Read the specified block list and service codes
       @param[out] rx Buffer (At least 16 * block_num)
       @param[in/out] rx_len in:buffer size, out:actual read size
       @param block Target block array
@@ -341,13 +341,13 @@ public:
     ///@{
     /*!
       @brief Is the PICC data in NDEF format?
-[      @param[out] valid True if NDEF format
+      @param[out] valid True if NDEF format
       @return True if successful
      */
     bool ndefIsValidFormat(bool& valid);
     /*!
       @brief Read NDEF Message TLV
-      @param[out] msg Messgae If it does not exist, a Null TLV is returned
+      @param[out] msg Message If it does not exist, a Null TLV is returned
       @return True if successful
       @note If multiple messages of the same type exist, return the first one
       @warning Only PICC cards supporting NDEF are valid
@@ -355,7 +355,7 @@ public:
     bool ndefRead(m5::nfc::ndef::TLV& msg);
     /*!
       @brief Write NDEF message TLV
-      @param msg Messgae TLV
+      @param msg Message TLV
       @return True if successful
       @warning Existing record will be overwritten
       @warning Only PICC cards supporting NDEF are valid

@@ -200,7 +200,7 @@ constexpr uint8_t CMD_START_WAKEUP_TIMER{0xE1};           //
 constexpr uint8_t CMD_START_MASK_RECEIVE_TIMER{0xE2};     // Starts the mask-receive timer and squelch operation
 constexpr uint8_t CMD_Start_NO_RESPONSE_TIMER{0xE3};      //
 constexpr uint8_t CMD_START_PPON2_TIMER{0xE4};            //
-constexpr uint8_t CMD_STOP_NO_RESPONSE_TIMER{0xE5};       //
+constexpr uint8_t CMD_STOP_NO_RESPONSE_TIMER{0xE8};       //
 constexpr uint8_t CMD_REGISTER_SPACEB_ACCESS{0xFB};       // Enables R/W access to register Space-B
 constexpr uint8_t CMD_TEST_ACCESS{0xFC};                  // Enable R/W access to Test register
 ///@endcond
@@ -302,8 +302,8 @@ constexpr uint8_t agc6_3{0x01};   // AGC ratio 0:3 1:6
 
 // 0x12 Timer and EMV control register
 constexpr uint8_t mrt_step{0x08};  // Mask receive timer step size 0:64/fc, 1:5126/fc
-constexpr uint8_t nrt_nfc{0x01};   // No-response timer start condition in AP2P initiator and target mode.
-constexpr uint8_t nrt_emv{0x01};   // 1: No-response timer EMV mode
+constexpr uint8_t nrt_nfc{0x04};   // No-response timer start condition in AP2P initiator and target mode.
+constexpr uint8_t nrt_emv{0x02};   // 1: No-response timer EMV mode
 constexpr uint8_t nrt_step{0x01};  // No-response timer step size 0:64/fc, 1:4096/fc
 
 constexpr uint8_t nrt_gptc_none{0x00};
@@ -394,7 +394,7 @@ constexpr uint8_t efd_o{0x40};
 constexpr uint8_t tx_on{0x20};
 constexpr uint8_t osc_ok{0x10};
 constexpr uint8_t rx_on{0x08};
-constexpr uint8_t rx_act{0x40};
+constexpr uint8_t rx_act{0x04};
 constexpr uint8_t en_peer{0x02};
 constexpr uint8_t en_ac{0x01};
 
