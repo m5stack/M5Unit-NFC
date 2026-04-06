@@ -5,7 +5,7 @@
  */
 /*
   Example using M5UnitUnified for ST25R3916
-  JapanIDCard exapmle
+  JapanIDCard example
 */
 // *************************************************************
 // Choose one define symbol to match the unit you are using

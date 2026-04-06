@@ -134,7 +134,7 @@ void dump_jtic()
                 break;
             }
             auto dt = buf_to_tm(buf + 6);
-            M5.Log.printf("  [%2u]:%4u/%02u/%02u %1u%1u:%1u%1u Enrty/Exit:%02X Gate:%03u-%03u/%04X Actuarial:%5u\n",  //
+            M5.Log.printf("  [%2u]:%4u/%02u/%02u %1u%1u:%1u%1u Entry/Exit:%02X Gate:%03u-%03u/%04X Actuarial:%5u\n",  //
                           i, dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday,                                            //
                           buf[8] >> 4, buf[8] & 0x0F, buf[9] >> 4, buf[9] & 0x0F,  // BCD hour and min
                           buf[0], buf[2], buf[3],                                  // Station code if train
@@ -200,15 +200,23 @@ void setup()
     unit.config(cfg);
 
 #if defined(USING_UNIT_NFC)
-    auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
-    auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
-    M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
-    Wire.end();
-    Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
-
-    if (!Units.add(unit, Wire) || !Units.begin()) {
+    auto board = M5.getBoard();
+    bool unit_ready{};
+    // NessoN1: SoftwareI2C too slow for NFC RF timing -> use port_a (Wire) via else branch
+    if (board == m5::board_t::board_M5NanoC6) {
+        M5_LOGI("Using M5.Ex_I2C");
+        unit_ready = Units.add(unit, M5.Ex_I2C) && Units.begin();
+    } else {
+        auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
+        auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
+        M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
+        Wire.end();
+        Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
+        unit_ready = Units.add(unit, Wire) && Units.begin();
+    }
+    if (!unit_ready) {
         M5_LOGE("Failed to begin");
-        lcd.clear(TFT_RED);
+        lcd.fillScreen(TFT_RED);
         while (true) {
             m5::utility::delay(10000);
         }
@@ -231,10 +239,10 @@ void setup()
         }
     }
 #endif
-    M5_LOGI("M5UnitUnified has been begun");
+    M5_LOGI("M5UnitUnified initialized");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
-    if (lcd.width() < lcd.height()) {
+    if (lcd.height() > lcd.width()) {
         lcd.setRotation(1);
     }
     lcd.setFont(&fonts::Font0);

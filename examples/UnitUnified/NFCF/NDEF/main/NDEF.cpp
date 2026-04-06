@@ -90,7 +90,7 @@ void write_ndef()
     // URI record
     r[0].setURIPayload("m5stack.com/", URIProtocol::HTTPS);
 
-    // Text record with langage type
+    // Text record with language type
     const char* en_data = "Hello M5Stack";
     r[1].setTextPayload(en_data, "en");
     const char* ja_data = "こんにちは M5Stack";
@@ -126,15 +126,23 @@ void setup()
     unit.config(cfg);
 
 #if defined(USING_UNIT_NFC)
-    auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
-    auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
-    M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
-    Wire.end();
-    Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
-
-    if (!Units.add(unit, Wire) || !Units.begin()) {
+    auto board = M5.getBoard();
+    bool unit_ready{};
+    // NessoN1: SoftwareI2C too slow for NFC RF timing -> use port_a (Wire) via else branch
+    if (board == m5::board_t::board_M5NanoC6) {
+        M5_LOGI("Using M5.Ex_I2C");
+        unit_ready = Units.add(unit, M5.Ex_I2C) && Units.begin();
+    } else {
+        auto pin_num_sda = M5.getPin(m5::pin_name_t::port_a_sda);
+        auto pin_num_scl = M5.getPin(m5::pin_name_t::port_a_scl);
+        M5_LOGI("getPin: SDA:%u SCL:%u", pin_num_sda, pin_num_scl);
+        Wire.end();
+        Wire.begin(pin_num_sda, pin_num_scl, 400 * 1000U);
+        unit_ready = Units.add(unit, Wire) && Units.begin();
+    }
+    if (!unit_ready) {
         M5_LOGE("Failed to begin");
-        lcd.clear(TFT_RED);
+        lcd.fillScreen(TFT_RED);
         while (true) {
             m5::utility::delay(10000);
         }
@@ -157,10 +165,10 @@ void setup()
         }
     }
 #endif
-    M5_LOGI("M5UnitUnified has been begun");
+    M5_LOGI("M5UnitUnified initialized");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
-    if (lcd.width() < lcd.height()) {
+    if (lcd.height() > lcd.width()) {
         lcd.setRotation(1);
     }
     lcd.setFont(&fonts::Font0);
