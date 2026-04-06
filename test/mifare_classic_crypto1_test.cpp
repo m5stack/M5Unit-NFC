@@ -103,7 +103,7 @@ TEST(Crypto1, ProxmarkVector)
     const uint32_t ks1 = c1.step32(nr_enc, true);
     const uint32_t nr  = nr_enc ^ ks1;
 
-    const uint32_t ar = suc2_from_nt(bswap32(nt));
+    const uint32_t ar = suc2_from_nt(m5::stl::byteswap(nt));
 
     Crypto1 c2(key);
     c2.inject(uid, nt);

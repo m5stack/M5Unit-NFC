@@ -79,9 +79,9 @@ TEST(NFC_F, UserArea)
     EXPECT_TRUE(is_user_block(Type::FeliCaLite, 0x0D));
     EXPECT_FALSE(is_user_block(Type::FeliCaLite, 0x0E));
 
-    EXPECT_EQ(get_maxumum_read_blocks(Type::FeliCaStandard), 8u);
-    EXPECT_EQ(get_maxumum_read_blocks(Type::FeliCaLite), 4u);
-    EXPECT_EQ(get_maxumum_write_blocks(Type::FeliCaLiteS), 1u);
+    EXPECT_EQ(get_maximum_read_blocks(Type::FeliCaStandard), 8u);
+    EXPECT_EQ(get_maximum_read_blocks(Type::FeliCaLite), 4u);
+    EXPECT_EQ(get_maximum_write_blocks(Type::FeliCaLiteS), 1u);
 }
 
 TEST(NFC_F, PICC)

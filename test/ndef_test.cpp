@@ -471,8 +471,8 @@ TEST(NDEF, Type5CapabilityContainer)
     EXPECT_EQ(cc8.ndef_size(), 0x1000);
 
     // Additional feature
-    cc.addtional_feature(0x01);
-    EXPECT_EQ(cc.addtional_feature(), 0x01);
+    cc.additional_feature(0x01);
+    EXPECT_EQ(cc.additional_feature(), 0x01);
 }
 
 TEST(NDEF, TLVExtended)
