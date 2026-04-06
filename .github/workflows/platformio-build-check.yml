@@ -1,0 +1,291 @@
+name: Build(platformio)
+
+on:
+  push:
+    tags-ignore:
+      - '*.*.*'
+      - 'v*.*.*'
+    branches:
+      - '*'
+    paths:
+      - 'src/**.cpp'
+      - 'src/**.hpp'
+      - 'src/**.h'
+      - 'src/**.c'
+      - 'examples/UnitUnified/**.ino'
+      - 'examples/UnitUnified/**.cpp'
+      - 'examples/UnitUnified/**.hpp'
+      - 'examples/UnitUnified/**.h'
+      - 'examples/UnitUnified/**.c'
+      - '.github/workflows/platformio-build-check.yml'
+      - 'platformio.ini'
+      - 'unit_nfc_env.ini'
+      - 'cap_hacker_env.ini'
+  pull_request:
+    paths:
+      - 'src/**.cpp'
+      - 'src/**.hpp'
+      - 'src/**.h'
+      - 'src/**.c'
+      - 'examples/UnitUnified/**.ino'
+      - 'examples/UnitUnified/**.cpp'
+      - 'examples/UnitUnified/**.hpp'
+      - 'examples/UnitUnified/**.h'
+      - 'examples/UnitUnified/**.c'
+      - '.github/workflows/platformio-build-check.yml'
+      - 'platformio.ini'
+      - 'unit_nfc_env.ini'
+      - 'cap_hacker_env.ini'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.unit }}:${{ matrix.example }}@${{ matrix.board }}:${{ matrix.framework }}:${{ matrix.espressif32 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+
+      matrix:
+        example:
+          - NFCA_Detect
+          - NFCB_Detect
+          - NFCF_Detect
+          - NFCV_Detect
+
+        unit:
+          - UnitNFC
+
+        board:
+          - Core
+          - Core2
+          - CoreS3
+          - Fire
+          - StampS3
+          - Dial
+          - Atom
+          - AtomS3
+          - AtomS3R
+          - NanoC6
+          - StickCPlus
+          - StickCPlus2
+          - StickS3
+          - Paper
+          - CoreInk
+          - Cardputer
+          - Tab5
+          - NessoN1
+
+        framework:
+          - Arduino
+
+        espressif32:
+          - latest
+
+        include:
+          # NFCA Specific sketches
+          - example: NFCA_Dump
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: NFCA_ValueBlock
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: NFCA_ReadWrite
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: NFCA_NDEF
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: NFCA_Emulation
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+
+          # NFCB Specific sketches
+          - example: NFCB_JapanIDCard
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+
+          # NFCF Specific sketches
+          - example: NFCF_Dump
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_NDEF
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_Subtract
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_ReadWriteMAC
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_JapanTransportationICCard
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_Emulation
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+
+          # NFCV Specific sketches
+          - example: NFCV_Dump
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: NFCV_NDEF
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+
+          # CapHacker - all examples on Cardputer
+          - example: NFCA_Detect
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCA_Dump
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCA_ReadWrite
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCA_ValueBlock
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCA_NDEF
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCA_Emulation
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+
+          - example: NFCB_Detect
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCB_JapanIDCard
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+
+          - example: NFCF_Detect
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_Dump
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_NDEF
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_Subtract
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_ReadWriteMAC
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_JapanTransportationICCard
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCF_Emulation
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+
+          - example: NFCV_Detect
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCV_Dump
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+          - example: NFCV_NDEF
+            unit: CapHacker
+            board: CardputerADV
+            framework: Arduino
+            espressif32: latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install intelhex
+        run: pip install intelhex
+
+      - name: Build examples
+        uses: karniv00l/platformio-run-action@v1
+        with:
+          environments: ${{ matrix.unit != '' && format('{0}_{1}_{2}_{3}_{4}', matrix.unit, matrix.example, matrix.board, matrix.framework, matrix.espressif32) || format('{0}_{1}_{2}_{3}', matrix.example, matrix.board, matrix.framework, matrix.espressif32) }}
+#         targets:
+          project-dir: "./"
+          project-conf: "./platformio.ini"
+#          jobs: 6
+#          silent: false
+#          verbose: true
+#          disable-auto-clean: false

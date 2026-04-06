@@ -17,7 +17,7 @@ concurrency:
 jobs:
   lint:
     name: Lint Check
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/arduino-lint-action@v2
