@@ -22,7 +22,7 @@ namespace a {
  */
 namespace mifare {
 
-///@name Historical bytes for identiy type
+///@name Historical bytes for identity type
 ///@{
 constexpr std::array<uint8_t, 7> historical_bytes_mifare_plus_s    = {0xC1, 0x05, 0x2F, 0x2F, 0x00, 0x35, 0xC7};
 constexpr std::array<uint8_t, 7> historical_bytes_mifare_plus_x_ev = {0xC1, 0x05, 0x2F, 0x2F, 0x01, 0xBC, 0xD6};
@@ -135,8 +135,8 @@ bool decode_value_block(int32_t& value, uint8_t& addr, const uint8_t buf[16]);
 const uint8_t* encode_value_block(uint8_t buf[16], const int32_t value, const uint8_t addr);
 
 /*!
-  @brief Encode accesss bits from permissions
-  @param abits[3] Output buffer at leaset 3 bytes
+  @brief Encode access bits from permissions
+  @param abits[3] Output buffer at least 3 bytes
   @param p0 permissions for block 0
   @param p1 permissions for block 1
   @param p2 permissions for block 2
@@ -147,8 +147,8 @@ const uint8_t* encode_value_block(uint8_t buf[16], const int32_t value, const ui
 */
 bool encode_access_bits(uint8_t abits[3], const uint8_t p0, const uint8_t p1, const uint8_t p2, const uint8_t p3);
 /*!
-  @brief Encode accesss bits from permissions
-  @param abits[3] Output buffer at leaset 3 bytes
+  @brief Encode access bits from permissions
+  @param abits[3] Output buffer at least 3 bytes
   @param permissions[4] Array of the permissions. [0];block0 ... [3]:sector trailer
   @return True if successful
   @warning Return values should always be checked
@@ -159,8 +159,8 @@ inline bool encode_access_bits(uint8_t abits[3], const uint8_t permissions[4])
     return encode_access_bits(abits, permissions[0], permissions[1], permissions[2], permissions[3]);
 }
 /*!
-  @brief Decode access bits to permissons
-  @param permissions[4] Output buffer at leaset 4 bytes
+  @brief Decode access bits to permissions
+  @param permissions[4] Output buffer at least 4 bytes
   @param ab0 1st byte of the access bits
   @param ab1 2nd byte of the access bits
   @param ab2 3rd byte of the access bits
@@ -173,9 +173,9 @@ inline bool encode_access_bits(uint8_t abits[3], const uint8_t permissions[4])
 */
 bool decode_access_bits(uint8_t permissions[4], const uint8_t ab0, const uint8_t ab1, const uint8_t ab2);
 /*!
-  @brief Decode access bits to permissons
-  @param permissions[4] Output buffer at leaset 4 bytes
-  @param abits[3] Array of the accees bits
+  @brief Decode access bits to permissions
+  @param permissions[4] Output buffer at least 4 bytes
+  @param abits[3] Array of the access bits
   @return True if successful
   @warning Return values should always be checked
 */
@@ -216,7 +216,7 @@ constexpr int8_t access_free{-2};
   @brief Obtain read permissions from access rights
   @param access_rights Access rights
   @retval >= 0 Key number to use
-  @reval == access_denied Access denied
+  @retval == access_denied Access denied
   @retval == access_free Access free
 */
 inline int8_t required_read_key_no_from_access_rights(const uint16_t access_rights)
@@ -241,7 +241,7 @@ inline int8_t required_read_key_no_from_access_rights(const uint16_t access_righ
   @brief Obtain rite permissions from access rights
   @param access_rights Access rights
   @retval >= 0 Key number to use
-  @reval == access_denied Access denied
+  @retval == access_denied Access denied
   @retval == access_free Access free
 */
 inline int8_t required_write_key_no_from_access_rights(const uint16_t access_rights)

@@ -175,7 +175,7 @@ struct Ev2Context {
 };
 /*!
   @brief Make native wrap command
-  @details Something similar to ADPU but different
+  @details Something similar to APDU but different
   @param ins Native INS
   @param data Data
   @param data_len Data length

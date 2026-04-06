@@ -160,7 +160,7 @@ public:
     bool dump();
     /*!
       @brief Dump 1 block
-      @param addr Block address
+      @param block Block address
       @return True if successful
     */
     bool dump(const uint16_t block);
@@ -171,7 +171,7 @@ public:
     ///@{
     /*!
       @brief Is the PICC data in NDEF format?
-      @paran[out] valid True if NDEF format
+      @param[out] valid True if NDEF format
       @return True if successful
      */
     bool ndefIsValidFormat(bool& valid);
@@ -189,7 +189,7 @@ public:
     bool ndefWriteCapabilityContainer(const m5::nfc::ndef::type5::CapabilityContainer& cc);
     /*!
       @brief Read NDEF Message TLV
-      @param[out] msg Messgae If it does not exist, a Null TLV is returned
+      @param[out] msg Message If it does not exist, a Null TLV is returned
       @return True if successful
       @note If multiple messages of the same type exist, return the first one
       @warning Only PICC cards supporting NDEF are valid
@@ -197,7 +197,7 @@ public:
     bool ndefRead(m5::nfc::ndef::TLV& msg);
     /*!
       @brief Write NDEF message
-      @param msg Messgae (NDEF Message)
+      @param msg Message (NDEF Message)
       @return True if successful
       @note Other existing tags will be preserved
       @warning Existing NDEF message TLVs will be overwritten

@@ -534,10 +534,10 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
                 rx[0] == ACK_NIBBLE) {
                 return true;
             }
-            M5_LIB_LOGD("Faile to WRITE2");
+            M5_LIB_LOGD("Failed to WRITE2");
             return false;
         } else {
-            M5_LIB_LOGD("Faile to WRITE1");
+            M5_LIB_LOGD("Failed to WRITE1");
             return false;
         }
     }
@@ -549,7 +549,7 @@ bool UnitST25R3916::nfcaWriteBlock(const uint8_t addr, const uint8_t tx[16])
             return true;
         }
     }
-    M5_LIB_LOGD("Faile to WRITE");
+    M5_LIB_LOGD("Failed to WRITE");
     return false;
 }
 

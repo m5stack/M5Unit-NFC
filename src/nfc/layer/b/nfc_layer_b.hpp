@@ -33,7 +33,7 @@ namespace nfc {
 
 /*!
   @class NFCLayerB
-  @brief Common interface layer for each chip of the NFC-V reader
+  @brief Common interface layer for each chip of the NFC-B reader
  */
 class NFCLayerB : public NFCLayerInterface {
 public:

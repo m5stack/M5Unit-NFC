@@ -274,7 +274,7 @@ public:
     /*!
       @brief Encode
       @param[out] buf Buffer
-      @paran blen Buffer size
+      @param blen Buffer size
       @retval > 0 Encoded length
       @retval == 0 Error
     */

@@ -223,7 +223,7 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
                     if (!ptr || !(sc == service_random_read || sc == service_random_read_write)) {
                         tx[9]  = 1U << i;  // Error block bit
                         tx[10] = 0xA8;     // Invalid block
-                        tx.resize(1 + 8 + 2);
+                        tx.resize(1 + 8 + 2 + 1);
                         error = true;
                         break;
                     }

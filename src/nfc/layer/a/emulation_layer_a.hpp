@@ -43,28 +43,37 @@ public:
     enum class State { None, Off, Idle, Ready, Active, Halt };
 
     struct Adapter;
+    //! @brief Construct with UnitST25R3916 (I2C)
     explicit EmulationLayerA(m5::unit::UnitST25R3916& u);
+    //! @brief Construct with CapST25R3916 (SPI)
     explicit EmulationLayerA(m5::unit::CapST25R3916& u);
 
+    //! @brief Gets the current emulation state
     inline State state() const
     {
         return _state;
     }
+    //! @brief Gets the emulated PICC information
     inline const m5::nfc::a::PICC& emulatePICC() const
     {
         return _picc;
     }
+    //! @brief Gets the expiration time (ms)
     inline uint32_t expiredTime() const
     {
         return _expired_ms;
     }
+    //! @brief Sets the expiration time (ms)
     void setExpiredTime(const uint32_t ms)
     {
         _expired_ms = ms;
     }
 
+    //! @brief Begin NFC-A emulation
     bool begin(const m5::nfc::a::PICC& picc, uint8_t* ptr, const uint32_t size);
+    //! @brief End NFC-A emulation
     bool end();
+    //! @brief Update emulation state machine
     void update();
 
     virtual State receive_callback(const uint8_t* rx, const uint32_t rx_len);

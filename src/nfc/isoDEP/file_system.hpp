@@ -27,7 +27,7 @@ struct FCP {
     uint16_t fid{};                 //!< @brief File ID (FID)
     uint16_t file_size{};           //!< @brief File size in bytes
     uint8_t file_descriptor{0x01};  //!< @brief File descriptor (default: transparent EF)
-    uint8_t file_size_tag{0x80};    //!< //! @brief File size TLV tag (default: 0x80)
+    uint8_t file_size_tag{0x80};    //!< @brief File size TLV tag (default: 0x80)
 
     /*!
       @brief Build FCP TLV (tag 0x62)

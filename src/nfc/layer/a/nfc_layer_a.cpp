@@ -1448,7 +1448,7 @@ bool NFCLayerA::dump_sector(const uint8_t sector)
             return false;
         }
         const uint8_t poffset      = (blocks == 4) ? i : i / 5;
-        const uint8_t permission   = permissions[poffset];
+        const uint8_t permission   = (poffset < 4) ? permissions[poffset] : 0xFF;
         const bool show_permission = (blocks == 4) ? true : (i % 5) == 0;
         print_block(dbuf, base + i, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, error,
                     can_value_block_permission(permission));
@@ -1780,7 +1780,7 @@ bool NFCLayerA::dump_sector_mifare_plus_sl3(const uint8_t sector)
         }
 
         const uint8_t poffset      = (blocks == 4) ? i : i / 5;
-        const uint8_t permission   = permissions[poffset];
+        const uint8_t permission   = (poffset < 4) ? permissions[poffset] : 0xFF;
         const bool show_permission = (blocks == 4) ? true : (i % 5) == 0;
         print_block(data.data(), base + i, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, error,
                     can_value_block_permission(permission));

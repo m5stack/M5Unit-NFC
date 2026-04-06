@@ -515,7 +515,7 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const block_t sblock)
         return false;
     }
 
-    const uint16_t batch_size = get_maxumum_read_blocks(_activePICC.type);
+    const uint16_t batch_size = get_maximum_read_blocks(_activePICC.type);
     std::vector<uint8_t> rbuf(16 * batch_size);
     block_t block{start};
     auto out = rx;
@@ -1023,7 +1023,7 @@ bool NFCLayerF::read(uint8_t* rx, uint16_t& rx_len, const uint16_t saddr)
     if (_activePICC.checkFormat(format_ndef)) {
         return read(rx, rx_len, block_t(static_cast<uint8_t>(saddr & 0xFF)));
     }
-    M5_LIB_LOGW("PICC Not sopport NDEF");
+    M5_LIB_LOGW("PICC Not support NDEF");
     rx_len = 0;
     return false;
 }

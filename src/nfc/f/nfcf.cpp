@@ -103,13 +103,13 @@ uint16_t get_last_user_block(const Type t)
     return user_block_table[idx < m5::stl::size(user_block_table) ? idx : 0][1];
 }
 
-uint8_t get_maxumum_read_blocks(const Type t)
+uint8_t get_maximum_read_blocks(const Type t)
 {
     uint8_t idx = m5::stl::to_underlying(t);
     return max_read_block_table[idx < m5::stl::size(max_block_table) ? idx : 0];
 }
 
-uint8_t get_maxumum_write_blocks(const Type t)
+uint8_t get_maximum_write_blocks(const Type t)
 {
     uint8_t idx = m5::stl::to_underlying(t);
     return max_write_block_table[idx < m5::stl::size(max_block_table) ? idx : 0];

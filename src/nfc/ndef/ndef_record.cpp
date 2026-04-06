@@ -246,14 +246,19 @@ std::string Record::payloadAsString() const
 
 void Record::set_text_payload(const char* str, const char* lang)
 {
-    auto lang_len = strlen(lang);
-
-    if (!str || !lang || lang_len >= 64) {
+    if (!str || !lang) {
         M5_LIB_LOGE("Invalid arguments");
         return;
     }
 
-    uint8_t status = 0x00 | lang_len;  // [7] 0:UTF-8 1:UTF-16, [6] RFU, [5..0] Length of the IANA langage code
+    auto lang_len = strlen(lang);
+
+    if (lang_len >= 64) {
+        M5_LIB_LOGE("Invalid arguments");
+        return;
+    }
+
+    uint8_t status = 0x00 | lang_len;  // [7] 0:UTF-8 1:UTF-16, [6] RFU, [5..0] Length of the IANA language code
 
     _payload.push_back(status);
     const uint8_t* lp = (const uint8_t*)lang;

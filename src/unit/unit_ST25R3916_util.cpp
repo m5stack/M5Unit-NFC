@@ -74,8 +74,9 @@ uint8_t calculate_mrt(const uint32_t us, const bool mrt_step /* false:64, true:5
 inline uint8_t calculate_fdt(const uint32_t us)
 {
     constexpr uint32_t FC_HZ{13560000};
-    uint32_t ticks = (us * FC_HZ + 8000000 - 1) / 8000000;
-    return static_cast<uint16_t>(std::max<uint32_t>(std::min<uint32_t>(ticks, 0xFFFFu), 1u));  // 1-0xFFFF
+    // fdel<3:0> is a 4-bit correction value in units of 1/fc (datasheet Table 32)
+    uint32_t ticks = (us * FC_HZ + 500000) / 1000000;               // us to 1/fc ticks (rounded)
+    return static_cast<uint8_t>(std::min<uint32_t>(ticks, 0x0Fu));  // 0-15 (4-bit)
 }
 
 }  // namespace st25r3916

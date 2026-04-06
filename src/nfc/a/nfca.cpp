@@ -537,9 +537,9 @@ Type version4_to_type(uint8_t& sub, const uint8_t ver[8])
                 type = Type::MIFARE_DESFire_8K;
                 break;
                 // case 0x1C:
-                //  return Tupe::MIFARE_DESFire_16K;
+                //  return Type::MIFARE_DESFire_16K;
                 // case 0x1E:
-                // return Tupe::MIFARE_DESFire_32K;
+                // return Type::MIFARE_DESFire_32K;
             default:
                 break;
         }

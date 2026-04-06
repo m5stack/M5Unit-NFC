@@ -79,8 +79,6 @@ std::vector<TLV> parse_tlv(const uint8_t* ptr, const uint32_t len)
         TLV tlv{};
 
         // T
-        if (off >= len) break;
-
         uint32_t tag{};
         uint8_t tag_len{};
 
