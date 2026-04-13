@@ -228,7 +228,7 @@ jobs:
             board: m5stack_core
             build-properties: "-DUSING_UNIT_NFC"
 
-          # CapHacker on Cardputer
+          # CapCC1101 on Cardputer
           - sketch: Detect
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -236,7 +236,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: Detect
             nfc: NFCB
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -244,7 +244,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: Detect
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -252,7 +252,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: Detect
             nfc: NFCV
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -260,8 +260,8 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
-          # CapHacker NFCA non-Detect sketches
+            build-properties: "-DUSING_CAP_CC1101"
+          # CapCC1101 NFCA non-Detect sketches
           - sketch: Dump
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -269,7 +269,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: ReadWrite
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -277,7 +277,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: ValueBlock
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -285,7 +285,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: NDEF
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -293,7 +293,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: Emulation
             nfc: NFCA
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -301,8 +301,8 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
-          # CapHacker NFCB non-Detect sketches
+            build-properties: "-DUSING_CAP_CC1101"
+          # CapCC1101 NFCB non-Detect sketches
           - sketch: JapanIDCard
             nfc: NFCB
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -310,8 +310,8 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
-          # CapHacker NFCF non-Detect sketches
+            build-properties: "-DUSING_CAP_CC1101"
+          # CapCC1101 NFCF non-Detect sketches
           - sketch: Dump
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -319,7 +319,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: NDEF
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -327,7 +327,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: Subtract
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -335,7 +335,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: ReadWriteMAC
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -343,7 +343,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: JapanTransportationICCard
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -351,7 +351,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: Emulation
             nfc: NFCF
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -359,8 +359,8 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
-          # CapHacker NFCV non-Detect sketches
+            build-properties: "-DUSING_CAP_CC1101"
+          # CapCC1101 NFCV non-Detect sketches
           - sketch: Dump
             nfc: NFCV
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -368,7 +368,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
           - sketch: NDEF
             nfc: NFCV
             platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -376,7 +376,7 @@ jobs:
             archi: esp32
             platform-version: 3.3.6
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
 
     steps:
       - name: Checkout

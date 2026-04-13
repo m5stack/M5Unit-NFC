@@ -5,10 +5,9 @@
 Library for Unit-NFC series using [M5UnitUnified](https://github.com/m5stack/M5UnitUnified).  
 M5UnitUnified has a unified API and can control multiple units via PaHub, etc.
 
-### SKU:xxx
+### SKU:U216
 
-Description of the product
-
+Unit NFC is a near-field communication (NFC) read/write unit based on a 13.56MHz frequency. It integrates the high-performance ST25R3916 NFC front-end chip, supporting NFC-A, NFC-B, NFC-F, and NFC-V standards, enabling read/write and communication functions for various NFC/RFID tags and cards. The chip supports reader mode, card emulation mode, and point-to-point communication mode, featuring automatic antenna tuning, high-sensitivity reception, and comprehensive protocol processing capabilities. This unit communicates with the host device via an I2C interface, providing stable data transmission performance. The product adopts a LEGO-compatible hole design, facilitating integration into creative structures or screw mounting, and is suitable for various applications requiring near-field communication and information verification, such as access control systems, identity recognition, intelligent transportation, and smart bookshelves.
 
 ## PICC Support
 
@@ -89,8 +88,7 @@ See examples: [NFCA Emulation](examples/UnitUnified/NFCA/Emulation) and [NFCF Em
 
 ## Related Link
 
-- [Unit NFC & Datasheet](https://docs.m5stack.com/en/----------)
-- [CapHacker & Datasheet](https://docs.m5stack.com/en/---------)
+- [Unit NFC & Datasheet](https://docs.m5stack.com/en/products/sku/U216)
 
 ## Required Libraries
 
@@ -112,17 +110,21 @@ Each example contains the following block to select the unit:
 ```cpp
 // For UnitNFC
 // #define USING_UNIT_NFC
-// For CapNFC
-// #define USING_HACKER_CAP
+// For CapCC1101
+// #define USING_CAP_CC1101
 ```
 
-The examples are shared with [M5Unit-RFID](https://github.com/m5stack/M5Unit-RFID), which is why other unit definitions may exist.  
-Uncomment `USING_UNIT_NFC` or `USING_HACKER_CAP`:
+Uncomment `USING_UNIT_NFC` or `USING_CAP_CC1101`:
 
 ```cpp
 #define USING_UNIT_NFC
-// #define USING_HACKER_CAP
+// #define USING_CAP_CC1101
 ```
+
+**Note:** CapCC1101 / SKU:U219 (SPI connection via ST25R3916) is included in this library for future use.
+The product is not yet publicly available.
+
+Some NFC-A examples are shared with [M5Unit-RFID](https://github.com/m5stack/M5Unit-RFID), which is why other unit definitions may exist.
 
 ## Doxygen document
 [GitHub Pages](https://m5stack.github.io/M5Unit-NFC/)

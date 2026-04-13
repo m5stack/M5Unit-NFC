@@ -21,13 +21,13 @@
 #include <SPI.h>
 #include <cstring>
 
-// Unit type is selected by build_flags: -D USING_UNIT_NFC or -D USING_HACKER_CAP
+// Unit type is selected by build_flags: -D USING_UNIT_NFC or -D USING_CAP_CC1101
 #if defined(USING_UNIT_NFC)
 using TestUnit = m5::unit::UnitNFC;  // I2C (UnitST25R3916)
-#elif defined(USING_HACKER_CAP)
-using TestUnit = m5::unit::HackerCapNFC;  // SPI (CapST25R3916)
+#elif defined(USING_CAP_CC1101)
+using TestUnit = m5::unit::CapCC1101NFC;  // SPI (CapST25R3916)
 #else
-#error "Define USING_UNIT_NFC or USING_HACKER_CAP via build_flags"
+#error "Define USING_UNIT_NFC or USING_CAP_CC1101 via build_flags"
 #endif
 
 using namespace m5::unit::st25r3916;
@@ -66,7 +66,7 @@ public:
             Wire.begin(sda, scl, 400000U);
             _unit_ready = _units.add(*_unit, Wire) && _units.begin();
         }
-#elif defined(USING_HACKER_CAP)
+#elif defined(USING_CAP_CC1101)
         // SPI: Cardputer uses sd_spi pins
         if (!SPI.bus()) {
             auto spi_sclk = M5.getPin(m5::pin_name_t::sd_spi_sclk);

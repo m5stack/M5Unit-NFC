@@ -239,11 +239,11 @@ jobs:
             board: m5stack_core
             build-properties: "-DUSING_UNIT_NFC"
 
-          # CapHacker on Cardputer
+          # CapCC1101 on Cardputer
           - sketch: Detect
             nfc: NFCA
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -251,7 +251,7 @@ jobs:
           - sketch: Detect
             nfc: NFCB
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -259,7 +259,7 @@ jobs:
           - sketch: Detect
             nfc: NFCF
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -267,16 +267,16 @@ jobs:
           - sketch: Detect
             nfc: NFCV
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
             platform-version: 3.2.5
-          # CapHacker NFCA non-Detect sketches
+          # CapCC1101 NFCA non-Detect sketches
           - sketch: Dump
             nfc: NFCA
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -284,7 +284,7 @@ jobs:
           - sketch: ReadWrite
             nfc: NFCA
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -292,7 +292,7 @@ jobs:
           - sketch: ValueBlock
             nfc: NFCA
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -300,7 +300,7 @@ jobs:
           - sketch: NDEF
             nfc: NFCA
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -308,25 +308,25 @@ jobs:
           - sketch: Emulation
             nfc: NFCA
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
             platform-version: 3.2.5
-          # CapHacker NFCB non-Detect sketches
+          # CapCC1101 NFCB non-Detect sketches
           - sketch: JapanIDCard
             nfc: NFCB
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
             platform-version: 3.2.5
-          # CapHacker NFCF non-Detect sketches
+          # CapCC1101 NFCF non-Detect sketches
           - sketch: Dump
             nfc: NFCF
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -334,7 +334,7 @@ jobs:
           - sketch: NDEF
             nfc: NFCF
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -342,7 +342,7 @@ jobs:
           - sketch: Subtract
             nfc: NFCF
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -350,7 +350,7 @@ jobs:
           - sketch: ReadWriteMAC
             nfc: NFCF
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -358,7 +358,7 @@ jobs:
           - sketch: JapanTransportationICCard
             nfc: NFCF
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -366,16 +366,16 @@ jobs:
           - sketch: Emulation
             nfc: NFCF
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
             platform-version: 3.2.5
-          # CapHacker NFCV non-Detect sketches
+          # CapCC1101 NFCV non-Detect sketches
           - sketch: Dump
             nfc: NFCV
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32
@@ -383,7 +383,7 @@ jobs:
           - sketch: NDEF
             nfc: NFCV
             board: m5stack_cardputer
-            build-properties: "-DUSING_HACKER_CAP"
+            build-properties: "-DUSING_CAP_CC1101"
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
             platform: m5stack
             archi: esp32

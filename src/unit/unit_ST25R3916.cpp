@@ -28,7 +28,7 @@ using namespace m5::nfc::a::mifare::classic;
 // clang-format on
 
 namespace {
-// HackerCap <-> CardputerADV pin configurations (EXT 2.54-14P)
+// CapCC1101 <-> CardputerADV pin configurations (EXT 2.54-14P)
 constexpr int PIN_SCK{40};           // G40
 constexpr int PIN_MOSI{14};          // G14
 constexpr int PIN_MISO{39};          // G39
@@ -726,7 +726,7 @@ const types::attr_t CapST25R3916::attr{attribute::AccessSPI};
 
 CapST25R3916::CapST25R3916(const uint8_t cs_pin) : UnitST25R3916(cs_pin)
 {
-    // HackerCap has IRQ PIN
+    // CapCC1101 has IRQ PIN
     auto cfg      = config();
     cfg.using_irq = true;
     cfg.irq       = PIN_ST25R3916_IRQ;
