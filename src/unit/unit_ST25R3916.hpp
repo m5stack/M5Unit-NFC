@@ -2053,7 +2053,7 @@ private:
 
 /*!
   @class CapST25R3916
-  @brief ST25R3916 unit in HackerCap (SPI)
+  @brief ST25R3916 unit in CapCC1101 (SPI)
  */
 class CapST25R3916 : public UnitST25R3916 {
     M5_UNIT_COMPONENT_HPP_BUILDER(CapST25R3916, 0x06 /* SPI CS pin */);

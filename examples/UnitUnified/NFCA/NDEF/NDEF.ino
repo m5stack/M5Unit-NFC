@@ -11,11 +11,11 @@
 // *************************************************************
 // Choose one define symbol to match the unit you are using
 // *************************************************************
-#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP) && !defined(USING_UNIT_RFID2)
+#if !defined(USING_UNIT_NFC) && !defined(USING_CAP_CC1101) && !defined(USING_UNIT_RFID2)
 // For UnitNFC
 // #define USING_UNIT_NFC
 // For CapNFC
-// #define USING_HACKER_CAP
+// #define USING_CAP_CC1101
 // For UnitRFID2
 // #define USING_UNIT_RFID2
 #endif

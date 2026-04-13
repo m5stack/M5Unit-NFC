@@ -19,11 +19,11 @@
 // *************************************************************
 // Choose one define symbol to match the unit you are using
 // *************************************************************
-#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP) && !defined(USING_UNIT_RFID2)
+#if !defined(USING_UNIT_NFC) && !defined(USING_CAP_CC1101) && !defined(USING_UNIT_RFID2)
 // For UnitNFC
 // #define USING_UNIT_NFC
 // For CapNFC
-// #define USING_HACKER_CAP
+// #define USING_CAP_CC1101
 // For UnitRFID2
 // #define USING_UNIT_RFID2
 #endif
@@ -41,9 +41,9 @@ m5::unit::UnitUnified Units;
 #if defined(USING_UNIT_NFC)
 #pragma message "Choose UnitNFC"
 m5::unit::UnitNFC unit{};  // I2C
-#elif defined(USING_HACKER_CAP)
-#pragma message "Choose HackerCapNFC"
-m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
+#elif defined(USING_CAP_CC1101)
+#pragma message "Choose CapCC1101NFC"
+m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 #elif defined(USING_UNIT_RFID2)
 #pragma message "Choose UnitRFID2"
 m5::unit::UnitRFID2 unit{};  // UnitRFID2 (M5Unit-RFID)
@@ -100,7 +100,7 @@ void setup()
             m5::utility::delay(10000);
         }
     }
-#elif defined(USING_HACKER_CAP)
+#elif defined(USING_CAP_CC1101)
     if (!SPI.bus()) {
         auto spi_sclk = M5.getPin(m5::pin_name_t::sd_spi_sclk);
         auto spi_mosi = M5.getPin(m5::pin_name_t::sd_spi_mosi);
@@ -142,7 +142,8 @@ void loop()
             if (nfc_a.identify(u)) {
                 M5.Log.printf("PICC:%s %s %04X/%02X %u/%u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.atqa,
                               u.sak, u.userAreaSize(), u.totalSize());
-                lcd.printf("[%2u]:PICC:<%s> %s\n", idx, u.uidAsString().c_str(), u.typeAsString().c_str());
+                lcd.printf("[%2u]:PICC:<%s> %s\n", static_cast<unsigned>(idx), u.uidAsString().c_str(),
+                           u.typeAsString().c_str());
                 ++idx;
             } else {
                 M5_LOGW("Failed to identify %s %s %04X/%02X %u/%u", u.uidAsString().c_str(), u.typeAsString().c_str(),

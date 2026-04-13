@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 /*
-  Example using M5UnitUnified for M5Cardputer-ADV with HackerCap
+  Example using M5UnitUnified for M5Cardputer-ADV with CapCC1101
   Detect NFC-B PICC
 */
 #include <M5Unified.h>
@@ -16,11 +16,11 @@
 // *************************************************************
 // Choose one define symbol to match the unit you are using
 // *************************************************************
-#if !defined(USING_UNIT_NFC) && !defined(USING_HACKER_CAP)
+#if !defined(USING_UNIT_NFC) && !defined(USING_CAP_CC1101)
 // For UnitNFC
 // #define USING_UNIT_NFC
 // For CapNFC
-// #define USING_HACKER_CAP
+// #define USING_CAP_CC1101
 #endif
 
 using namespace m5::nfc;
@@ -33,9 +33,9 @@ m5::unit::UnitUnified Units;
 #if defined(USING_UNIT_NFC)
 #pragma message "Choose UnitNFC"
 m5::unit::UnitNFC unit{};  // I2C
-#elif defined(USING_HACKER_CAP)
-#pragma message "Choose HackerCapNFC"
-m5::unit::HackerCapNFC unit{};  // HackerCap (SPI)
+#elif defined(USING_CAP_CC1101)
+#pragma message "Choose CapCC1101NFC"
+m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 #else
 #error Choose unit please!
 #endif
@@ -73,7 +73,7 @@ void setup()
             m5::utility::delay(10000);
         }
     }
-#elif defined(USING_HACKER_CAP)
+#elif defined(USING_CAP_CC1101)
     if (!SPI.bus()) {
         auto spi_sclk = M5.getPin(m5::pin_name_t::sd_spi_sclk);
         auto spi_mosi = M5.getPin(m5::pin_name_t::sd_spi_mosi);
@@ -117,7 +117,8 @@ void loop()
         uint32_t idx{};
         for (auto&& u : piccs) {
             M5.Log.printf("PICC:%s %s\n", u.pupiAsString().c_str(), u.typeAsString().c_str());
-            lcd.printf("[%2u]:PICC:<%s>%s\n", idx, u.pupiAsString().c_str(), u.typeAsString().c_str());
+            lcd.printf("[%2u]:PICC:<%s>%s\n", static_cast<unsigned>(idx), u.pupiAsString().c_str(),
+                       u.typeAsString().c_str());
             ++idx;
         }
     }

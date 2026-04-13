@@ -44,8 +44,8 @@ namespace unit {
 
 //! @brief Alias for UnitST25R3916 (Unit NFC, I2C connection)
 using UnitNFC = m5::unit::UnitST25R3916;
-//! @brief Alias for CapST25R3916 (HackerCap NFC, SPI connection)
-using HackerCapNFC = m5::unit::CapST25R3916;
+//! @brief Alias for CapST25R3916 (CapCC1101 NFC, SPI connection)
+using CapCC1101NFC = m5::unit::CapST25R3916;
 
 }  // namespace unit
 }  // namespace m5

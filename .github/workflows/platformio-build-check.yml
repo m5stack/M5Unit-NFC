@@ -20,7 +20,7 @@ on:
       - '.github/workflows/platformio-build-check.yml'
       - 'platformio.ini'
       - 'unit_nfc_env.ini'
-      - 'cap_hacker_env.ini'
+      - 'cap_cc1101_env.ini'
   pull_request:
     paths:
       - 'src/**.cpp'
@@ -35,7 +35,7 @@ on:
       - '.github/workflows/platformio-build-check.yml'
       - 'platformio.ini'
       - 'unit_nfc_env.ini'
-      - 'cap_hacker_env.ini'
+      - 'cap_cc1101_env.ini'
   workflow_dispatch:
 
 defaults:
@@ -171,97 +171,97 @@ jobs:
             framework: Arduino
             espressif32: latest
 
-          # CapHacker - all examples on Cardputer
+          # CapCC1101 - all examples on Cardputer
           - example: NFCA_Detect
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCA_Dump
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCA_ReadWrite
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCA_ValueBlock
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCA_NDEF
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCA_Emulation
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
 
           - example: NFCB_Detect
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCB_JapanIDCard
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
 
           - example: NFCF_Detect
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCF_Dump
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCF_NDEF
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCF_Subtract
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCF_ReadWriteMAC
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCF_JapanTransportationICCard
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCF_Emulation
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
 
           - example: NFCV_Detect
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCV_Dump
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
           - example: NFCV_NDEF
-            unit: CapHacker
+            unit: CapCC1101
             board: CardputerADV
             framework: Arduino
             espressif32: latest
