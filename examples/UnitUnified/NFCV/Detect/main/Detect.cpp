@@ -117,7 +117,8 @@ void loop()
         uint32_t idx{};
         for (auto&& u : piccs) {
             M5.Log.printf("PICC:%s %s %u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.totalSize());
-            lcd.printf("[%2u]:PICC:<%s> %s\n", static_cast<unsigned>(idx), u.uidAsString().c_str(), u.typeAsString().c_str());
+            lcd.printf("[%2u]:PICC:<%s> %s\n", static_cast<unsigned>(idx), u.uidAsString().c_str(),
+                       u.typeAsString().c_str());
             ++idx;
         }
     }

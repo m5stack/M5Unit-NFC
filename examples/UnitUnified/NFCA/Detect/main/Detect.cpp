@@ -142,7 +142,8 @@ void loop()
             if (nfc_a.identify(u)) {
                 M5.Log.printf("PICC:%s %s %04X/%02X %u/%u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.atqa,
                               u.sak, u.userAreaSize(), u.totalSize());
-                lcd.printf("[%2u]:PICC:<%s> %s\n", static_cast<unsigned>(idx), u.uidAsString().c_str(), u.typeAsString().c_str());
+                lcd.printf("[%2u]:PICC:<%s> %s\n", static_cast<unsigned>(idx), u.uidAsString().c_str(),
+                           u.typeAsString().c_str());
                 ++idx;
             } else {
                 M5_LOGW("Failed to identify %s %s %04X/%02X %u/%u", u.uidAsString().c_str(), u.typeAsString().c_str(),
