@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['sak_5fto_5ftype_0',['sak_to_type',['../nfca_8cpp.html#aba956d86d9cb908086a4e3b3b55b8bd6',1,'m5::nfc::a']]],
+  ['select_1',['select',['../classm5_1_1nfc_1_1_n_f_c_layer_a.html#a6c5ba9ff6ce1ad9c5c2ec5adf17a9299',1,'m5::nfc::NFCLayerA::select()'],['../classm5_1_1nfc_1_1_n_f_c_layer_b.html#ad7936a932130b4514d04a225c10e4305',1,'m5::nfc::NFCLayerB::select()']]],
+  ['selectbydfname_2',['selectByDfName',['../classm5_1_1nfc_1_1_file_system.html#ae89a1668d4bd55d89e06760ac5471db8',1,'m5::nfc::FileSystem']]],
+  ['selectbyfileid_3',['selectByFileId',['../classm5_1_1nfc_1_1_file_system.html#ac36340e28a4f58001fca8d8e277b3ff9',1,'m5::nfc::FileSystem']]],
+  ['selectbypath_4',['selectByPath',['../classm5_1_1nfc_1_1_file_system.html#ad9a976bf6364804939ccaf30beaab14b',1,'m5::nfc::FileSystem']]],
+  ['selectdfnameauto_5',['selectDfNameAuto',['../classm5_1_1nfc_1_1_file_system.html#a5dcce8b2abc183d2397bae156ba3be15',1,'m5::nfc::FileSystem']]],
+  ['selectfile_6',['selectFile',['../classm5_1_1nfc_1_1_file_system.html#ae60578d2b25f1a7c34773ff445859cc5',1,'m5::nfc::FileSystem']]],
+  ['selectfileidauto_7',['selectFileIdAuto',['../classm5_1_1nfc_1_1_file_system.html#a0503db312968888ab64f023916a7c682',1,'m5::nfc::FileSystem']]],
+  ['selectmasterfile_8',['selectMasterFile',['../classm5_1_1nfc_1_1_file_system.html#a6abdc8aa28226e0bd5d908aaa7dcc8e1',1,'m5::nfc::FileSystem']]],
+  ['selectparent_9',['selectParent',['../classm5_1_1nfc_1_1_file_system.html#ac79680652b300a039327a87c48162c56',1,'m5::nfc::FileSystem']]],
+  ['setexpiredtime_10',['setExpiredTime',['../classm5_1_1nfc_1_1_emulation_layer_a.html#a82370280351c601e7b6092e28132e3ef',1,'m5::nfc::EmulationLayerA::setExpiredTime()'],['../classm5_1_1nfc_1_1_emulation_layer_f.html#a16832ef764ed5d2d4b9053e8e424df38',1,'m5::nfc::EmulationLayerF::setExpiredTime()']]],
+  ['setidentifier_11',['setIdentifier',['../classm5_1_1nfc_1_1ndef_1_1_record.html#ae58c57b3a64ea9994961324f8eb5489e',1,'m5::nfc::ndef::Record']]],
+  ['setpayload_12',['setPayload',['../classm5_1_1nfc_1_1ndef_1_1_record.html#ae8e62dbadd7289e91d80df78572c4958',1,'m5::nfc::ndef::Record']]],
+  ['settextpayload_13',['setTextPayload',['../classm5_1_1nfc_1_1ndef_1_1_record.html#a8b2d1b07c095b9878b5468c3934a17bc',1,'m5::nfc::ndef::Record']]],
+  ['seturipayload_14',['setURIPayload',['../classm5_1_1nfc_1_1ndef_1_1_record.html#a170c8e9afe7d6631c6d6a7f062fed1f5',1,'m5::nfc::ndef::Record']]],
+  ['state_15',['state',['../classm5_1_1nfc_1_1_emulation_layer_a.html#ae825e954296b17714c73850a674e4461',1,'m5::nfc::EmulationLayerA::state()'],['../classm5_1_1nfc_1_1_emulation_layer_f.html#a1940d738cb0030cf5c4f6bc0a366a57c',1,'m5::nfc::EmulationLayerF::state()']]],
+  ['status_5fcode_16',['status_code',['../desfire__file__system_8hpp.html#ac48e82125fa96801b0ceae50e510fc26',1,'m5::nfc::a::mifare::desfire']]],
+  ['stop_5femulation_17',['stop_emulation',['../structm5_1_1nfc_1_1_listener_s_t25_r3916_for_a.html#a242c96ae280a9d827084035edaa6db40',1,'m5::nfc::ListenerST25R3916ForA::stop_emulation()'],['../structm5_1_1nfc_1_1_listener_s_t25_r3916_for_f.html#a5bee1c348c5bded09f8b5d9e41903632',1,'m5::nfc::ListenerST25R3916ForF::stop_emulation()']]],
+  ['supports_5fiso14443_5f4_18',['supports_iso14443_4',['../nfcb_8hpp.html#a9c051e67a823a3666937bfa9b003d45f',1,'m5::nfc::b']]],
+  ['supports_5fnfc_19',['supports_NFC',['../nfca_8hpp.html#a5e813cdf62d4a05e10dde34e64e21f1b',1,'m5::nfc::a']]],
+  ['supportsfilesystem_20',['supportsFilesystem',['../classm5_1_1nfc_1_1_n_f_c_layer_a.html#a439668b546644bf82e4bf402806c4fc3',1,'m5::nfc::NFCLayerA::supportsFilesystem()'],['../classm5_1_1nfc_1_1_n_f_c_layer_interface.html#ab85c55ea62d2ef6d735b94ef906b25e0',1,'m5::nfc::NFCLayerInterface::supportsFilesystem()']]],
+  ['supportsndef_21',['supportsNDEF',['../structm5_1_1nfc_1_1a_1_1_p_i_c_c.html#aac42c420ff4003971cd9b97734300cdd',1,'m5::nfc::a::PICC::supportsNDEF()'],['../structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a246d933e11c4c723a25b97a6ed18a5b2',1,'m5::nfc::f::PICC::supportsNDEF()']]],
+  ['supportsnfc_22',['supportsNFC',['../structm5_1_1nfc_1_1a_1_1_p_i_c_c.html#a13e5f8003b32199e33633f2e7959ad5a',1,'m5::nfc::a::PICC']]],
+  ['supportsnfctag_23',['supportsNFCTag',['../classm5_1_1nfc_1_1_n_f_c_layer_a.html#ac9a9341857b32fa2016d93e2dce4d053',1,'m5::nfc::NFCLayerA::supportsNFCTag()'],['../classm5_1_1nfc_1_1_n_f_c_layer_interface.html#ab1d3234d299dfef18bb456b1cc2ae17f',1,'m5::nfc::NFCLayerInterface::supportsNFCTag()']]]
+];

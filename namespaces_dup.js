@@ -1,0 +1,25 @@
+var namespaces_dup =
+[
+    [ "a", "namespacea.html", null ],
+    [ "apdu", "namespaceapdu.html", null ],
+    [ "b", "namespaceb.html", null ],
+    [ "classic", "namespaceclassic.html", null ],
+    [ "desfire", "namespacedesfire.html", null ],
+    [ "f", "namespacef.html", null ],
+    [ "isodep", "namespaceisodep.html", null ],
+    [ "m5", "namespacem5.html", null ],
+    [ "mifare", "namespacemifare.html", null ],
+    [ "ndef", "namespacendef.html", null ],
+    [ "nfc", "namespacenfc.html", null ],
+    [ "plus", "namespaceplus.html", null ],
+    [ "regval", "namespaceregval.html", null ],
+    [ "st25r3916", "namespacest25r3916.html", null ],
+    [ "st25ta", "namespacest25ta.html", null ],
+    [ "standard", "namespacestandard.html", null ],
+    [ "type2", "namespacetype2.html", null ],
+    [ "type3", "namespacetype3.html", null ],
+    [ "type4", "namespacetype4.html", null ],
+    [ "type5", "namespacetype5.html", null ],
+    [ "unit", "namespaceunit.html", null ],
+    [ "v", "namespacev.html", null ]
+];

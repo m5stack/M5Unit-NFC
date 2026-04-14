@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['na_0',['NA',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6ad4cd0dabcf4caa22ad92fab40844c786',1,'m5::nfc::ndef']]],
+  ['nec_1',['NEC',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a7e70c0503999340437163065dbd1b1b7',1,'m5::nfc']]],
+  ['news_2',['NEWS',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6aff4e2dc4962dc25a1512353299992c8d',1,'m5::nfc::ndef']]],
+  ['next_3',['Next',['../apdu_8hpp.html#a74836436e907c80c9a02040d912e6400a10ac3d04253ef7e1ddc73e6091c0cd55',1,'m5::nfc::apdu']]],
+  ['nfc_4',['NFC',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6ad6fef5d168d085196fddede17c3fdd05',1,'m5::nfc::ndef']]],
+  ['nfcforumtype1_5',['NFCForumType1',['../_s_t25_r3916__definition_8hpp.html#a4b62cbbb0eb6e6a282d422eff3018982a2477a3d7e824a688688b07b1977e53e2',1,'m5::unit::st25r3916']]],
+  ['nfcip1_6',['NFCIP1',['../_s_t25_r3916__definition_8hpp.html#a4b62cbbb0eb6e6a282d422eff3018982a47b3e6d28090c5f54b07211d5b45ae90',1,'NFCIP1m5::unit::st25r3916'],['../_s_t25_r3916__definition_8hpp.html#a7d85ed3cdee95b0eab2dff6373824137a47b3e6d28090c5f54b07211d5b45ae90',1,'NFCIP1m5::unit::st25r3916']]],
+  ['nfs_7',['NFS',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a1d1a594959ec615f56516f5d0f5e8ddb',1,'m5::nfc::ndef']]],
+  ['nitecrest_8',['Nitecrest',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52abea429b0656e0205f1fa32769cc10919',1,'m5::nfc']]],
+  ['none_9',['None',['../apdu_8hpp.html#a43277a89917969f53d3b2feb57caecbfa6adf97f83acf6453d4a6a4b1070f3754',1,'Nonem5::nfc::apdu'],['../nfcf_8hpp.html#aa85476c3807a205b8d13cb06347bb144a6adf97f83acf6453d4a6a4b1070f3754',1,'Nonem5::nfc::f'],['../nfc_8hpp.html#a5e5f58799f82b1611c0309f953cc2c6fa6adf97f83acf6453d4a6a4b1070f3754',1,'Nonem5::nfc']]],
+  ['nordic_10',['Nordic',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a460ebccd86ebc5e464cdc933b95a6fe0',1,'m5::nfc']]],
+  ['ntag_5f203_11',['NTAG_203',['../nfca_8hpp.html#ab84bb90cd0fe7b0457f4d2a7969da0d9a7b40ce30595f4bd206ade201da8d29ee',1,'m5::nfc::a']]],
+  ['ntag_5f210_12',['NTAG_210',['../nfca_8hpp.html#ab84bb90cd0fe7b0457f4d2a7969da0d9ae6e82df8e5684b0c2caac42233144ecf',1,'m5::nfc::a']]],
+  ['ntag_5f210u_13',['NTAG_210u',['../nfca_8hpp.html#ab84bb90cd0fe7b0457f4d2a7969da0d9a348ce2863a7bca1a7fa60cb0dbe666ba',1,'m5::nfc::a']]],
+  ['ntag_5f212_14',['NTAG_212',['../nfca_8hpp.html#ab84bb90cd0fe7b0457f4d2a7969da0d9a2f55bc6a25763536d7476378eb6cb65d',1,'m5::nfc::a']]],
+  ['ntag_5f213_15',['NTAG_213',['../nfca_8hpp.html#ab84bb90cd0fe7b0457f4d2a7969da0d9a28e799698d4e8f7ea5cecfafdbb9bb7a',1,'m5::nfc::a']]],
+  ['ntag_5f215_16',['NTAG_215',['../nfca_8hpp.html#ab84bb90cd0fe7b0457f4d2a7969da0d9a4175799ea4ce591a0797676b68d82fe6',1,'m5::nfc::a']]],
+  ['ntag_5f216_17',['NTAG_216',['../nfca_8hpp.html#ab84bb90cd0fe7b0457f4d2a7969da0d9a93f5a9b6399d7a5544876358c861b04a',1,'m5::nfc::a']]],
+  ['ntag_5f4xx_18',['NTAG_4XX',['../nfca_8hpp.html#ab84bb90cd0fe7b0457f4d2a7969da0d9a327c9572a3acf7762731393d101cbd65',1,'m5::nfc::a']]],
+  ['null_19',['Null',['../ndef_8hpp.html#ace18f3439d147659696eec175e13e03aabbb93ef26e3c101ff11cdd21cab08a94',1,'m5::nfc::ndef']]],
+  ['nxp_20',['NXP',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52aab174cf654efc28e4b7c7adb1b57e5fa',1,'NXPm5::nfc'],['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aaab174cf654efc28e4b7c7adb1b57e5fa',1,'NXPm5::nfc::v']]],
+  ['nxp_5ficode_5fsli_21',['NXP_ICODE_SLI',['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aa207aaada4da22517a2da85561d2864b9',1,'m5::nfc::v']]],
+  ['nxp_5ficode_5fslix_22',['NXP_ICODE_SLIX',['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aad77a0b9d83149e70f1568aa3410659ee',1,'m5::nfc::v']]],
+  ['nxp_5ficode_5fslix_5f2_23',['NXP_ICODE_SLIX_2',['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aa2f22e309e6dd43a737c096587fe73323',1,'m5::nfc::v']]]
+];

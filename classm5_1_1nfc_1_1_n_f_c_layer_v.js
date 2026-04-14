@@ -1,0 +1,28 @@
+var classm5_1_1nfc_1_1_n_f_c_layer_v =
+[
+    [ "activate", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#aaddc0e4e632f6991267ffdffe68913f2", null ],
+    [ "activatedPICC", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ad967723ec85d3aab6e535348aac36995", null ],
+    [ "deactivate", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a5afa6b43399feb102a08f80f8d767b91", null ],
+    [ "detect", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a21fe559bf013ae298db9fb62edb39039", null ],
+    [ "detect", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a14d3001bb4b854a265370125d9242a47", null ],
+    [ "dump", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a991bdbbe91ba9dca88c2ec25253e5abf", null ],
+    [ "dump", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a871b0d7f0f4c020aea717899b6e53fc0", null ],
+    [ "first_user_block", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a87013386596202ac4d100d6217f050f3", null ],
+    [ "isActive", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#af49881f7956101a57692b9c4a28b61ef", null ],
+    [ "last_user_block", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a14c86c20699947d6b66b7d039ba87d0f", null ],
+    [ "maximum_fifo_depth", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ac5bc6049f86f77f97fd363a096be8800", null ],
+    [ "ndefIsValidFormat", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a2a850165ceb42a91169fac1b6aaef55c", null ],
+    [ "ndefRead", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a70860961bacb0e5b48af02f58600d3af", null ],
+    [ "ndefReadCapabilityContainer", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a520d660f41006af09c2475652df9a2fe", null ],
+    [ "ndefWrite", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a1c516b5988e3eebb4d6effc29f284c2b", null ],
+    [ "ndefWriteCapabilityContainer", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ab32fa4e8ef5c36caabbae5804a4742e5", null ],
+    [ "reactivate", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ad53738b47506d3d0c4f6ff31509c24dd", null ],
+    [ "reactivate", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#aa891ec87b5e896fef8806e5b8783022d", null ],
+    [ "read", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a4e8459bbef08fd87a6b7baff52ac4f00", null ],
+    [ "readBlock", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#aa7871ddea482ddf11320d89268a40877", null ],
+    [ "unit_size_read", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ac9c6c45e5861251841cda8b80479aaf5", null ],
+    [ "unit_size_write", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a49d0f37b6e33138a43ea3160bb757382", null ],
+    [ "user_area_size", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a47fa999d2496dbfe1477966e0c878fc8", null ],
+    [ "write", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ab7f845ecfb606ad7b55b6e1a450e0ba4", null ],
+    [ "writeBlock", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a92f5e3d2cbd0001320b3ac25203d7101", null ]
+];

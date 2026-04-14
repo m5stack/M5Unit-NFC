@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['has_5ffast_5fread_0',['has_fast_read',['../nfca_8hpp.html#a93c19461ed1494462e3b7da394cc8cee',1,'m5::nfc::a']]],
+  ['has_5fsak_5fdependent_5fbit_1',['has_sak_dependent_bit',['../nfca_8hpp.html#abc51c5a960972570a4bf6da0876541c0',1,'m5::nfc::a']]],
+  ['header_2',['header',['../structm5_1_1nfc_1_1f_1_1block__t.html#a744a7f95e6dd3082d954c7014f0530f8',1,'m5::nfc::f::block_t']]],
+  ['hidglobal_3',['HidGlobal',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a4ab9474eb236654f13ca79351f17811f',1,'m5::nfc']]],
+  ['historical_4',['historical',['../structm5_1_1nfc_1_1a_1_1_a_t_s.html#a6aef2d0ecc433934d2bdaf9baa87e1ca',1,'m5::nfc::a::ATS']]],
+  ['historical_5fbytes_5fto_5ftype_5',['historical_bytes_to_type',['../nfca_8cpp.html#ada4876b0d15c060036b8f88ee1e81297',1,'m5::nfc::a']]],
+  ['historical_5flen_6',['historical_len',['../structm5_1_1nfc_1_1a_1_1_a_t_s.html#a417bdba772f804afba6cb722d7857298',1,'m5::nfc::a::ATS']]],
+  ['hitachi_7',['Hitachi',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52ac76e5f5afd86d0ca4d39ff7bb3fd722d',1,'m5::nfc']]],
+  ['hitachiulsi_8',['HitachiUlsi',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52ab9c7b1758e2866e63d2b7032e97519fb',1,'m5::nfc']]],
+  ['hlta_9',['HLTA',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90aca56861bff3805bf618d0a05acf1e9585e',1,'m5::nfc::a']]],
+  ['hltb_10',['HLTB',['../nfcb_8hpp.html#ae2a856e80084be96e7eab93c4007af8ca64f2b46f660a112d2cc1a68e522cb0e0',1,'m5::nfc::b']]],
+  ['hmt_11',['Hmt',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52ac74b16e4e10cd1c81587d247b2027e4c',1,'m5::nfc']]],
+  ['holtek_12',['Holtek',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a37bccf898dd6469a4dd10f82a5cc47a0',1,'m5::nfc']]],
+  ['http_13',['HTTP',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a293c9ea246ff9985dc6f62a650f78986',1,'m5::nfc::ndef']]],
+  ['http_5fwww_14',['HTTP_WWW',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a610eb6d830ec73ea0cbb0db7e0dd21bb',1,'m5::nfc::ndef']]],
+  ['https_15',['HTTPS',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a0e8433f9a404f1f3ba601c14b026d321',1,'m5::nfc::ndef']]],
+  ['https_5fwww_16',['HTTPS_WWW',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6ab9522804eaa2e4afccb42a63de1c90a0',1,'m5::nfc::ndef']]],
+  ['huada_17',['Huada',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a722e7803fa055c9334fa490aeebc0730',1,'m5::nfc']]],
+  ['hynix_18',['Hynix',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a3934b9f6b38739f963327cc4b064e01f',1,'m5::nfc']]]
+];

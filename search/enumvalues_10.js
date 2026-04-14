@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['rats_0',['RATS',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90aca105e4919a5c861ae6a88ce3d7a7232de',1,'m5::nfc::a']]],
+  ['read_1',['READ',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90aca3466fab4975481651940ed328aa990e4',1,'m5::nfc::a']]],
+  ['read_5fcnt_2',['READ_CNT',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90acae5b12698b003a4e8fa1a5d2537802447',1,'m5::nfc::a']]],
+  ['read_5fsig_3',['READ_SIG',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90acae3862d0b16eab4f9489ac7f7f39e8655',1,'m5::nfc::a']]],
+  ['readonly_4',['ReadOnly',['../structm5_1_1nfc_1_1ndef_1_1type3_1_1_attribute_block.html#a1a43484f01b9e89ab972227fddeaf508a131fb182a881796e7606ed6da27f1197',1,'m5::nfc::ndef::type3::AttributeBlock']]],
+  ['readsingleblock_5',['ReadSingleBlock',['../nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665ad69a55353d7d8baf25db134591f4dd19',1,'m5::nfc::v']]],
+  ['readwrite_6',['ReadWrite',['../structm5_1_1nfc_1_1ndef_1_1type3_1_1_attribute_block.html#a1a43484f01b9e89ab972227fddeaf508a70a2a84088d405a2e3f1e3accaa16723',1,'m5::nfc::ndef::type3::AttributeBlock']]],
+  ['realtek_7',['Realtek',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52abe40f32919f3a7ab684c228c46aa65c9',1,'m5::nfc']]],
+  ['renesaselectronics_8',['RenesasElectronics',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a7050614b5099a7e516d86b0b3f813169',1,'m5::nfc']]],
+  ['renesastechnology_9',['RenesasTechnology',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52ae68db2e7905c0a38950967691e7e2038',1,'m5::nfc']]],
+  ['req_5fwupb_10',['REQ_WUPB',['../nfcb_8hpp.html#ae2a856e80084be96e7eab93c4007af8cacf8fbe52b35ccf31d879b73fa27243af',1,'m5::nfc::b']]],
+  ['reqa_11',['REQA',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90acad7bd76c9aadbfa1c3d7fbde38f278e78',1,'m5::nfc::a']]],
+  ['reserved_12',['Reserved',['../ndef__record_8hpp.html#a43d1cb99aeb4fdf193bba66a6b4e7153a942d4e37dd5607ab68e54755540d4a47',1,'m5::nfc::ndef']]],
+  ['resettoready_13',['ResetToReady',['../nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665aaa50b9e7396c2397b860d5c1a96b68a0',1,'m5::nfc::v']]],
+  ['restore_14',['RESTORE',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90acac95fa04340c629ddfa2d38e285e59245',1,'m5::nfc::a']]],
+  ['rfidsec_15',['Rfidsec',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52af13065a643218726322db94094519d49',1,'m5::nfc']]],
+  ['ricoh_16',['Ricoh',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52ad1756d23d0eb2b335751132a660378e1',1,'m5::nfc']]],
+  ['rightplug_17',['RightPlug',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52ab3c4563a2cb61660e3ac39c69ed77e38',1,'m5::nfc']]],
+  ['rstp_18',['RSTP',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a70c93323ddcb89632da9dcb77ba54844',1,'m5::nfc::ndef']]]
+];

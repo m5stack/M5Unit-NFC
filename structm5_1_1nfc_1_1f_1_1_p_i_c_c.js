@@ -1,0 +1,26 @@
+var structm5_1_1nfc_1_1f_1_1_p_i_c_c =
+[
+    [ "checkFormat", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a77e3b5039aeabc5046b4d73ee2a6315f", null ],
+    [ "emulate", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#ab87ee26752ef4249f240922b6d33a93c", null ],
+    [ "firstUserBlock", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#ac3b14091a6e255fdd111dc5058106573", null ],
+    [ "idmAsString", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#ae9d6e0cdb4d3bdfbe96e1acd8b35d6f6", null ],
+    [ "isUserBlock", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#ad84ac714bd3397f8cb173b7b8651ff0c", null ],
+    [ "lastUserBlock", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a3e1acb785f96fe267425388e2519b544", null ],
+    [ "maximumReadBlocks", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#ad034f19064f3e2e66e13758a72e38b23", null ],
+    [ "maximumWriteBlocks", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#ab1ca680451a84ccf5b3bda589fb03ca3", null ],
+    [ "nfcForumTagType", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a022a996aef9698d70c080d53ef53e553", null ],
+    [ "pmmAsString", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a6a7775e4b7939567da6e2d42f3ff877a", null ],
+    [ "supportsNDEF", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a246d933e11c4c723a25b97a6ed18a5b2", null ],
+    [ "typeAsString", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a19ed1943e3a20f5d160801d85e1281b0", null ],
+    [ "userAreaSize", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a19b5720e144a758fc9a26d9045fc35c2", null ],
+    [ "valid", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#af69afa2b56967446faeeec15e9785f3a", null ],
+    [ "validEmulation", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a38bab55d286773192148fd6d21cfb42b", null ],
+    [ "dfc_format", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a259230acc28cc4aaf634364234eb59a6", null ],
+    [ "emulation_sc", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#af525e296d36658fdda374724ce5de6ef", null ],
+    [ "format", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a3c8e889e88a8a234e71ccb9a45166a18", null ],
+    [ "idm", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a4835868074d0ca82eade8bd58bae6d69", null ],
+    [ "pmm", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a98b1fadb1fee84982f07020c3254770c", null ],
+    [ "request_code", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a4997c0cf13eff03c2ad30f207d7fe77b", null ],
+    [ "request_data", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#ac0edd79a2abaa04fb42e8bd6d716eed2", null ],
+    [ "type", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#ac61ed02400e19194b6827cb208846119", null ]
+];

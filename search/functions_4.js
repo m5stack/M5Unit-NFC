@@ -1,0 +1,14 @@
+var searchData=
+[
+  ['emulate_0',['emulate',['../structm5_1_1nfc_1_1a_1_1_p_i_c_c.html#a8e148e1ece9558110be9723557ab9984',1,'m5::nfc::a::PICC::emulate()'],['../structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#ab87ee26752ef4249f240922b6d33a93c',1,'m5::nfc::f::PICC::emulate()']]],
+  ['emulatepicc_1',['emulatePICC',['../classm5_1_1nfc_1_1_emulation_layer_a.html#a28dc0f0938b70793e278be544e7a6713',1,'m5::nfc::EmulationLayerA::emulatePICC()'],['../classm5_1_1nfc_1_1_emulation_layer_f.html#a4982b0e08aad7ef968b7be3ae62a6d56',1,'m5::nfc::EmulationLayerF::emulatePICC()']]],
+  ['emulationlayera_2',['EmulationLayerA',['../classm5_1_1nfc_1_1_emulation_layer_a.html#a0a9a8fdc2afd980d8e069b5354866950',1,'m5::nfc::EmulationLayerA::EmulationLayerA(m5::unit::UnitST25R3916 &amp;u)'],['../classm5_1_1nfc_1_1_emulation_layer_a.html#ad7628497d7b17701284bea33282fc1ca',1,'m5::nfc::EmulationLayerA::EmulationLayerA(m5::unit::CapST25R3916 &amp;u)']]],
+  ['emulationlayerf_3',['EmulationLayerF',['../classm5_1_1nfc_1_1_emulation_layer_f.html#a2628058a439c3138d0c78a8a43616d08',1,'m5::nfc::EmulationLayerF::EmulationLayerF(m5::unit::UnitST25R3916 &amp;u)'],['../classm5_1_1nfc_1_1_emulation_layer_f.html#acd32305a8dad49c1e78735e04acfd9e5',1,'m5::nfc::EmulationLayerF::EmulationLayerF(m5::unit::CapST25R3916 &amp;u)']]],
+  ['enablefield_4',['enableField',['../classm5_1_1unit_1_1_unit_s_t25_r3916.html#ad8ec70245d36b1be5d23872eeb17474e',1,'m5::unit::UnitST25R3916']]],
+  ['encode_5',['encode',['../classm5_1_1nfc_1_1ndef_1_1_record.html#a6a4da09ffe10b063c174c9e4c5e5ad3a',1,'m5::nfc::ndef::Record::encode()'],['../classm5_1_1nfc_1_1ndef_1_1_t_l_v.html#ad6f904f81efecc20d4864a9a08681421',1,'m5::nfc::ndef::TLV::encode()']]],
+  ['encode_5faccess_5fbits_6',['encode_access_bits',['../mifare_8cpp.html#abf7a51fcc17ccc900b3fbdcf26b585d2',1,'m5::nfc::a::mifare::classic::encode_access_bits(uint8_t abits[3], const uint8_t p0, const uint8_t p1, const uint8_t p2, const uint8_t p3)'],['../mifare_8hpp.html#a9bbff8328dfb21ac5d098b075abb1f97',1,'m5::nfc::a::mifare::classic::encode_access_bits(uint8_t abits[3], const uint8_t permissions[4])']]],
+  ['encode_5fvalue_5fblock_7',['encode_value_block',['../mifare_8cpp.html#a0378982e28186360ac9eb38fa3128c3a',1,'m5::nfc::a::mifare::classic']]],
+  ['end_8',['end',['../classm5_1_1nfc_1_1_emulation_layer_a.html#a07691cfc18445903313a853d5e0d1fd1',1,'m5::nfc::EmulationLayerA::end()'],['../classm5_1_1nfc_1_1_emulation_layer_f.html#a945ed86f7503a178aa759bc89f1acaec',1,'m5::nfc::EmulationLayerF::end()']]],
+  ['expiredtime_9',['expiredTime',['../classm5_1_1nfc_1_1_emulation_layer_a.html#ab6075f2492e9f9fd2b55fc087eca146d',1,'m5::nfc::EmulationLayerA::expiredTime()'],['../classm5_1_1nfc_1_1_emulation_layer_f.html#ac6e55ae14a26c808058d04af3b486672',1,'m5::nfc::EmulationLayerF::expiredTime()']]],
+  ['externalauthenticate_10',['externalAuthenticate',['../classm5_1_1nfc_1_1_n_f_c_layer_f.html#ac1af90c0d51679b17f6683363f2e10e5',1,'m5::nfc::NFCLayerF']]]
+];

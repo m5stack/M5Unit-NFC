@@ -1,0 +1,26 @@
+var searchData=
+[
+  ['tagsys_0',['Tagsys',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52af0681a809fe90639fc06c2d693182818',1,'m5::nfc']]],
+  ['tcpobex_1',['TCPOBEX',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6ae3c51d88bdea51cfc57178bfd6709596',1,'m5::nfc::ndef']]],
+  ['tel_2',['TEL',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a6154785551f14c097a9caf44e74b615e',1,'m5::nfc::ndef']]],
+  ['telnet_3',['TELNET',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a1360d1787ff8bb4f8eca82602452a58d',1,'m5::nfc::ndef']]],
+  ['tendyron_4',['Tendyron',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a4e6a90f67cdf2dfc7bb127ee0b489ae4',1,'m5::nfc']]],
+  ['terminator_5',['Terminator',['../ndef_8hpp.html#ace18f3439d147659696eec175e13e03aab420c1d31e69a823fbc30a434907c9c0',1,'m5::nfc::ndef']]],
+  ['texasinstruments_6',['TexasInstruments',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a67e54b1ee931f3f4bddfefa5fbde5fd8',1,'m5::nfc']]],
+  ['tftp_7',['TFTP',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a34d3dff1acba95184204f7a379c6d4f7',1,'m5::nfc::ndef']]],
+  ['ti_8',['TI',['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aaa316c795d70a350e00b1ac22da664e38',1,'m5::nfc::v']]],
+  ['ti_5ftagit_5f2048_9',['TI_TAGIT_2048',['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aa1b673238aff76b2058bcb24791fac1c2',1,'m5::nfc::v']]],
+  ['ti_5ftagit_5fhf_5fi_10',['TI_TAGIT_HF_I',['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aa24465f610f082f61b77474c8f0f2984c',1,'m5::nfc::v']]],
+  ['ti_5ftagit_5fhf_5fi_5fplus_11',['TI_TAGIT_HF_I_Plus',['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aa6c94cea8874fa9beb4542eafaa23ff7b',1,'m5::nfc::v']]],
+  ['ti_5ftagit_5fhf_5fi_5fpro_12',['TI_TAGIT_HF_I_Pro',['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aa675cf1945d721a33d53bff5abbb977c3',1,'m5::nfc::v']]],
+  ['toptroniq_13',['TopTroniq',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52aaad87bb774ff9febfd6acedddcf4549e',1,'m5::nfc']]],
+  ['toshiba_14',['Toshiba',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a0e550130373c0857829991e1767bc46d',1,'m5::nfc']]],
+  ['transcore_15',['Transcore',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a376312b3b2f150923acc3164132d87c8',1,'m5::nfc']]],
+  ['transfer_16',['TRANSFER',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90acaeb5ddb3b6096fb90ff720d9c3e2a6628',1,'m5::nfc::a']]],
+  ['tubitakbilgem_17',['TubitakBilgem',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a8fb60ad690955805f9e98eabda5db0a4',1,'m5::nfc']]],
+  ['type1_18',['Type1',['../nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1a3fc8355f4568d0bc9fa60829e4db7ad8',1,'m5::nfc']]],
+  ['type2_19',['Type2',['../nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1a843171beb7019761cbdf01fa3b1b61fb',1,'m5::nfc']]],
+  ['type3_20',['Type3',['../nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1a459e4c1992412014278341a5705d8aec',1,'m5::nfc']]],
+  ['type4_21',['Type4',['../nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1a17bc479530517e70b6ce6639d64c9b6b',1,'m5::nfc']]],
+  ['type5_22',['Type5',['../nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1a5d05e9889bd18763a956959c86940a23',1,'m5::nfc']]]
+];

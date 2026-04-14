@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['f_0',['F',['../nfc_8hpp.html#a5e5f58799f82b1611c0309f953cc2c6fa800618943025315f869e4e1f09471012',1,'m5::nfc']]],
+  ['fast_5fread_1',['FAST_READ',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90aca5b6e85f572e9f04e0ce673ed57d63b4b',1,'m5::nfc::a']]],
+  ['fci_2',['FCI',['../apdu_8hpp.html#a43277a89917969f53d3b2feb57caecbfa74198f9e44085e24bba72b3ccac4c13a',1,'m5::nfc::apdu']]],
+  ['fcp_3',['FCP',['../apdu_8hpp.html#a43277a89917969f53d3b2feb57caecbfaa7c815fafe60ae637d38216fa6300395',1,'m5::nfc::apdu']]],
+  ['felica_4',['FeliCa',['../_s_t25_r3916__definition_8hpp.html#a4b62cbbb0eb6e6a282d422eff3018982a2980dbc2442917a5c692c841d9f75bf3',1,'m5::unit::st25r3916']]],
+  ['felica_5',['Felica',['../_s_t25_r3916__definition_8hpp.html#a7d85ed3cdee95b0eab2dff6373824137aaa0cab77c3a886a6845b072c65998bb0',1,'m5::unit::st25r3916']]],
+  ['felicabitrate_6',['FelicaBitrate',['../_s_t25_r3916__definition_8hpp.html#a7d85ed3cdee95b0eab2dff6373824137a6a423d5a4a5fcd692e78eb20f8af274f',1,'m5::unit::st25r3916']]],
+  ['felicalite_7',['FeliCaLite',['../nfcf_8hpp.html#a6edf4a03089bd8e0b648d6469d07c96fabb274ba4f79260fac1cceb11d9504a91',1,'m5::nfc::f']]],
+  ['felicalites_8',['FeliCaLiteS',['../nfcf_8hpp.html#a6edf4a03089bd8e0b648d6469d07c96fa6478df87d6ba411e0bb4c7824085bc01',1,'m5::nfc::f']]],
+  ['felicaplug_9',['FeliCaPlug',['../nfcf_8hpp.html#a6edf4a03089bd8e0b648d6469d07c96fa2672a11e5105880c01910d1c337e4bcb',1,'m5::nfc::f']]],
+  ['felicastandard_10',['FeliCaStandard',['../nfcf_8hpp.html#a6edf4a03089bd8e0b648d6469d07c96facac4693ba70e855674fafee447e1b759',1,'m5::nfc::f']]],
+  ['file_11',['FILE',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a9fc5887c030f7a3e19821ebec457e719',1,'m5::nfc::ndef']]],
+  ['fileid_12',['FileId',['../apdu_8hpp.html#a15996a2f517e76dafb70c61654cb08ada225a9460e6eedf7af126fdc580345881',1,'m5::nfc::apdu']]],
+  ['firstoronly_13',['FirstOrOnly',['../apdu_8hpp.html#a74836436e907c80c9a02040d912e6400a703aba6102ad8dd4829bc645f464c0b0',1,'m5::nfc::apdu']]],
+  ['fmd_14',['FMD',['../apdu_8hpp.html#a43277a89917969f53d3b2feb57caecbfa4b25de86ef47d3b09525b1176978b34d',1,'m5::nfc::apdu']]],
+  ['fraunhoferipms_15',['FraunhoferIpms',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52ac98ec4b6eacfeddc9c9e98805db4f108',1,'m5::nfc']]],
+  ['freevision_16',['Freevision',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52ae1f17c7686d52051f430b8ffeb8ee7ed',1,'m5::nfc']]],
+  ['ftp_17',['FTP',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6ac728a49363c9a93a43a7e7f232b5a54a',1,'m5::nfc::ndef']]],
+  ['ftp_5faa_18',['FTP_AA',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a122814ce7a56a5112eb1cff8c5bd3593',1,'m5::nfc::ndef']]],
+  ['ftp_5fftp_19',['FTP_FTP',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6aec69ec65586bccf2924fd029d1a4141e',1,'m5::nfc::ndef']]],
+  ['ftps_20',['FTPS',['../ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a29f97c79cb913145ca7c7b259f68eda9',1,'m5::nfc::ndef']]],
+  ['fudan_21',['Fudan',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52ae4322c6191d730dac2105a2299a0c25b',1,'m5::nfc']]],
+  ['fujitsu_22',['Fujitsu',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a053f42c6bae3432cae270ea978f7e638',1,'Fujitsum5::nfc'],['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aa053f42c6bae3432cae270ea978f7e638',1,'Fujitsum5::nfc::v']]],
+  ['fujitsu_5ffram_23',['Fujitsu_FRAM',['../nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aa83aa9cd674ce75d50214b184503787d6',1,'m5::nfc::v']]]
+];

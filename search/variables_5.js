@@ -1,0 +1,21 @@
+var searchData=
+[
+  ['fcbitsall_0',['fcBitsAll',['../ndef_8hpp.html#a6d08bca1d9560291af41563234874bc7',1,'m5::nfc::ndef::type4']]],
+  ['fcbitsmessage_1',['fcBitsMessage',['../ndef_8hpp.html#a8556c520132d5996602b4b3815d0107e',1,'m5::nfc::ndef::type4']]],
+  ['fid_2',['fid',['../structm5_1_1nfc_1_1_f_c_p.html#a49e96cebffbeb575f85c7c0934b35e0b',1,'m5::nfc::FCP']]],
+  ['file_5fdescriptor_3',['file_descriptor',['../structm5_1_1nfc_1_1_f_c_p.html#ab543ee3b32ec8a43c41b3ed4307c50dc',1,'m5::nfc::FCP']]],
+  ['file_5fsize_4',['file_size',['../structm5_1_1nfc_1_1_f_c_p.html#aa011c00c6d1551c0a57d9094ff807850',1,'m5::nfc::FCP']]],
+  ['file_5fsize_5ftag_5',['file_size_tag',['../structm5_1_1nfc_1_1_f_c_p.html#af5a5d46832dffbb42948b79a6efc26d2',1,'m5::nfc::FCP']]],
+  ['file_5fsystem_5fdesfire_6',['FILE_SYSTEM_DESFIRE',['../nfc_8hpp.html#a45cad45fa6d286a94cbe7e38db122ed7',1,'m5::nfc']]],
+  ['file_5fsystem_5fdesfire_5flight_7',['FILE_SYSTEM_DESFIRE_LIGHT',['../nfc_8hpp.html#a7913c5e5556d7531d8b333650eb08f23',1,'m5::nfc']]],
+  ['file_5fsystem_5fflat_5fmemory_8',['FILE_SYSTEM_FLAT_MEMORY',['../nfc_8hpp.html#a395e5c24db3d02f0637dd68801151b5a',1,'m5::nfc']]],
+  ['file_5fsystem_5fiso7816_5f4_9',['FILE_SYSTEM_ISO7816_4',['../nfc_8hpp.html#a76e841dc92d8e14f40548e9a3a25b62b',1,'m5::nfc']]],
+  ['format_10',['format',['../structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a3c8e889e88a8a234e71ccb9a45166a18',1,'m5::nfc::f::PICC']]],
+  ['format_5ffelica_5fplug_11',['format_felica_plug',['../nfcf_8hpp.html#a703ced21afb41aef9aa9f100b80b25ce',1,'m5::nfc::f']]],
+  ['format_5flite_12',['format_lite',['../nfcf_8hpp.html#afe6ad9f347b81b810097fd17b31af8d2',1,'m5::nfc::f']]],
+  ['format_5fndef_13',['format_ndef',['../nfcf_8hpp.html#ab430bcb9ae317feae37a1a7f1364f544',1,'m5::nfc::f']]],
+  ['format_5fnfcip1_14',['format_nfcip1',['../nfcf_8hpp.html#aa521daa7bf5e75d10fa21e848654c2be',1,'m5::nfc::f']]],
+  ['format_5fprivate_15',['format_private',['../nfcf_8hpp.html#a2ddee2f888ea8483516ca0d5c09f9935',1,'m5::nfc::f']]],
+  ['format_5fsecure_16',['format_secure',['../nfcf_8hpp.html#a9adc4af29d0d219c1804748d6c7aef48',1,'m5::nfc::f']]],
+  ['format_5fshared_17',['format_shared',['../nfcf_8hpp.html#a2e51494ec684f04fe85652cfca51b19d',1,'m5::nfc::f']]]
+];
