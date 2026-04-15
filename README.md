@@ -85,6 +85,11 @@ See examples: [NFCA Emulation](examples/UnitUnified/NFCA/Emulation) and [NFCF Em
 
 - I2C version: MIFARE Plus SL3 operation has issues.
 
+### NessoN1 Connection
+GROVE port (port_b) on NessoN1 uses SoftwareI2C (M5HAL Bus), which causes I2C register polling latency too high for ST25R3916 RF timing requirements.  
+Use **QWIIC port (port_a)** with a QWIIC-GROVE conversion cable instead.
+
+> **Note:** GROVE port support may be added in a future update if SoftwareI2C performance improves.
 
 ## Related Link
 
