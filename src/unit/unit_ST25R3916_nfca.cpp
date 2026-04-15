@@ -205,6 +205,16 @@ bool UnitST25R3916::nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const
     return true;
 }
 
+bool UnitST25R3916::nfcaEmulationTransmit(const uint8_t* tx, const uint16_t tx_len)
+{
+    if (!tx || !tx_len) {
+        return false;
+    }
+    return writeDirectCommand(CMD_CLEAR_FIFO) &&  //
+           writeFIFO(tx, tx_len) &&               //
+           writeNumberOfTransmittedBytes(tx_len, 0) && writeDirectCommand(CMD_TRANSMIT_WITH_CRC);
+}
+
 bool UnitST25R3916::nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
 {
     CHECK_MODE();
