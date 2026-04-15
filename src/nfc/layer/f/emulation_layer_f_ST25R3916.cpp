@@ -211,9 +211,9 @@ bool ListenerST25R3916ForF::stop_emulation()
            _u.writeModeDefinition(0x00);
 }
 
-bool ListenerST25R3916ForF::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
+bool ListenerST25R3916ForF::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t /*timeout_ms*/)
 {
-    return _u.nfcfTransmit(tx, tx_len, timeout_ms);
+    return _u.nfcfEmulationTransmit(tx, tx_len);
 }
 
 // ------------------------------------------------------------
@@ -284,7 +284,6 @@ EmulationLayerF::State ListenerST25R3916ForF::goto_communicated()
     _u.writeDirectCommand(CMD_UNMASK_RECEIVE_DATA);
     //       rfalCheckEnableObsModeRx();
 
-    _u.update();
     return update_communicated();
     return EmulationLayerF::State::Communicated;
 }
@@ -303,7 +302,6 @@ EmulationLayerF::State ListenerST25R3916ForF::goto_selected()
     (void)get_irq(I_par32 | I_crc32 | I_err232 | I_err132);
     _u.enable_interrupts(I_rxe32);
 
-    _u.update();
     return update_selected();
     return EmulationLayerF::State::Selected;
 }
