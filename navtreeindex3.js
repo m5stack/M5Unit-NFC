@@ -1,5 +1,7 @@
 var NAVTREEINDEX3 =
 {
+"manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a9912c9330e203d0dc109bf7e74e09e51":[3,0,0,0,9,0,50],
+"manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a9b9abf8402a7357bfc8a4972855eb0c1":[3,0,0,0,9,0,100],
 "manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a9f1cc74db71195bb3ae8bd29f60d7bfb":[3,0,0,0,9,0,91],
 "manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a9f3451b6a6b2570d821b0cdbabaf0d75":[3,0,0,0,9,0,31],
 "manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52aa0b271a9d8aa8e7473922164d6a1c03c":[3,0,0,0,9,0,41],
@@ -247,7 +249,5 @@ var NAVTREEINDEX3 =
 "nfc__b__file__system_8hpp.html":[3,0,0,0,5,7],
 "nfc__b__file__system_8hpp_source.html":[3,0,0,0,5,7],
 "nfc__layer_8hpp.html":[3,0,0,0,6,6],
-"nfc__layer_8hpp_source.html":[3,0,0,0,6,6],
-"nfc__layer__a_8cpp.html":[3,0,0,0,6,0,3],
-"nfc__layer__a_8hpp.html":[3,0,0,0,6,0,4]
+"nfc__layer_8hpp_source.html":[3,0,0,0,6,6]
 };
