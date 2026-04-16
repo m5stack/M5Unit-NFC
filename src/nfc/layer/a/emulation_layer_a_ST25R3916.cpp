@@ -186,9 +186,9 @@ bool ListenerST25R3916ForA::stop_emulation()
            _u.writeModeDefinition(0x00);
 }
 
-bool ListenerST25R3916ForA::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
+bool ListenerST25R3916ForA::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t /*timeout_ms*/)
 {
-    return _u.nfcaTransmit(tx, tx_len, timeout_ms);
+    return _u.nfcaEmulationTransmit(tx, tx_len);
 }
 
 // ------------------------------------------------------------
@@ -273,7 +273,6 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_idle()
 
     _wakeup = false;
 
-    _u.update();
     return update_idle();
     //    return EmulationLayerA::State::Idle;
 }
@@ -292,7 +291,6 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_ready()
     _u.clear_bit_register8(REG_OPERATION_CONTROL, wu);  // Disable wakeup mode
     _u.writeModeDefinition(mode_listen_nfc_a);          // Disable bitrate detection and collision
 
-    _u.update();
     return update_ready();
     //    return EmulationLayerA::State::Ready;
 }
@@ -305,7 +303,6 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_active()
 
     _u.enable_interrupts(I_rxe32);
 
-    _u.update();
     return update_active();
     //    return EmulationLayerA::State::Active;
 }
@@ -326,7 +323,6 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_halt()
         return goto_off();
     }
 
-    _u.update();
     return update_halt();
     //    return EmulationLayerA::State::Halt;
 }

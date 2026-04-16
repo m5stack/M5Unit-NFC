@@ -1749,6 +1749,8 @@ public:
     uint32_t nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms);
     bool nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
+    //! @brief Transmit in emulation (PICC) mode with minimal I2C overhead
+    bool nfcaEmulationTransmit(const uint8_t* tx, const uint16_t tx_len);
     bool nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms);
 
     /*!
@@ -1899,6 +1901,8 @@ public:
       @return True if successful
      */
     bool nfcfTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
+    //! @brief Transmit in emulation (PICC) mode with minimal I2C overhead
+    bool nfcfEmulationTransmit(const uint8_t* tx, const uint16_t tx_len);
     /*!
       @brief Receive from NFC-F PICC
       @param[out] rx Receive buffer
