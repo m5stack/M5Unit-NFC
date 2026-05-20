@@ -225,7 +225,9 @@ bool UnitST25R3916::nfcaReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
         return false;
     }
 
-    if (!wait_for_FIFO(timeout_ms, rx_len_org)) {
+    // rx_len_org is the caller's buffer capacity, not an expected frame length.
+    // Wait only until a frame is available, then read up to the provided capacity.
+    if (!wait_for_FIFO(timeout_ms, 1)) {
         // M5_LIB_LOGE("nfcaReceive timeout rx_len=%u timeout_ms=%u", rx_len_org, timeout_ms);
         M5_LIB_LOGD("Timeout");
         return false;
