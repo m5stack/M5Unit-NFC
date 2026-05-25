@@ -28,6 +28,8 @@ constexpr uint8_t dummy_signature[32] = {};
 namespace m5 {
 namespace nfc {
 
+EmulationLayerA::~EmulationLayerA() = default;
+
 bool EmulationLayerA::begin(const m5::nfc::a::PICC& picc, uint8_t* ptr, const uint32_t size)
 {
     if (_state != State::None) {

@@ -47,6 +47,7 @@ public:
     explicit EmulationLayerA(m5::unit::UnitST25R3916& u);
     //! @brief Construct with CapST25R3916 (SPI)
     explicit EmulationLayerA(m5::unit::CapST25R3916& u);
+    ~EmulationLayerA();
 
     //! @brief Gets the current emulation state
     inline State state() const

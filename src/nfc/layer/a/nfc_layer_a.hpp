@@ -47,6 +47,7 @@ public:
     explicit NFCLayerA(m5::unit::UnitWS1850S& u);  // The implementation of this function is located in M5Unit-RFID
     explicit NFCLayerA(m5::unit::UnitST25R3916& u);
     explicit NFCLayerA(m5::unit::CapST25R3916& u);
+    ~NFCLayerA();
 
     ///@name override
     ///@{
