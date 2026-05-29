@@ -16,7 +16,6 @@
 #include "nfc/apdu/apdu.hpp"
 #include <cassert>
 #include <cstring>
-#include <mbedtls/aes.h>
 #include <esp_random.h>
 #include <M5Utility.hpp>
 #include <algorithm>
@@ -1362,22 +1361,12 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
         m5::nfc::crypto::secure_zero(ek_AB, sizeof(ek_AB));
     };
     {
-        mbedtls_aes_context aes;
-        mbedtls_aes_init(&aes);
-        if (mbedtls_aes_setkey_dec(&aes, key, 128) != 0) {
-            M5_LIB_LOGE("AuthAES setkey_dec failed");
-            mbedtls_aes_free(&aes);
-            wipe();
-            return false;
-        }
         uint8_t iv[16]{};
-        if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, ek_rndB, rndB) != 0) {
+        if (!aes_cbc_crypt(rndB, key, iv, ek_rndB, 16, false)) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
-            mbedtls_aes_free(&aes);
             wipe();
             return false;
         }
-        mbedtls_aes_free(&aes);
     }
 
     for (int i = 0; i < 15; ++i) {
@@ -1393,23 +1382,13 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
     std::memcpy(plain_AB + 16, rndB_rot, 16);
 
     {
-        mbedtls_aes_context aes;
-        mbedtls_aes_init(&aes);
-        if (mbedtls_aes_setkey_enc(&aes, key, 128) != 0) {
-            M5_LIB_LOGE("AuthAES setkey_enc failed");
-            mbedtls_aes_free(&aes);
-            wipe();
-            return false;
-        }
         uint8_t iv[16]{};
         std::memcpy(iv, ek_rndB, 16);
-        if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, sizeof(plain_AB), iv, plain_AB, ek_AB) != 0) {
+        if (!aes_cbc_crypt(ek_AB, key, iv, plain_AB, sizeof(plain_AB), true)) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
-            mbedtls_aes_free(&aes);
             wipe();
             return false;
         }
-        mbedtls_aes_free(&aes);
     }
 
     auto cmd2 = make_native_wrap_command(0xAF, ek_AB, sizeof(ek_AB));
@@ -1427,23 +1406,13 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
 
     uint8_t rndA_rot_from_card[16]{};
     {
-        mbedtls_aes_context aes;
-        mbedtls_aes_init(&aes);
-        if (mbedtls_aes_setkey_dec(&aes, key, 128) != 0) {
-            M5_LIB_LOGE("AuthAES setkey_dec failed");
-            mbedtls_aes_free(&aes);
-            wipe();
-            return false;
-        }
         uint8_t iv[16]{};
         std::memcpy(iv, ek_AB + 16, 16);
-        if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, rx.data(), rndA_rot_from_card) != 0) {
+        if (!aes_cbc_crypt(rndA_rot_from_card, key, iv, rx.data(), 16, false)) {
             M5_LIB_LOGE("AuthAES crypt_cbc failed");
-            mbedtls_aes_free(&aes);
             wipe();
             return false;
         }
-        mbedtls_aes_free(&aes);
     }
 
     uint8_t rndA_rot[16]{};
