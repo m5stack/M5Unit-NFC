@@ -21,12 +21,14 @@ var searchData=
   ['encode_18',['encode',['../classm5_1_1nfc_1_1ndef_1_1_record.html#a6a4da09ffe10b063c174c9e4c5e5ad3a',1,'m5::nfc::ndef::Record::encode()'],['../classm5_1_1nfc_1_1ndef_1_1_t_l_v.html#ad6f904f81efecc20d4864a9a08681421',1,'m5::nfc::ndef::TLV::encode()']]],
   ['encode_5faccess_5fbits_19',['encode_access_bits',['../mifare_8cpp.html#abf7a51fcc17ccc900b3fbdcf26b585d2',1,'m5::nfc::a::mifare::classic::encode_access_bits(uint8_t abits[3], const uint8_t p0, const uint8_t p1, const uint8_t p2, const uint8_t p3)'],['../mifare_8hpp.html#a9bbff8328dfb21ac5d098b075abb1f97',1,'m5::nfc::a::mifare::classic::encode_access_bits(uint8_t abits[3], const uint8_t permissions[4])']]],
   ['encode_5fvalue_5fblock_20',['encode_value_block',['../mifare_8cpp.html#a0378982e28186360ac9eb38fa3128c3a',1,'m5::nfc::a::mifare::classic']]],
-  ['end_21',['end',['../classm5_1_1nfc_1_1_emulation_layer_a.html#a07691cfc18445903313a853d5e0d1fd1',1,'m5::nfc::EmulationLayerA::end()'],['../classm5_1_1nfc_1_1_emulation_layer_f.html#a945ed86f7503a178aa759bc89f1acaec',1,'m5::nfc::EmulationLayerF::end()']]],
-  ['ev2context_22',['Ev2Context',['../structm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_ev2_context.html',1,'m5::nfc::a::mifare::desfire']]],
-  ['expiredtime_23',['expiredTime',['../classm5_1_1nfc_1_1_emulation_layer_a.html#ab6075f2492e9f9fd2b55fc087eca146d',1,'m5::nfc::EmulationLayerA::expiredTime()'],['../classm5_1_1nfc_1_1_emulation_layer_f.html#ac6e55ae14a26c808058d04af3b486672',1,'m5::nfc::EmulationLayerF::expiredTime()']]],
-  ['extendedgetsysteminfo_24',['ExtendedGetSystemInfo',['../nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665a467655381b250e323dc4602a34042aec',1,'m5::nfc::v']]],
-  ['extendedreadsingleblock_25',['ExtendedReadSingleBlock',['../nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665a0be6a3722fb223e6b44152b59e8ce890',1,'m5::nfc::v']]],
-  ['extendedwritesingleblock_26',['ExtendedWriteSingleBlock',['../nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665a9caeb24c8f5e7d8cdc4304d5d72b18b2',1,'m5::nfc::v']]],
-  ['external_27',['External',['../ndef__record_8hpp.html#a43d1cb99aeb4fdf193bba66a6b4e7153ab206a1b4ea1097761f78e8876f6da779',1,'m5::nfc::ndef']]],
-  ['externalauthenticate_28',['externalAuthenticate',['../classm5_1_1nfc_1_1_n_f_c_layer_f.html#ac1af90c0d51679b17f6683363f2e10e5',1,'m5::nfc::NFCLayerF']]]
+  ['encode_5fvcd_21',['encode_VCD',['../nfcv_8cpp.html#ad504030eb24c3ad71beecf3cf841abe1',1,'m5::nfc::v']]],
+  ['encrypt_22',['encrypt',['../classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html#af1b5b046783cb652c5ff15f64b5a1373',1,'m5::nfc::a::mifare::classic::Crypto1::encrypt(uint8_t buf[8], const uint32_t Nr, const uint32_t Ar) noexcept'],['../classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html#a1348efa59a9a9616782567d80b305148',1,'m5::nfc::a::mifare::classic::Crypto1::encrypt(uint8_t *out, const uint8_t *in, const uint8_t in_len)']]],
+  ['end_23',['end',['../classm5_1_1nfc_1_1_emulation_layer_a.html#a07691cfc18445903313a853d5e0d1fd1',1,'m5::nfc::EmulationLayerA::end()'],['../classm5_1_1nfc_1_1_emulation_layer_f.html#a945ed86f7503a178aa759bc89f1acaec',1,'m5::nfc::EmulationLayerF::end()']]],
+  ['ev2context_24',['Ev2Context',['../structm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_ev2_context.html',1,'m5::nfc::a::mifare::desfire']]],
+  ['expiredtime_25',['expiredTime',['../classm5_1_1nfc_1_1_emulation_layer_a.html#ab6075f2492e9f9fd2b55fc087eca146d',1,'m5::nfc::EmulationLayerA::expiredTime()'],['../classm5_1_1nfc_1_1_emulation_layer_f.html#ac6e55ae14a26c808058d04af3b486672',1,'m5::nfc::EmulationLayerF::expiredTime()']]],
+  ['extendedgetsysteminfo_26',['ExtendedGetSystemInfo',['../nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665a467655381b250e323dc4602a34042aec',1,'m5::nfc::v']]],
+  ['extendedreadsingleblock_27',['ExtendedReadSingleBlock',['../nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665a0be6a3722fb223e6b44152b59e8ce890',1,'m5::nfc::v']]],
+  ['extendedwritesingleblock_28',['ExtendedWriteSingleBlock',['../nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665a9caeb24c8f5e7d8cdc4304d5d72b18b2',1,'m5::nfc::v']]],
+  ['external_29',['External',['../ndef__record_8hpp.html#a43d1cb99aeb4fdf193bba66a6b4e7153ab206a1b4ea1097761f78e8876f6da779',1,'m5::nfc::ndef']]],
+  ['externalauthenticate_30',['externalAuthenticate',['../classm5_1_1nfc_1_1_n_f_c_layer_f.html#ac1af90c0d51679b17f6683363f2e10e5',1,'m5::nfc::NFCLayerF']]]
 ];

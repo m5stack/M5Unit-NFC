@@ -1,5 +1,6 @@
 var searchData=
 [
   ['write_5faccess_0',['write_access',['../structm5_1_1nfc_1_1ndef_1_1type4_1_1_file_control_t_l_v.html#abd3975e52acc6e88d3570dbd9213e0b5',1,'m5::nfc::ndef::type4::FileControlTLV']]],
-  ['wrong_5flength_5fle_1',['WRONG_LENGTH_LE',['../apdu_8hpp.html#a47cfe093613fbd3f11fcf22156238da3',1,'m5::nfc::apdu']]]
+  ['wrong_5flength_5fle_1',['WRONG_LENGTH_LE',['../apdu_8hpp.html#a47cfe093613fbd3f11fcf22156238da3',1,'m5::nfc::apdu']]],
+  ['wtx_5fmax_5fms_2',['wtx_max_ms',['../structm5_1_1nfc_1_1isodep_1_1policy__t.html#a60130450d56f34836f97e535d8b4f4ec',1,'m5::nfc::isodep::policy_t']]]
 ];

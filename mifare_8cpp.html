@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
    </div>
   </td>
  </tr>
@@ -111,7 +111,7 @@ $(function(){initNavTree('mifare_8cpp.html',''); initResizable(true); });
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacem5.html">m5</a></td></tr>
-<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5stack. <br /></td></tr>
+<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5Stack. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
@@ -164,7 +164,7 @@ Functions</h2></td></tr>
 <p>Decode access bits to permissions. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">permissions[4]</td><td>Output buffer at least 4 bytes </td></tr>
+    <tr><td class="paramname">permissions</td><td>Output buffer at least 4 bytes </td></tr>
     <tr><td class="paramname">ab0</td><td>1st byte of the access bits </td></tr>
     <tr><td class="paramname">ab1</td><td>2nd byte of the access bits </td></tr>
     <tr><td class="paramname">ab2</td><td>3rd byte of the access bits </td></tr>
@@ -257,11 +257,11 @@ permissions[3] sector trailer </dd></dl>
 <p>Encode access bits from permissions. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">abits[3]</td><td>Output buffer at least 3 bytes </td></tr>
+    <tr><td class="paramname">abits</td><td>Output buffer at least 3 bytes </td></tr>
     <tr><td class="paramname">p0</td><td>permissions for block 0 </td></tr>
     <tr><td class="paramname">p1</td><td>permissions for block 1 </td></tr>
     <tr><td class="paramname">p2</td><td>permissions for block 2 </td></tr>
-    <tr><td class="paramname">p3</td><td>permissions for sector tarailer </td></tr>
+    <tr><td class="paramname">p3</td><td>permissions for sector trailer </td></tr>
   </table>
   </dd>
 </dl>

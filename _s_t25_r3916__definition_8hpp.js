@@ -16,6 +16,9 @@ var _s_t25_r3916__definition_8hpp =
       [ "FelicaBitrate", "_s_t25_r3916__definition_8hpp.html#a7d85ed3cdee95b0eab2dff6373824137a6a423d5a4a5fcd692e78eb20f8af274f", null ],
       [ "ISO14443ABitrate", "_s_t25_r3916__definition_8hpp.html#a7d85ed3cdee95b0eab2dff6373824137a7fc22f6cc29c597048b17b6db90613e9", null ]
     ] ],
+    [ "calculate_fdt", "_s_t25_r3916__definition_8hpp.html#aedad80139af09e96887b9ece9979b99f", null ],
+    [ "calculate_mrt", "_s_t25_r3916__definition_8hpp.html#a45e005a6545b708b5d40445673ff5fd1", null ],
+    [ "calculate_nrt", "_s_t25_r3916__definition_8hpp.html#af5465c2ea62624a2691846c9665989cd", null ],
     [ "MAX_FIFO_DEPTH", "_s_t25_r3916__definition_8hpp.html#a23d8ebdc9efd6affca9566a3ad523108", null ],
     [ "PT_MEMORY_A_LENGTH", "_s_t25_r3916__definition_8hpp.html#a3bc9e99c48ede032ca794e0c603fd891", null ],
     [ "PT_MEMORY_F_LENGTH", "_s_t25_r3916__definition_8hpp.html#a361ca243f632742c4209b56fc345b3f2", null ],

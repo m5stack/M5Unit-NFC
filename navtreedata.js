@@ -25,13 +25,10 @@
 var NAVTREE =
 [
   [ "M5Unit-NFC", "index.html", [
+    [ "Deprecated List", "deprecated.html", null ],
     [ "Todo List", "todo.html", null ],
     [ "Namespaces", "namespaces.html", [
-      [ "Namespace List", "namespaces.html", "namespaces_dup" ],
-      [ "Namespace Members", "namespacemembers.html", [
-        [ "All", "namespacemembers.html", null ],
-        [ "Enumerations", "namespacemembers_enum.html", null ]
-      ] ]
+      [ "Namespace List", "namespaces.html", "namespaces_dup" ]
     ] ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
@@ -54,12 +51,12 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_m5_unit_unified_n_f_c_8hpp.html",
-"classm5_1_1nfc_1_1_n_f_c_layer_b.html#af8c07646909ab393b0c1609a767c7804",
-"classm5_1_1unit_1_1_unit_s_t25_r3916.html#a8cf6dcbd164572b3e227e6d84f619993",
-"manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a9912c9330e203d0dc109bf7e74e09e51",
-"nfc__layer__a_8cpp.html",
-"nfcf_8hpp.html#a8205d1ee70e7b5a0d9c073f9e8916b90ada3f9688888dfbaa06ca923662130978",
-"structm5_1_1unit_1_1_unit_s_t25_r3916_1_1config__t.html"
+"classm5_1_1nfc_1_1_n_f_c_layer_b.html#a1a4bd73e6949ae6391316024baa7d310",
+"classm5_1_1unit_1_1_unit_s_t25_r3916.html#a170aadcabb38fec9dcefd6c02797a43b",
+"functions_func_l.html",
+"ndef_8hpp.html#a7b108ad368053dd0056d9e0dccdb7bd6a293c9ea246ff9985dc6f62a650f78986",
+"nfca_8hpp.html#afd9353ea57cde9b113a3ec6d6191664fa02129bb861061d1a052c592e2dc6b383",
+"structm5_1_1nfc_1_1a_1_1_p_i_c_c.html#ab8f56c8ab8b31cfaada10cf58cb6777a"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

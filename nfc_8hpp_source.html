@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
    </div>
   </td>
  </tr>
@@ -150,49 +150,62 @@ $(function(){initNavTree('nfc_8hpp_source.html',''); initResizable(true); });
 <div class="line"><a id="l00065" name="l00065"></a><span class="lineno"><a class="line" href="nfc_8hpp.html#a45cad45fa6d286a94cbe7e38db122ed7">   65</a></span><span class="keyword">constexpr</span> <a class="code hl_typedef" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a> <a class="code hl_variable" href="nfc_8hpp.html#a45cad45fa6d286a94cbe7e38db122ed7">FILE_SYSTEM_DESFIRE</a>{0x04};        </div>
 <div class="line"><a id="l00066" name="l00066"></a><span class="lineno"><a class="line" href="nfc_8hpp.html#a7913c5e5556d7531d8b333650eb08f23">   66</a></span><span class="keyword">constexpr</span> <a class="code hl_typedef" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a> <a class="code hl_variable" href="nfc_8hpp.html#a7913c5e5556d7531d8b333650eb08f23">FILE_SYSTEM_DESFIRE_LIGHT</a>{0x08};  </div>
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="keyword">inline</span> <span class="keywordtype">bool</span> is_file_system_memory(<span class="keyword">const</span> file_system_feature_t fsf)</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>{</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="keywordflow">return</span> (fsf &amp; FILE_SYSTEM_FLAT_MEMORY);</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>}</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span><span class="keyword">inline</span> <span class="keywordtype">bool</span> is_file_system_file(<span class="keyword">const</span> file_system_feature_t fsf)</div>
+<div class="foldopen" id="foldopen00074" data-start="{" data-end="}">
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno"><a class="line" href="nfc_8hpp.html#ad754a66e71bfd266a889b4e772a77575">   74</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> is_file_system_memory(<span class="keyword">const</span> <a class="code hl_typedef" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a> fsf)</div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>{</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="keywordflow">return</span> (fsf &amp; (FILE_SYSTEM_ISO7816_4 | FILE_SYSTEM_DESFIRE | FILE_SYSTEM_DESFIRE_LIGHT));</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="keywordflow">return</span> (fsf &amp; <a class="code hl_variable" href="nfc_8hpp.html#a395e5c24db3d02f0637dd68801151b5a">FILE_SYSTEM_FLAT_MEMORY</a>);</div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>}</div>
+</div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="keyword">inline</span> <span class="keywordtype">bool</span> is_file_system_ISO(<span class="keyword">const</span> file_system_feature_t fsf)</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>{</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="keywordflow">return</span> (fsf &amp; FILE_SYSTEM_ISO7816_4);</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>}</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span> </div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span><span class="keyword">inline</span> <span class="keywordtype">bool</span> is_file_system_desfire(<span class="keyword">const</span> file_system_feature_t fsf)</div>
+<div class="foldopen" id="foldopen00084" data-start="{" data-end="}">
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno"><a class="line" href="nfc_8hpp.html#a2c724f427aa2cc607b77ead2d7d78bdb">   84</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> is_file_system_file(<span class="keyword">const</span> <a class="code hl_typedef" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a> fsf)</div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>{</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <span class="keywordflow">return</span> (fsf &amp; (FILE_SYSTEM_DESFIRE | FILE_SYSTEM_DESFIRE_LIGHT));</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <span class="keywordflow">return</span> (fsf &amp; (<a class="code hl_variable" href="nfc_8hpp.html#a76e841dc92d8e14f40548e9a3a25b62b">FILE_SYSTEM_ISO7816_4</a> | <a class="code hl_variable" href="nfc_8hpp.html#a45cad45fa6d286a94cbe7e38db122ed7">FILE_SYSTEM_DESFIRE</a> | <a class="code hl_variable" href="nfc_8hpp.html#a7913c5e5556d7531d8b333650eb08f23">FILE_SYSTEM_DESFIRE_LIGHT</a>));</div>
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>}</div>
+</div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span><span class="keyword">inline</span> <span class="keywordtype">bool</span> is_file_system_desfire_normal(<span class="keyword">const</span> file_system_feature_t fsf)</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>{</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keywordflow">return</span> (fsf &amp; FILE_SYSTEM_DESFIRE);</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>}</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span> </div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span><span class="keyword">inline</span> <span class="keywordtype">bool</span> is_file_system_desfire_light(<span class="keyword">const</span> file_system_feature_t fsf)</div>
+<div class="foldopen" id="foldopen00094" data-start="{" data-end="}">
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno"><a class="line" href="nfc_8hpp.html#afd61e7c2f20b3d396c0e4177b5599079">   94</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="nfc_8hpp.html#afd61e7c2f20b3d396c0e4177b5599079">is_file_system_ISO</a>(<span class="keyword">const</span> <a class="code hl_typedef" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a> fsf)</div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>{</div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keywordflow">return</span> (fsf &amp; FILE_SYSTEM_DESFIRE_LIGHT);</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keywordflow">return</span> (fsf &amp; <a class="code hl_variable" href="nfc_8hpp.html#a76e841dc92d8e14f40548e9a3a25b62b">FILE_SYSTEM_ISO7816_4</a>);</div>
 <div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>}</div>
+</div>
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span> </div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>}  <span class="comment">// namespace nfc</span></div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>}  <span class="comment">// namespace m5</span></div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span> </div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span><span class="comment">// #include &quot;a/nfca.hpp&quot;</span></div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="comment">// #include &quot;b/nfcb.hpp&quot;</span></div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span><span class="comment">// #include &quot;f/nfcf.hpp&quot;</span></div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span><span class="comment">// #include &quot;v/nfcv.hpp&quot;</span></div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span><span class="comment">// #include &quot;ndef/ndef.hpp&quot;</span></div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span><span class="preprocessor">#endif</span></div>
+<div class="foldopen" id="foldopen00104" data-start="{" data-end="}">
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno"><a class="line" href="nfc_8hpp.html#a60262c927120b869d91d47b0baa2d046">  104</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="nfc_8hpp.html#a60262c927120b869d91d47b0baa2d046">is_file_system_desfire</a>(<span class="keyword">const</span> <a class="code hl_typedef" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a> fsf)</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>{</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>    <span class="keywordflow">return</span> (fsf &amp; (<a class="code hl_variable" href="nfc_8hpp.html#a45cad45fa6d286a94cbe7e38db122ed7">FILE_SYSTEM_DESFIRE</a> | <a class="code hl_variable" href="nfc_8hpp.html#a7913c5e5556d7531d8b333650eb08f23">FILE_SYSTEM_DESFIRE_LIGHT</a>));</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>}</div>
+</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span> </div>
+<div class="foldopen" id="foldopen00114" data-start="{" data-end="}">
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno"><a class="line" href="nfc_8hpp.html#a96d475444beefb0fecd201b132542685">  114</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="nfc_8hpp.html#a96d475444beefb0fecd201b132542685">is_file_system_desfire_normal</a>(<span class="keyword">const</span> <a class="code hl_typedef" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a> fsf)</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>{</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>    <span class="keywordflow">return</span> (fsf &amp; <a class="code hl_variable" href="nfc_8hpp.html#a45cad45fa6d286a94cbe7e38db122ed7">FILE_SYSTEM_DESFIRE</a>);</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>}</div>
+</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
+<div class="foldopen" id="foldopen00124" data-start="{" data-end="}">
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno"><a class="line" href="nfc_8hpp.html#a24fd8e5aa492ee91c14994e00fe5f0ab">  124</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="nfc_8hpp.html#a24fd8e5aa492ee91c14994e00fe5f0ab">is_file_system_desfire_light</a>(<span class="keyword">const</span> <a class="code hl_typedef" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a> fsf)</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>{</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>    <span class="keywordflow">return</span> (fsf &amp; <a class="code hl_variable" href="nfc_8hpp.html#a7913c5e5556d7531d8b333650eb08f23">FILE_SYSTEM_DESFIRE_LIGHT</a>);</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>}</div>
+</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span> </div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>}  <span class="comment">// namespace nfc</span></div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>}  <span class="comment">// namespace m5</span></div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span> </div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span><span class="comment">// #include &quot;a/nfca.hpp&quot;</span></div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span><span class="comment">// #include &quot;b/nfcb.hpp&quot;</span></div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span><span class="comment">// #include &quot;f/nfcf.hpp&quot;</span></div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span><span class="comment">// #include &quot;v/nfcv.hpp&quot;</span></div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span><span class="comment">// #include &quot;ndef/ndef.hpp&quot;</span></div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="amanufacturer__id_8hpp_html"><div class="ttname"><a href="manufacturer__id_8hpp.html">manufacturer_id.hpp</a></div><div class="ttdoc">Manufacturer ID (UID[0]) definitions for ISO/IEC 14443-3.</div></div>
-<div class="ttc" id="anamespacem5_html"><div class="ttname"><a href="namespacem5.html">m5</a></div><div class="ttdoc">Top level namespace of M5stack.</div></div>
+<div class="ttc" id="anamespacem5_html"><div class="ttname"><a href="namespacem5.html">m5</a></div><div class="ttdoc">Top level namespace of M5Stack.</div></div>
 <div class="ttc" id="anamespacenfc_html"><div class="ttname"><a href="namespacenfc.html">nfc</a></div><div class="ttdoc">NFC related definitions.</div></div>
 <div class="ttc" id="anfc_8hpp_html_a14c7cd97b5b6e6bef9a0485ee5b430a3"><div class="ttname"><a href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">m5::nfc::file_system_feature_t</a></div><div class="ttdeci">uint8_t file_system_feature_t</div><div class="ttdoc">Alias for file_system_feature_t.</div><div class="ttdef"><b>Definition</b> nfc.hpp:62</div></div>
+<div class="ttc" id="anfc_8hpp_html_a24fd8e5aa492ee91c14994e00fe5f0ab"><div class="ttname"><a href="nfc_8hpp.html#a24fd8e5aa492ee91c14994e00fe5f0ab">m5::nfc::is_file_system_desfire_light</a></div><div class="ttdeci">bool is_file_system_desfire_light(const file_system_feature_t fsf)</div><div class="ttdoc">Has MIFARE DESFire light file system feature?</div><div class="ttdef"><b>Definition</b> nfc.hpp:124</div></div>
 <div class="ttc" id="anfc_8hpp_html_a395e5c24db3d02f0637dd68801151b5a"><div class="ttname"><a href="nfc_8hpp.html#a395e5c24db3d02f0637dd68801151b5a">m5::nfc::FILE_SYSTEM_FLAT_MEMORY</a></div><div class="ttdeci">constexpr file_system_feature_t FILE_SYSTEM_FLAT_MEMORY</div><div class="ttdoc">Block/Page base R/W (flat memory)</div><div class="ttdef"><b>Definition</b> nfc.hpp:63</div></div>
 <div class="ttc" id="anfc_8hpp_html_a45cad45fa6d286a94cbe7e38db122ed7"><div class="ttname"><a href="nfc_8hpp.html#a45cad45fa6d286a94cbe7e38db122ed7">m5::nfc::FILE_SYSTEM_DESFIRE</a></div><div class="ttdeci">constexpr file_system_feature_t FILE_SYSTEM_DESFIRE</div><div class="ttdoc">MIFARE DESFire (multi file base)</div><div class="ttdef"><b>Definition</b> nfc.hpp:65</div></div>
 <div class="ttc" id="anfc_8hpp_html_a5e5f58799f82b1611c0309f953cc2c6f"><div class="ttname"><a href="nfc_8hpp.html#a5e5f58799f82b1611c0309f953cc2c6f">m5::nfc::NFC</a></div><div class="ttdeci">NFC</div><div class="ttdoc">NFC type.</div><div class="ttdef"><b>Definition</b> nfc.hpp:27</div></div>
@@ -200,6 +213,7 @@ $(function(){initNavTree('nfc_8hpp_source.html',''); initResizable(true); });
 <div class="ttc" id="anfc_8hpp_html_a5e5f58799f82b1611c0309f953cc2c6fa7fc56270e7a70fa81a5935b72eacbe29"><div class="ttname"><a href="nfc_8hpp.html#a5e5f58799f82b1611c0309f953cc2c6fa7fc56270e7a70fa81a5935b72eacbe29">m5::nfc::NFC::A</a></div><div class="ttdeci">@ A</div><div class="ttdoc">NFC-A.</div></div>
 <div class="ttc" id="anfc_8hpp_html_a5e5f58799f82b1611c0309f953cc2c6fa800618943025315f869e4e1f09471012"><div class="ttname"><a href="nfc_8hpp.html#a5e5f58799f82b1611c0309f953cc2c6fa800618943025315f869e4e1f09471012">m5::nfc::NFC::F</a></div><div class="ttdeci">@ F</div><div class="ttdoc">NFC-F.</div></div>
 <div class="ttc" id="anfc_8hpp_html_a5e5f58799f82b1611c0309f953cc2c6fa9d5ed678fe57bcca610140957afab571"><div class="ttname"><a href="nfc_8hpp.html#a5e5f58799f82b1611c0309f953cc2c6fa9d5ed678fe57bcca610140957afab571">m5::nfc::NFC::B</a></div><div class="ttdeci">@ B</div><div class="ttdoc">NFC-B.</div></div>
+<div class="ttc" id="anfc_8hpp_html_a60262c927120b869d91d47b0baa2d046"><div class="ttname"><a href="nfc_8hpp.html#a60262c927120b869d91d47b0baa2d046">m5::nfc::is_file_system_desfire</a></div><div class="ttdeci">bool is_file_system_desfire(const file_system_feature_t fsf)</div><div class="ttdoc">Has MIFARE DESFire (any variant) file system feature?</div><div class="ttdef"><b>Definition</b> nfc.hpp:104</div></div>
 <div class="ttc" id="anfc_8hpp_html_a6e4ec7792513939bffd3f557b917d326"><div class="ttname"><a href="nfc_8hpp.html#a6e4ec7792513939bffd3f557b917d326">m5::nfc::Bitrate</a></div><div class="ttdeci">Bitrate</div><div class="ttdoc">Communication bitrate.</div><div class="ttdef"><b>Definition</b> nfc.hpp:52</div></div>
 <div class="ttc" id="anfc_8hpp_html_a6e4ec7792513939bffd3f557b917d326a022572132d374f84ca57f030cc88099f"><div class="ttname"><a href="nfc_8hpp.html#a6e4ec7792513939bffd3f557b917d326a022572132d374f84ca57f030cc88099f">m5::nfc::Bitrate::Bps848K</a></div><div class="ttdeci">@ Bps848K</div><div class="ttdoc">848K</div></div>
 <div class="ttc" id="anfc_8hpp_html_a6e4ec7792513939bffd3f557b917d326a3a6399f5064660be3047c534c426f951"><div class="ttname"><a href="nfc_8hpp.html#a6e4ec7792513939bffd3f557b917d326a3a6399f5064660be3047c534c426f951">m5::nfc::Bitrate::Bps212K</a></div><div class="ttdeci">@ Bps212K</div><div class="ttdoc">212K</div></div>
@@ -213,6 +227,8 @@ $(function(){initNavTree('nfc_8hpp_source.html',''); initResizable(true); });
 <div class="ttc" id="anfc_8hpp_html_a952a1a2c9c08aa278d2aadafe02a5cd1a459e4c1992412014278341a5705d8aec"><div class="ttname"><a href="nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1a459e4c1992412014278341a5705d8aec">m5::nfc::NFCForumTag::Type3</a></div><div class="ttdeci">@ Type3</div><div class="ttdoc">Type 3 (NFC-F)</div></div>
 <div class="ttc" id="anfc_8hpp_html_a952a1a2c9c08aa278d2aadafe02a5cd1a5d05e9889bd18763a956959c86940a23"><div class="ttname"><a href="nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1a5d05e9889bd18763a956959c86940a23">m5::nfc::NFCForumTag::Type5</a></div><div class="ttdeci">@ Type5</div><div class="ttdoc">Type 5 ISO/IEC 15693.</div></div>
 <div class="ttc" id="anfc_8hpp_html_a952a1a2c9c08aa278d2aadafe02a5cd1a843171beb7019761cbdf01fa3b1b61fb"><div class="ttname"><a href="nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1a843171beb7019761cbdf01fa3b1b61fb">m5::nfc::NFCForumTag::Type2</a></div><div class="ttdeci">@ Type2</div><div class="ttdoc">Type 2 (NFC-A)</div></div>
+<div class="ttc" id="anfc_8hpp_html_a96d475444beefb0fecd201b132542685"><div class="ttname"><a href="nfc_8hpp.html#a96d475444beefb0fecd201b132542685">m5::nfc::is_file_system_desfire_normal</a></div><div class="ttdeci">bool is_file_system_desfire_normal(const file_system_feature_t fsf)</div><div class="ttdoc">Has MIFARE DESFire (normal) file system feature?</div><div class="ttdef"><b>Definition</b> nfc.hpp:114</div></div>
+<div class="ttc" id="anfc_8hpp_html_afd61e7c2f20b3d396c0e4177b5599079"><div class="ttname"><a href="nfc_8hpp.html#afd61e7c2f20b3d396c0e4177b5599079">m5::nfc::is_file_system_ISO</a></div><div class="ttdeci">bool is_file_system_ISO(const file_system_feature_t fsf)</div><div class="ttdoc">Has ISO 7816-4 file system feature?</div><div class="ttdef"><b>Definition</b> nfc.hpp:94</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
