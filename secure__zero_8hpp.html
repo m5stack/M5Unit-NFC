@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.2 git rev:864e58d</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
    </div>
   </td>
  </tr>
@@ -112,18 +112,57 @@ $(function(){initNavTree('secure__zero_8hpp.html',''); initResizable(true); });
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacem5.html">m5</a></td></tr>
-<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5stack. <br /></td></tr>
+<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5Stack. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a49c85795bce3d3773c16611b54d703b8" id="r_a49c85795bce3d3773c16611b54d703b8"><td class="memItemLeft" align="right" valign="top"><a id="a49c85795bce3d3773c16611b54d703b8" name="a49c85795bce3d3773c16611b54d703b8"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::crypto::secure_zero</b> (void *p, const size_t n)</td></tr>
+<tr class="memitem:a49c85795bce3d3773c16611b54d703b8" id="r_a49c85795bce3d3773c16611b54d703b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a49c85795bce3d3773c16611b54d703b8">m5::nfc::crypto::secure_zero</a> (void *p, const size_t n)</td></tr>
+<tr class="memdesc:a49c85795bce3d3773c16611b54d703b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Securely wipe a memory region (volatile-safe; not optimized away)  <br /></td></tr>
 <tr class="separator:a49c85795bce3d3773c16611b54d703b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Secure memory wipe helpers. </p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Function Documentation</h2>
+<a id="a49c85795bce3d3773c16611b54d703b8" name="a49c85795bce3d3773c16611b54d703b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49c85795bce3d3773c16611b54d703b8">&#9670;&#160;</a></span>secure_zero()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void m5::nfc::crypto::secure_zero </td>
+          <td>(</td>
+          <td class="paramtype">void *</td>          <td class="paramname"><span class="paramname"><em>p</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Securely wipe a memory region (volatile-safe; not optimized away) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">p</td><td>Pointer to memory to wipe </td></tr>
+    <tr><td class="paramname">n</td><td>Number of bytes to wipe </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

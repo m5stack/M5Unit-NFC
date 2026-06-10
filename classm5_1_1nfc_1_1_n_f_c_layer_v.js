@@ -1,5 +1,7 @@
 var classm5_1_1nfc_1_1_n_f_c_layer_v =
 [
+    [ "NFCLayerV", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#adbaf2b94318fe72160c29d39f8152a78", null ],
+    [ "NFCLayerV", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#abe50cdfb8a0ccb75b7e3499477636e18", null ],
     [ "activate", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#aaddc0e4e632f6991267ffdffe68913f2", null ],
     [ "activatedPICC", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ad967723ec85d3aab6e535348aac36995", null ],
     [ "deactivate", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a5afa6b43399feb102a08f80f8d767b91", null ],
@@ -11,6 +13,7 @@ var classm5_1_1nfc_1_1_n_f_c_layer_v =
     [ "isActive", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#af49881f7956101a57692b9c4a28b61ef", null ],
     [ "last_user_block", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a14c86c20699947d6b66b7d039ba87d0f", null ],
     [ "maximum_fifo_depth", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ac5bc6049f86f77f97fd363a096be8800", null ],
+    [ "modulationMode", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ae7f584c79f797284d9d6b316110ecd4f", null ],
     [ "ndefIsValidFormat", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a2a850165ceb42a91169fac1b6aaef55c", null ],
     [ "ndefRead", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a70860961bacb0e5b48af02f58600d3af", null ],
     [ "ndefReadCapabilityContainer", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a520d660f41006af09c2475652df9a2fe", null ],
@@ -20,9 +23,10 @@ var classm5_1_1nfc_1_1_n_f_c_layer_v =
     [ "reactivate", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#aa891ec87b5e896fef8806e5b8783022d", null ],
     [ "read", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a4e8459bbef08fd87a6b7baff52ac4f00", null ],
     [ "readBlock", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#aa7871ddea482ddf11320d89268a40877", null ],
+    [ "setModulationMode", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#abfaee79e97af01d498366772518ea90e", null ],
     [ "unit_size_read", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ac9c6c45e5861251841cda8b80479aaf5", null ],
     [ "unit_size_write", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a49d0f37b6e33138a43ea3160bb757382", null ],
-    [ "user_area_size", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a47fa999d2496dbfe1477966e0c878fc8", null ],
+    [ "user_area_size", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a37c5e421c06cd01cfec6d7d7f7cfb203", null ],
     [ "write", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#ab7f845ecfb606ad7b55b6e1a450e0ba4", null ],
     [ "writeBlock", "classm5_1_1nfc_1_1_n_f_c_layer_v.html#a92f5e3d2cbd0001320b3ac25203d7101", null ]
 ];

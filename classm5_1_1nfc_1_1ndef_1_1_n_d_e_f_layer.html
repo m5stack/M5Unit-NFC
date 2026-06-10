@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.2 git rev:864e58d</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
    </div>
   </td>
  </tr>
@@ -193,11 +193,11 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>write_type5</b> (cons
 std::vector&lt; <a class="el" href="classm5_1_1nfc_1_1ndef_1_1_t_l_v.html">m5::nfc::ndef::TLV</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>merge_tlv</b> (std::vector&lt; <a class="el" href="classm5_1_1nfc_1_1ndef_1_1_t_l_v.html">m5::nfc::ndef::TLV</a> &gt; &amp;old_tlvs, const std::vector&lt; <a class="el" href="classm5_1_1nfc_1_1ndef_1_1_t_l_v.html">m5::nfc::ndef::TLV</a> &gt; &amp;tlvs)</td></tr>
 <tr class="separator:ade035e38fcd934fec05b34c6d041a4f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">Byte-level access helpers for NFC-V (Type5)</div></td></tr>
-<tr class="memitem:a1b87db303260ea4eecda8da79d947222" id="r_a1b87db303260ea4eecda8da79d947222"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1b87db303260ea4eecda8da79d947222">read_nfcv</a> (uint8_t *rx, const uint16_t offset, const uint16_t len)</td></tr>
-<tr class="memdesc:a1b87db303260ea4eecda8da79d947222"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read bytes from arbitrary byte offset (for NFC-V)  <br /></td></tr>
+<tr class="memitem:a1b87db303260ea4eecda8da79d947222" id="r_a1b87db303260ea4eecda8da79d947222"><td class="memItemLeft" align="right" valign="top"><a id="a1b87db303260ea4eecda8da79d947222" name="a1b87db303260ea4eecda8da79d947222"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>read_nfcv</b> (uint8_t *rx, const uint16_t offset, const uint16_t len)</td></tr>
 <tr class="separator:a1b87db303260ea4eecda8da79d947222"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5332d964b6e308fef3007629e1be272a" id="r_a5332d964b6e308fef3007629e1be272a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5332d964b6e308fef3007629e1be272a">write_nfcv</a> (const uint16_t offset, const uint8_t *tx, const uint16_t len)</td></tr>
-<tr class="memdesc:a5332d964b6e308fef3007629e1be272a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write bytes to arbitrary byte offset (for NFC-V)  <br /></td></tr>
+<tr class="memitem:a5332d964b6e308fef3007629e1be272a" id="r_a5332d964b6e308fef3007629e1be272a"><td class="memItemLeft" align="right" valign="top"><a id="a5332d964b6e308fef3007629e1be272a" name="a5332d964b6e308fef3007629e1be272a"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>write_nfcv</b> (const uint16_t offset, const uint8_t *tx, const uint16_t len)</td></tr>
 <tr class="separator:a5332d964b6e308fef3007629e1be272a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -310,51 +310,6 @@ std::vector&lt; <a class="el" href="classm5_1_1nfc_1_1ndef_1_1_t_l_v.html">m5::n
     <tr><td class="paramdir"></td><td class="paramname">ftag</td><td>NFC Forum Tag type </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">tlvs</td><td>Output TLVs </td></tr>
     <tr><td class="paramdir"></td><td class="paramname">tagBits</td><td>Target <a class="el" href="classm5_1_1nfc_1_1ndef_1_1_t_l_v.html" title="NDEF TLV container.">TLV</a> tags </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
-
-</div>
-</div>
-<a id="a1b87db303260ea4eecda8da79d947222" name="a1b87db303260ea4eecda8da79d947222"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1b87db303260ea4eecda8da79d947222">&#9670;&#160;</a></span>read_nfcv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::ndef::NDEFLayer::read_nfcv </td>
-          <td>(</td>
-          <td class="paramtype">uint8_t *</td>          <td class="paramname"><span class="paramname"><em>rx</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>offset</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>len</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Read bytes from arbitrary byte offset (for NFC-V) </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[out]</td><td class="paramname">rx</td><td>Output buffer </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">offset</td><td>Byte offset from start of user area </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">len</td><td>Number of bytes to read </td></tr>
   </table>
   </dd>
 </dl>
@@ -501,52 +456,6 @@ std::vector&lt; <a class="el" href="classm5_1_1nfc_1_1ndef_1_1_t_l_v.html">m5::n
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>The message will be overwritten </dd></dl>
-
-</div>
-</div>
-<a id="a5332d964b6e308fef3007629e1be272a" name="a5332d964b6e308fef3007629e1be272a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5332d964b6e308fef3007629e1be272a">&#9670;&#160;</a></span>write_nfcv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::ndef::NDEFLayer::write_nfcv </td>
-          <td>(</td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>offset</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>tx</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>len</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Write bytes to arbitrary byte offset (for NFC-V) </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">offset</td><td>Byte offset from start of user area </td></tr>
-    <tr><td class="paramname">tx</td><td>Input buffer </td></tr>
-    <tr><td class="paramname">len</td><td>Number of bytes to write </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
-<dl class="section note"><dt>Note</dt><dd>Performs read-modify-write for partial block writes </dd></dl>
 
 </div>
 </div>

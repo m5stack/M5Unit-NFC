@@ -1,7 +1,13 @@
 var classm5_1_1nfc_1_1_n_f_c_layer_a =
 [
+    [ "NFCLayerA", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a1b8e69b20db511e7d6d831503777cfff", null ],
+    [ "NFCLayerA", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a86792505a7bff3da3d754ea58e297e9c", null ],
+    [ "NFCLayerA", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a2a718632ff97ffe7a281c3e5b07e65f9", null ],
+    [ "NFCLayerA", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#aab2ac769990a29e12b9258026060a7d1", null ],
     [ "activate", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a48ebe154a123b7213cb9783b6b0d24dd", null ],
     [ "activatedPICC", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a88b5213b7feafcec4c5e0e12d53d1a8c", null ],
+    [ "config", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#aac8cf4d6ac235976aec081213a19932b", null ],
+    [ "config", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a92ba88b2b1107d8b1a1e780faab0dcab", null ],
     [ "deactivate", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#ac1bb18ba571351953246a97168e30c79", null ],
     [ "detect", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a1b671840e2fce10e1d7a800fe084e2ab", null ],
     [ "detect", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a69c8817ff9ebea44fcb39aca0217c990", null ],
@@ -50,7 +56,7 @@ var classm5_1_1nfc_1_1_n_f_c_layer_a =
     [ "transceive", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#af922fdf273e872f865fb78312796393b", null ],
     [ "unit_size_read", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#aa249c4d6c5425dbf0f79ae9d29be3540", null ],
     [ "unit_size_write", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#ad24a58b5b02a26316e0c14bda504e243", null ],
-    [ "user_area_size", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a569a7bfed33c5202acacb045b39519a2", null ],
+    [ "user_area_size", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#ae24b54a5770ba79c8e5e6589369ac398", null ],
     [ "wakeup", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#af0ee18fb7743f541ce135af87c950275", null ],
     [ "write", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a3c982e97ad6b66ffb9aa6f685e3f7869", null ],
     [ "write", "classm5_1_1nfc_1_1_n_f_c_layer_a.html#a5940b86e65b0fad0af0a04378b3e27d2", null ],

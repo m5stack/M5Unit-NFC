@@ -5,7 +5,7 @@ var annotated_dup =
         [ "a", null, [
           [ "mifare", null, [
             [ "classic", null, [
-              [ "Crypto1", "classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html", null ]
+              [ "Crypto1", "classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html", "classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1" ]
             ] ],
             [ "desfire", null, [
               [ "desfire_aid_t", "structm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1desfire__aid__t.html", null ],
@@ -17,9 +17,10 @@ var annotated_dup =
             ] ]
           ] ],
           [ "st25ta", null, [
-            [ "SystemFile", "structm5_1_1nfc_1_1a_1_1st25ta_1_1_system_file.html", null ]
+            [ "SystemFile", "structm5_1_1nfc_1_1a_1_1st25ta_1_1_system_file.html", "structm5_1_1nfc_1_1a_1_1st25ta_1_1_system_file" ]
           ] ],
           [ "ATS", "structm5_1_1nfc_1_1a_1_1_a_t_s.html", "structm5_1_1nfc_1_1a_1_1_a_t_s" ],
+          [ "config_t", "structm5_1_1nfc_1_1a_1_1config__t.html", "structm5_1_1nfc_1_1a_1_1config__t" ],
           [ "PICC", "structm5_1_1nfc_1_1a_1_1_p_i_c_c.html", "structm5_1_1nfc_1_1a_1_1_p_i_c_c" ]
         ] ],
         [ "apdu", null, [
@@ -34,8 +35,9 @@ var annotated_dup =
           [ "REG", "unionm5_1_1nfc_1_1f_1_1_r_e_g.html", "unionm5_1_1nfc_1_1f_1_1_r_e_g" ]
         ] ],
         [ "isodep", null, [
-          [ "config_t", "structm5_1_1nfc_1_1isodep_1_1config__t.html", null ],
+          [ "config_t", "structm5_1_1nfc_1_1isodep_1_1config__t.html", "structm5_1_1nfc_1_1isodep_1_1config__t" ],
           [ "IsoDEP", "classm5_1_1nfc_1_1isodep_1_1_iso_d_e_p.html", "classm5_1_1nfc_1_1isodep_1_1_iso_d_e_p" ],
+          [ "policy_t", "structm5_1_1nfc_1_1isodep_1_1policy__t.html", "structm5_1_1nfc_1_1isodep_1_1policy__t" ],
           [ "RxInfo", "structm5_1_1nfc_1_1isodep_1_1_rx_info.html", null ]
         ] ],
         [ "ndef", null, [
@@ -52,7 +54,7 @@ var annotated_dup =
           [ "type5", null, [
             [ "CapabilityContainer", "structm5_1_1nfc_1_1ndef_1_1type5_1_1_capability_container.html", null ]
           ] ],
-          [ "Attribute", "structm5_1_1nfc_1_1ndef_1_1_attribute.html", null ],
+          [ "Attribute", "structm5_1_1nfc_1_1ndef_1_1_attribute.html", "structm5_1_1nfc_1_1ndef_1_1_attribute" ],
           [ "NDEFLayer", "classm5_1_1nfc_1_1ndef_1_1_n_d_e_f_layer.html", "classm5_1_1nfc_1_1ndef_1_1_n_d_e_f_layer" ],
           [ "Record", "classm5_1_1nfc_1_1ndef_1_1_record.html", "classm5_1_1nfc_1_1ndef_1_1_record" ],
           [ "TLV", "classm5_1_1nfc_1_1ndef_1_1_t_l_v.html", "classm5_1_1nfc_1_1ndef_1_1_t_l_v" ]
@@ -69,7 +71,7 @@ var annotated_dup =
         [ "FileSystem", "classm5_1_1nfc_1_1_file_system.html", "classm5_1_1nfc_1_1_file_system" ],
         [ "ListenerST25R3916ForA", "structm5_1_1nfc_1_1_listener_s_t25_r3916_for_a.html", "structm5_1_1nfc_1_1_listener_s_t25_r3916_for_a" ],
         [ "ListenerST25R3916ForF", "structm5_1_1nfc_1_1_listener_s_t25_r3916_for_f.html", "structm5_1_1nfc_1_1_listener_s_t25_r3916_for_f" ],
-        [ "NFCBFileSystem", "classm5_1_1nfc_1_1_n_f_c_b_file_system.html", null ],
+        [ "NFCBFileSystem", "classm5_1_1nfc_1_1_n_f_c_b_file_system.html", "classm5_1_1nfc_1_1_n_f_c_b_file_system" ],
         [ "NFCLayerA", "classm5_1_1nfc_1_1_n_f_c_layer_a.html", "classm5_1_1nfc_1_1_n_f_c_layer_a" ],
         [ "NFCLayerB", "classm5_1_1nfc_1_1_n_f_c_layer_b.html", "classm5_1_1nfc_1_1_n_f_c_layer_b" ],
         [ "NFCLayerF", "classm5_1_1nfc_1_1_n_f_c_layer_f.html", "classm5_1_1nfc_1_1_n_f_c_layer_f" ],
@@ -78,7 +80,7 @@ var annotated_dup =
         [ "PollerST25R3916ForA", "structm5_1_1nfc_1_1_poller_s_t25_r3916_for_a.html", null ]
       ] ],
       [ "unit", null, [
-        [ "CapST25R3916", "classm5_1_1unit_1_1_cap_s_t25_r3916.html", null ],
+        [ "CapST25R3916", "classm5_1_1unit_1_1_cap_s_t25_r3916.html", "classm5_1_1unit_1_1_cap_s_t25_r3916" ],
         [ "UnitST25R3916", "classm5_1_1unit_1_1_unit_s_t25_r3916.html", "classm5_1_1unit_1_1_unit_s_t25_r3916" ]
       ] ]
     ] ]

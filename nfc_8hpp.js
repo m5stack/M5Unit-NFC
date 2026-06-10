@@ -23,6 +23,12 @@ var nfc_8hpp =
       [ "Type4", "nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1a17bc479530517e70b6ce6639d64c9b6b", null ],
       [ "Type5", "nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1a5d05e9889bd18763a956959c86940a23", null ]
     ] ],
+    [ "is_file_system_desfire", "nfc_8hpp.html#a60262c927120b869d91d47b0baa2d046", null ],
+    [ "is_file_system_desfire_light", "nfc_8hpp.html#a24fd8e5aa492ee91c14994e00fe5f0ab", null ],
+    [ "is_file_system_desfire_normal", "nfc_8hpp.html#a96d475444beefb0fecd201b132542685", null ],
+    [ "is_file_system_file", "nfc_8hpp.html#a2c724f427aa2cc607b77ead2d7d78bdb", null ],
+    [ "is_file_system_ISO", "nfc_8hpp.html#afd61e7c2f20b3d396c0e4177b5599079", null ],
+    [ "is_file_system_memory", "nfc_8hpp.html#ad754a66e71bfd266a889b4e772a77575", null ],
     [ "FILE_SYSTEM_DESFIRE", "nfc_8hpp.html#a45cad45fa6d286a94cbe7e38db122ed7", null ],
     [ "FILE_SYSTEM_DESFIRE_LIGHT", "nfc_8hpp.html#a7913c5e5556d7531d8b333650eb08f23", null ],
     [ "FILE_SYSTEM_FLAT_MEMORY", "nfc_8hpp.html#a395e5c24db3d02f0637dd68801151b5a", null ],

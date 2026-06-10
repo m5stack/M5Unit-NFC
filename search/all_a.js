@@ -7,10 +7,12 @@ var searchData=
   ['legic_4',['Legic',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a8e1dad2094b9d0f7df48aed4f7423a29',1,'m5::nfc']]],
   ['len_5',['len',['../structm5_1_1nfc_1_1apdu_1_1_t_l_v.html#a23282914a0c23b080895fb06291de1aa',1,'m5::nfc::apdu::TLV::len'],['../structm5_1_1nfc_1_1ndef_1_1type4_1_1_file_control_t_l_v.html#a82f1b76ce19c48b20b426d9ccd88145d',1,'m5::nfc::ndef::type4::FileControlTLV::len']]],
   ['lg_6',['LG',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a3138b8e6061fdf7cfaaa79279175cbcd',1,'m5::nfc']]],
-  ['list_7',['Todo List',['../todo.html',1,'']]],
+  ['list_7',['List',['../deprecated.html',1,'Deprecated List'],['../todo.html',1,'Todo List']]],
   ['listenerst25r3916fora_8',['ListenerST25R3916ForA',['../structm5_1_1nfc_1_1_listener_s_t25_r3916_for_a.html',1,'m5::nfc']]],
   ['listenerst25r3916forf_9',['ListenerST25R3916ForF',['../structm5_1_1nfc_1_1_listener_s_t25_r3916_for_f.html',1,'m5::nfc']]],
-  ['lock_5fsig_10',['LOCK_SIG',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90aca229bbf49bdf5d7f5e0e759e078b11984',1,'m5::nfc::a']]],
-  ['lockcontrol_11',['LockControl',['../ndef_8hpp.html#ace18f3439d147659696eec175e13e03aa48c38339a630d01cabdda99ea58ea368',1,'m5::nfc::ndef']]],
-  ['lsitec_12',['LsiTec',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a9b9abf8402a7357bfc8a4972855eb0c1',1,'m5::nfc']]]
+  ['lite_10',['lite',['../namespacelite.html',1,'']]],
+  ['lite_5fs_11',['lite_s',['../namespacelite__s.html',1,'']]],
+  ['lock_5fsig_12',['LOCK_SIG',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90aca229bbf49bdf5d7f5e0e759e078b11984',1,'m5::nfc::a']]],
+  ['lockcontrol_13',['LockControl',['../ndef_8hpp.html#ace18f3439d147659696eec175e13e03aa48c38339a630d01cabdda99ea58ea368',1,'m5::nfc::ndef']]],
+  ['lsitec_14',['LsiTec',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52a9b9abf8402a7357bfc8a4972855eb0c1',1,'m5::nfc']]]
 ];

@@ -2,7 +2,7 @@ var searchData=
 [
   ['v_0',['V',['../nfc_8hpp.html#a5e5f58799f82b1611c0309f953cc2c6fa5206560a306a2e085a437fd258eb57ce',1,'m5::nfc']]],
   ['v_1',['v',['../namespacev.html',1,'v'],['../structm5_1_1nfc_1_1apdu_1_1_t_l_v.html#a62f5cacf0a1d57d2e0b0f5c328755697',1,'m5::nfc::apdu::TLV::v']]],
-  ['valid_2',['valid',['../structm5_1_1nfc_1_1a_1_1_p_i_c_c.html#a6332d499b3dd5c2c5c1d2bc8e4ae812b',1,'m5::nfc::a::PICC::valid()'],['../structm5_1_1nfc_1_1b_1_1_p_i_c_c.html#a67d3842dce9b225cafb7d89e712ddc25',1,'m5::nfc::b::PICC::valid()'],['../structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#af69afa2b56967446faeeec15e9785f3a',1,'m5::nfc::f::PICC::valid() const']]],
+  ['valid_2',['valid',['../structm5_1_1nfc_1_1a_1_1_p_i_c_c.html#a6332d499b3dd5c2c5c1d2bc8e4ae812b',1,'m5::nfc::a::PICC::valid()'],['../structm5_1_1nfc_1_1b_1_1_p_i_c_c.html#a67d3842dce9b225cafb7d89e712ddc25',1,'m5::nfc::b::PICC::valid()'],['../structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#af69afa2b56967446faeeec15e9785f3a',1,'m5::nfc::f::PICC::valid()'],['../structm5_1_1nfc_1_1v_1_1_p_i_c_c.html#a7eaf3275f38b9d1afd90fb80e80290ec',1,'m5::nfc::v::PICC::valid()']]],
   ['validemulation_3',['validEmulation',['../structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a38bab55d286773192148fd6d21cfb42b',1,'m5::nfc::f::PICC']]],
   ['value_5fblock_5fnon_5frechargeable_4',['VALUE_BLOCK_NON_RECHARGEABLE',['../mifare_8hpp.html#a30a1c1073fca2491088351e917667d0e',1,'m5::nfc::a::mifare::classic']]],
   ['value_5fblock_5frechargeable_5',['VALUE_BLOCK_RECHARGEABLE',['../mifare_8hpp.html#a0f1353490d06daa12f2cfd17a693eaba',1,'m5::nfc::a::mifare::classic']]],

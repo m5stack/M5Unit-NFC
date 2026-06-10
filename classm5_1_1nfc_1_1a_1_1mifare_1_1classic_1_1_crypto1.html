@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.2 git rev:864e58d</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
    </div>
   </td>
  </tr>
@@ -118,47 +118,51 @@ Inheritance diagram for m5::nfc::a::mifare::classic::Crypto1:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a3f71947afe964d4de7c4626427c009d3" id="r_a3f71947afe964d4de7c4626427c009d3"><td class="memItemLeft" align="right" valign="top"><a id="a3f71947afe964d4de7c4626427c009d3" name="a3f71947afe964d4de7c4626427c009d3"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Crypto1</b> (const uint64_t key48) noexcept</td></tr>
+<tr class="memitem:a33be914c45360d87c9d352630cb6076c" id="r_a33be914c45360d87c9d352630cb6076c"><td class="memItemLeft" align="right" valign="top"><a id="a33be914c45360d87c9d352630cb6076c" name="a33be914c45360d87c9d352630cb6076c"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Crypto1</b> () noexcept</td></tr>
+<tr class="memdesc:a33be914c45360d87c9d352630cb6076c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default ctor (zero-initialized state) <br /></td></tr>
+<tr class="separator:a33be914c45360d87c9d352630cb6076c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f71947afe964d4de7c4626427c009d3" id="r_a3f71947afe964d4de7c4626427c009d3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a3f71947afe964d4de7c4626427c009d3">Crypto1</a> (const uint64_t key48) noexcept</td></tr>
+<tr class="memdesc:a3f71947afe964d4de7c4626427c009d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct with 48-bit key.  <br /></td></tr>
 <tr class="separator:a3f71947afe964d4de7c4626427c009d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb237e6a9a5749d7596ded922f32acf6" id="r_aeb237e6a9a5749d7596ded922f32acf6"><td class="memItemLeft" align="right" valign="top"><a id="aeb237e6a9a5749d7596ded922f32acf6" name="aeb237e6a9a5749d7596ded922f32acf6"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const uint64_t key48) noexcept</td></tr>
+<tr class="memitem:aeb237e6a9a5749d7596ded922f32acf6" id="r_aeb237e6a9a5749d7596ded922f32acf6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aeb237e6a9a5749d7596ded922f32acf6">init</a> (const uint64_t key48) noexcept</td></tr>
+<tr class="memdesc:aeb237e6a9a5749d7596ded922f32acf6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize with 48-bit key.  <br /></td></tr>
 <tr class="separator:aeb237e6a9a5749d7596ded922f32acf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2719252a51478901b14e790d61f1df3c" id="r_a2719252a51478901b14e790d61f1df3c"><td class="memItemLeft" align="right" valign="top"><a id="a2719252a51478901b14e790d61f1df3c" name="a2719252a51478901b14e790d61f1df3c"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>inject</b> (uint32_t uid, uint32_t Nt, const bool encrypted=false) noexcept</td></tr>
+<tr class="memitem:a2719252a51478901b14e790d61f1df3c" id="r_a2719252a51478901b14e790d61f1df3c"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2719252a51478901b14e790d61f1df3c">inject</a> (uint32_t uid, uint32_t Nt, const bool encrypted=false) noexcept</td></tr>
+<tr class="memdesc:a2719252a51478901b14e790d61f1df3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inject UID and card nonce into the cipher state.  <br /></td></tr>
 <tr class="separator:a2719252a51478901b14e790d61f1df3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a39aa69e90283716cc5ad8b3ba24e2f6a" id="r_a39aa69e90283716cc5ad8b3ba24e2f6a"><td class="memItemLeft" align="right" valign="top"><a id="a39aa69e90283716cc5ad8b3ba24e2f6a" name="a39aa69e90283716cc5ad8b3ba24e2f6a"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>step_with</b> (const bool in, const bool enc=false) noexcept</td></tr>
+<tr class="memitem:a39aa69e90283716cc5ad8b3ba24e2f6a" id="r_a39aa69e90283716cc5ad8b3ba24e2f6a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a39aa69e90283716cc5ad8b3ba24e2f6a">step_with</a> (const bool in, const bool enc=false) noexcept</td></tr>
+<tr class="memdesc:a39aa69e90283716cc5ad8b3ba24e2f6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Step the cipher with one input bit.  <br /></td></tr>
 <tr class="separator:a39aa69e90283716cc5ad8b3ba24e2f6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a554e88c51ef12f286615de8a264b7d2e" id="r_a554e88c51ef12f286615de8a264b7d2e"><td class="memItemLeft" align="right" valign="top"><a id="a554e88c51ef12f286615de8a264b7d2e" name="a554e88c51ef12f286615de8a264b7d2e"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>step8</b> (const uint8_t in, const bool enc=false) noexcept</td></tr>
+<tr class="memitem:a554e88c51ef12f286615de8a264b7d2e" id="r_a554e88c51ef12f286615de8a264b7d2e"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a554e88c51ef12f286615de8a264b7d2e">step8</a> (const uint8_t in, const bool enc=false) noexcept</td></tr>
+<tr class="memdesc:a554e88c51ef12f286615de8a264b7d2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Step the cipher with 8 input bits.  <br /></td></tr>
 <tr class="separator:a554e88c51ef12f286615de8a264b7d2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ad487c4a2dd0720e77248b965fb43b2" id="r_a3ad487c4a2dd0720e77248b965fb43b2"><td class="memItemLeft" align="right" valign="top"><a id="a3ad487c4a2dd0720e77248b965fb43b2" name="a3ad487c4a2dd0720e77248b965fb43b2"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>step32</b> (const uint32_t in, const bool enc=false) noexcept</td></tr>
+<tr class="memitem:a3ad487c4a2dd0720e77248b965fb43b2" id="r_a3ad487c4a2dd0720e77248b965fb43b2"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a3ad487c4a2dd0720e77248b965fb43b2">step32</a> (const uint32_t in, const bool enc=false) noexcept</td></tr>
+<tr class="memdesc:a3ad487c4a2dd0720e77248b965fb43b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Step the cipher with 32 input bits.  <br /></td></tr>
 <tr class="separator:a3ad487c4a2dd0720e77248b965fb43b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1b5b046783cb652c5ff15f64b5a1373" id="r_af1b5b046783cb652c5ff15f64b5a1373"><td class="memItemLeft" align="right" valign="top"><a id="af1b5b046783cb652c5ff15f64b5a1373" name="af1b5b046783cb652c5ff15f64b5a1373"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>encrypt</b> (uint8_t buf[8], const uint32_t Nr, const uint32_t Ar) noexcept</td></tr>
+<tr class="memitem:af1b5b046783cb652c5ff15f64b5a1373" id="r_af1b5b046783cb652c5ff15f64b5a1373"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af1b5b046783cb652c5ff15f64b5a1373">encrypt</a> (uint8_t buf[8], const uint32_t Nr, const uint32_t Ar) noexcept</td></tr>
+<tr class="memdesc:af1b5b046783cb652c5ff15f64b5a1373"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encrypt reader nonce and authenticator response.  <br /></td></tr>
 <tr class="separator:af1b5b046783cb652c5ff15f64b5a1373"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1348efa59a9a9616782567d80b305148" id="r_a1348efa59a9a9616782567d80b305148"><td class="memItemLeft" align="right" valign="top"><a id="a1348efa59a9a9616782567d80b305148" name="a1348efa59a9a9616782567d80b305148"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>encrypt</b> (uint8_t *out, const uint8_t *in, const uint8_t in_len)</td></tr>
+<tr class="memitem:a1348efa59a9a9616782567d80b305148" id="r_a1348efa59a9a9616782567d80b305148"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1348efa59a9a9616782567d80b305148">encrypt</a> (uint8_t *out, const uint8_t *in, const uint8_t in_len)</td></tr>
+<tr class="memdesc:a1348efa59a9a9616782567d80b305148"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encrypt a byte buffer.  <br /></td></tr>
 <tr class="separator:a1348efa59a9a9616782567d80b305148"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8f0d090472279c7614fbfae552e299e6" id="r_a8f0d090472279c7614fbfae552e299e6"><td class="memItemLeft" align="right" valign="top"><a id="a8f0d090472279c7614fbfae552e299e6" name="a8f0d090472279c7614fbfae552e299e6"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>filter</b> () const noexcept</td></tr>
+<tr class="memitem:a8f0d090472279c7614fbfae552e299e6" id="r_a8f0d090472279c7614fbfae552e299e6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8f0d090472279c7614fbfae552e299e6">filter</a> () const noexcept</td></tr>
+<tr class="memdesc:a8f0d090472279c7614fbfae552e299e6"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html" title="Crypto1 for MIFARE Classic.">Crypto1</a> nonlinear filter.  <br /></td></tr>
 <tr class="separator:a8f0d090472279c7614fbfae552e299e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:ae927c51b787c625bf48e574c8c0c17ec" id="r_ae927c51b787c625bf48e574c8c0c17ec"><td class="memItemLeft" align="right" valign="top"><a id="ae927c51b787c625bf48e574c8c0c17ec" name="ae927c51b787c625bf48e574c8c0c17ec"></a>
-static uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>oddparity8</b> (uint8_t x) noexcept</td></tr>
+<tr class="memitem:ae927c51b787c625bf48e574c8c0c17ec" id="r_ae927c51b787c625bf48e574c8c0c17ec"><td class="memItemLeft" align="right" valign="top">static uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae927c51b787c625bf48e574c8c0c17ec">oddparity8</a> (uint8_t x) noexcept</td></tr>
+<tr class="memdesc:ae927c51b787c625bf48e574c8c0c17ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate odd parity for one byte.  <br /></td></tr>
 <tr class="separator:ae927c51b787c625bf48e574c8c0c17ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe90bdd3313dec692b10abc38c58edb1" id="r_abe90bdd3313dec692b10abc38c58edb1"><td class="memItemLeft" align="right" valign="top"><a id="abe90bdd3313dec692b10abc38c58edb1" name="abe90bdd3313dec692b10abc38c58edb1"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>fa</b> (bool a, bool b, bool c, bool d) noexcept</td></tr>
+<tr class="memitem:abe90bdd3313dec692b10abc38c58edb1" id="r_abe90bdd3313dec692b10abc38c58edb1"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#abe90bdd3313dec692b10abc38c58edb1">fa</a> (bool a, bool b, bool c, bool d) noexcept</td></tr>
+<tr class="memdesc:abe90bdd3313dec692b10abc38c58edb1"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html" title="Crypto1 for MIFARE Classic.">Crypto1</a> filter helper A.  <br /></td></tr>
 <tr class="separator:abe90bdd3313dec692b10abc38c58edb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3cb4d70fedc4ec8b451a40d5547d837d" id="r_a3cb4d70fedc4ec8b451a40d5547d837d"><td class="memItemLeft" align="right" valign="top"><a id="a3cb4d70fedc4ec8b451a40d5547d837d" name="a3cb4d70fedc4ec8b451a40d5547d837d"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>fb</b> (bool a, bool b, bool c, bool d) noexcept</td></tr>
+<tr class="memitem:a3cb4d70fedc4ec8b451a40d5547d837d" id="r_a3cb4d70fedc4ec8b451a40d5547d837d"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a3cb4d70fedc4ec8b451a40d5547d837d">fb</a> (bool a, bool b, bool c, bool d) noexcept</td></tr>
+<tr class="memdesc:a3cb4d70fedc4ec8b451a40d5547d837d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html" title="Crypto1 for MIFARE Classic.">Crypto1</a> filter helper B.  <br /></td></tr>
 <tr class="separator:a3cb4d70fedc4ec8b451a40d5547d837d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a271f2736b92caf883416e38b53cbc897" id="r_a271f2736b92caf883416e38b53cbc897"><td class="memItemLeft" align="right" valign="top"><a id="a271f2736b92caf883416e38b53cbc897" name="a271f2736b92caf883416e38b53cbc897"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>fc</b> (bool a, bool b, bool c, bool d, bool e) noexcept</td></tr>
+<tr class="memitem:a271f2736b92caf883416e38b53cbc897" id="r_a271f2736b92caf883416e38b53cbc897"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a271f2736b92caf883416e38b53cbc897">fc</a> (bool a, bool b, bool c, bool d, bool e) noexcept</td></tr>
+<tr class="memdesc:a271f2736b92caf883416e38b53cbc897"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html" title="Crypto1 for MIFARE Classic.">Crypto1</a> filter helper C.  <br /></td></tr>
 <tr class="separator:a271f2736b92caf883416e38b53cbc897"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
@@ -169,7 +173,548 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>_count</b> {}</td
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p><a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html" title="Crypto1 for MIFARE Classic.">Crypto1</a> for MIFARE Classic. </p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a3f71947afe964d4de7c4626427c009d3" name="a3f71947afe964d4de7c4626427c009d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f71947afe964d4de7c4626427c009d3">&#9670;&#160;</a></span>Crypto1()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">m5::nfc::a::mifare::classic::Crypto1::Crypto1 </td>
+          <td>(</td>
+          <td class="paramtype">const uint64_t</td>          <td class="paramname"><span class="paramname"><em>key48</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">explicit</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Construct with 48-bit key. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">key48</td><td>48-bit MIFARE Classic key </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a1348efa59a9a9616782567d80b305148" name="a1348efa59a9a9616782567d80b305148"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1348efa59a9a9616782567d80b305148">&#9670;&#160;</a></span>encrypt() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t m5::nfc::a::mifare::classic::Crypto1::encrypt </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t *</td>          <td class="paramname"><span class="paramname"><em>out</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>in</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>in_len</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Encrypt a byte buffer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">out</td><td>Output buffer </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">in</td><td>Input buffer </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">in_len</td><td>Input length, up to 32 bytes </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Packed parity bits for the encrypted bytes </dd></dl>
+
+</div>
+</div>
+<a id="af1b5b046783cb652c5ff15f64b5a1373" name="af1b5b046783cb652c5ff15f64b5a1373"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1b5b046783cb652c5ff15f64b5a1373">&#9670;&#160;</a></span>encrypt() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t m5::nfc::a::mifare::classic::Crypto1::encrypt </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>buf</em></span>[8], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>Nr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>Ar</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Encrypt reader nonce and authenticator response. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">buf</td><td>Output buffer at least 8 bytes </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">Nr</td><td>Reader nonce </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">Ar</td><td>Reader authenticator </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Packed parity bits for the encrypted bytes </dd></dl>
+
+</div>
+</div>
+<a id="abe90bdd3313dec692b10abc38c58edb1" name="abe90bdd3313dec692b10abc38c58edb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe90bdd3313dec692b10abc38c58edb1">&#9670;&#160;</a></span>fa()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static bool m5::nfc::a::mifare::classic::Crypto1::fa </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>b</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>c</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>d</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html" title="Crypto1 for MIFARE Classic.">Crypto1</a> filter helper A. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>Input bit a </td></tr>
+    <tr><td class="paramname">b</td><td>Input bit b </td></tr>
+    <tr><td class="paramname">c</td><td>Input bit c </td></tr>
+    <tr><td class="paramname">d</td><td>Input bit d </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Filter helper result </dd></dl>
+
+</div>
+</div>
+<a id="a3cb4d70fedc4ec8b451a40d5547d837d" name="a3cb4d70fedc4ec8b451a40d5547d837d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3cb4d70fedc4ec8b451a40d5547d837d">&#9670;&#160;</a></span>fb()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static bool m5::nfc::a::mifare::classic::Crypto1::fb </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>b</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>c</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>d</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html" title="Crypto1 for MIFARE Classic.">Crypto1</a> filter helper B. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>Input bit a </td></tr>
+    <tr><td class="paramname">b</td><td>Input bit b </td></tr>
+    <tr><td class="paramname">c</td><td>Input bit c </td></tr>
+    <tr><td class="paramname">d</td><td>Input bit d </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Filter helper result </dd></dl>
+
+</div>
+</div>
+<a id="a271f2736b92caf883416e38b53cbc897" name="a271f2736b92caf883416e38b53cbc897"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a271f2736b92caf883416e38b53cbc897">&#9670;&#160;</a></span>fc()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static bool m5::nfc::a::mifare::classic::Crypto1::fc </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>b</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>c</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>d</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>e</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html" title="Crypto1 for MIFARE Classic.">Crypto1</a> filter helper C. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>Input bit a </td></tr>
+    <tr><td class="paramname">b</td><td>Input bit b </td></tr>
+    <tr><td class="paramname">c</td><td>Input bit c </td></tr>
+    <tr><td class="paramname">d</td><td>Input bit d </td></tr>
+    <tr><td class="paramname">e</td><td>Input bit e </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Filter helper result </dd></dl>
+
+</div>
+</div>
+<a id="a8f0d090472279c7614fbfae552e299e6" name="a8f0d090472279c7614fbfae552e299e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f0d090472279c7614fbfae552e299e6">&#9670;&#160;</a></span>filter()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool m5::nfc::a::mifare::classic::Crypto1::filter </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1classic_1_1_crypto1.html" title="Crypto1 for MIFARE Classic.">Crypto1</a> nonlinear filter. </p>
+<dl class="section return"><dt>Returns</dt><dd>Current keystream bit </dd></dl>
+
+</div>
+</div>
+<a id="aeb237e6a9a5749d7596ded922f32acf6" name="aeb237e6a9a5749d7596ded922f32acf6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb237e6a9a5749d7596ded922f32acf6">&#9670;&#160;</a></span>init()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void m5::nfc::a::mifare::classic::Crypto1::init </td>
+          <td>(</td>
+          <td class="paramtype">const uint64_t</td>          <td class="paramname"><span class="paramname"><em>key48</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Initialize with 48-bit key. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">key48</td><td>48-bit MIFARE Classic key </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a2719252a51478901b14e790d61f1df3c" name="a2719252a51478901b14e790d61f1df3c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2719252a51478901b14e790d61f1df3c">&#9670;&#160;</a></span>inject()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t m5::nfc::a::mifare::classic::Crypto1::inject </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>uid</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>Nt</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool</td>          <td class="paramname"><span class="paramname"><em>encrypted</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Inject UID and card nonce into the cipher state. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">uid</td><td>32-bit UID value </td></tr>
+    <tr><td class="paramname">Nt</td><td>Card nonce </td></tr>
+    <tr><td class="paramname">encrypted</td><td>True if the injected bits are encrypted </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Generated 32-bit keystream value </dd></dl>
+
+</div>
+</div>
+<a id="ae927c51b787c625bf48e574c8c0c17ec" name="ae927c51b787c625bf48e574c8c0c17ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae927c51b787c625bf48e574c8c0c17ec">&#9670;&#160;</a></span>oddparity8()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static uint8_t m5::nfc::a::mifare::classic::Crypto1::oddparity8 </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>x</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Calculate odd parity for one byte. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>Input byte </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Parity bit that makes the byte odd parity </dd></dl>
+
+</div>
+</div>
+<a id="a3ad487c4a2dd0720e77248b965fb43b2" name="a3ad487c4a2dd0720e77248b965fb43b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ad487c4a2dd0720e77248b965fb43b2">&#9670;&#160;</a></span>step32()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t m5::nfc::a::mifare::classic::Crypto1::step32 </td>
+          <td>(</td>
+          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>in</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool</td>          <td class="paramname"><span class="paramname"><em>enc</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Step the cipher with 32 input bits. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in</td><td>Input 32-bit value </td></tr>
+    <tr><td class="paramname">enc</td><td>True if the input value is encrypted </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Generated 32-bit keystream value </dd></dl>
+
+</div>
+</div>
+<a id="a554e88c51ef12f286615de8a264b7d2e" name="a554e88c51ef12f286615de8a264b7d2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a554e88c51ef12f286615de8a264b7d2e">&#9670;&#160;</a></span>step8()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t m5::nfc::a::mifare::classic::Crypto1::step8 </td>
+          <td>(</td>
+          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>in</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool</td>          <td class="paramname"><span class="paramname"><em>enc</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Step the cipher with 8 input bits. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in</td><td>Input byte </td></tr>
+    <tr><td class="paramname">enc</td><td>True if the input byte is encrypted </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Generated 8-bit keystream value </dd></dl>
+
+</div>
+</div>
+<a id="a39aa69e90283716cc5ad8b3ba24e2f6a" name="a39aa69e90283716cc5ad8b3ba24e2f6a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39aa69e90283716cc5ad8b3ba24e2f6a">&#9670;&#160;</a></span>step_with()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool m5::nfc::a::mifare::classic::Crypto1::step_with </td>
+          <td>(</td>
+          <td class="paramtype">const bool</td>          <td class="paramname"><span class="paramname"><em>in</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool</td>          <td class="paramname"><span class="paramname"><em>enc</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Step the cipher with one input bit. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in</td><td>Input bit </td></tr>
+    <tr><td class="paramname">enc</td><td>True if the input bit is encrypted </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Generated keystream bit before the state update </dd></dl>
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
