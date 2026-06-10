@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
    </div>
   </td>
  </tr>
@@ -119,12 +119,12 @@ Inheritance diagram for m5::nfc::NFCBFileSystem:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a02cb4894a750112de3ff7c8e21ea5217" id="r_a02cb4894a750112de3ff7c8e21ea5217"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a02cb4894a750112de3ff7c8e21ea5217">NFCBFileSystem</a> (<a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_b.html">m5::nfc::NFCLayerB</a> &amp;layer)</td></tr>
-<tr class="memdesc:a02cb4894a750112de3ff7c8e21ea5217"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor with <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_b.html" title="Common interface layer for each chip of the NFC-B reader.">NFCLayerB</a>.  <br /></td></tr>
+<tr class="memitem:a02cb4894a750112de3ff7c8e21ea5217" id="r_a02cb4894a750112de3ff7c8e21ea5217"><td class="memItemLeft" align="right" valign="top"><a id="a02cb4894a750112de3ff7c8e21ea5217" name="a02cb4894a750112de3ff7c8e21ea5217"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>NFCBFileSystem</b> (<a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_b.html">m5::nfc::NFCLayerB</a> &amp;layer)</td></tr>
 <tr class="separator:a02cb4894a750112de3ff7c8e21ea5217"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classm5_1_1nfc_1_1_file_system"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classm5_1_1nfc_1_1_file_system')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classm5_1_1nfc_1_1_file_system.html">m5::nfc::FileSystem</a></td></tr>
-<tr class="memitem:a7cd6e96011e7ac36649663a5a3c3e804 inherit pub_methods_classm5_1_1nfc_1_1_file_system" id="r_a7cd6e96011e7ac36649663a5a3c3e804"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classm5_1_1nfc_1_1_file_system.html#a7cd6e96011e7ac36649663a5a3c3e804">FileSystem</a> (<a class="el" href="classm5_1_1nfc_1_1isodep_1_1_iso_d_e_p.html">m5::nfc::isodep::IsoDEP</a> &amp;isoDEP)</td></tr>
-<tr class="memdesc:a7cd6e96011e7ac36649663a5a3c3e804 inherit pub_methods_classm5_1_1nfc_1_1_file_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor with IsoDEP.  <br /></td></tr>
+<tr class="memitem:a7cd6e96011e7ac36649663a5a3c3e804 inherit pub_methods_classm5_1_1nfc_1_1_file_system" id="r_a7cd6e96011e7ac36649663a5a3c3e804"><td class="memItemLeft" align="right" valign="top">
+&#160;</td><td class="memItemRight" valign="bottom"><b>FileSystem</b> (<a class="el" href="classm5_1_1nfc_1_1isodep_1_1_iso_d_e_p.html">m5::nfc::isodep::IsoDEP</a> &amp;isoDEP)</td></tr>
 <tr class="separator:a7cd6e96011e7ac36649663a5a3c3e804 inherit pub_methods_classm5_1_1nfc_1_1_file_system"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d501a0770b5a34d349e5809b4f895f4 inherit pub_methods_classm5_1_1nfc_1_1_file_system" id="r_a7d501a0770b5a34d349e5809b4f895f4"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; uint8_t &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classm5_1_1nfc_1_1_file_system.html#a7d501a0770b5a34d349e5809b4f895f4">lastSelectData</a> () const</td></tr>
 <tr class="memdesc:a7d501a0770b5a34d349e5809b4f895f4 inherit pub_methods_classm5_1_1nfc_1_1_file_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Last SELECT response data (SW excluded)  <br /></td></tr>
@@ -190,41 +190,7 @@ std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom">
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>File system base using isoDEP for NFC-B. </p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a02cb4894a750112de3ff7c8e21ea5217" name="a02cb4894a750112de3ff7c8e21ea5217"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a02cb4894a750112de3ff7c8e21ea5217">&#9670;&#160;</a></span>NFCBFileSystem()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">m5::nfc::NFCBFileSystem::NFCBFileSystem </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_b.html">m5::nfc::NFCLayerB</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>layer</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Constructor with <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_b.html" title="Common interface layer for each chip of the NFC-B reader.">NFCLayerB</a>. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">layer</td><td>NFC-B layer </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

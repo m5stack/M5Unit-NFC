@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
    </div>
   </td>
  </tr>
@@ -104,6 +104,7 @@ $(function(){initNavTree('functions_r.html',''); initResizable(true); });
 <li>read16()&#160;:&#160;<a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_a.html#a80e45ceb5b4bdf04ac2a667fde3b92ee">m5::nfc::NFCLayerA</a>, <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_f.html#a089dbc2c19a53d7df1e8dd07af25647d">m5::nfc::NFCLayerF</a></li>
 <li>read4()&#160;:&#160;<a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_a.html#ab668e6b37b0a4263efc29ee97ec2f44d">m5::nfc::NFCLayerA</a></li>
 <li>read_access&#160;:&#160;<a class="el" href="structm5_1_1nfc_1_1ndef_1_1type4_1_1_file_control_t_l_v.html#a2f690a048b8283318d558bafc4a5ec01">m5::nfc::ndef::type4::FileControlTLV</a></li>
+<li>read_nfcv()&#160;:&#160;<a class="el" href="classm5_1_1nfc_1_1ndef_1_1_n_d_e_f_layer.html#a1b87db303260ea4eecda8da79d947222">m5::nfc::ndef::NDEFLayer</a></li>
 <li>readADConverterOutput()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#a08062fdb097c796921ceccf297c02baa">m5::unit::UnitST25R3916</a></li>
 <li>readAmplitudeMeasurementAutoAveragingDisplay()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#ad9c562ef698193dfdcd8152d89a6808e">m5::unit::UnitST25R3916</a></li>
 <li>readAmplitudeMeasurementConfiguration()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#a735cf92a6a7265ddbd42057ae27cc851">m5::unit::UnitST25R3916</a></li>
@@ -132,9 +133,6 @@ $(function(){initNavTree('functions_r.html',''); initResizable(true); });
 <li>readCorrelatorConfiguration1()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#ae737fc7f43faf3d550d0ad069e8f0ccd">m5::unit::UnitST25R3916</a></li>
 <li>readCorrelatorConfiguration2()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#accf80af0ec691e8c74de111f19112086">m5::unit::UnitST25R3916</a></li>
 <li>readData()&#160;:&#160;<a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#ab5694060981744a4ea1f79db5711a3ce">m5::nfc::a::mifare::desfire::DESFireFileSystem</a></li>
-<li>readDataLight()&#160;:&#160;<a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#a4c8fc8a760bc1f0a08d3a74a656c40b4">m5::nfc::a::mifare::desfire::DESFireFileSystem</a></li>
-<li>readDataLightEV2()&#160;:&#160;<a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#ad49decac1bfd831cb6bd330517d8f92f">m5::nfc::a::mifare::desfire::DESFireFileSystem</a></li>
-<li>readDataLightEV2Full()&#160;:&#160;<a class="el" href="classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#ae7fdf53c05ffc599bb3277a8f1dbca14">m5::nfc::a::mifare::desfire::DESFireFileSystem</a></li>
 <li>readEMDSuppressionConfiguration()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#a88fb2f73a2c4fb430b17293a0761fbf3">m5::unit::UnitST25R3916</a></li>
 <li>readErrorAndWakeupInterrupt()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#a218162c4dd414da630479020930824d0">m5::unit::UnitST25R3916</a></li>
 <li>readExternalFieldDetectorActivationThreshold()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#a19defbfd6df303cf0c6d77187a711917">m5::unit::UnitST25R3916</a></li>
@@ -182,7 +180,6 @@ $(function(){initNavTree('functions_r.html',''); initResizable(true); });
 <li>readPhaseMeasurementDisplay()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#ae33d45840047077cb237b33be2524738">m5::unit::UnitST25R3916</a></li>
 <li>readPhaseMeasurementReference()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#ab650256ac000e08eb1d3a084ab74d1c1">m5::unit::UnitST25R3916</a></li>
 <li>readPPON2FieldWaiting()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#ad0f10895c515d966a744b18001c22c08">m5::unit::UnitST25R3916</a></li>
-<li>readPtMemory()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#a43b36d1dcf864db7e313f5296c6e9a78">m5::unit::UnitST25R3916</a></li>
 <li>readReceiverConfiguration()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#a60203aa11d73ec598f2940d51e716888">m5::unit::UnitST25R3916</a></li>
 <li>readReceiverConfiguration1()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#aefeca1ad098a7109af3a66ecfa67a866">m5::unit::UnitST25R3916</a></li>
 <li>readReceiverConfiguration2()&#160;:&#160;<a class="el" href="classm5_1_1unit_1_1_unit_s_t25_r3916.html#a68cbfcac8dddb4c7a4f703f433f6e8c9">m5::unit::UnitST25R3916</a></li>

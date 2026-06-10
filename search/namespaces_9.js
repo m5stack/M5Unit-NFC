@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['plus_0',['plus',['../namespaceplus.html',1,'']]]
+  ['regval_0',['regval',['../namespaceregval.html',1,'']]]
 ];

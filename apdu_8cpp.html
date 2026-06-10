@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
    </div>
   </td>
  </tr>
@@ -112,7 +112,7 @@ $(function(){initNavTree('apdu_8cpp.html',''); initResizable(true); });
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacem5.html">m5</a></td></tr>
-<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5Stack. <br /></td></tr>
+<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5stack. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
@@ -120,46 +120,18 @@ Functions</h2></td></tr>
 <tr class="memitem:ade33069f0d2d930a92d79591644b8ed8" id="r_ade33069f0d2d930a92d79591644b8ed8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ade33069f0d2d930a92d79591644b8ed8">m5::nfc::apdu::make_apdu_command</a> (const uint8_t cla, const uint8_t ins, const uint8_t param1=0x00, const uint8_t param2=0x00, const uint8_t *data=nullptr, const uint16_t data_len=0, const uint16_t rx_len=0)</td></tr>
 <tr class="memdesc:ade33069f0d2d930a92d79591644b8ed8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make APDU command.  <br /></td></tr>
 <tr class="separator:ade33069f0d2d930a92d79591644b8ed8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f63415d23f1838b2cf7a294cad86ec1" id="r_a5f63415d23f1838b2cf7a294cad86ec1"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html">TLV</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5f63415d23f1838b2cf7a294cad86ec1">m5::nfc::apdu::parse_tlv</a> (const uint8_t *ptr, const uint32_t len)</td></tr>
-<tr class="memdesc:a5f63415d23f1838b2cf7a294cad86ec1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html" title="TLV element.">TLV</a>.  <br /></td></tr>
+<tr class="memitem:a5f63415d23f1838b2cf7a294cad86ec1" id="r_a5f63415d23f1838b2cf7a294cad86ec1"><td class="memItemLeft" align="right" valign="top"><a id="a5f63415d23f1838b2cf7a294cad86ec1" name="a5f63415d23f1838b2cf7a294cad86ec1"></a>
+std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html">TLV</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::parse_tlv</b> (const uint8_t *ptr, const uint32_t len)</td></tr>
+<tr class="memdesc:a5f63415d23f1838b2cf7a294cad86ec1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html" title="TLV element.">TLV</a>. <br /></td></tr>
 <tr class="separator:a5f63415d23f1838b2cf7a294cad86ec1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aefdcb0a0692e4e97f13e6a5f7a140ade" id="r_aefdcb0a0692e4e97f13e6a5f7a140ade"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aefdcb0a0692e4e97f13e6a5f7a140ade">m5::nfc::apdu::dump_tlv</a> (const std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html">TLV</a> &gt; &amp;tlvs, const uint8_t depth=0)</td></tr>
-<tr class="memdesc:aefdcb0a0692e4e97f13e6a5f7a140ade"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dump <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html" title="TLV element.">TLV</a>.  <br /></td></tr>
+<tr class="memitem:aefdcb0a0692e4e97f13e6a5f7a140ade" id="r_aefdcb0a0692e4e97f13e6a5f7a140ade"><td class="memItemLeft" align="right" valign="top"><a id="aefdcb0a0692e4e97f13e6a5f7a140ade" name="aefdcb0a0692e4e97f13e6a5f7a140ade"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::dump_tlv</b> (const std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html">TLV</a> &gt; &amp;tlvs, const uint8_t depth=0)</td></tr>
+<tr class="memdesc:aefdcb0a0692e4e97f13e6a5f7a140ade"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dump <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html" title="TLV element.">TLV</a>. <br /></td></tr>
 <tr class="separator:aefdcb0a0692e4e97f13e6a5f7a140ade"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Application Protocol Data Unit (ISO/IEC 7816-4) </p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="aefdcb0a0692e4e97f13e6a5f7a140ade" name="aefdcb0a0692e4e97f13e6a5f7a140ade"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aefdcb0a0692e4e97f13e6a5f7a140ade">&#9670;&#160;</a></span>dump_tlv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void m5::nfc::apdu::dump_tlv </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html">TLV</a> &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>tlvs</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>depth</em></span><span class="paramdefsep"> = </span><span class="paramdefval">0</span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Dump TLV. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">tlvs</td><td>TLV elements to dump </td></tr>
-    <tr><td class="paramname">depth</td><td>Initial indentation depth </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a id="ade33069f0d2d930a92d79591644b8ed8" name="ade33069f0d2d930a92d79591644b8ed8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ade33069f0d2d930a92d79591644b8ed8">&#9670;&#160;</a></span>make_apdu_command()</h2>
 
@@ -218,37 +190,6 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Constructed command data </dd></dl>
-
-</div>
-</div>
-<a id="a5f63415d23f1838b2cf7a294cad86ec1" name="a5f63415d23f1838b2cf7a294cad86ec1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f63415d23f1838b2cf7a294cad86ec1">&#9670;&#160;</a></span>parse_tlv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; TLV &gt; m5::nfc::apdu::parse_tlv </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>len</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Parse TLV. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">ptr</td><td>Pointer to TLV bytes </td></tr>
-    <tr><td class="paramname">len</td><td>TLV data length </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Parsed TLV elements </dd></dl>
 
 </div>
 </div>

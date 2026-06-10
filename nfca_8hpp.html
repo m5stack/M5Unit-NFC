@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
    </div>
   </td>
  </tr>
@@ -124,9 +124,6 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html">m5::nfc::a::PICC</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html" title="PICC for NFC-A.">PICC</a> for NFC-A.  <a href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structm5_1_1nfc_1_1a_1_1config__t.html">m5::nfc::a::config_t</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">NFC-A activation configuration (RATS parameters)  <a href="structm5_1_1nfc_1_1a_1_1config__t.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structm5_1_1nfc_1_1a_1_1st25ta_1_1_system_file.html">m5::nfc::a::st25ta::SystemFile</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">ST25TA series system file.  <a href="structm5_1_1nfc_1_1a_1_1st25ta_1_1_system_file.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -134,7 +131,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacem5.html">m5</a></td></tr>
-<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5Stack. <br /></td></tr>
+<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5stack. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacea.html">a</a></td></tr>
 <tr class="memdesc:namespacea"><td class="mdescLeft">&#160;</td><td class="mdescRight">NFC-A definitions. <br /></td></tr>
@@ -256,107 +253,139 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a2b812e490b87a87814c33bb3f3b64904" id="r_a2b812e490b87a87814c33bb3f3b64904"><td class="memItemLeft" align="right" valign="top"><a class="el" href="nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1">m5::nfc::NFCForumTag</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#a2b812e490b87a87814c33bb3f3b64904">m5::nfc::a::get_nfc_forum_tag_type</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a2b812e490b87a87814c33bb3f3b64904"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get NFC Forum Tag Type from <a class="el" href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html" title="PICC for NFC-A.">PICC</a> type.  <br /></td></tr>
+<tr class="memitem:a2b812e490b87a87814c33bb3f3b64904" id="r_a2b812e490b87a87814c33bb3f3b64904"><td class="memItemLeft" align="right" valign="top"><a id="a2b812e490b87a87814c33bb3f3b64904" name="a2b812e490b87a87814c33bb3f3b64904"></a>
+<a class="el" href="nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1">m5::nfc::NFCForumTag</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::get_nfc_forum_tag_type</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a2b812e490b87a87814c33bb3f3b64904"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get NFC Forum Tag Type from <a class="el" href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html" title="PICC for NFC-A.">PICC</a> type. <br /></td></tr>
 <tr class="separator:a2b812e490b87a87814c33bb3f3b64904"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aff355cbd00ee527fa9fa5e797895bd07" id="r_aff355cbd00ee527fa9fa5e797895bd07"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aff355cbd00ee527fa9fa5e797895bd07">m5::nfc::a::is_mifare_classic</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:aff355cbd00ee527fa9fa5e797895bd07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE Classic?  <br /></td></tr>
+<tr class="memitem:aff355cbd00ee527fa9fa5e797895bd07" id="r_aff355cbd00ee527fa9fa5e797895bd07"><td class="memItemLeft" align="right" valign="top"><a id="aff355cbd00ee527fa9fa5e797895bd07" name="aff355cbd00ee527fa9fa5e797895bd07"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_mifare_classic</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:aff355cbd00ee527fa9fa5e797895bd07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE Classic? <br /></td></tr>
 <tr class="separator:aff355cbd00ee527fa9fa5e797895bd07"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abbf43a3ba65f0b362de47ed4382e38ce" id="r_abbf43a3ba65f0b362de47ed4382e38ce"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#abbf43a3ba65f0b362de47ed4382e38ce">m5::nfc::a::is_mifare_ultralight</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:abbf43a3ba65f0b362de47ed4382e38ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE Ultralight series?  <br /></td></tr>
+<tr class="memitem:abbf43a3ba65f0b362de47ed4382e38ce" id="r_abbf43a3ba65f0b362de47ed4382e38ce"><td class="memItemLeft" align="right" valign="top"><a id="abbf43a3ba65f0b362de47ed4382e38ce" name="abbf43a3ba65f0b362de47ed4382e38ce"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_mifare_ultralight</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:abbf43a3ba65f0b362de47ed4382e38ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE Ultralight series? <br /></td></tr>
 <tr class="separator:abbf43a3ba65f0b362de47ed4382e38ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5183fa6cbb067b3a4aa00dad6c4c56aa" id="r_a5183fa6cbb067b3a4aa00dad6c4c56aa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5183fa6cbb067b3a4aa00dad6c4c56aa">m5::nfc::a::is_ntag2</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a5183fa6cbb067b3a4aa00dad6c4c56aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type NTAG2xx?  <br /></td></tr>
+<tr class="memitem:a5183fa6cbb067b3a4aa00dad6c4c56aa" id="r_a5183fa6cbb067b3a4aa00dad6c4c56aa"><td class="memItemLeft" align="right" valign="top"><a id="a5183fa6cbb067b3a4aa00dad6c4c56aa" name="a5183fa6cbb067b3a4aa00dad6c4c56aa"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_ntag2</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a5183fa6cbb067b3a4aa00dad6c4c56aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type NTAG2xx? <br /></td></tr>
 <tr class="separator:a5183fa6cbb067b3a4aa00dad6c4c56aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a49181c1838c1e0df61a9599b4fd6d621" id="r_a49181c1838c1e0df61a9599b4fd6d621"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a49181c1838c1e0df61a9599b4fd6d621">m5::nfc::a::is_ntag4</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a49181c1838c1e0df61a9599b4fd6d621"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type NTAG4xx?  <br /></td></tr>
+<tr class="memitem:a49181c1838c1e0df61a9599b4fd6d621" id="r_a49181c1838c1e0df61a9599b4fd6d621"><td class="memItemLeft" align="right" valign="top"><a id="a49181c1838c1e0df61a9599b4fd6d621" name="a49181c1838c1e0df61a9599b4fd6d621"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_ntag4</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a49181c1838c1e0df61a9599b4fd6d621"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type NTAG4xx? <br /></td></tr>
 <tr class="separator:a49181c1838c1e0df61a9599b4fd6d621"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7580ee2e43c1349e4e90d6e4443abb4" id="r_ae7580ee2e43c1349e4e90d6e4443abb4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae7580ee2e43c1349e4e90d6e4443abb4">m5::nfc::a::is_mifare_plus</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:ae7580ee2e43c1349e4e90d6e4443abb4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE Plus?  <br /></td></tr>
+<tr class="memitem:ae7580ee2e43c1349e4e90d6e4443abb4" id="r_ae7580ee2e43c1349e4e90d6e4443abb4"><td class="memItemLeft" align="right" valign="top"><a id="ae7580ee2e43c1349e4e90d6e4443abb4" name="ae7580ee2e43c1349e4e90d6e4443abb4"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_mifare_plus</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:ae7580ee2e43c1349e4e90d6e4443abb4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE Plus? <br /></td></tr>
 <tr class="separator:ae7580ee2e43c1349e4e90d6e4443abb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab3301d301ddd00ea67b1b737376c021" id="r_aab3301d301ddd00ea67b1b737376c021"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aab3301d301ddd00ea67b1b737376c021">m5::nfc::a::is_mifare_classic_compatible</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t, const uint8_t sl)</td></tr>
-<tr class="memdesc:aab3301d301ddd00ea67b1b737376c021"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE classic compatible? (Plus SL1)  <br /></td></tr>
+<tr class="memitem:aab3301d301ddd00ea67b1b737376c021" id="r_aab3301d301ddd00ea67b1b737376c021"><td class="memItemLeft" align="right" valign="top"><a id="aab3301d301ddd00ea67b1b737376c021" name="aab3301d301ddd00ea67b1b737376c021"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_mifare_classic_compatible</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t, const uint8_t sl)</td></tr>
+<tr class="memdesc:aab3301d301ddd00ea67b1b737376c021"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE classic compatible? (Plus SL1) <br /></td></tr>
 <tr class="separator:aab3301d301ddd00ea67b1b737376c021"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b4e052a262a225acbb161354266ea5d" id="r_a0b4e052a262a225acbb161354266ea5d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0b4e052a262a225acbb161354266ea5d">m5::nfc::a::is_mifare_desfire</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a0b4e052a262a225acbb161354266ea5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE DESFire?  <br /></td></tr>
+<tr class="memitem:a0b4e052a262a225acbb161354266ea5d" id="r_a0b4e052a262a225acbb161354266ea5d"><td class="memItemLeft" align="right" valign="top"><a id="a0b4e052a262a225acbb161354266ea5d" name="a0b4e052a262a225acbb161354266ea5d"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_mifare_desfire</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a0b4e052a262a225acbb161354266ea5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE DESFire? <br /></td></tr>
 <tr class="separator:a0b4e052a262a225acbb161354266ea5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a73dd2bd204c94f0609d92fe881437084" id="r_a73dd2bd204c94f0609d92fe881437084"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a73dd2bd204c94f0609d92fe881437084">m5::nfc::a::is_mifare</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a73dd2bd204c94f0609d92fe881437084"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE?  <br /></td></tr>
+<tr class="memitem:a73dd2bd204c94f0609d92fe881437084" id="r_a73dd2bd204c94f0609d92fe881437084"><td class="memItemLeft" align="right" valign="top"><a id="a73dd2bd204c94f0609d92fe881437084" name="a73dd2bd204c94f0609d92fe881437084"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_mifare</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a73dd2bd204c94f0609d92fe881437084"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is type MIFARE? <br /></td></tr>
 <tr class="separator:a73dd2bd204c94f0609d92fe881437084"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d4572c50dafd47bdc9d0f5bc81ccc7c" id="r_a9d4572c50dafd47bdc9d0f5bc81ccc7c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a9d4572c50dafd47bdc9d0f5bc81ccc7c">m5::nfc::a::is_st25ta</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a9d4572c50dafd47bdc9d0f5bc81ccc7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is ST25TA series?  <br /></td></tr>
+<tr class="memitem:a9d4572c50dafd47bdc9d0f5bc81ccc7c" id="r_a9d4572c50dafd47bdc9d0f5bc81ccc7c"><td class="memItemLeft" align="right" valign="top"><a id="a9d4572c50dafd47bdc9d0f5bc81ccc7c" name="a9d4572c50dafd47bdc9d0f5bc81ccc7c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_st25ta</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a9d4572c50dafd47bdc9d0f5bc81ccc7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is ST25TA series? <br /></td></tr>
 <tr class="separator:a9d4572c50dafd47bdc9d0f5bc81ccc7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a921cc53e1ae6ed8b23a334f3bc2bf0b2" id="r_a921cc53e1ae6ed8b23a334f3bc2bf0b2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a921cc53e1ae6ed8b23a334f3bc2bf0b2">m5::nfc::a::is_iso14443_4</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a921cc53e1ae6ed8b23a334f3bc2bf0b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is ISO 14443-4?  <br /></td></tr>
+<tr class="memitem:a921cc53e1ae6ed8b23a334f3bc2bf0b2" id="r_a921cc53e1ae6ed8b23a334f3bc2bf0b2"><td class="memItemLeft" align="right" valign="top"><a id="a921cc53e1ae6ed8b23a334f3bc2bf0b2" name="a921cc53e1ae6ed8b23a334f3bc2bf0b2"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_iso14443_4</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a921cc53e1ae6ed8b23a334f3bc2bf0b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is ISO 14443-4? <br /></td></tr>
 <tr class="separator:a921cc53e1ae6ed8b23a334f3bc2bf0b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e0bb0c2934cf966515e67720500d0a8" id="r_a1e0bb0c2934cf966515e67720500d0a8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1e0bb0c2934cf966515e67720500d0a8">m5::nfc::a::is_iso14443_3</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a1e0bb0c2934cf966515e67720500d0a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is ISO 14443-3?  <br /></td></tr>
+<tr class="memitem:a1e0bb0c2934cf966515e67720500d0a8" id="r_a1e0bb0c2934cf966515e67720500d0a8"><td class="memItemLeft" align="right" valign="top"><a id="a1e0bb0c2934cf966515e67720500d0a8" name="a1e0bb0c2934cf966515e67720500d0a8"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_iso14443_3</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a1e0bb0c2934cf966515e67720500d0a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is ISO 14443-3? <br /></td></tr>
 <tr class="separator:a1e0bb0c2934cf966515e67720500d0a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e813cdf62d4a05e10dde34e64e21f1b" id="r_a5e813cdf62d4a05e10dde34e64e21f1b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5e813cdf62d4a05e10dde34e64e21f1b">m5::nfc::a::supports_NFC</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a5e813cdf62d4a05e10dde34e64e21f1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Does the specified type function as NFC?  <br /></td></tr>
+<tr class="memitem:a5e813cdf62d4a05e10dde34e64e21f1b" id="r_a5e813cdf62d4a05e10dde34e64e21f1b"><td class="memItemLeft" align="right" valign="top"><a id="a5e813cdf62d4a05e10dde34e64e21f1b" name="a5e813cdf62d4a05e10dde34e64e21f1b"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::supports_NFC</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a5e813cdf62d4a05e10dde34e64e21f1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Does the specified type function as NFC? <br /></td></tr>
 <tr class="separator:a5e813cdf62d4a05e10dde34e64e21f1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a93c19461ed1494462e3b7da394cc8cee" id="r_a93c19461ed1494462e3b7da394cc8cee"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a93c19461ed1494462e3b7da394cc8cee">m5::nfc::a::has_fast_read</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a93c19461ed1494462e3b7da394cc8cee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Has FAST_READ command?  <br /></td></tr>
+<tr class="memitem:a93c19461ed1494462e3b7da394cc8cee" id="r_a93c19461ed1494462e3b7da394cc8cee"><td class="memItemLeft" align="right" valign="top"><a id="a93c19461ed1494462e3b7da394cc8cee" name="a93c19461ed1494462e3b7da394cc8cee"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::has_fast_read</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a93c19461ed1494462e3b7da394cc8cee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Has FAST_READ command? <br /></td></tr>
 <tr class="separator:a93c19461ed1494462e3b7da394cc8cee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc51c5a960972570a4bf6da0876541c0" id="r_abc51c5a960972570a4bf6da0876541c0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#abc51c5a960972570a4bf6da0876541c0">m5::nfc::a::has_sak_dependent_bit</a> (const uint8_t sak)</td></tr>
-<tr class="memdesc:abc51c5a960972570a4bf6da0876541c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SAK incomplete?  <br /></td></tr>
+<tr class="memitem:abc51c5a960972570a4bf6da0876541c0" id="r_abc51c5a960972570a4bf6da0876541c0"><td class="memItemLeft" align="right" valign="top"><a id="abc51c5a960972570a4bf6da0876541c0" name="abc51c5a960972570a4bf6da0876541c0"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::has_sak_dependent_bit</b> (const uint8_t sak)</td></tr>
+<tr class="memdesc:abc51c5a960972570a4bf6da0876541c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SAK uncompleted? <br /></td></tr>
 <tr class="separator:abc51c5a960972570a4bf6da0876541c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71761585d3b73c7fe363568554722239" id="r_a71761585d3b73c7fe363568554722239"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a71761585d3b73c7fe363568554722239">m5::nfc::a::is_sak_completed_14443_4</a> (const uint8_t sak)</td></tr>
-<tr class="memdesc:a71761585d3b73c7fe363568554722239"><td class="mdescLeft">&#160;</td><td class="mdescRight">SAK completed? (Complies with ISO/IEC 14443-4)  <br /></td></tr>
+<tr class="memitem:a71761585d3b73c7fe363568554722239" id="r_a71761585d3b73c7fe363568554722239"><td class="memItemLeft" align="right" valign="top"><a id="a71761585d3b73c7fe363568554722239" name="a71761585d3b73c7fe363568554722239"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_sak_completed_14443_4</b> (const uint8_t sak)</td></tr>
+<tr class="memdesc:a71761585d3b73c7fe363568554722239"><td class="mdescLeft">&#160;</td><td class="mdescRight">SAK completed? (Complies with ISO/IEC 14443-4) <br /></td></tr>
 <tr class="separator:a71761585d3b73c7fe363568554722239"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6316020b27e82ca7c8bbf5a66cc00381" id="r_a6316020b27e82ca7c8bbf5a66cc00381"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6316020b27e82ca7c8bbf5a66cc00381">m5::nfc::a::is_sak_completed</a> (const uint8_t sak)</td></tr>
-<tr class="memdesc:a6316020b27e82ca7c8bbf5a66cc00381"><td class="mdescLeft">&#160;</td><td class="mdescRight">SAK completed? (Does not comply with ISO/IEC 14443-4)  <br /></td></tr>
+<tr class="memitem:a6316020b27e82ca7c8bbf5a66cc00381" id="r_a6316020b27e82ca7c8bbf5a66cc00381"><td class="memItemLeft" align="right" valign="top"><a id="a6316020b27e82ca7c8bbf5a66cc00381" name="a6316020b27e82ca7c8bbf5a66cc00381"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_sak_completed</b> (const uint8_t sak)</td></tr>
+<tr class="memdesc:a6316020b27e82ca7c8bbf5a66cc00381"><td class="mdescLeft">&#160;</td><td class="mdescRight">SAK completed? (Does not comply with ISO/IEC 14443-4) <br /></td></tr>
 <tr class="separator:a6316020b27e82ca7c8bbf5a66cc00381"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba956d86d9cb908086a4e3b3b55b8bd6" id="r_aba956d86d9cb908086a4e3b3b55b8bd6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#aba956d86d9cb908086a4e3b3b55b8bd6">m5::nfc::a::sak_to_type</a> (const uint8_t sak)</td></tr>
 <tr class="memdesc:aba956d86d9cb908086a4e3b3b55b8bd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inferring the type from SAK.  <br /></td></tr>
 <tr class="separator:aba956d86d9cb908086a4e3b3b55b8bd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c36af0eeed9f0cae6f19adeaac0522b" id="r_a1c36af0eeed9f0cae6f19adeaac0522b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#a1c36af0eeed9f0cae6f19adeaac0522b">m5::nfc::a::version3_to_type</a> (const uint8_t info[8])</td></tr>
-<tr class="memdesc:a1c36af0eeed9f0cae6f19adeaac0522b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inferring the type from GetVersion L3.  <br /></td></tr>
+<tr class="memitem:a1c36af0eeed9f0cae6f19adeaac0522b" id="r_a1c36af0eeed9f0cae6f19adeaac0522b"><td class="memItemLeft" align="right" valign="top"><a id="a1c36af0eeed9f0cae6f19adeaac0522b" name="a1c36af0eeed9f0cae6f19adeaac0522b"></a>
+<a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::version3_to_type</b> (const uint8_t info[8])</td></tr>
+<tr class="memdesc:a1c36af0eeed9f0cae6f19adeaac0522b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inferring the type from GetVersion L3. <br /></td></tr>
 <tr class="separator:a1c36af0eeed9f0cae6f19adeaac0522b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a897ff51a5eccfd505aeec8f2c66c7e31" id="r_a897ff51a5eccfd505aeec8f2c66c7e31"><td class="memItemLeft" align="right" valign="top"><a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#a897ff51a5eccfd505aeec8f2c66c7e31">m5::nfc::a::version4_to_type</a> (uint8_t &amp;sub, const uint8_t info[8])</td></tr>
-<tr class="memdesc:a897ff51a5eccfd505aeec8f2c66c7e31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inferring the type from GetVersion L4.  <br /></td></tr>
+<tr class="memitem:a897ff51a5eccfd505aeec8f2c66c7e31" id="r_a897ff51a5eccfd505aeec8f2c66c7e31"><td class="memItemLeft" align="right" valign="top"><a id="a897ff51a5eccfd505aeec8f2c66c7e31" name="a897ff51a5eccfd505aeec8f2c66c7e31"></a>
+<a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::version4_to_type</b> (uint8_t &amp;sub, const uint8_t info[8])</td></tr>
+<tr class="memdesc:a897ff51a5eccfd505aeec8f2c66c7e31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inferring the type from GetVersion L4. <br /></td></tr>
 <tr class="separator:a897ff51a5eccfd505aeec8f2c66c7e31"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ada4876b0d15c060036b8f88ee1e81297" id="r_ada4876b0d15c060036b8f88ee1e81297"><td class="memItemLeft" align="right" valign="top"><a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#ada4876b0d15c060036b8f88ee1e81297">m5::nfc::a::historical_bytes_to_type</a> (uint8_t &amp;sub, const uint16_t atqa, const uint8_t sak, const uint8_t *bytes, const uint8_t len)</td></tr>
-<tr class="memdesc:ada4876b0d15c060036b8f88ee1e81297"><td class="mdescLeft">&#160;</td><td class="mdescRight">Historical bytes to type.  <br /></td></tr>
+<tr class="memitem:ada4876b0d15c060036b8f88ee1e81297" id="r_ada4876b0d15c060036b8f88ee1e81297"><td class="memItemLeft" align="right" valign="top"><a id="ada4876b0d15c060036b8f88ee1e81297" name="ada4876b0d15c060036b8f88ee1e81297"></a>
+<a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::historical_bytes_to_type</b> (uint8_t &amp;sub, const uint16_t atqa, const uint8_t sak, const uint8_t *bytes, const uint8_t len)</td></tr>
+<tr class="memdesc:ada4876b0d15c060036b8f88ee1e81297"><td class="mdescLeft">&#160;</td><td class="mdescRight">Historical bytes to type. <br /></td></tr>
 <tr class="separator:ada4876b0d15c060036b8f88ee1e81297"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9de505e4515436fb3b2ab99ffd6d1fc0" id="r_a9de505e4515436fb3b2ab99ffd6d1fc0"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#a9de505e4515436fb3b2ab99ffd6d1fc0">m5::nfc::a::get_number_of_blocks</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a9de505e4515436fb3b2ab99ffd6d1fc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the number of blocks.  <br /></td></tr>
+<tr class="memitem:a9de505e4515436fb3b2ab99ffd6d1fc0" id="r_a9de505e4515436fb3b2ab99ffd6d1fc0"><td class="memItemLeft" align="right" valign="top"><a id="a9de505e4515436fb3b2ab99ffd6d1fc0" name="a9de505e4515436fb3b2ab99ffd6d1fc0"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::get_number_of_blocks</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a9de505e4515436fb3b2ab99ffd6d1fc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the number of blocks. <br /></td></tr>
 <tr class="separator:a9de505e4515436fb3b2ab99ffd6d1fc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90f81b2afbf160114f08f351e7b6c16f" id="r_a90f81b2afbf160114f08f351e7b6c16f"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#a90f81b2afbf160114f08f351e7b6c16f">m5::nfc::a::get_number_of_user_blocks</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a90f81b2afbf160114f08f351e7b6c16f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the number of user blocks.  <br /></td></tr>
+<tr class="memitem:a90f81b2afbf160114f08f351e7b6c16f" id="r_a90f81b2afbf160114f08f351e7b6c16f"><td class="memItemLeft" align="right" valign="top"><a id="a90f81b2afbf160114f08f351e7b6c16f" name="a90f81b2afbf160114f08f351e7b6c16f"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::get_number_of_user_blocks</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a90f81b2afbf160114f08f351e7b6c16f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the number of user blocks. <br /></td></tr>
 <tr class="separator:a90f81b2afbf160114f08f351e7b6c16f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad24687ca20e8b303110f5bd6b399263" id="r_aad24687ca20e8b303110f5bd6b399263"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#aad24687ca20e8b303110f5bd6b399263">m5::nfc::a::get_user_area_size</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:aad24687ca20e8b303110f5bd6b399263"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the user area bytes.  <br /></td></tr>
+<tr class="memitem:aad24687ca20e8b303110f5bd6b399263" id="r_aad24687ca20e8b303110f5bd6b399263"><td class="memItemLeft" align="right" valign="top"><a id="aad24687ca20e8b303110f5bd6b399263" name="aad24687ca20e8b303110f5bd6b399263"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::get_user_area_size</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:aad24687ca20e8b303110f5bd6b399263"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the user area bytes. <br /></td></tr>
 <tr class="separator:aad24687ca20e8b303110f5bd6b399263"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e93f331f794cfd3ec5e1c7115e7bef5" id="r_a3e93f331f794cfd3ec5e1c7115e7bef5"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#a3e93f331f794cfd3ec5e1c7115e7bef5">m5::nfc::a::get_unit_size</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
 <tr class="memdesc:a3e93f331f794cfd3ec5e1c7115e7bef5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the unit size of 1 block / 1 page.  <br /></td></tr>
 <tr class="separator:a3e93f331f794cfd3ec5e1c7115e7bef5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a676326bf06691aca5ec34684cb005d67" id="r_a676326bf06691aca5ec34684cb005d67"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#a676326bf06691aca5ec34684cb005d67">m5::nfc::a::get_number_of_sectors</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a676326bf06691aca5ec34684cb005d67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the number of sectors.  <br /></td></tr>
+<tr class="memitem:a676326bf06691aca5ec34684cb005d67" id="r_a676326bf06691aca5ec34684cb005d67"><td class="memItemLeft" align="right" valign="top"><a id="a676326bf06691aca5ec34684cb005d67" name="a676326bf06691aca5ec34684cb005d67"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::get_number_of_sectors</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a676326bf06691aca5ec34684cb005d67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the number of sectors. <br /></td></tr>
 <tr class="separator:a676326bf06691aca5ec34684cb005d67"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1221607496388f9a78ea472230e68ba" id="r_af1221607496388f9a78ea472230e68ba"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#af1221607496388f9a78ea472230e68ba">m5::nfc::a::get_first_user_block</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:af1221607496388f9a78ea472230e68ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the first user area block.  <br /></td></tr>
+<tr class="memitem:af1221607496388f9a78ea472230e68ba" id="r_af1221607496388f9a78ea472230e68ba"><td class="memItemLeft" align="right" valign="top"><a id="af1221607496388f9a78ea472230e68ba" name="af1221607496388f9a78ea472230e68ba"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::get_first_user_block</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:af1221607496388f9a78ea472230e68ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the first user area block. <br /></td></tr>
 <tr class="separator:af1221607496388f9a78ea472230e68ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a56472040cbc607773f2dd4d64e7ad3d3" id="r_a56472040cbc607773f2dd4d64e7ad3d3"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#a56472040cbc607773f2dd4d64e7ad3d3">m5::nfc::a::get_last_user_block</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a56472040cbc607773f2dd4d64e7ad3d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the last user area block.  <br /></td></tr>
+<tr class="memitem:a56472040cbc607773f2dd4d64e7ad3d3" id="r_a56472040cbc607773f2dd4d64e7ad3d3"><td class="memItemLeft" align="right" valign="top"><a id="a56472040cbc607773f2dd4d64e7ad3d3" name="a56472040cbc607773f2dd4d64e7ad3d3"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::get_last_user_block</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a56472040cbc607773f2dd4d64e7ad3d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the last user area block. <br /></td></tr>
 <tr class="separator:a56472040cbc607773f2dd4d64e7ad3d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad5568cdfb2f1c3f2e8b866a504615de6" id="r_ad5568cdfb2f1c3f2e8b866a504615de6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#ad5568cdfb2f1c3f2e8b866a504615de6">m5::nfc::a::is_user_block</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t, const uint16_t block)</td></tr>
-<tr class="memdesc:ad5568cdfb2f1c3f2e8b866a504615de6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is block user area?  <br /></td></tr>
+<tr class="memitem:ad5568cdfb2f1c3f2e8b866a504615de6" id="r_ad5568cdfb2f1c3f2e8b866a504615de6"><td class="memItemLeft" align="right" valign="top"><a id="ad5568cdfb2f1c3f2e8b866a504615de6" name="ad5568cdfb2f1c3f2e8b866a504615de6"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_user_block</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t, const uint16_t block)</td></tr>
+<tr class="memdesc:ad5568cdfb2f1c3f2e8b866a504615de6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is block user area? <br /></td></tr>
 <tr class="separator:ad5568cdfb2f1c3f2e8b866a504615de6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f4eb62eb93a95c6f3d8a82ffc1dfa8a" id="r_a5f4eb62eb93a95c6f3d8a82ffc1dfa8a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#a5f4eb62eb93a95c6f3d8a82ffc1dfa8a">m5::nfc::a::get_file_system_feature</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a5f4eb62eb93a95c6f3d8a82ffc1dfa8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get file system feature bits.  <br /></td></tr>
+<tr class="memitem:a5f4eb62eb93a95c6f3d8a82ffc1dfa8a" id="r_a5f4eb62eb93a95c6f3d8a82ffc1dfa8a"><td class="memItemLeft" align="right" valign="top"><a id="a5f4eb62eb93a95c6f3d8a82ffc1dfa8a" name="a5f4eb62eb93a95c6f3d8a82ffc1dfa8a"></a>
+<a class="el" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::get_file_system_feature</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a5f4eb62eb93a95c6f3d8a82ffc1dfa8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get file system fearure bits. <br /></td></tr>
 <tr class="separator:a5f4eb62eb93a95c6f3d8a82ffc1dfa8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a01bc1d95019f0f2247fc5a6494c7da26" id="r_a01bc1d95019f0f2247fc5a6494c7da26"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a01bc1d95019f0f2247fc5a6494c7da26">m5::nfc::a::is_file_system_memory</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:a01bc1d95019f0f2247fc5a6494c7da26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Memory file system?  <br /></td></tr>
+<tr class="memitem:a01bc1d95019f0f2247fc5a6494c7da26" id="r_a01bc1d95019f0f2247fc5a6494c7da26"><td class="memItemLeft" align="right" valign="top"><a id="a01bc1d95019f0f2247fc5a6494c7da26" name="a01bc1d95019f0f2247fc5a6494c7da26"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_file_system_memory</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:a01bc1d95019f0f2247fc5a6494c7da26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Memory file system? <br /></td></tr>
 <tr class="separator:a01bc1d95019f0f2247fc5a6494c7da26"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afbc51163bb9d06aa2d4d78bef4e99365" id="r_afbc51163bb9d06aa2d4d78bef4e99365"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#afbc51163bb9d06aa2d4d78bef4e99365">m5::nfc::a::is_file_system_file</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:afbc51163bb9d06aa2d4d78bef4e99365"><td class="mdescLeft">&#160;</td><td class="mdescRight">File base file system?  <br /></td></tr>
+<tr class="memitem:afbc51163bb9d06aa2d4d78bef4e99365" id="r_afbc51163bb9d06aa2d4d78bef4e99365"><td class="memItemLeft" align="right" valign="top"><a id="afbc51163bb9d06aa2d4d78bef4e99365" name="afbc51163bb9d06aa2d4d78bef4e99365"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::is_file_system_file</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:afbc51163bb9d06aa2d4d78bef4e99365"><td class="mdescLeft">&#160;</td><td class="mdescRight">File base file system? <br /></td></tr>
 <tr class="separator:afbc51163bb9d06aa2d4d78bef4e99365"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f00ebbaee2d5c4267682a346251feaa" id="r_a2f00ebbaee2d5c4267682a346251feaa"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#a2f00ebbaee2d5c4267682a346251feaa">m5::nfc::a::calculate_bcc8</a> (const uint8_t *data, const uint32_t len)</td></tr>
-<tr class="memdesc:a2f00ebbaee2d5c4267682a346251feaa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate bcc8.  <br /></td></tr>
+<tr class="memitem:a2f00ebbaee2d5c4267682a346251feaa" id="r_a2f00ebbaee2d5c4267682a346251feaa"><td class="memItemLeft" align="right" valign="top"><a id="a2f00ebbaee2d5c4267682a346251feaa" name="a2f00ebbaee2d5c4267682a346251feaa"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::calculate_bcc8</b> (const uint8_t *data, const uint32_t len)</td></tr>
+<tr class="memdesc:a2f00ebbaee2d5c4267682a346251feaa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate bcc8. <br /></td></tr>
 <tr class="separator:a2f00ebbaee2d5c4267682a346251feaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf8a3d3a8f2d6c01750bc4b7b99a9472" id="r_acf8a3d3a8f2d6c01750bc4b7b99a9472"><td class="memItemLeft" align="right" valign="top">const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfca_8cpp.html#acf8a3d3a8f2d6c01750bc4b7b99a9472">m5::nfc::a::get_version3_response</a> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
-<tr class="memdesc:acf8a3d3a8f2d6c01750bc4b7b99a9472"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the <a class="el" href="#a1a21e28554c0dc7d49466fff910e90aca3e4d39d03ce99d4daaab3749af67ff13" title="NTAG 21x/UL EV1,Nano Gets the version information.">GET_VERSION(L3)</a> response for emulation.  <br /></td></tr>
+<tr class="memitem:acf8a3d3a8f2d6c01750bc4b7b99a9472" id="r_acf8a3d3a8f2d6c01750bc4b7b99a9472"><td class="memItemLeft" align="right" valign="top"><a id="acf8a3d3a8f2d6c01750bc4b7b99a9472" name="acf8a3d3a8f2d6c01750bc4b7b99a9472"></a>
+const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::get_version3_response</b> (const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> t)</td></tr>
+<tr class="memdesc:acf8a3d3a8f2d6c01750bc4b7b99a9472"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the <a class="el" href="#a1a21e28554c0dc7d49466fff910e90aca3e4d39d03ce99d4daaab3749af67ff13" title="NTAG 21x/UL EV1,Nano Gets the version information.">GET_VERSION(L3)</a> response for emulation. <br /></td></tr>
 <tr class="separator:acf8a3d3a8f2d6c01750bc4b7b99a9472"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a613b44aedafa4a844d37f94af2a07955" id="r_a613b44aedafa4a844d37f94af2a07955"><td class="memItemLeft" align="right" valign="top"><a id="a613b44aedafa4a844d37f94af2a07955" name="a613b44aedafa4a844d37f94af2a07955"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::operator==</b> (const <a class="el" href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html">PICC</a> &amp;a, const <a class="el" href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html">PICC</a> &amp;b)</td></tr>
@@ -366,9 +395,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::operator=
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::operator!=</b> (const <a class="el" href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html">PICC</a> &amp;a, const <a class="el" href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html">PICC</a> &amp;b)</td></tr>
 <tr class="memdesc:aae4e036a81bf97f2133c38ec1ec54af4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Not equal? <br /></td></tr>
 <tr class="separator:aae4e036a81bf97f2133c38ec1ec54af4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a5bf45cd1ad13cc3196e022dafe2048" id="r_a6a5bf45cd1ad13cc3196e022dafe2048"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6a5bf45cd1ad13cc3196e022dafe2048">m5::nfc::a::make_rats_param</a> (const uint8_t fsdi, const uint8_t cid)</td></tr>
-<tr class="memdesc:a6a5bf45cd1ad13cc3196e022dafe2048"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build the RATS PARAM byte (ISO/IEC 14443-4)  <br /></td></tr>
-<tr class="separator:a6a5bf45cd1ad13cc3196e022dafe2048"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d5c5a55d9dbf508cb4fab2b0a7a3f24" id="r_a2d5c5a55d9dbf508cb4fab2b0a7a3f24"><td class="memItemLeft" align="right" valign="top"><a id="a2d5c5a55d9dbf508cb4fab2b0a7a3f24" name="a2d5c5a55d9dbf508cb4fab2b0a7a3f24"></a>
 <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::a::st25ta::get_type</b> (const uint8_t ic_ref_or_product_code)</td></tr>
 <tr class="memdesc:a2d5c5a55d9dbf508cb4fab2b0a7a3f24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the type from IC reference or product code. <br /></td></tr>
@@ -643,219 +669,6 @@ constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc:
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a2f00ebbaee2d5c4267682a346251feaa" name="a2f00ebbaee2d5c4267682a346251feaa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f00ebbaee2d5c4267682a346251feaa">&#9670;&#160;</a></span>calculate_bcc8()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint8_t m5::nfc::a::calculate_bcc8 </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>data</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>len</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Calculate bcc8. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">data</td><td>Input data </td></tr>
-    <tr><td class="paramname">len</td><td>Input data length </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>BCC8 value </dd></dl>
-
-</div>
-</div>
-<a id="a5f4eb62eb93a95c6f3d8a82ffc1dfa8a" name="a5f4eb62eb93a95c6f3d8a82ffc1dfa8a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f4eb62eb93a95c6f3d8a82ffc1dfa8a">&#9670;&#160;</a></span>get_file_system_feature()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="nfc_8hpp.html#a14c7cd97b5b6e6bef9a0485ee5b430a3">file_system_feature_t</a> m5::nfc::a::get_file_system_feature </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Get file system feature bits. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>File system feature bits </dd></dl>
-
-</div>
-</div>
-<a id="af1221607496388f9a78ea472230e68ba" name="af1221607496388f9a78ea472230e68ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1221607496388f9a78ea472230e68ba">&#9670;&#160;</a></span>get_first_user_block()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint16_t m5::nfc::a::get_first_user_block </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Gets the first user area block. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>First user block/page number </dd></dl>
-
-</div>
-</div>
-<a id="a56472040cbc607773f2dd4d64e7ad3d3" name="a56472040cbc607773f2dd4d64e7ad3d3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a56472040cbc607773f2dd4d64e7ad3d3">&#9670;&#160;</a></span>get_last_user_block()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint16_t m5::nfc::a::get_last_user_block </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Gets the last user area block. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Last user block/page number </dd></dl>
-
-</div>
-</div>
-<a id="a2b812e490b87a87814c33bb3f3b64904" name="a2b812e490b87a87814c33bb3f3b64904"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b812e490b87a87814c33bb3f3b64904">&#9670;&#160;</a></span>get_nfc_forum_tag_type()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1">m5::nfc::NFCForumTag</a> m5::nfc::a::get_nfc_forum_tag_type </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Get NFC Forum Tag Type from PICC type. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>NFC Forum Tag Type </dd></dl>
-
-</div>
-</div>
-<a id="a9de505e4515436fb3b2ab99ffd6d1fc0" name="a9de505e4515436fb3b2ab99ffd6d1fc0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9de505e4515436fb3b2ab99ffd6d1fc0">&#9670;&#160;</a></span>get_number_of_blocks()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint16_t m5::nfc::a::get_number_of_blocks </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Gets the number of blocks. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Number of blocks/pages </dd></dl>
-
-</div>
-</div>
-<a id="a676326bf06691aca5ec34684cb005d67" name="a676326bf06691aca5ec34684cb005d67"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a676326bf06691aca5ec34684cb005d67">&#9670;&#160;</a></span>get_number_of_sectors()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint16_t m5::nfc::a::get_number_of_sectors </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Gets the number of sectors. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Number of sectors </dd></dl>
-
-</div>
-</div>
-<a id="a90f81b2afbf160114f08f351e7b6c16f" name="a90f81b2afbf160114f08f351e7b6c16f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90f81b2afbf160114f08f351e7b6c16f">&#9670;&#160;</a></span>get_number_of_user_blocks()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint16_t m5::nfc::a::get_number_of_user_blocks </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Gets the number of user blocks. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Number of user blocks/pages </dd></dl>
-
-</div>
-</div>
 <a id="a3e93f331f794cfd3ec5e1c7115e7bef5" name="a3e93f331f794cfd3ec5e1c7115e7bef5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3e93f331f794cfd3ec5e1c7115e7bef5">&#9670;&#160;</a></span>get_unit_size()</h2>
 
@@ -872,12 +685,6 @@ constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc:
 </div><div class="memdoc">
 
 <p>Get the unit size of 1 block / 1 page. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
 <dl class="retval"><dt>Return values</dt><dd>
   <table class="retval">
     <tr><td class="paramname">!=</td><td>0 Unit size </td></tr>
@@ -885,760 +692,6 @@ constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc:
   </table>
   </dd>
 </dl>
-
-</div>
-</div>
-<a id="aad24687ca20e8b303110f5bd6b399263" name="aad24687ca20e8b303110f5bd6b399263"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad24687ca20e8b303110f5bd6b399263">&#9670;&#160;</a></span>get_user_area_size()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint16_t m5::nfc::a::get_user_area_size </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Gets the user area bytes. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>User area size in bytes </dd></dl>
-
-</div>
-</div>
-<a id="acf8a3d3a8f2d6c01750bc4b7b99a9472" name="acf8a3d3a8f2d6c01750bc4b7b99a9472"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf8a3d3a8f2d6c01750bc4b7b99a9472">&#9670;&#160;</a></span>get_version3_response()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const uint8_t * m5::nfc::a::get_version3_response </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Gets the GET_VERSION(L3) response for emulation. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Pointer to the GET_VERSION response bytes, or nullptr if unavailable </dd></dl>
-
-</div>
-</div>
-<a id="a93c19461ed1494462e3b7da394cc8cee" name="a93c19461ed1494462e3b7da394cc8cee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a93c19461ed1494462e3b7da394cc8cee">&#9670;&#160;</a></span>has_fast_read()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::has_fast_read </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Has FAST_READ command? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type supports FAST_READ </dd></dl>
-
-</div>
-</div>
-<a id="abc51c5a960972570a4bf6da0876541c0" name="abc51c5a960972570a4bf6da0876541c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abc51c5a960972570a4bf6da0876541c0">&#9670;&#160;</a></span>has_sak_dependent_bit()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::has_sak_dependent_bit </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>sak</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>SAK incomplete? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">sak</td><td>SAK byte </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the SAK cascade/dependent bit is set </dd></dl>
-
-</div>
-</div>
-<a id="ada4876b0d15c060036b8f88ee1e81297" name="ada4876b0d15c060036b8f88ee1e81297"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ada4876b0d15c060036b8f88ee1e81297">&#9670;&#160;</a></span>historical_bytes_to_type()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> m5::nfc::a::historical_bytes_to_type </td>
-          <td>(</td>
-          <td class="paramtype">uint8_t &amp;</td>          <td class="paramname"><span class="paramname"><em>sub</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>atqa</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>sak</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>bytes</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>len</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Historical bytes to type. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[out]</td><td class="paramname">sub</td><td>Inferred subtype value </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">atqa</td><td>ATQA value </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">sak</td><td>SAK byte </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">bytes</td><td>Historical bytes </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">len</td><td>Historical byte length </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Type inferred from historical bytes </dd></dl>
-
-</div>
-</div>
-<a id="afbc51163bb9d06aa2d4d78bef4e99365" name="afbc51163bb9d06aa2d4d78bef4e99365"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afbc51163bb9d06aa2d4d78bef4e99365">&#9670;&#160;</a></span>is_file_system_file()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_file_system_file </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>File base file system? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if ISO 7816-4 or DESFire file access is supported </dd></dl>
-
-</div>
-</div>
-<a id="a01bc1d95019f0f2247fc5a6494c7da26" name="a01bc1d95019f0f2247fc5a6494c7da26"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01bc1d95019f0f2247fc5a6494c7da26">&#9670;&#160;</a></span>is_file_system_memory()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_file_system_memory </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Memory file system? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if flat memory access is supported </dd></dl>
-
-</div>
-</div>
-<a id="a1e0bb0c2934cf966515e67720500d0a8" name="a1e0bb0c2934cf966515e67720500d0a8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1e0bb0c2934cf966515e67720500d0a8">&#9670;&#160;</a></span>is_iso14443_3()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_iso14443_3 </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is ISO 14443-3? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is treated as ISO/IEC 14443-3 only </dd></dl>
-
-</div>
-</div>
-<a id="a921cc53e1ae6ed8b23a334f3bc2bf0b2" name="a921cc53e1ae6ed8b23a334f3bc2bf0b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a921cc53e1ae6ed8b23a334f3bc2bf0b2">&#9670;&#160;</a></span>is_iso14443_4()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_iso14443_4 </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is ISO 14443-4? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type supports ISO/IEC 14443-4 </dd></dl>
-
-</div>
-</div>
-<a id="a73dd2bd204c94f0609d92fe881437084" name="a73dd2bd204c94f0609d92fe881437084"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a73dd2bd204c94f0609d92fe881437084">&#9670;&#160;</a></span>is_mifare()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_mifare </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is type MIFARE? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is a supported MIFARE family </dd></dl>
-
-</div>
-</div>
-<a id="aff355cbd00ee527fa9fa5e797895bd07" name="aff355cbd00ee527fa9fa5e797895bd07"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aff355cbd00ee527fa9fa5e797895bd07">&#9670;&#160;</a></span>is_mifare_classic()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_mifare_classic </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is type MIFARE Classic? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is MIFARE Classic </dd></dl>
-
-</div>
-</div>
-<a id="aab3301d301ddd00ea67b1b737376c021" name="aab3301d301ddd00ea67b1b737376c021"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aab3301d301ddd00ea67b1b737376c021">&#9670;&#160;</a></span>is_mifare_classic_compatible()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_mifare_classic_compatible </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>sl</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is type MIFARE classic compatible? (Plus SL1) </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-    <tr><td class="paramname">sl</td><td>Security level </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is MIFARE Plus in security level 1 </dd></dl>
-
-</div>
-</div>
-<a id="a0b4e052a262a225acbb161354266ea5d" name="a0b4e052a262a225acbb161354266ea5d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b4e052a262a225acbb161354266ea5d">&#9670;&#160;</a></span>is_mifare_desfire()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_mifare_desfire </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is type MIFARE DESFire? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is MIFARE DESFire </dd></dl>
-
-</div>
-</div>
-<a id="ae7580ee2e43c1349e4e90d6e4443abb4" name="ae7580ee2e43c1349e4e90d6e4443abb4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7580ee2e43c1349e4e90d6e4443abb4">&#9670;&#160;</a></span>is_mifare_plus()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_mifare_plus </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is type MIFARE Plus? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is MIFARE Plus </dd></dl>
-
-</div>
-</div>
-<a id="abbf43a3ba65f0b362de47ed4382e38ce" name="abbf43a3ba65f0b362de47ed4382e38ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abbf43a3ba65f0b362de47ed4382e38ce">&#9670;&#160;</a></span>is_mifare_ultralight()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_mifare_ultralight </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is type MIFARE Ultralight series? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is MIFARE Ultralight series </dd></dl>
-
-</div>
-</div>
-<a id="a5183fa6cbb067b3a4aa00dad6c4c56aa" name="a5183fa6cbb067b3a4aa00dad6c4c56aa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5183fa6cbb067b3a4aa00dad6c4c56aa">&#9670;&#160;</a></span>is_ntag2()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_ntag2 </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is type NTAG2xx? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is NTAG2xx </dd></dl>
-
-</div>
-</div>
-<a id="a49181c1838c1e0df61a9599b4fd6d621" name="a49181c1838c1e0df61a9599b4fd6d621"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a49181c1838c1e0df61a9599b4fd6d621">&#9670;&#160;</a></span>is_ntag4()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_ntag4 </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is type NTAG4xx? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is NTAG4xx </dd></dl>
-
-</div>
-</div>
-<a id="a6316020b27e82ca7c8bbf5a66cc00381" name="a6316020b27e82ca7c8bbf5a66cc00381"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6316020b27e82ca7c8bbf5a66cc00381">&#9670;&#160;</a></span>is_sak_completed()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_sak_completed </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>sak</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>SAK completed? (Does not comply with ISO/IEC 14443-4) </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">sak</td><td>SAK byte </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the SAK indicates a complete non ISO/IEC 14443-4 UID </dd></dl>
-
-</div>
-</div>
-<a id="a71761585d3b73c7fe363568554722239" name="a71761585d3b73c7fe363568554722239"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a71761585d3b73c7fe363568554722239">&#9670;&#160;</a></span>is_sak_completed_14443_4()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_sak_completed_14443_4 </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>sak</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>SAK completed? (Complies with ISO/IEC 14443-4) </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">sak</td><td>SAK byte </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the SAK indicates a complete ISO/IEC 14443-4 compliant UID </dd></dl>
-
-</div>
-</div>
-<a id="a9d4572c50dafd47bdc9d0f5bc81ccc7c" name="a9d4572c50dafd47bdc9d0f5bc81ccc7c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9d4572c50dafd47bdc9d0f5bc81ccc7c">&#9670;&#160;</a></span>is_st25ta()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_st25ta </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is ST25TA series? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is ST25TA series </dd></dl>
-
-</div>
-</div>
-<a id="ad5568cdfb2f1c3f2e8b866a504615de6" name="ad5568cdfb2f1c3f2e8b866a504615de6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad5568cdfb2f1c3f2e8b866a504615de6">&#9670;&#160;</a></span>is_user_block()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::is_user_block </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>block</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Is block user area? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-    <tr><td class="paramname">block</td><td>Block/page number </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the block/page is in the user area </dd></dl>
-
-</div>
-</div>
-<a id="a6a5bf45cd1ad13cc3196e022dafe2048" name="a6a5bf45cd1ad13cc3196e022dafe2048"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a5bf45cd1ad13cc3196e022dafe2048">&#9670;&#160;</a></span>make_rats_param()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint8_t m5::nfc::a::make_rats_param </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>fsdi</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>cid</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Build the RATS PARAM byte (ISO/IEC 14443-4) </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">fsdi</td><td>PCD's max receive frame size index (0..8). Lower 4 bits are used </td></tr>
-    <tr><td class="paramname">cid</td><td>Card IDentifier (0..14). Lower 4 bits are used </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>PARAM byte = (FSDI &lt;&lt; 4) | CID </dd></dl>
 
 </div>
 </div>
@@ -1658,105 +711,8 @@ constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc:
 </div><div class="memdoc">
 
 <p>Inferring the type from SAK. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">sak</td><td>SAK byte </td></tr>
-  </table>
-  </dd>
-</dl>
 <dl class="section return"><dt>Returns</dt><dd>Type </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>This is a preliminary diagnosis, a more accurate diagnosis is required </dd></dl>
-
-</div>
-</div>
-<a id="a5e813cdf62d4a05e10dde34e64e21f1b" name="a5e813cdf62d4a05e10dde34e64e21f1b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5e813cdf62d4a05e10dde34e64e21f1b">&#9670;&#160;</a></span>supports_NFC()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::a::supports_NFC </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Does the specified type function as NFC? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the type is usable as an NFC Forum Type 2 style tag </dd></dl>
-
-</div>
-</div>
-<a id="a1c36af0eeed9f0cae6f19adeaac0522b" name="a1c36af0eeed9f0cae6f19adeaac0522b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c36af0eeed9f0cae6f19adeaac0522b">&#9670;&#160;</a></span>version3_to_type()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> m5::nfc::a::version3_to_type </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>info</em></span>[8]</td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Inferring the type from GetVersion L3. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">info</td><td>GET_VERSION response bytes </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Type inferred from the level 3 version information </dd></dl>
-
-</div>
-</div>
-<a id="a897ff51a5eccfd505aeec8f2c66c7e31" name="a897ff51a5eccfd505aeec8f2c66c7e31"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a897ff51a5eccfd505aeec8f2c66c7e31">&#9670;&#160;</a></span>version4_to_type()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="#ab84bb90cd0fe7b0457f4d2a7969da0d9">Type</a> m5::nfc::a::version4_to_type </td>
-          <td>(</td>
-          <td class="paramtype">uint8_t &amp;</td>          <td class="paramname"><span class="paramname"><em>sub</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>info</em></span>[8]&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Inferring the type from GetVersion L4. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[out]</td><td class="paramname">sub</td><td>Inferred subtype value </td></tr>
-    <tr><td class="paramdir"></td><td class="paramname">info</td><td>GET_VERSION response bytes </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Type inferred from the level 4 version information </dd></dl>
 
 </div>
 </div>

@@ -79,7 +79,6 @@ var nfcf_8hpp =
     [ "format_secure", "nfcf_8hpp.html#a9adc4af29d0d219c1804748d6c7aef48", null ],
     [ "format_shared", "nfcf_8hpp.html#a2e51494ec684f04fe85652cfca51b19d", null ],
     [ "KEY_VERIOSN_NONE", "nfcf_8hpp.html#a826f0b02bdb00fafe162f52e5a90c7c4", null ],
-    [ "KEY_VERSION_NONE", "nfcf_8hpp.html#afb4084ac673f4f1e792f23da6ad05b29", null ],
     [ "NODE_SYSTEM_KEY", "nfcf_8hpp.html#aea1e9a30d61d21a485d0f00785b030d2", null ],
     [ "service_cyclic_read", "nfcf_8hpp.html#ad932724434468d099da3f88fd3ea3131", null ],
     [ "service_cyclic_read_auth", "nfcf_8hpp.html#ab3f37f14f630750fae7a1015a24d158f", null ],

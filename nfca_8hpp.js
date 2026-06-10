@@ -2,8 +2,7 @@ var nfca_8hpp =
 [
     [ "m5::nfc::a::ATS", "structm5_1_1nfc_1_1a_1_1_a_t_s.html", "structm5_1_1nfc_1_1a_1_1_a_t_s" ],
     [ "m5::nfc::a::PICC", "structm5_1_1nfc_1_1a_1_1_p_i_c_c.html", "structm5_1_1nfc_1_1a_1_1_p_i_c_c" ],
-    [ "m5::nfc::a::config_t", "structm5_1_1nfc_1_1a_1_1config__t.html", "structm5_1_1nfc_1_1a_1_1config__t" ],
-    [ "m5::nfc::a::st25ta::SystemFile", "structm5_1_1nfc_1_1a_1_1st25ta_1_1_system_file.html", "structm5_1_1nfc_1_1a_1_1st25ta_1_1_system_file" ],
+    [ "m5::nfc::a::st25ta::SystemFile", "structm5_1_1nfc_1_1a_1_1st25ta_1_1_system_file.html", null ],
     [ "Command", "nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90ac", [
       [ "REQA", "nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90acad7bd76c9aadbfa1c3d7fbde38f278e78", null ],
       [ "WUPA", "nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90acad3d299158514dd7779be84e08f22d4cc", null ],
@@ -117,7 +116,6 @@ var nfca_8hpp =
     [ "is_sak_completed_14443_4", "nfca_8hpp.html#a71761585d3b73c7fe363568554722239", null ],
     [ "is_st25ta", "nfca_8hpp.html#a9d4572c50dafd47bdc9d0f5bc81ccc7c", null ],
     [ "is_user_block", "nfca_8hpp.html#ad5568cdfb2f1c3f2e8b866a504615de6", null ],
-    [ "make_rats_param", "nfca_8hpp.html#a6a5bf45cd1ad13cc3196e022dafe2048", null ],
     [ "operator!=", "nfca_8hpp.html#aae4e036a81bf97f2133c38ec1ec54af4", null ],
     [ "operator==", "nfca_8hpp.html#a613b44aedafa4a844d37f94af2a07955", null ],
     [ "sak_to_type", "nfca_8hpp.html#aba956d86d9cb908086a4e3b3b55b8bd6", null ],

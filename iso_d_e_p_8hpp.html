@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
    </div>
   </td>
  </tr>
@@ -117,9 +117,6 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structm5_1_1nfc_1_1isodep_1_1config__t.html">m5::nfc::isodep::config_t</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">ISO-DEP configuration.  <a href="structm5_1_1nfc_1_1isodep_1_1config__t.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structm5_1_1nfc_1_1isodep_1_1policy__t.html">m5::nfc::isodep::policy_t</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-exchange timeout/retry override for transceiveINF/transceiveAPDU.  <a href="structm5_1_1nfc_1_1isodep_1_1policy__t.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structm5_1_1nfc_1_1isodep_1_1_rx_info.html">m5::nfc::isodep::RxInfo</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">RX information.  <a href="structm5_1_1nfc_1_1isodep_1_1_rx_info.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -130,7 +127,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacem5.html">m5</a></td></tr>
-<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5Stack. <br /></td></tr>
+<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5stack. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceisodep.html">isodep</a></td></tr>
 <tr class="memdesc:namespaceisodep"><td class="mdescLeft">&#160;</td><td class="mdescRight">For ISO-DEP. <br /></td></tr>
@@ -138,11 +135,58 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a9c9dd562bc432a87e23b1f8388e581d5" id="r_a9c9dd562bc432a87e23b1f8388e581d5"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="iso_d_e_p_8cpp.html#a9c9dd562bc432a87e23b1f8388e581d5">m5::nfc::isodep::fwi_to_ms</a> (const uint8_t fwi, const float fc)</td></tr>
-<tr class="memdesc:a9c9dd562bc432a87e23b1f8388e581d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate waiting time(ms) by fwi and fc.  <br /></td></tr>
+<tr class="memitem:a9c9dd562bc432a87e23b1f8388e581d5" id="r_a9c9dd562bc432a87e23b1f8388e581d5"><td class="memItemLeft" align="right" valign="top"><a id="a9c9dd562bc432a87e23b1f8388e581d5" name="a9c9dd562bc432a87e23b1f8388e581d5"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::fwi_to_ms</b> (const uint8_t fwi, const float fc)</td></tr>
+<tr class="memdesc:a9c9dd562bc432a87e23b1f8388e581d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate waiting time(ms) by fwi and fc. <br /></td></tr>
 <tr class="separator:a9c9dd562bc432a87e23b1f8388e581d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b90bcfb046d66851dff723aff035867" id="r_a0b90bcfb046d66851dff723aff035867"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0b90bcfb046d66851dff723aff035867">m5::nfc::isodep::fsci_to_fsc</a> (const uint8_t fsci)</td></tr>
-<tr class="memdesc:a0b90bcfb046d66851dff723aff035867"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert FSCI to FSC (ISO/IEC 14443-4)  <br /></td></tr>
+<tr class="memitem:a59e5ce7f46c0b5ab6af2294da48f7ed3" id="r_a59e5ce7f46c0b5ab6af2294da48f7ed3"><td class="memItemLeft" align="right" valign="top"><a id="a59e5ce7f46c0b5ab6af2294da48f7ed3" name="a59e5ce7f46c0b5ab6af2294da48f7ed3"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::is_i_block</b> (uint8_t pcb)</td></tr>
+<tr class="separator:a59e5ce7f46c0b5ab6af2294da48f7ed3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6ad4dc96fc87f34d581e2d9bb7b7b57" id="r_ab6ad4dc96fc87f34d581e2d9bb7b7b57"><td class="memItemLeft" align="right" valign="top"><a id="ab6ad4dc96fc87f34d581e2d9bb7b7b57" name="ab6ad4dc96fc87f34d581e2d9bb7b7b57"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::is_r_block</b> (uint8_t pcb)</td></tr>
+<tr class="separator:ab6ad4dc96fc87f34d581e2d9bb7b7b57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73cfb13fef1f2c46ebc0448af5c9dce8" id="r_a73cfb13fef1f2c46ebc0448af5c9dce8"><td class="memItemLeft" align="right" valign="top"><a id="a73cfb13fef1f2c46ebc0448af5c9dce8" name="a73cfb13fef1f2c46ebc0448af5c9dce8"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::is_s_block</b> (uint8_t pcb)</td></tr>
+<tr class="separator:a73cfb13fef1f2c46ebc0448af5c9dce8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ad76900d66a8877602b8c41d6830d31" id="r_a7ad76900d66a8877602b8c41d6830d31"><td class="memItemLeft" align="right" valign="top"><a id="a7ad76900d66a8877602b8c41d6830d31" name="a7ad76900d66a8877602b8c41d6830d31"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::i_has_more</b> (uint8_t pcb)</td></tr>
+<tr class="separator:a7ad76900d66a8877602b8c41d6830d31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef1fdc8e5b66ecff6eb79c36081e4c1e" id="r_aef1fdc8e5b66ecff6eb79c36081e4c1e"><td class="memItemLeft" align="right" valign="top"><a id="aef1fdc8e5b66ecff6eb79c36081e4c1e" name="aef1fdc8e5b66ecff6eb79c36081e4c1e"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::i_bn</b> (uint8_t pcb)</td></tr>
+<tr class="separator:aef1fdc8e5b66ecff6eb79c36081e4c1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7225ca2e46a57f944e59fc16f0f129d3" id="r_a7225ca2e46a57f944e59fc16f0f129d3"><td class="memItemLeft" align="right" valign="top"><a id="a7225ca2e46a57f944e59fc16f0f129d3" name="a7225ca2e46a57f944e59fc16f0f129d3"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::is_s_wtx</b> (uint8_t pcb)</td></tr>
+<tr class="separator:a7225ca2e46a57f944e59fc16f0f129d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29ad8e55585d16e2863bc9f0c16bdf71" id="r_a29ad8e55585d16e2863bc9f0c16bdf71"><td class="memItemLeft" align="right" valign="top"><a id="a29ad8e55585d16e2863bc9f0c16bdf71" name="a29ad8e55585d16e2863bc9f0c16bdf71"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::is_valid_rblock</b> (uint8_t pcb)</td></tr>
+<tr class="separator:a29ad8e55585d16e2863bc9f0c16bdf71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdfc6ef2b1a7dafa34473df8c5227a7a" id="r_afdfc6ef2b1a7dafa34473df8c5227a7a"><td class="memItemLeft" align="right" valign="top"><a id="afdfc6ef2b1a7dafa34473df8c5227a7a" name="afdfc6ef2b1a7dafa34473df8c5227a7a"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::r_is_nak</b> (uint8_t pcb)</td></tr>
+<tr class="separator:afdfc6ef2b1a7dafa34473df8c5227a7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13f2d60bd946acea5a011bb3e136bef7" id="r_a13f2d60bd946acea5a011bb3e136bef7"><td class="memItemLeft" align="right" valign="top"><a id="a13f2d60bd946acea5a011bb3e136bef7" name="a13f2d60bd946acea5a011bb3e136bef7"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::r_is_ack</b> (uint8_t pcb)</td></tr>
+<tr class="separator:a13f2d60bd946acea5a011bb3e136bef7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe5cb1952d10a93168184ad3d2bf12f1" id="r_afe5cb1952d10a93168184ad3d2bf12f1"><td class="memItemLeft" align="right" valign="top"><a id="afe5cb1952d10a93168184ad3d2bf12f1" name="afe5cb1952d10a93168184ad3d2bf12f1"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::get_wtxm</b> (uint8_t inf)</td></tr>
+<tr class="separator:afe5cb1952d10a93168184ad3d2bf12f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90e3aff408232f050233bd99ab0f0e5e" id="r_a90e3aff408232f050233bd99ab0f0e5e"><td class="memItemLeft" align="right" valign="top"><a id="a90e3aff408232f050233bd99ab0f0e5e" name="a90e3aff408232f050233bd99ab0f0e5e"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::is_valid_wtxm</b> (uint8_t wtxm)</td></tr>
+<tr class="separator:a90e3aff408232f050233bd99ab0f0e5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6eac0c9ee2cbeb0787a1d5ab0172a58d" id="r_a6eac0c9ee2cbeb0787a1d5ab0172a58d"><td class="memItemLeft" align="right" valign="top"><a id="a6eac0c9ee2cbeb0787a1d5ab0172a58d" name="a6eac0c9ee2cbeb0787a1d5ab0172a58d"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::mul_clamp_u32</b> (uint32_t a, uint32_t b, uint32_t maxv)</td></tr>
+<tr class="separator:a6eac0c9ee2cbeb0787a1d5ab0172a58d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b844c00492b51204d32d35736059115" id="r_a2b844c00492b51204d32d35736059115"><td class="memItemLeft" align="right" valign="top"><a id="a2b844c00492b51204d32d35736059115" name="a2b844c00492b51204d32d35736059115"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::make_i_pcb</b> (uint8_t bn, bool more, bool has_cid, bool has_nad)</td></tr>
+<tr class="separator:a2b844c00492b51204d32d35736059115"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f041277b7fe6a00ea5d795cee8ac5c6" id="r_a1f041277b7fe6a00ea5d795cee8ac5c6"><td class="memItemLeft" align="right" valign="top"><a id="a1f041277b7fe6a00ea5d795cee8ac5c6" name="a1f041277b7fe6a00ea5d795cee8ac5c6"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::make_r_ack</b> (uint8_t bn, bool has_cid)</td></tr>
+<tr class="separator:a1f041277b7fe6a00ea5d795cee8ac5c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa51fcf372f22b978e9850e8752b7e81" id="r_afa51fcf372f22b978e9850e8752b7e81"><td class="memItemLeft" align="right" valign="top"><a id="afa51fcf372f22b978e9850e8752b7e81" name="afa51fcf372f22b978e9850e8752b7e81"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::detail::make_s_wtx_ack</b> (bool has_cid)</td></tr>
+<tr class="separator:afa51fcf372f22b978e9850e8752b7e81"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b90bcfb046d66851dff723aff035867" id="r_a0b90bcfb046d66851dff723aff035867"><td class="memItemLeft" align="right" valign="top"><a id="a0b90bcfb046d66851dff723aff035867" name="a0b90bcfb046d66851dff723aff035867"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::isodep::fsci_to_fsc</b> (const uint8_t fsci)</td></tr>
+<tr class="memdesc:a0b90bcfb046d66851dff723aff035867"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert FSCI to FSC (ISO/IEC 14443-4) <br /></td></tr>
 <tr class="separator:a0b90bcfb046d66851dff723aff035867"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
@@ -153,73 +197,7 @@ constexpr uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>ISO Data Exchange Protocol. </p>
-</div><h2 class="groupheader">Function Documentation</h2>
-<a id="a0b90bcfb046d66851dff723aff035867" name="a0b90bcfb046d66851dff723aff035867"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b90bcfb046d66851dff723aff035867">&#9670;&#160;</a></span>fsci_to_fsc()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint16_t m5::nfc::isodep::fsci_to_fsc </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>fsci</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Convert FSCI to FSC (ISO/IEC 14443-4) </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">fsci</td><td>Frame Size for proximity Card Integer </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Frame Size for proximity Card in bytes, or 0 if invalid </dd></dl>
-
-</div>
-</div>
-<a id="a9c9dd562bc432a87e23b1f8388e581d5" name="a9c9dd562bc432a87e23b1f8388e581d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c9dd562bc432a87e23b1f8388e581d5">&#9670;&#160;</a></span>fwi_to_ms()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t m5::nfc::isodep::fwi_to_ms </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>fwi</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const float</td>          <td class="paramname"><span class="paramname"><em>fc</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Calculate waiting time(ms) by fwi and fc. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">fwi</td><td>Frame Waiting Integer </td></tr>
-    <tr><td class="paramname">fc</td><td>Carrier frequency in MHz </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Frame waiting time in milliseconds </dd></dl>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

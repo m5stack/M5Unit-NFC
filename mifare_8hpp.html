@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
    </div>
   </td>
  </tr>
@@ -115,7 +115,7 @@ $(function(){initNavTree('mifare_8hpp.html',''); initResizable(true); });
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacem5.html">m5</a></td></tr>
-<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5Stack. <br /></td></tr>
+<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5stack. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacemifare.html">mifare</a></td></tr>
 <tr class="memdesc:namespacemifare"><td class="mdescLeft">&#160;</td><td class="mdescRight">For MIFARE. <br /></td></tr>
@@ -296,7 +296,7 @@ constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc:
 <tr class="memdesc:a0431c9806ae0c3dca72b0d2e1c68efd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain read permissions from access rights.  <br /></td></tr>
 <tr class="separator:a0431c9806ae0c3dca72b0d2e1c68efd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf8d199a4af41bae63909d3f4e1a5aaf" id="r_abf8d199a4af41bae63909d3f4e1a5aaf"><td class="memItemLeft" align="right" valign="top">int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#abf8d199a4af41bae63909d3f4e1a5aaf">m5::nfc::a::mifare::desfire::required_write_key_no_from_access_rights</a> (const uint16_t access_rights)</td></tr>
-<tr class="memdesc:abf8d199a4af41bae63909d3f4e1a5aaf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain write permissions from access rights.  <br /></td></tr>
+<tr class="memdesc:abf8d199a4af41bae63909d3f4e1a5aaf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain rite permissions from access rights.  <br /></td></tr>
 <tr class="separator:abf8d199a4af41bae63909d3f4e1a5aaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -362,7 +362,7 @@ constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc:
 <p>Decode access bits to permissions. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">permissions</td><td>Output buffer at least 4 bytes </td></tr>
+    <tr><td class="paramname">permissions[4]</td><td>Output buffer at least 4 bytes </td></tr>
     <tr><td class="paramname">ab0</td><td>1st byte of the access bits </td></tr>
     <tr><td class="paramname">ab1</td><td>2nd byte of the access bits </td></tr>
     <tr><td class="paramname">ab2</td><td>3rd byte of the access bits </td></tr>
@@ -411,8 +411,8 @@ permissions[3] sector trailer </dd></dl>
 <p>Decode access bits to permissions. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">permissions</td><td>Output buffer at least 4 bytes </td></tr>
-    <tr><td class="paramname">abits</td><td>Array of the access bits </td></tr>
+    <tr><td class="paramname">permissions[4]</td><td>Output buffer at least 4 bytes </td></tr>
+    <tr><td class="paramname">abits[3]</td><td>Array of the access bits </td></tr>
   </table>
   </dd>
 </dl>
@@ -495,11 +495,11 @@ permissions[3] sector trailer </dd></dl>
 <p>Encode access bits from permissions. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">abits</td><td>Output buffer at least 3 bytes </td></tr>
+    <tr><td class="paramname">abits[3]</td><td>Output buffer at least 3 bytes </td></tr>
     <tr><td class="paramname">p0</td><td>permissions for block 0 </td></tr>
     <tr><td class="paramname">p1</td><td>permissions for block 1 </td></tr>
     <tr><td class="paramname">p2</td><td>permissions for block 2 </td></tr>
-    <tr><td class="paramname">p3</td><td>permissions for sector trailer </td></tr>
+    <tr><td class="paramname">p3</td><td>permissions for sector tarailer </td></tr>
   </table>
   </dd>
 </dl>
@@ -540,8 +540,8 @@ Writing incorrect access bits may make the sector inaccessible! </dd></dl>
 <p>Encode access bits from permissions. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">abits</td><td>Output buffer at least 3 bytes </td></tr>
-    <tr><td class="paramname">permissions</td><td>Array of the permissions. [0];block0 ... [3]:sector trailer </td></tr>
+    <tr><td class="paramname">abits[3]</td><td>Output buffer at least 3 bytes </td></tr>
+    <tr><td class="paramname">permissions[4]</td><td>Array of the permissions. [0];block0 ... [3]:sector trailer </td></tr>
   </table>
   </dd>
 </dl>
@@ -799,7 +799,7 @@ Writing incorrect access bits may make the sector inaccessible! </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p>Obtain write permissions from access rights. </p>
+<p>Obtain rite permissions from access rights. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">access_rights</td><td>Access rights </td></tr>

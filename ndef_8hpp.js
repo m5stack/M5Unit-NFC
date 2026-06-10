@@ -8,8 +8,7 @@ var ndef_8hpp =
     [ "TagBits", "ndef_8hpp.html#a5716a98da0909374b245e22ea5b4bfed", null ],
     [ "FileControlTag", "ndef_8hpp.html#a3d88baf2d1668d0f00d9c5a2397f9c2f", [
       [ "Message", "ndef_8hpp.html#a3d88baf2d1668d0f00d9c5a2397f9c2fa4c2a8fe7eaf24721cc7a9f0175115bd4", null ],
-      [ "Proprietary", "ndef_8hpp.html#a3d88baf2d1668d0f00d9c5a2397f9c2fa03fe683ef28b9ddfe7f658a0f4b3b80e", null ],
-      [ "Invalid", "ndef_8hpp.html#a3d88baf2d1668d0f00d9c5a2397f9c2fa4bbb8f967da6d1a610596d7257179c2b", null ]
+      [ "Proprietary", "ndef_8hpp.html#a3d88baf2d1668d0f00d9c5a2397f9c2fa03fe683ef28b9ddfe7f658a0f4b3b80e", null ]
     ] ],
     [ "Tag", "ndef_8hpp.html#ace18f3439d147659696eec175e13e03a", [
       [ "Null", "ndef_8hpp.html#ace18f3439d147659696eec175e13e03aabbb93ef26e3c101ff11cdd21cab08a94", null ],

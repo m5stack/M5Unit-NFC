@@ -7,8 +7,6 @@ var namespaces_dup =
     [ "desfire", "namespacedesfire.html", null ],
     [ "f", "namespacef.html", null ],
     [ "isodep", "namespaceisodep.html", null ],
-    [ "lite", "namespacelite.html", null ],
-    [ "lite_s", "namespacelite__s.html", null ],
     [ "m5", "namespacem5.html", null ],
     [ "mifare", "namespacemifare.html", null ],
     [ "ndef", "namespacendef.html", null ],

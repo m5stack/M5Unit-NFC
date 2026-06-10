@@ -30,7 +30,6 @@ var hierarchy =
         [ "m5::unit::CapST25R3916", "classm5_1_1unit_1_1_cap_s_t25_r3916.html", null ]
       ] ]
     ] ],
-    [ "m5::nfc::a::config_t", "structm5_1_1nfc_1_1a_1_1config__t.html", null ],
     [ "m5::nfc::isodep::config_t", "structm5_1_1nfc_1_1isodep_1_1config__t.html", null ],
     [ "m5::unit::UnitST25R3916::config_t", "structm5_1_1unit_1_1_unit_s_t25_r3916_1_1config__t.html", null ],
     [ "m5::nfc::a::mifare::desfire::desfire_aid_t", "structm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1desfire__aid__t.html", null ],
@@ -61,7 +60,6 @@ var hierarchy =
     [ "m5::nfc::b::PICC", "structm5_1_1nfc_1_1b_1_1_p_i_c_c.html", null ],
     [ "m5::nfc::f::PICC", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html", null ],
     [ "m5::nfc::v::PICC", "structm5_1_1nfc_1_1v_1_1_p_i_c_c.html", null ],
-    [ "m5::nfc::isodep::policy_t", "structm5_1_1nfc_1_1isodep_1_1policy__t.html", null ],
     [ "m5::nfc::ndef::Record", "classm5_1_1nfc_1_1ndef_1_1_record.html", null ],
     [ "m5::nfc::f::REG", "unionm5_1_1nfc_1_1f_1_1_r_e_g.html", null ],
     [ "m5::nfc::isodep::RxInfo", "structm5_1_1nfc_1_1isodep_1_1_rx_info.html", null ],

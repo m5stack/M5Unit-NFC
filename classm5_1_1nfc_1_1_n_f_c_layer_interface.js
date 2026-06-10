@@ -1,6 +1,5 @@
 var classm5_1_1nfc_1_1_n_f_c_layer_interface =
 [
-    [ "~NFCLayerInterface", "classm5_1_1nfc_1_1_n_f_c_layer_interface.html#a4acef73549f09662cb75bcbb2d85c19f", null ],
     [ "first_user_block", "classm5_1_1nfc_1_1_n_f_c_layer_interface.html#a9f7d7f4be1107c1a09325596de06fd54", null ],
     [ "isoDEP", "classm5_1_1nfc_1_1_n_f_c_layer_interface.html#a2d1a4a1c91d0a054640c806f8ba9d42f", null ],
     [ "last_user_block", "classm5_1_1nfc_1_1_n_f_c_layer_interface.html#ad3718fd96e63ae118ec7f46f65ad9dce", null ],

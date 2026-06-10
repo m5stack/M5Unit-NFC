@@ -1,15 +1,9 @@
 var classm5_1_1nfc_1_1_n_f_c_layer_b =
 [
-    [ "NFCLayerB", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#ac1c5ad5d5be6fc374e4cad8d1a14c9da", null ],
-    [ "NFCLayerB", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a3db1fee95788ddc14b489b059b6fc2d2", null ],
-    [ "NFCLayerB", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a6e75370322d135218de578bf429379e8", null ],
     [ "activatedPICC", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a43e13b709e37cda6e0bd2e63ec0db114", null ],
-    [ "deactivate", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a7eb3849eb85ec9aa48d0be99bf2e6b35", null ],
-    [ "deselect", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#aaeebcde5471a788d40b62b12b467b05e", null ],
     [ "detect", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a8c0d0d0f0746fc372d1f9a1599ca00b9", null ],
     [ "detect", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#af8c07646909ab393b0c1609a767c7804", null ],
     [ "first_user_block", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#afa2dbc0f285d67cefe5fdc9193784672", null ],
-    [ "hlt", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a793a94c93e909bd2b0eed7835cefb828", null ],
     [ "isActive", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a11b95164e1ef71d9dfce3cad9ab3da29", null ],
     [ "isoDEP", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a8f40ff3e5e6bc0018e3e635229c1cbbc", null ],
     [ "last_user_block", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a36c1c50e191cbcc8755456520c61561d", null ],
@@ -22,7 +16,7 @@ var classm5_1_1nfc_1_1_n_f_c_layer_b =
     [ "transmit", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a3f248f568f9ce9526593e1eb194073f4", null ],
     [ "unit_size_read", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a19d4d6e76db9241d8e5a79c180acaba3", null ],
     [ "unit_size_write", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#ac3993de89564964f63a7a0035b0837eb", null ],
-    [ "user_area_size", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#ab8aa0b8de10637d3e1ae7ec110da5255", null ],
+    [ "user_area_size", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a5f42174f261408428c47686a8c2a7bc7", null ],
     [ "wakeup", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a1a4bd73e6949ae6391316024baa7d310", null ],
     [ "write", "classm5_1_1nfc_1_1_n_f_c_layer_b.html#a4283e90fffaadbda8ab352ec153cd893", null ]
 ];

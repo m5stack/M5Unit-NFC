@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
    </div>
   </td>
  </tr>
@@ -123,7 +123,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacem5.html">m5</a></td></tr>
-<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5Stack. <br /></td></tr>
+<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5stack. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceapdu.html">apdu</a></td></tr>
 <tr class="memdesc:namespaceapdu"><td class="mdescLeft">&#160;</td><td class="mdescRight">For APDU. <br /></td></tr>
@@ -131,7 +131,7 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a52383af4e666193fc52faa7c2c0f1c45" id="r_a52383af4e666193fc52faa7c2c0f1c45"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a52383af4e666193fc52faa7c2c0f1c45">m5::nfc::apdu::INS</a> : uint8_t { <br />
+<tr class="memitem:a52383af4e666193fc52faa7c2c0f1c45" id="r_a52383af4e666193fc52faa7c2c0f1c45"><td class="memItemLeft" align="right" valign="top"><a id="a52383af4e666193fc52faa7c2c0f1c45" name="a52383af4e666193fc52faa7c2c0f1c45"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a52383af4e666193fc52faa7c2c0f1c45">m5::nfc::apdu::INS</a> : uint8_t { <br />
 &#160;&#160;<b>SELECT_FILE</b> = 0xA4
 , <b>CREATE_FILE</b> = 0xE0
 , <b>READ_BINARY</b> = 0xB0
@@ -143,55 +143,52 @@ Enumerations</h2></td></tr>
 , <b>WRITE_RECORD</b> = 0xD2
 , <br />
 &#160;&#160;<b>APPEND_RECORD</b> = 0xE2
-, <b>UPDATE_RECORD</b> = 0xDC
-, <a class="el" href="#a52383af4e666193fc52faa7c2c0f1c45ad6c38ad6dbc6dbbc3af768f5ab1e3d94">UPDATE_RECORRD</a> = UPDATE_RECORD
+, <b>UPDATE_RECORRD</b> = 0xDC
 , <b>GET_RESPONSE</b> = 0xC0
+, <b>GET_DATA</b> = 0xCA
 , <br />
-&#160;&#160;<b>GET_DATA</b> = 0xCA
-, <b>PUT_DATA</b> = 0xDA
+&#160;&#160;<b>PUT_DATA</b> = 0xDA
 , <b>VERIFY</b> = 0x20
 , <b>INTERNAL_AUTHENTICATE</b> = 0x88
+, <b>EXTERNAL_AUTHENTICATE</b> = 0x82
 , <br />
-&#160;&#160;<b>EXTERNAL_AUTHENTICATE</b> = 0x82
-, <b>GET_CHALLENGE</b> = 0x84
-, <a class="el" href="#a52383af4e666193fc52faa7c2c0f1c45a47ba60cb92b683ab6f11566f9f78db7c">GET_CHALLEMGE</a> = GET_CHALLENGE
+&#160;&#160;<b>GET_CHALLEMGE</b> = 0x84
 , <b>LOCK_DF</b> = 0x50
-, <br />
-&#160;&#160;<b>UNLOCK_DF</b> = 0x52
+, <b>UNLOCK_DF</b> = 0x52
 , <b>UNLOCK_KEY</b> = 0x54
-, <b>CHANGE_KEY</b> = 0x32
+, <br />
+&#160;&#160;<b>CHANGE_KEY</b> = 0x32
 , <b>ERASE_ALL_RECORDS</b> = 0x06
-, <br />
-&#160;&#160;<b>GET_VERSION</b> = 0x60
+, <b>GET_VERSION</b> = 0x60
 , <b>DF_CREATE_APPLICATION</b> = 0xCA
-, <b>DF_DELETE_APPLICATION</b> = 0xDA
+, <br />
+&#160;&#160;<b>DF_DELETE_APPLICATION</b> = 0xDA
 , <b>DF_SELECT_APPLICATION</b> = 0x5A
-, <br />
-&#160;&#160;<b>DF_GET_APPLICATION_IDS</b> = 0x6A
+, <b>DF_GET_APPLICATION_IDS</b> = 0x6A
 , <b>DF_CREATE_STD_DATA_FILE</b> = 0xCD
-, <b>DF_GET_FREE_MEMORY</b> = 0x6E
+, <br />
+&#160;&#160;<b>DF_GET_FREE_MEMORY</b> = 0x6E
 , <b>DF_GET_FILE_IDS</b> = 0x6F
-, <br />
-&#160;&#160;<b>DF_GET_ISO_FILE_IDS</b> = 0x61
+, <b>DF_GET_ISO_FILE_IDS</b> = 0x61
 , <b>DF_GET_KEY_SETTINGS</b> = 0x45
-, <b>DF_SET_CONFIGURATION</b> = 0x5C
+, <br />
+&#160;&#160;<b>DF_SET_CONFIGURATION</b> = 0x5C
 , <b>DF_CHANGE_FILE_SETTINGS</b> = 0x5F
-, <br />
-&#160;&#160;<b>DF_AUTHENTICATE</b> = 0x0A
+, <b>DF_AUTHENTICATE</b> = 0x0A
 , <b>DF_AUTHENTICATE_ISO</b> = 0x1A
-, <b>DF_AUTHENTICATE_AES</b> = 0xAA
+, <br />
+&#160;&#160;<b>DF_AUTHENTICATE_AES</b> = 0xAA
 , <b>DF_AUTHENTICATE_EV2</b> = 0x71
-, <br />
-&#160;&#160;<b>DF_FORMAT_PICC</b> = 0xFC
+, <b>DF_FORMAT_PICC</b> = 0xFC
 , <b>DF_READ_DATA</b> = 0xBD
-, <b>DF_WRITE_DATA</b> = 0x3D
-, <b>DF_GET_FILE_SETTINGS</b> = 0xF5
 , <br />
-&#160;&#160;<b>DF_DELETE_TRANSACTION_MAC_FILE</b> = 0xDF
+&#160;&#160;<b>DF_WRITE_DATA</b> = 0x3D
+, <b>DF_GET_FILE_SETTINGS</b> = 0xF5
+, <b>DF_DELETE_TRANSACTION_MAC_FILE</b> = 0xDF
 , <b>DF_CREATE_TRANSACTION_MAC_FILE</b> = 0xCE
 <br />
  }</td></tr>
-<tr class="memdesc:a52383af4e666193fc52faa7c2c0f1c45"><td class="mdescLeft">&#160;</td><td class="mdescRight">APDU instruction code.  <a href="#a52383af4e666193fc52faa7c2c0f1c45">More...</a><br /></td></tr>
+<tr class="memdesc:a52383af4e666193fc52faa7c2c0f1c45"><td class="mdescLeft">&#160;</td><td class="mdescRight">APDU instruction code. <br /></td></tr>
 <tr class="separator:a52383af4e666193fc52faa7c2c0f1c45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15996a2f517e76dafb70c61654cb08ad" id="r_a15996a2f517e76dafb70c61654cb08ad"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a15996a2f517e76dafb70c61654cb08ad">m5::nfc::apdu::SelectBy</a> : uint8_t { <br />
 &#160;&#160;<a class="el" href="#a15996a2f517e76dafb70c61654cb08ada225a9460e6eedf7af126fdc580345881">FileId</a> = 0x00
@@ -223,38 +220,47 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a8661d1015977051ff244e69214a9f244" id="r_a8661d1015977051ff244e69214a9f244"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8661d1015977051ff244e69214a9f244">m5::nfc::apdu::is_response_OK</a> (const uint16_t sw12)</td></tr>
-<tr class="memdesc:a8661d1015977051ff244e69214a9f244"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is response successfully?  <br /></td></tr>
+<tr class="memitem:a8661d1015977051ff244e69214a9f244" id="r_a8661d1015977051ff244e69214a9f244"><td class="memItemLeft" align="right" valign="top"><a id="a8661d1015977051ff244e69214a9f244" name="a8661d1015977051ff244e69214a9f244"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::is_response_OK</b> (const uint16_t sw12)</td></tr>
+<tr class="memdesc:a8661d1015977051ff244e69214a9f244"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is response successfully? <br /></td></tr>
 <tr class="separator:a8661d1015977051ff244e69214a9f244"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02f2cf412748d5964bb0034cb40dd622" id="r_a02f2cf412748d5964bb0034cb40dd622"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a02f2cf412748d5964bb0034cb40dd622">m5::nfc::apdu::is_response_OK</a> (const uint8_t sw[2])</td></tr>
-<tr class="memdesc:a02f2cf412748d5964bb0034cb40dd622"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is response successfully?  <br /></td></tr>
+<tr class="memitem:a02f2cf412748d5964bb0034cb40dd622" id="r_a02f2cf412748d5964bb0034cb40dd622"><td class="memItemLeft" align="right" valign="top"><a id="a02f2cf412748d5964bb0034cb40dd622" name="a02f2cf412748d5964bb0034cb40dd622"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::is_response_OK</b> (const uint8_t sw[2])</td></tr>
+<tr class="memdesc:a02f2cf412748d5964bb0034cb40dd622"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is response successfully? <br /></td></tr>
 <tr class="separator:a02f2cf412748d5964bb0034cb40dd622"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adba4a567d412579a8447c2da5425e935" id="r_adba4a567d412579a8447c2da5425e935"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#adba4a567d412579a8447c2da5425e935">m5::nfc::apdu::is_response_OK</a> (const uint8_t sw1, const uint8_t sw2)</td></tr>
-<tr class="memdesc:adba4a567d412579a8447c2da5425e935"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is response successfully?  <br /></td></tr>
+<tr class="memitem:adba4a567d412579a8447c2da5425e935" id="r_adba4a567d412579a8447c2da5425e935"><td class="memItemLeft" align="right" valign="top"><a id="adba4a567d412579a8447c2da5425e935" name="adba4a567d412579a8447c2da5425e935"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::is_response_OK</b> (const uint8_t sw1, const uint8_t sw2)</td></tr>
+<tr class="memdesc:adba4a567d412579a8447c2da5425e935"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is response successfully? <br /></td></tr>
 <tr class="separator:adba4a567d412579a8447c2da5425e935"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a525935a38be231627a6abbebc6d757e8" id="r_a525935a38be231627a6abbebc6d757e8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a525935a38be231627a6abbebc6d757e8">m5::nfc::apdu::need_select_file_le</a> (const uint8_t param2)</td></tr>
-<tr class="memdesc:a525935a38be231627a6abbebc6d757e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check whether SELECT FILE expects Le.  <br /></td></tr>
+<tr class="memitem:a525935a38be231627a6abbebc6d757e8" id="r_a525935a38be231627a6abbebc6d757e8"><td class="memItemLeft" align="right" valign="top"><a id="a525935a38be231627a6abbebc6d757e8" name="a525935a38be231627a6abbebc6d757e8"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::need_select_file_le</b> (const uint8_t param2)</td></tr>
 <tr class="separator:a525935a38be231627a6abbebc6d757e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f63415d23f1838b2cf7a294cad86ec1" id="r_a5f63415d23f1838b2cf7a294cad86ec1"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html">TLV</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="apdu_8cpp.html#a5f63415d23f1838b2cf7a294cad86ec1">m5::nfc::apdu::parse_tlv</a> (const uint8_t *ptr, const uint32_t len)</td></tr>
-<tr class="memdesc:a5f63415d23f1838b2cf7a294cad86ec1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html" title="TLV element.">TLV</a>.  <br /></td></tr>
+<tr class="memitem:a5f63415d23f1838b2cf7a294cad86ec1" id="r_a5f63415d23f1838b2cf7a294cad86ec1"><td class="memItemLeft" align="right" valign="top"><a id="a5f63415d23f1838b2cf7a294cad86ec1" name="a5f63415d23f1838b2cf7a294cad86ec1"></a>
+std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html">TLV</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::parse_tlv</b> (const uint8_t *ptr, const uint32_t len)</td></tr>
+<tr class="memdesc:a5f63415d23f1838b2cf7a294cad86ec1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html" title="TLV element.">TLV</a>. <br /></td></tr>
 <tr class="separator:a5f63415d23f1838b2cf7a294cad86ec1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aefdcb0a0692e4e97f13e6a5f7a140ade" id="r_aefdcb0a0692e4e97f13e6a5f7a140ade"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="apdu_8cpp.html#aefdcb0a0692e4e97f13e6a5f7a140ade">m5::nfc::apdu::dump_tlv</a> (const std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html">TLV</a> &gt; &amp;tlvs, const uint8_t depth=0)</td></tr>
-<tr class="memdesc:aefdcb0a0692e4e97f13e6a5f7a140ade"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dump <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html" title="TLV element.">TLV</a>.  <br /></td></tr>
+<tr class="memitem:aefdcb0a0692e4e97f13e6a5f7a140ade" id="r_aefdcb0a0692e4e97f13e6a5f7a140ade"><td class="memItemLeft" align="right" valign="top"><a id="aefdcb0a0692e4e97f13e6a5f7a140ade" name="aefdcb0a0692e4e97f13e6a5f7a140ade"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::dump_tlv</b> (const std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html">TLV</a> &gt; &amp;tlvs, const uint8_t depth=0)</td></tr>
+<tr class="memdesc:aefdcb0a0692e4e97f13e6a5f7a140ade"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dump <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html" title="TLV element.">TLV</a>. <br /></td></tr>
 <tr class="separator:aefdcb0a0692e4e97f13e6a5f7a140ade"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade33069f0d2d930a92d79591644b8ed8" id="r_ade33069f0d2d930a92d79591644b8ed8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="apdu_8cpp.html#ade33069f0d2d930a92d79591644b8ed8">m5::nfc::apdu::make_apdu_command</a> (const uint8_t cla, const uint8_t ins, const uint8_t param1=0x00, const uint8_t param2=0x00, const uint8_t *data=nullptr, const uint16_t data_len=0, const uint16_t rx_len=0)</td></tr>
 <tr class="memdesc:ade33069f0d2d930a92d79591644b8ed8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make APDU command.  <br /></td></tr>
 <tr class="separator:ade33069f0d2d930a92d79591644b8ed8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f8d54d3187aa2aebd756f6da9523351" id="r_a3f8d54d3187aa2aebd756f6da9523351"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a3f8d54d3187aa2aebd756f6da9523351">m5::nfc::apdu::make_apdu_case1</a> (const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2)</td></tr>
-<tr class="memdesc:a3f8d54d3187aa2aebd756f6da9523351"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make APDU case1 command [CLA | INS | P1 | P2].  <br /></td></tr>
+<tr class="memitem:a3f8d54d3187aa2aebd756f6da9523351" id="r_a3f8d54d3187aa2aebd756f6da9523351"><td class="memItemLeft" align="right" valign="top"><a id="a3f8d54d3187aa2aebd756f6da9523351" name="a3f8d54d3187aa2aebd756f6da9523351"></a>
+std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::make_apdu_case1</b> (const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2)</td></tr>
+<tr class="memdesc:a3f8d54d3187aa2aebd756f6da9523351"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make APDU case1 command [CLA | INS | P1 | P2]. <br /></td></tr>
 <tr class="separator:a3f8d54d3187aa2aebd756f6da9523351"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a2d632c8b477931e48b04663927ce01" id="r_a4a2d632c8b477931e48b04663927ce01"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4a2d632c8b477931e48b04663927ce01">m5::nfc::apdu::make_apdu_case2</a> (const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2, const uint16_t le)</td></tr>
-<tr class="memdesc:a4a2d632c8b477931e48b04663927ce01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make APDU case2 command [CLA | INS | P1 | P2 | Le].  <br /></td></tr>
+<tr class="memitem:a4a2d632c8b477931e48b04663927ce01" id="r_a4a2d632c8b477931e48b04663927ce01"><td class="memItemLeft" align="right" valign="top"><a id="a4a2d632c8b477931e48b04663927ce01" name="a4a2d632c8b477931e48b04663927ce01"></a>
+std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::make_apdu_case2</b> (const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2, const uint16_t le)</td></tr>
+<tr class="memdesc:a4a2d632c8b477931e48b04663927ce01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make APDU case2 command [CLA | INS | P1 | P2 | Le]. <br /></td></tr>
 <tr class="separator:a4a2d632c8b477931e48b04663927ce01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca08fb7d12f53387b2a9d8350e01499d" id="r_aca08fb7d12f53387b2a9d8350e01499d"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aca08fb7d12f53387b2a9d8350e01499d">m5::nfc::apdu::make_apdu_case3</a> (const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2, const uint8_t *data, const uint16_t data_len)</td></tr>
-<tr class="memdesc:aca08fb7d12f53387b2a9d8350e01499d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make APDU case3 command [CLA | INS | P1 | P2 | Lc | C-Data].  <br /></td></tr>
+<tr class="memitem:aca08fb7d12f53387b2a9d8350e01499d" id="r_aca08fb7d12f53387b2a9d8350e01499d"><td class="memItemLeft" align="right" valign="top"><a id="aca08fb7d12f53387b2a9d8350e01499d" name="aca08fb7d12f53387b2a9d8350e01499d"></a>
+std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::make_apdu_case3</b> (const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2, const uint8_t *data, const uint16_t data_len)</td></tr>
+<tr class="memdesc:aca08fb7d12f53387b2a9d8350e01499d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make APDU case3 command [CLA | INS | P1 | P2 | Lc | C-Data]. <br /></td></tr>
 <tr class="separator:aca08fb7d12f53387b2a9d8350e01499d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa98f1a34a0201b9011bab4fe0c3af7ff" id="r_aa98f1a34a0201b9011bab4fe0c3af7ff"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa98f1a34a0201b9011bab4fe0c3af7ff">m5::nfc::apdu::make_apdu_case4</a> (const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2, const uint8_t *data, const uint16_t data_len, const uint16_t le)</td></tr>
-<tr class="memdesc:aa98f1a34a0201b9011bab4fe0c3af7ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make APDU case4 command [CLA | INS | P1 | P2 | Lc | C-Data | Le].  <br /></td></tr>
+<tr class="memitem:aa98f1a34a0201b9011bab4fe0c3af7ff" id="r_aa98f1a34a0201b9011bab4fe0c3af7ff"><td class="memItemLeft" align="right" valign="top"><a id="aa98f1a34a0201b9011bab4fe0c3af7ff" name="aa98f1a34a0201b9011bab4fe0c3af7ff"></a>
+std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::make_apdu_case4</b> (const uint8_t cla, const uint8_t ins, const uint8_t p1, const uint8_t p2, const uint8_t *data, const uint16_t data_len, const uint16_t le)</td></tr>
+<tr class="memdesc:aa98f1a34a0201b9011bab4fe0c3af7ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make APDU case4 command [CLA | INS | P1 | P2 | Lc | C-Data | Le]. <br /></td></tr>
 <tr class="separator:aa98f1a34a0201b9011bab4fe0c3af7ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
@@ -270,11 +276,11 @@ constexpr uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc
 <tr class="separator:a1b669f6a49f7093762d3dad36c420b6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a64594933a9df521c8ebaafa07ece39e8" id="r_a64594933a9df521c8ebaafa07ece39e8"><td class="memItemLeft" align="right" valign="top"><a id="a64594933a9df521c8ebaafa07ece39e8" name="a64594933a9df521c8ebaafa07ece39e8"></a>
 constexpr uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::SUCCESSFULLY_1</b> {0x6100}</td></tr>
-<tr class="memdesc:a64594933a9df521c8ebaafa07ece39e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Command successfully executed; xx bytes of data are available and can be requested using GET RESPONSE. <br /></td></tr>
+<tr class="memdesc:a64594933a9df521c8ebaafa07ece39e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Command successfully executed; xx bytes of data are available and can be requested using GET RESPON. <br /></td></tr>
 <tr class="separator:a64594933a9df521c8ebaafa07ece39e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3758d358b5278fdb64b90cffcb4f0a64" id="r_a3758d358b5278fdb64b90cffcb4f0a64"><td class="memItemLeft" align="right" valign="top"><a id="a3758d358b5278fdb64b90cffcb4f0a64" name="a3758d358b5278fdb64b90cffcb4f0a64"></a>
 constexpr uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::SUCCESSFULLY_2</b> {0x9F00}</td></tr>
-<tr class="memdesc:a3758d358b5278fdb64b90cffcb4f0a64"><td class="mdescLeft">&#160;</td><td class="mdescRight">Command successfully executed; xx bytes of data are available and can be requested using GET RESPONSE. <br /></td></tr>
+<tr class="memdesc:a3758d358b5278fdb64b90cffcb4f0a64"><td class="mdescLeft">&#160;</td><td class="mdescRight">Command successfully executed; xx bytes of data are available and can be requested using GET RESPON. <br /></td></tr>
 <tr class="separator:a3758d358b5278fdb64b90cffcb4f0a64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a526ff7f8c3bf24f7a29439dfd8c94abf" id="r_a526ff7f8c3bf24f7a29439dfd8c94abf"><td class="memItemLeft" align="right" valign="top"><a id="a526ff7f8c3bf24f7a29439dfd8c94abf" name="a526ff7f8c3bf24f7a29439dfd8c94abf"></a>
 constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::apdu::RESPONSE_BYTES_STILL_AVAILABLE</b> {0x61}</td></tr>
@@ -288,36 +294,6 @@ constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc:
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Application Protocol Data Unit (ISO/IEC 7816-4) </p>
 </div><h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="a52383af4e666193fc52faa7c2c0f1c45" name="a52383af4e666193fc52faa7c2c0f1c45"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a52383af4e666193fc52faa7c2c0f1c45">&#9670;&#160;</a></span>INS</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum class <a class="el" href="#a52383af4e666193fc52faa7c2c0f1c45">m5::nfc::apdu::INS</a> : uint8_t</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>APDU instruction code. </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a52383af4e666193fc52faa7c2c0f1c45ad6c38ad6dbc6dbbc3af768f5ab1e3d94" name="a52383af4e666193fc52faa7c2c0f1c45ad6c38ad6dbc6dbbc3af768f5ab1e3d94"></a>UPDATE_RECORRD&#160;</td><td class="fielddoc"><dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000001">Deprecated</a></b></dt><dd>typo alias; use UPDATE_RECORD </dd></dl>
-</td></tr>
-<tr><td class="fieldname"><a id="a52383af4e666193fc52faa7c2c0f1c45a47ba60cb92b683ab6f11566f9f78db7c" name="a52383af4e666193fc52faa7c2c0f1c45a47ba60cb92b683ab6f11566f9f78db7c"></a>GET_CHALLEMGE&#160;</td><td class="fielddoc"><dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000002">Deprecated</a></b></dt><dd>typo alias; use GET_CHALLENGE </dd></dl>
-</td></tr>
-</table>
-
-</div>
-</div>
 <a id="a15996a2f517e76dafb70c61654cb08ad" name="a15996a2f517e76dafb70c61654cb08ad"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a15996a2f517e76dafb70c61654cb08ad">&#9670;&#160;</a></span>SelectBy</h2>
 
@@ -422,390 +398,13 @@ constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc:
 </td></tr>
 <tr><td class="fieldname"><a id="a43277a89917969f53d3b2feb57caecbfa4b25de86ef47d3b09525b1176978b34d" name="a43277a89917969f53d3b2feb57caecbfa4b25de86ef47d3b09525b1176978b34d"></a>FMD&#160;</td><td class="fielddoc"><p>FMD template. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a43277a89917969f53d3b2feb57caecbfa6adf97f83acf6453d4a6a4b1070f3754" name="a43277a89917969f53d3b2feb57caecbfa6adf97f83acf6453d4a6a4b1070f3754"></a>None&#160;</td><td class="fielddoc"><p>No response. </p>
+<tr><td class="fieldname"><a id="a43277a89917969f53d3b2feb57caecbfa6adf97f83acf6453d4a6a4b1070f3754" name="a43277a89917969f53d3b2feb57caecbfa6adf97f83acf6453d4a6a4b1070f3754"></a>None&#160;</td><td class="fielddoc"><p>/ No response </p>
 </td></tr>
 </table>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="aefdcb0a0692e4e97f13e6a5f7a140ade" name="aefdcb0a0692e4e97f13e6a5f7a140ade"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aefdcb0a0692e4e97f13e6a5f7a140ade">&#9670;&#160;</a></span>dump_tlv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void m5::nfc::apdu::dump_tlv </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1apdu_1_1_t_l_v.html">TLV</a> &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>tlvs</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>depth</em></span><span class="paramdefsep"> = </span><span class="paramdefval">0</span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Dump TLV. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">tlvs</td><td>TLV elements to dump </td></tr>
-    <tr><td class="paramname">depth</td><td>Initial indentation depth </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a8661d1015977051ff244e69214a9f244" name="a8661d1015977051ff244e69214a9f244"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8661d1015977051ff244e69214a9f244">&#9670;&#160;</a></span>is_response_OK() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::apdu::is_response_OK </td>
-          <td>(</td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>sw12</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is response successfully? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">sw12</td><td>Status word (SW1 || SW2) </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the APDU response status indicates success or more data </dd></dl>
-
-</div>
-</div>
-<a id="adba4a567d412579a8447c2da5425e935" name="adba4a567d412579a8447c2da5425e935"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adba4a567d412579a8447c2da5425e935">&#9670;&#160;</a></span>is_response_OK() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::apdu::is_response_OK </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>sw1</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>sw2</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is response successfully? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">sw1</td><td>Status byte 1 </td></tr>
-    <tr><td class="paramname">sw2</td><td>Status byte 2 </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the APDU response status indicates success or more data </dd></dl>
-
-</div>
-</div>
-<a id="a02f2cf412748d5964bb0034cb40dd622" name="a02f2cf412748d5964bb0034cb40dd622"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a02f2cf412748d5964bb0034cb40dd622">&#9670;&#160;</a></span>is_response_OK() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::apdu::is_response_OK </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>sw</em></span>[2]</td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is response successfully? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">sw</td><td>Status bytes, SW1 followed by SW2 </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the APDU response status indicates success or more data </dd></dl>
-
-</div>
-</div>
-<a id="a3f8d54d3187aa2aebd756f6da9523351" name="a3f8d54d3187aa2aebd756f6da9523351"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f8d54d3187aa2aebd756f6da9523351">&#9670;&#160;</a></span>make_apdu_case1()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; uint8_t &gt; m5::nfc::apdu::make_apdu_case1 </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>cla</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>ins</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>p1</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>p2</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Make APDU case1 command [CLA | INS | P1 | P2]. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">cla</td><td>CLA </td></tr>
-    <tr><td class="paramname">ins</td><td>INS </td></tr>
-    <tr><td class="paramname">p1</td><td>P1 </td></tr>
-    <tr><td class="paramname">p2</td><td>P2 </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Constructed command data </dd></dl>
-
-</div>
-</div>
-<a id="a4a2d632c8b477931e48b04663927ce01" name="a4a2d632c8b477931e48b04663927ce01"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a2d632c8b477931e48b04663927ce01">&#9670;&#160;</a></span>make_apdu_case2()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; uint8_t &gt; m5::nfc::apdu::make_apdu_case2 </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>cla</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>ins</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>p1</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>p2</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>le</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Make APDU case2 command [CLA | INS | P1 | P2 | Le]. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">cla</td><td>CLA </td></tr>
-    <tr><td class="paramname">ins</td><td>INS </td></tr>
-    <tr><td class="paramname">p1</td><td>P1 </td></tr>
-    <tr><td class="paramname">p2</td><td>P2 </td></tr>
-    <tr><td class="paramname">le</td><td>Expected bytes to receive </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Constructed command data </dd></dl>
-
-</div>
-</div>
-<a id="aca08fb7d12f53387b2a9d8350e01499d" name="aca08fb7d12f53387b2a9d8350e01499d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aca08fb7d12f53387b2a9d8350e01499d">&#9670;&#160;</a></span>make_apdu_case3()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; uint8_t &gt; m5::nfc::apdu::make_apdu_case3 </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>cla</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>ins</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>p1</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>p2</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>data</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>data_len</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Make APDU case3 command [CLA | INS | P1 | P2 | Lc | C-Data]. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">cla</td><td>CLA </td></tr>
-    <tr><td class="paramname">ins</td><td>INS </td></tr>
-    <tr><td class="paramname">p1</td><td>P1 </td></tr>
-    <tr><td class="paramname">p2</td><td>P2 </td></tr>
-    <tr><td class="paramname">data</td><td>Command data </td></tr>
-    <tr><td class="paramname">data_len</td><td>Command data length </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Constructed command data </dd></dl>
-
-</div>
-</div>
-<a id="aa98f1a34a0201b9011bab4fe0c3af7ff" name="aa98f1a34a0201b9011bab4fe0c3af7ff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa98f1a34a0201b9011bab4fe0c3af7ff">&#9670;&#160;</a></span>make_apdu_case4()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; uint8_t &gt; m5::nfc::apdu::make_apdu_case4 </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>cla</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>ins</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>p1</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>p2</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>data</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>data_len</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>le</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Make APDU case4 command [CLA | INS | P1 | P2 | Lc | C-Data | Le]. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">cla</td><td>CLA </td></tr>
-    <tr><td class="paramname">ins</td><td>INS </td></tr>
-    <tr><td class="paramname">p1</td><td>P1 </td></tr>
-    <tr><td class="paramname">p2</td><td>P2 </td></tr>
-    <tr><td class="paramname">data</td><td>Command data </td></tr>
-    <tr><td class="paramname">data_len</td><td>Command data length </td></tr>
-    <tr><td class="paramname">le</td><td>Expected bytes to receive </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Constructed command data </dd></dl>
-
-</div>
-</div>
 <a id="ade33069f0d2d930a92d79591644b8ed8" name="ade33069f0d2d930a92d79591644b8ed8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ade33069f0d2d930a92d79591644b8ed8">&#9670;&#160;</a></span>make_apdu_command()</h2>
 
@@ -864,71 +463,6 @@ constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc:
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Constructed command data </dd></dl>
-
-</div>
-</div>
-<a id="a525935a38be231627a6abbebc6d757e8" name="a525935a38be231627a6abbebc6d757e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a525935a38be231627a6abbebc6d757e8">&#9670;&#160;</a></span>need_select_file_le()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::apdu::need_select_file_le </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t</td>          <td class="paramname"><span class="paramname"><em>param2</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Check whether SELECT FILE expects Le. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">param2</td><td>SELECT FILE P2 parameter </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if the selected response control requests response data </dd></dl>
-
-</div>
-</div>
-<a id="a5f63415d23f1838b2cf7a294cad86ec1" name="a5f63415d23f1838b2cf7a294cad86ec1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f63415d23f1838b2cf7a294cad86ec1">&#9670;&#160;</a></span>parse_tlv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; TLV &gt; m5::nfc::apdu::parse_tlv </td>
-          <td>(</td>
-          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>len</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Parse TLV. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">ptr</td><td>Pointer to TLV bytes </td></tr>
-    <tr><td class="paramname">len</td><td>TLV data length </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Parsed TLV elements </dd></dl>
 
 </div>
 </div>

@@ -7,7 +7,6 @@ var nfcv_8hpp =
       [ "Select", "nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665ae0626222614bdee31951d84c64e5e9ff", null ],
       [ "ResetToReady", "nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665aaa50b9e7396c2397b860d5c1a96b68a0", null ],
       [ "GetSystemInformaion", "nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665a3a52b5070d76c0420ebb20c27f0245c3", null ],
-      [ "GetSystemInformation", "nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665a0b51bc7e85af1c6f66c17aef375c1965", null ],
       [ "ExtendedGetSystemInfo", "nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665a467655381b250e323dc4602a34042aec", null ],
       [ "ReadSingleBlock", "nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665ad69a55353d7d8baf25db134591f4dd19", null ],
       [ "ExtendedReadSingleBlock", "nfcv_8hpp.html#a82f91becfd0bad97f0e5216c10d5e665a0be6a3722fb223e6b44152b59e8ce890", null ],
@@ -37,10 +36,7 @@ var nfcv_8hpp =
       [ "Fujitsu", "nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aa053f42c6bae3432cae270ea978f7e638", null ],
       [ "Unclassified", "nfcv_8hpp.html#a5aa34c03e26801066d48119cab74dd0aa3336022d50ad5765c5db6964d942f5e1", null ]
     ] ],
-    [ "decode_VICC", "nfcv_8hpp.html#a817f9267ff46c4fb41341495705c0c2c", null ],
-    [ "encode_VCD", "nfcv_8hpp.html#ad504030eb24c3ad71beecf3cf841abe1", null ],
     [ "get_nfc_forum_tag_type", "nfcv_8hpp.html#a49b9842ab7f389211c7cc9299cedc40b", null ],
-    [ "identify_type", "nfcv_8hpp.html#a0617c46b393fa073d501c051bec7b899", null ],
     [ "operator!=", "nfcv_8hpp.html#a3aac55a9610fa6bc574cb7d3d5dce671", null ],
     [ "operator==", "nfcv_8hpp.html#a04b09eb24f7e2bab1244be40dbee3304", null ]
 ];

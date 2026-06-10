@@ -1,7 +1,5 @@
 var classm5_1_1nfc_1_1_n_f_c_layer_f =
 [
-    [ "NFCLayerF", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#afe91dfb11410034b651d2cd7c460b799", null ],
-    [ "NFCLayerF", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#a92fc8915a2a676e0eb3cf0cfa9e9e6ff", null ],
     [ "activate", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#acb1e41eb54c5b681ca9ae7cd376d2eec", null ],
     [ "activatedPICC", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#adca10cd40a000169aab21a481b71af39", null ],
     [ "clearAuthenticate", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#ab684a8b787b35c412f1355628d69bc21", null ],
@@ -38,7 +36,7 @@ var classm5_1_1nfc_1_1_n_f_c_layer_f =
     [ "requestSystemCode", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#aeedd43471a62cde89d8b62229ba3c19d", null ],
     [ "unit_size_read", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#a34ca54b19d762ad541378304dd751175", null ],
     [ "unit_size_write", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#a66f6f636a210a8a78f41a94cfc7bcfee", null ],
-    [ "user_area_size", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#a7aeb09ec3fe1961bca8a20879982f8c7", null ],
+    [ "user_area_size", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#ac08779e3debb8d158e3aa213677d6a92", null ],
     [ "write", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#ac21ff34e93d4973fca6eccdaf093f79f", null ],
     [ "write", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#a9ab7eb934accdfa3335a9c4cd6eed63e", null ],
     [ "write16", "classm5_1_1nfc_1_1_n_f_c_layer_f.html#afb06a34128696f7c450a212258409834", null ],

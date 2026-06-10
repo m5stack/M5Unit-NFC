@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
    </div>
   </td>
  </tr>
@@ -124,7 +124,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacem5.html">m5</a></td></tr>
-<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5Stack. <br /></td></tr>
+<tr class="memdesc:namespacem5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top level namespace of M5stack. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacev.html">v</a></td></tr>
 <tr class="memdesc:namespacev"><td class="mdescLeft">&#160;</td><td class="mdescRight">NFC-V definitions. <br /></td></tr>
@@ -169,12 +169,11 @@ Enumerations</h2></td></tr>
 , <a class="el" href="#a82f91becfd0bad97f0e5216c10d5e665aaa50b9e7396c2397b860d5c1a96b68a0">ResetToReady</a> = 0x26
 , <br />
 &#160;&#160;<a class="el" href="#a82f91becfd0bad97f0e5216c10d5e665a3a52b5070d76c0420ebb20c27f0245c3">GetSystemInformaion</a> = 0x2B
-, <a class="el" href="#a82f91becfd0bad97f0e5216c10d5e665a0b51bc7e85af1c6f66c17aef375c1965">GetSystemInformation</a> = 0x2B
 , <a class="el" href="#a82f91becfd0bad97f0e5216c10d5e665a467655381b250e323dc4602a34042aec">ExtendedGetSystemInfo</a> = 0x3B
 , <a class="el" href="#a82f91becfd0bad97f0e5216c10d5e665ad69a55353d7d8baf25db134591f4dd19">ReadSingleBlock</a> = 0x20
+, <a class="el" href="#a82f91becfd0bad97f0e5216c10d5e665a0be6a3722fb223e6b44152b59e8ce890">ExtendedReadSingleBlock</a> = 0x30
 , <br />
-&#160;&#160;<a class="el" href="#a82f91becfd0bad97f0e5216c10d5e665a0be6a3722fb223e6b44152b59e8ce890">ExtendedReadSingleBlock</a> = 0x30
-, <a class="el" href="#a82f91becfd0bad97f0e5216c10d5e665aec468a6afe871d6c4210e8573e0728f9">WriteSingleBlock</a> = 0x21
+&#160;&#160;<a class="el" href="#a82f91becfd0bad97f0e5216c10d5e665aec468a6afe871d6c4210e8573e0728f9">WriteSingleBlock</a> = 0x21
 , <a class="el" href="#a82f91becfd0bad97f0e5216c10d5e665a9caeb24c8f5e7d8cdc4304d5d72b18b2">ExtendedWriteSingleBlock</a> = 0x31
 <br />
  }</td></tr>
@@ -183,14 +182,17 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a49b9842ab7f389211c7cc9299cedc40b" id="r_a49b9842ab7f389211c7cc9299cedc40b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1">m5::nfc::NFCForumTag</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a49b9842ab7f389211c7cc9299cedc40b">m5::nfc::v::get_nfc_forum_tag_type</a> (const <a class="el" href="#a5aa34c03e26801066d48119cab74dd0a">Type</a> t)</td></tr>
-<tr class="memdesc:a49b9842ab7f389211c7cc9299cedc40b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get NFC Forum Tag Type from <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html" title="PICC for NFC-V.">PICC</a> type.  <br /></td></tr>
+<tr class="memitem:a49b9842ab7f389211c7cc9299cedc40b" id="r_a49b9842ab7f389211c7cc9299cedc40b"><td class="memItemLeft" align="right" valign="top"><a id="a49b9842ab7f389211c7cc9299cedc40b" name="a49b9842ab7f389211c7cc9299cedc40b"></a>
+<a class="el" href="nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1">m5::nfc::NFCForumTag</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::v::get_nfc_forum_tag_type</b> (const <a class="el" href="#a5aa34c03e26801066d48119cab74dd0a">Type</a> t)</td></tr>
+<tr class="memdesc:a49b9842ab7f389211c7cc9299cedc40b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get NFC Forum Tag Type from <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html" title="PICC for NFC-V.">PICC</a> type. <br /></td></tr>
 <tr class="separator:a49b9842ab7f389211c7cc9299cedc40b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04b09eb24f7e2bab1244be40dbee3304" id="r_a04b09eb24f7e2bab1244be40dbee3304"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a04b09eb24f7e2bab1244be40dbee3304">m5::nfc::v::operator==</a> (const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;a, const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;b)</td></tr>
-<tr class="memdesc:a04b09eb24f7e2bab1244be40dbee3304"><td class="mdescLeft">&#160;</td><td class="mdescRight">Equal?  <br /></td></tr>
+<tr class="memitem:a04b09eb24f7e2bab1244be40dbee3304" id="r_a04b09eb24f7e2bab1244be40dbee3304"><td class="memItemLeft" align="right" valign="top"><a id="a04b09eb24f7e2bab1244be40dbee3304" name="a04b09eb24f7e2bab1244be40dbee3304"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::v::operator==</b> (const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;a, const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;b)</td></tr>
+<tr class="memdesc:a04b09eb24f7e2bab1244be40dbee3304"><td class="mdescLeft">&#160;</td><td class="mdescRight">Equal? <br /></td></tr>
 <tr class="separator:a04b09eb24f7e2bab1244be40dbee3304"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3aac55a9610fa6bc574cb7d3d5dce671" id="r_a3aac55a9610fa6bc574cb7d3d5dce671"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a3aac55a9610fa6bc574cb7d3d5dce671">m5::nfc::v::operator!=</a> (const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;a, const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;b)</td></tr>
-<tr class="memdesc:a3aac55a9610fa6bc574cb7d3d5dce671"><td class="mdescLeft">&#160;</td><td class="mdescRight">Not equal?  <br /></td></tr>
+<tr class="memitem:a3aac55a9610fa6bc574cb7d3d5dce671" id="r_a3aac55a9610fa6bc574cb7d3d5dce671"><td class="memItemLeft" align="right" valign="top"><a id="a3aac55a9610fa6bc574cb7d3d5dce671" name="a3aac55a9610fa6bc574cb7d3d5dce671"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::v::operator!=</b> (const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;a, const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;b)</td></tr>
+<tr class="memdesc:a3aac55a9610fa6bc574cb7d3d5dce671"><td class="mdescLeft">&#160;</td><td class="mdescRight">Not equal? <br /></td></tr>
 <tr class="separator:a3aac55a9610fa6bc574cb7d3d5dce671"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0617c46b393fa073d501c051bec7b899" id="r_a0617c46b393fa073d501c051bec7b899"><td class="memItemLeft" align="right" valign="top"><a class="el" href="#a5aa34c03e26801066d48119cab74dd0a">Type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfcv_8cpp.html#a0617c46b393fa073d501c051bec7b899">m5::nfc::v::identify_type</a> (const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;picc)</td></tr>
 <tr class="memdesc:a0617c46b393fa073d501c051bec7b899"><td class="mdescLeft">&#160;</td><td class="mdescRight">Identify the type from Manufacturer Code, IC Identifier, IC Reference.  <br /></td></tr>
@@ -220,9 +222,9 @@ const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::v::
 <tr class="memitem:af83ee7bbf75d6c411a093105ce9c1756" id="r_af83ee7bbf75d6c411a093105ce9c1756"><td class="memItemLeft" align="right" valign="top"><a id="af83ee7bbf75d6c411a093105ce9c1756" name="af83ee7bbf75d6c411a093105ce9c1756"></a>
 const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::v::data_rate_flag</b> {0x02}</td></tr>
 <tr class="separator:af83ee7bbf75d6c411a093105ce9c1756"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47c13cc1e1b67bec72b7985fd5cf83be" id="r_a47c13cc1e1b67bec72b7985fd5cf83be"><td class="memItemLeft" align="right" valign="top"><a id="a47c13cc1e1b67bec72b7985fd5cf83be" name="a47c13cc1e1b67bec72b7985fd5cf83be"></a>
-const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::v::subcarrier_flag</b> {0x01}</td></tr>
-<tr class="separator:a47c13cc1e1b67bec72b7985fd5cf83be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec8a27aa07ac794887c565180ad2f14e" id="r_aec8a27aa07ac794887c565180ad2f14e"><td class="memItemLeft" align="right" valign="top"><a id="aec8a27aa07ac794887c565180ad2f14e" name="aec8a27aa07ac794887c565180ad2f14e"></a>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::v::subcarrior_flag</b> {0x01}</td></tr>
+<tr class="separator:aec8a27aa07ac794887c565180ad2f14e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adcaa2a13928a85d720d39826ba589807" id="r_adcaa2a13928a85d720d39826ba589807"><td class="memItemLeft" align="right" valign="top"><a id="adcaa2a13928a85d720d39826ba589807" name="adcaa2a13928a85d720d39826ba589807"></a>
 const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::v::nb_slots_flag</b> {0x20}</td></tr>
 <tr class="separator:adcaa2a13928a85d720d39826ba589807"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -280,7 +282,7 @@ constexpr uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc
 
 <p>ISO/IEC 15693 Command. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a82f91becfd0bad97f0e5216c10d5e665a4d604dd8f008145471dc845683399189" name="a82f91becfd0bad97f0e5216c10d5e665a4d604dd8f008145471dc845683399189"></a>Inventory&#160;</td><td class="fielddoc"><p>INVENTORY. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a82f91becfd0bad97f0e5216c10d5e665a4d604dd8f008145471dc845683399189" name="a82f91becfd0bad97f0e5216c10d5e665a4d604dd8f008145471dc845683399189"></a>Inventory&#160;</td><td class="fielddoc"><p>IVENTORY. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a82f91becfd0bad97f0e5216c10d5e665ae4408f60e028773308e82551836d726b" name="a82f91becfd0bad97f0e5216c10d5e665ae4408f60e028773308e82551836d726b"></a>StayQuiet&#160;</td><td class="fielddoc"><p>STAY QUIET. </p>
 </td></tr>
@@ -288,9 +290,7 @@ constexpr uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc
 </td></tr>
 <tr><td class="fieldname"><a id="a82f91becfd0bad97f0e5216c10d5e665aaa50b9e7396c2397b860d5c1a96b68a0" name="a82f91becfd0bad97f0e5216c10d5e665aaa50b9e7396c2397b860d5c1a96b68a0"></a>ResetToReady&#160;</td><td class="fielddoc"><p>RESET TO READY. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a82f91becfd0bad97f0e5216c10d5e665a3a52b5070d76c0420ebb20c27f0245c3" name="a82f91becfd0bad97f0e5216c10d5e665a3a52b5070d76c0420ebb20c27f0245c3"></a>GetSystemInformaion&#160;</td><td class="fielddoc"><dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000004">Deprecated</a></b></dt><dd>typo; use GetSystemInformation </dd></dl>
-</td></tr>
-<tr><td class="fieldname"><a id="a82f91becfd0bad97f0e5216c10d5e665a0b51bc7e85af1c6f66c17aef375c1965" name="a82f91becfd0bad97f0e5216c10d5e665a0b51bc7e85af1c6f66c17aef375c1965"></a>GetSystemInformation&#160;</td><td class="fielddoc"><p>GET SYSTEM INFORMATION. </p>
+<tr><td class="fieldname"><a id="a82f91becfd0bad97f0e5216c10d5e665a3a52b5070d76c0420ebb20c27f0245c3" name="a82f91becfd0bad97f0e5216c10d5e665a3a52b5070d76c0420ebb20c27f0245c3"></a>GetSystemInformaion&#160;</td><td class="fielddoc"><p>GET SYSTEM INFORMATION. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a82f91becfd0bad97f0e5216c10d5e665a467655381b250e323dc4602a34042aec" name="a82f91becfd0bad97f0e5216c10d5e665a467655381b250e323dc4602a34042aec"></a>ExtendedGetSystemInfo&#160;</td><td class="fielddoc"><p>EXTENDED GET SYSTEM INFORMATION. </p>
 </td></tr>
@@ -430,7 +430,6 @@ constexpr uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc
     <tr><td class="paramname">out</td><td>Output buffer </td></tr>
     <tr><td class="paramname">buffer</td><td>Input buffer </td></tr>
     <tr><td class="paramname">length</td><td>Input buffer length </td></tr>
-    <tr><td class="paramname">ignore_bits</td><td>Number of trailing bits to ignore </td></tr>
   </table>
   </dd>
 </dl>
@@ -494,40 +493,6 @@ constexpr uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc
 
 </div>
 </div>
-<a id="a49b9842ab7f389211c7cc9299cedc40b" name="a49b9842ab7f389211c7cc9299cedc40b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a49b9842ab7f389211c7cc9299cedc40b">&#9670;&#160;</a></span>get_nfc_forum_tag_type()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="nfc_8hpp.html#a952a1a2c9c08aa278d2aadafe02a5cd1">m5::nfc::NFCForumTag</a> m5::nfc::v::get_nfc_forum_tag_type </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#a5aa34c03e26801066d48119cab74dd0a">Type</a></td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Get NFC Forum Tag Type from PICC type. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">t</td><td>PICC type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>NFC Forum Tag Type </dd></dl>
-
-</div>
-</div>
 <a id="a0617c46b393fa073d501c051bec7b899" name="a0617c46b393fa073d501c051bec7b899"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0617c46b393fa073d501c051bec7b899">&#9670;&#160;</a></span>identify_type()</h2>
 
@@ -544,94 +509,10 @@ constexpr uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc
 </div><div class="memdoc">
 
 <p>Identify the type from Manufacturer Code, IC Identifier, IC Reference. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">picc</td><td>PICC information to identify </td></tr>
-  </table>
-  </dd>
-</dl>
 <dl class="section return"><dt>Returns</dt><dd>Type </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Not all tags can be identified </dd>
 <dd>
 If identification is impossible, Unclassified is returned </dd></dl>
-
-</div>
-</div>
-<a id="a3aac55a9610fa6bc574cb7d3d5dce671" name="a3aac55a9610fa6bc574cb7d3d5dce671"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3aac55a9610fa6bc574cb7d3d5dce671">&#9670;&#160;</a></span>operator!=()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::v::operator!= </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>b</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Not equal? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">a</td><td>Left PICC </td></tr>
-    <tr><td class="paramname">b</td><td>Right PICC </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if UID bytes are not equal </dd></dl>
-
-</div>
-</div>
-<a id="a04b09eb24f7e2bab1244be40dbee3304" name="a04b09eb24f7e2bab1244be40dbee3304"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04b09eb24f7e2bab1244be40dbee3304">&#9670;&#160;</a></span>operator==()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool m5::nfc::v::operator== </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structm5_1_1nfc_1_1v_1_1_p_i_c_c.html">PICC</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>b</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Equal? </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">a</td><td>Left PICC </td></tr>
-    <tr><td class="paramname">b</td><td>Right PICC </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if UID bytes are equal </dd></dl>
 
 </div>
 </div>

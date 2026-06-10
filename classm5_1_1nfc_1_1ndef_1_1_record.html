@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
    </div>
   </td>
  </tr>
@@ -113,10 +113,11 @@ $(function(){initNavTree('classm5_1_1nfc_1_1ndef_1_1_record.html',''); initResiz
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9a29a4a7b4d8e98088e40ea547d5ec94" id="r_a9a29a4a7b4d8e98088e40ea547d5ec94"><td class="memItemLeft" align="right" valign="top"><a id="a9a29a4a7b4d8e98088e40ea547d5ec94" name="a9a29a4a7b4d8e98088e40ea547d5ec94"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Record</b> (const <a class="el" href="ndef__record_8hpp.html#a43d1cb99aeb4fdf193bba66a6b4e7153">TNF</a> <a class="el" href="#a58c43f4add3f80815f8700b4f30208ef">tnf</a>) noexcept</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Record</b> (const <a class="el" href="ndef__record_8hpp.html#a43d1cb99aeb4fdf193bba66a6b4e7153">TNF</a> tnf) noexcept</td></tr>
 <tr class="separator:a9a29a4a7b4d8e98088e40ea547d5ec94"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7a23c577e74fe4cf86c61c351125798c" id="r_a7a23c577e74fe4cf86c61c351125798c"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7a23c577e74fe4cf86c61c351125798c">required</a> () const</td></tr>
-<tr class="memdesc:a7a23c577e74fe4cf86c61c351125798c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size required for encoding.  <br /></td></tr>
+<tr class="memitem:a7a23c577e74fe4cf86c61c351125798c" id="r_a7a23c577e74fe4cf86c61c351125798c"><td class="memItemLeft" align="right" valign="top"><a id="a7a23c577e74fe4cf86c61c351125798c" name="a7a23c577e74fe4cf86c61c351125798c"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>required</b> () const</td></tr>
+<tr class="memdesc:a7a23c577e74fe4cf86c61c351125798c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size required for encoding. <br /></td></tr>
 <tr class="separator:a7a23c577e74fe4cf86c61c351125798c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a4da09ffe10b063c174c9e4c5e5ad3a" id="r_a6a4da09ffe10b063c174c9e4c5e5ad3a"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6a4da09ffe10b063c174c9e4c5e5ad3a">encode</a> (uint8_t *buf, const uint32_t blen) const</td></tr>
 <tr class="memdesc:a6a4da09ffe10b063c174c9e4c5e5ad3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encode.  <br /></td></tr>
@@ -133,14 +134,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>dump</b> () const</td
 <tr class="memdesc:aafd086e92751abae204ecde8d213da5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dump record for debug. <br /></td></tr>
 <tr class="separator:aafd086e92751abae204ecde8d213da5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">Attribute</div></td></tr>
-<tr class="memitem:aa42d5484118b52ca4ff5c6f068329a99" id="r_aa42d5484118b52ca4ff5c6f068329a99"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structm5_1_1nfc_1_1ndef_1_1_attribute.html">Attribute</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa42d5484118b52ca4ff5c6f068329a99">attribute</a> ()</td></tr>
-<tr class="memdesc:aa42d5484118b52ca4ff5c6f068329a99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets mutable attribute.  <br /></td></tr>
+<tr class="memitem:aa42d5484118b52ca4ff5c6f068329a99" id="r_aa42d5484118b52ca4ff5c6f068329a99"><td class="memItemLeft" align="right" valign="top"><a id="aa42d5484118b52ca4ff5c6f068329a99" name="aa42d5484118b52ca4ff5c6f068329a99"></a>
+<a class="el" href="structm5_1_1nfc_1_1ndef_1_1_attribute.html">Attribute</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>attribute</b> ()</td></tr>
 <tr class="separator:aa42d5484118b52ca4ff5c6f068329a99"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad98f885fdc44a7e73fc2646a1f5db251" id="r_ad98f885fdc44a7e73fc2646a1f5db251"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structm5_1_1nfc_1_1ndef_1_1_attribute.html">Attribute</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad98f885fdc44a7e73fc2646a1f5db251">attribute</a> () const</td></tr>
-<tr class="memdesc:ad98f885fdc44a7e73fc2646a1f5db251"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets attribute.  <br /></td></tr>
+<tr class="memitem:ad98f885fdc44a7e73fc2646a1f5db251" id="r_ad98f885fdc44a7e73fc2646a1f5db251"><td class="memItemLeft" align="right" valign="top"><a id="ad98f885fdc44a7e73fc2646a1f5db251" name="ad98f885fdc44a7e73fc2646a1f5db251"></a>
+const <a class="el" href="structm5_1_1nfc_1_1ndef_1_1_attribute.html">Attribute</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>attribute</b> () const</td></tr>
 <tr class="separator:ad98f885fdc44a7e73fc2646a1f5db251"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a58c43f4add3f80815f8700b4f30208ef" id="r_a58c43f4add3f80815f8700b4f30208ef"><td class="memItemLeft" align="right" valign="top"><a class="el" href="ndef__record_8hpp.html#a43d1cb99aeb4fdf193bba66a6b4e7153">TNF</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a58c43f4add3f80815f8700b4f30208ef">tnf</a> () const</td></tr>
-<tr class="memdesc:a58c43f4add3f80815f8700b4f30208ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets Type Name Format.  <br /></td></tr>
+<tr class="memitem:a58c43f4add3f80815f8700b4f30208ef" id="r_a58c43f4add3f80815f8700b4f30208ef"><td class="memItemLeft" align="right" valign="top"><a id="a58c43f4add3f80815f8700b4f30208ef" name="a58c43f4add3f80815f8700b4f30208ef"></a>
+<a class="el" href="ndef__record_8hpp.html#a43d1cb99aeb4fdf193bba66a6b4e7153">TNF</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tnf</b> () const</td></tr>
 <tr class="separator:a58c43f4add3f80815f8700b4f30208ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">Type</div></td></tr>
 <tr><td colspan="2"><div class="groupText"><dl class="section note"><dt>Note</dt><dd>Well-known NDEF <a class="el" href="classm5_1_1nfc_1_1ndef_1_1_record.html" title="NDEF Record.">Record</a> Types <table class="markdownTable">
@@ -194,18 +195,20 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>dump</b> () const</td
 </dd></dl>
 <p>If TNF is TNF::Media, type is MIME type string e.g. "text/plain" , "image/png"... </p>
 </div></td></tr>
-<tr class="memitem:ad0b8cc6ec1fe996409993feaf7229146" id="r_ad0b8cc6ec1fe996409993feaf7229146"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad0b8cc6ec1fe996409993feaf7229146">type</a> () const</td></tr>
-<tr class="memdesc:ad0b8cc6ec1fe996409993feaf7229146"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the type string.  <br /></td></tr>
+<tr class="memitem:ad0b8cc6ec1fe996409993feaf7229146" id="r_ad0b8cc6ec1fe996409993feaf7229146"><td class="memItemLeft" align="right" valign="top"><a id="ad0b8cc6ec1fe996409993feaf7229146" name="ad0b8cc6ec1fe996409993feaf7229146"></a>
+const char *&#160;</td><td class="memItemRight" valign="bottom"><b>type</b> () const</td></tr>
 <tr class="separator:ad0b8cc6ec1fe996409993feaf7229146"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac2bf58bbaf25c3434630ce32dc898ae" id="r_aac2bf58bbaf25c3434630ce32dc898ae"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aac2bf58bbaf25c3434630ce32dc898ae">setType</a> (const char *s)</td></tr>
-<tr class="memdesc:aac2bf58bbaf25c3434630ce32dc898ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the type string.  <br /></td></tr>
+<tr class="memitem:aac2bf58bbaf25c3434630ce32dc898ae" id="r_aac2bf58bbaf25c3434630ce32dc898ae"><td class="memItemLeft" align="right" valign="top"><a id="aac2bf58bbaf25c3434630ce32dc898ae" name="aac2bf58bbaf25c3434630ce32dc898ae"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setType</b> (const char *s)</td></tr>
 <tr class="separator:aac2bf58bbaf25c3434630ce32dc898ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">Identifier</div></td></tr>
-<tr class="memitem:af60a22933abd389082980c943def5ee3" id="r_af60a22933abd389082980c943def5ee3"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af60a22933abd389082980c943def5ee3">identifierSize</a> () const</td></tr>
-<tr class="memdesc:af60a22933abd389082980c943def5ee3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the identifier size.  <br /></td></tr>
+<tr class="memitem:af60a22933abd389082980c943def5ee3" id="r_af60a22933abd389082980c943def5ee3"><td class="memItemLeft" align="right" valign="top"><a id="af60a22933abd389082980c943def5ee3" name="af60a22933abd389082980c943def5ee3"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>identifierSize</b> () const</td></tr>
+<tr class="memdesc:af60a22933abd389082980c943def5ee3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the identifier size. <br /></td></tr>
 <tr class="separator:af60a22933abd389082980c943def5ee3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad1b2fab80216ddd14c0b06502d31a707" id="r_ad1b2fab80216ddd14c0b06502d31a707"><td class="memItemLeft" align="right" valign="top">const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad1b2fab80216ddd14c0b06502d31a707">identifier</a> () const</td></tr>
-<tr class="memdesc:ad1b2fab80216ddd14c0b06502d31a707"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the identifier pointer.  <br /></td></tr>
+<tr class="memitem:ad1b2fab80216ddd14c0b06502d31a707" id="r_ad1b2fab80216ddd14c0b06502d31a707"><td class="memItemLeft" align="right" valign="top"><a id="ad1b2fab80216ddd14c0b06502d31a707" name="ad1b2fab80216ddd14c0b06502d31a707"></a>
+const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><b>identifier</b> () const</td></tr>
+<tr class="memdesc:ad1b2fab80216ddd14c0b06502d31a707"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the identifier pointer. <br /></td></tr>
 <tr class="separator:ad1b2fab80216ddd14c0b06502d31a707"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae58c57b3a64ea9994961324f8eb5489e" id="r_ae58c57b3a64ea9994961324f8eb5489e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae58c57b3a64ea9994961324f8eb5489e">setIdentifier</a> (const uint8_t *id, const uint32_t len)</td></tr>
 <tr class="memdesc:ae58c57b3a64ea9994961324f8eb5489e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the identifier.  <br /></td></tr>
@@ -215,14 +218,17 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>clearIdentifier</b> (
 <tr class="memdesc:a3747f61f495e7b0480f29bbf49bea74c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear the identifier. <br /></td></tr>
 <tr class="separator:a3747f61f495e7b0480f29bbf49bea74c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">Payload</div></td></tr>
-<tr class="memitem:acf8cc597c825300d9e0eff4ec239cb7c" id="r_acf8cc597c825300d9e0eff4ec239cb7c"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#acf8cc597c825300d9e0eff4ec239cb7c">payloadAsString</a> () const</td></tr>
-<tr class="memdesc:acf8cc597c825300d9e0eff4ec239cb7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain the payload as a string.  <br /></td></tr>
+<tr class="memitem:acf8cc597c825300d9e0eff4ec239cb7c" id="r_acf8cc597c825300d9e0eff4ec239cb7c"><td class="memItemLeft" align="right" valign="top"><a id="acf8cc597c825300d9e0eff4ec239cb7c" name="acf8cc597c825300d9e0eff4ec239cb7c"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>payloadAsString</b> () const</td></tr>
+<tr class="memdesc:acf8cc597c825300d9e0eff4ec239cb7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain the payload as a string. <br /></td></tr>
 <tr class="separator:acf8cc597c825300d9e0eff4ec239cb7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22e7e4a8281b52ecd93ce557cff1693d" id="r_a22e7e4a8281b52ecd93ce557cff1693d"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a22e7e4a8281b52ecd93ce557cff1693d">payloadSize</a> () const</td></tr>
-<tr class="memdesc:a22e7e4a8281b52ecd93ce557cff1693d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the payload size.  <br /></td></tr>
+<tr class="memitem:a22e7e4a8281b52ecd93ce557cff1693d" id="r_a22e7e4a8281b52ecd93ce557cff1693d"><td class="memItemLeft" align="right" valign="top"><a id="a22e7e4a8281b52ecd93ce557cff1693d" name="a22e7e4a8281b52ecd93ce557cff1693d"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>payloadSize</b> () const</td></tr>
+<tr class="memdesc:a22e7e4a8281b52ecd93ce557cff1693d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the payload size. <br /></td></tr>
 <tr class="separator:a22e7e4a8281b52ecd93ce557cff1693d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a277f654c9f1e6cc2000a41531befb09c" id="r_a277f654c9f1e6cc2000a41531befb09c"><td class="memItemLeft" align="right" valign="top">const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a277f654c9f1e6cc2000a41531befb09c">payload</a> () const</td></tr>
-<tr class="memdesc:a277f654c9f1e6cc2000a41531befb09c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the payload pointer.  <br /></td></tr>
+<tr class="memitem:a277f654c9f1e6cc2000a41531befb09c" id="r_a277f654c9f1e6cc2000a41531befb09c"><td class="memItemLeft" align="right" valign="top"><a id="a277f654c9f1e6cc2000a41531befb09c" name="a277f654c9f1e6cc2000a41531befb09c"></a>
+const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><b>payload</b> () const</td></tr>
+<tr class="memdesc:a277f654c9f1e6cc2000a41531befb09c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the payload pointer. <br /></td></tr>
 <tr class="separator:a277f654c9f1e6cc2000a41531befb09c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8e62dbadd7289e91d80df78572c4958" id="r_ae8e62dbadd7289e91d80df78572c4958"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae8e62dbadd7289e91d80df78572c4958">setPayload</a> (const uint8_t *data, const uint32_t len)</td></tr>
 <tr class="memdesc:ae8e62dbadd7289e91d80df78572c4958"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the payload data.  <br /></td></tr>
@@ -258,62 +264,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator==</b> (const
 <div class="textblock"><p>NDEF <a class="el" href="classm5_1_1nfc_1_1ndef_1_1_record.html" title="NDEF Record.">Record</a>. </p>
 <dl class="section warning"><dt>Warning</dt><dd>CF is not supported </dd></dl>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="aa42d5484118b52ca4ff5c6f068329a99" name="aa42d5484118b52ca4ff5c6f068329a99"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa42d5484118b52ca4ff5c6f068329a99">&#9670;&#160;</a></span>attribute() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structm5_1_1nfc_1_1ndef_1_1_attribute.html">Attribute</a> &amp; m5::nfc::ndef::Record::attribute </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Gets mutable attribute. </p>
-<dl class="section return"><dt>Returns</dt><dd>Mutable record attribute </dd></dl>
-
-</div>
-</div>
-<a id="ad98f885fdc44a7e73fc2646a1f5db251" name="ad98f885fdc44a7e73fc2646a1f5db251"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad98f885fdc44a7e73fc2646a1f5db251">&#9670;&#160;</a></span>attribute() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="structm5_1_1nfc_1_1ndef_1_1_attribute.html">Attribute</a> &amp; m5::nfc::ndef::Record::attribute </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Gets attribute. </p>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classm5_1_1nfc_1_1ndef_1_1_record.html" title="NDEF Record.">Record</a> attribute </dd></dl>
-
-</div>
-</div>
 <a id="adeaae2985edd51a8db464fbe57e1ee5c" name="adeaae2985edd51a8db464fbe57e1ee5c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adeaae2985edd51a8db464fbe57e1ee5c">&#9670;&#160;</a></span>decode()</h2>
 
@@ -385,158 +335,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator==</b> (const
   </table>
   </dd>
 </dl>
-
-</div>
-</div>
-<a id="ad1b2fab80216ddd14c0b06502d31a707" name="ad1b2fab80216ddd14c0b06502d31a707"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad1b2fab80216ddd14c0b06502d31a707">&#9670;&#160;</a></span>identifier()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const uint8_t * m5::nfc::ndef::Record::identifier </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Gets the identifier pointer. </p>
-<dl class="section return"><dt>Returns</dt><dd>Pointer to identifier bytes, or nullptr if empty </dd></dl>
-
-</div>
-</div>
-<a id="af60a22933abd389082980c943def5ee3" name="af60a22933abd389082980c943def5ee3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af60a22933abd389082980c943def5ee3">&#9670;&#160;</a></span>identifierSize()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t m5::nfc::ndef::Record::identifierSize </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Gets the identifier size. </p>
-<dl class="section return"><dt>Returns</dt><dd>Identifier size in bytes </dd></dl>
-
-</div>
-</div>
-<a id="a277f654c9f1e6cc2000a41531befb09c" name="a277f654c9f1e6cc2000a41531befb09c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a277f654c9f1e6cc2000a41531befb09c">&#9670;&#160;</a></span>payload()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const uint8_t * m5::nfc::ndef::Record::payload </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Gets the payload pointer. </p>
-<dl class="section return"><dt>Returns</dt><dd>Pointer to payload bytes, or nullptr if empty </dd></dl>
-
-</div>
-</div>
-<a id="acf8cc597c825300d9e0eff4ec239cb7c" name="acf8cc597c825300d9e0eff4ec239cb7c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf8cc597c825300d9e0eff4ec239cb7c">&#9670;&#160;</a></span>payloadAsString()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::string m5::nfc::ndef::Record::payloadAsString </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Obtain the payload as a string. </p>
-<dl class="section return"><dt>Returns</dt><dd>Payload interpreted as a string </dd></dl>
-
-</div>
-</div>
-<a id="a22e7e4a8281b52ecd93ce557cff1693d" name="a22e7e4a8281b52ecd93ce557cff1693d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a22e7e4a8281b52ecd93ce557cff1693d">&#9670;&#160;</a></span>payloadSize()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t m5::nfc::ndef::Record::payloadSize </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Gets the payload size. </p>
-<dl class="section return"><dt>Returns</dt><dd>Payload size in bytes </dd></dl>
-
-</div>
-</div>
-<a id="a7a23c577e74fe4cf86c61c351125798c" name="a7a23c577e74fe4cf86c61c351125798c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7a23c577e74fe4cf86c61c351125798c">&#9670;&#160;</a></span>required()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t m5::nfc::ndef::Record::required </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Size required for encoding. </p>
-<dl class="section return"><dt>Returns</dt><dd>Required encoded size in bytes </dd></dl>
 
 </div>
 </div>
@@ -643,43 +441,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator==</b> (const
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>type is changed to "T" </dd>
 <dd>
 UTF-8 only </dd></dl>
-
-</div>
-</div>
-<a id="aac2bf58bbaf25c3434630ce32dc898ae" name="aac2bf58bbaf25c3434630ce32dc898ae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aac2bf58bbaf25c3434630ce32dc898ae">&#9670;&#160;</a></span>setType()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void m5::nfc::ndef::Record::setType </td>
-          <td>(</td>
-          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>s</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Set the type string. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">s</td><td>Null-terminated type string </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>
@@ -710,65 +474,8 @@ UTF-8 only </dd></dl>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>If there is a part that can be omitted by the protocol, it is omitted and stored </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>type is changed to "U" </dd></dl>
-
-</div>
-</div>
-<a id="a58c43f4add3f80815f8700b4f30208ef" name="a58c43f4add3f80815f8700b4f30208ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a58c43f4add3f80815f8700b4f30208ef">&#9670;&#160;</a></span>tnf()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="ndef__record_8hpp.html#a43d1cb99aeb4fdf193bba66a6b4e7153">TNF</a> m5::nfc::ndef::Record::tnf </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Gets Type Name Format. </p>
-<dl class="section return"><dt>Returns</dt><dd>TNF value </dd></dl>
-
-</div>
-</div>
-<a id="ad0b8cc6ec1fe996409993feaf7229146" name="ad0b8cc6ec1fe996409993feaf7229146"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad0b8cc6ec1fe996409993feaf7229146">&#9670;&#160;</a></span>type()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * m5::nfc::ndef::Record::type </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Gets the type string. </p>
-<dl class="section return"><dt>Returns</dt><dd>Null-terminated type string </dd></dl>
 
 </div>
 </div>

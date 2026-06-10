@@ -21,13 +21,5 @@ var searchData=
   ['get_5funit_5fsize_18',['get_unit_size',['../nfca_8cpp.html#a3e93f331f794cfd3ec5e1c7115e7bef5',1,'m5::nfc::a']]],
   ['get_5furi_5fidc_5fstring_19',['get_uri_idc_string',['../ndef_8cpp.html#a06ad435246f351420fd0f90c562870ea',1,'m5::nfc::ndef']]],
   ['get_5fuser_5farea_5fsize_20',['get_user_area_size',['../nfca_8cpp.html#aad24687ca20e8b303110f5bd6b399263',1,'m5::nfc::a::get_user_area_size()'],['../nfcf_8hpp.html#aa8fa452b71d896b1fb7ed52eab69a8d2',1,'m5::nfc::f::get_user_area_size()']]],
-  ['get_5fversion3_5fresponse_21',['get_version3_response',['../nfca_8cpp.html#acf8a3d3a8f2d6c01750bc4b7b99a9472',1,'m5::nfc::a']]],
-  ['getapplicationids_22',['getApplicationIDs',['../classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#a68a6cb3278cd0481aad76b008cf7df8b',1,'m5::nfc::a::mifare::desfire::DESFireFileSystem']]],
-  ['getfileids_23',['getFileIDs',['../classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#a38589c5c4e0680ba66025d313f66652a',1,'m5::nfc::a::mifare::desfire::DESFireFileSystem']]],
-  ['getfilesettings_24',['getFileSettings',['../classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#a6a158582ceb15643b30928713dabdff8',1,'m5::nfc::a::mifare::desfire::DESFireFileSystem']]],
-  ['getfilesettingsev2_25',['getFileSettingsEV2',['../classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#aea61387738035f332ac4179d7f86b472',1,'m5::nfc::a::mifare::desfire::DESFireFileSystem']]],
-  ['getfilesettingsev2full_26',['getFileSettingsEV2Full',['../classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#a7b8239c44f5f2bd57234edabc77fd3ab',1,'m5::nfc::a::mifare::desfire::DESFireFileSystem']]],
-  ['getfreememory_27',['getFreeMemory',['../classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#a7cb5dc54518bf6c6f69b33e9b9ecef27',1,'m5::nfc::a::mifare::desfire::DESFireFileSystem']]],
-  ['getisofileids_28',['getISOFileIDs',['../classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#a9fc9d81043d93dc4666da54bb23f39ce',1,'m5::nfc::a::mifare::desfire::DESFireFileSystem']]],
-  ['getkeysettings_29',['getKeySettings',['../classm5_1_1nfc_1_1a_1_1mifare_1_1desfire_1_1_d_e_s_fire_file_system.html#a8c2aa173858bb6c21ed7323d4e615219',1,'m5::nfc::a::mifare::desfire::DESFireFileSystem']]]
+  ['get_5fversion3_5fresponse_21',['get_version3_response',['../nfca_8cpp.html#acf8a3d3a8f2d6c01750bc4b7b99a9472',1,'m5::nfc::a']]]
 ];

@@ -1,6 +1,6 @@
 var ndef__record_8hpp =
 [
-    [ "m5::nfc::ndef::Attribute", "structm5_1_1nfc_1_1ndef_1_1_attribute.html", "structm5_1_1nfc_1_1ndef_1_1_attribute" ],
+    [ "m5::nfc::ndef::Attribute", "structm5_1_1nfc_1_1ndef_1_1_attribute.html", null ],
     [ "m5::nfc::ndef::Record", "classm5_1_1nfc_1_1ndef_1_1_record.html", "classm5_1_1nfc_1_1ndef_1_1_record" ],
     [ "TNF", "ndef__record_8hpp.html#a43d1cb99aeb4fdf193bba66a6b4e7153", [
       [ "Empty", "ndef__record_8hpp.html#a43d1cb99aeb4fdf193bba66a6b4e7153ace2c8aed9c2fa0cfbed56cbda4d8bf07", null ],
