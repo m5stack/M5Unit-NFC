@@ -127,7 +127,7 @@ var searchData=
   ['renesastechnology_124',['RenesasTechnology',['../manufacturer__id_8hpp.html#aae5fb117206b5b278632bbf99d1e4f52ae68db2e7905c0a38950967691e7e2038',1,'m5::nfc']]],
   ['req_5fwupb_125',['REQ_WUPB',['../nfcb_8hpp.html#ae2a856e80084be96e7eab93c4007af8cacf8fbe52b35ccf31d879b73fa27243af',1,'m5::nfc::b']]],
   ['reqa_126',['REQA',['../nfca_8hpp.html#a1a21e28554c0dc7d49466fff910e90acad7bd76c9aadbfa1c3d7fbde38f278e78',1,'m5::nfc::a']]],
-  ['request_127',['request',['../classm5_1_1nfc_1_1_n_f_c_layer_a.html#a0db4941c60b2f67a8415ef2fd505ead4',1,'m5::nfc::NFCLayerA::request()'],['../classm5_1_1nfc_1_1_n_f_c_layer_b.html#ab515868911273b8f1925bf4d41163eb7',1,'m5::nfc::NFCLayerB::request()']]],
+  ['request_127',['request',['../classm5_1_1nfc_1_1_n_f_c_layer_a.html#a0db4941c60b2f67a8415ef2fd505ead4',1,'m5::nfc::NFCLayerA::request()'],['../classm5_1_1nfc_1_1_n_f_c_layer_b.html#af30da614d7bdcfd7829d70dcd23d9b18',1,'m5::nfc::NFCLayerB::request()']]],
   ['request_5fcode_128',['request_code',['../structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#a4997c0cf13eff03c2ad30f207d7fe77b',1,'m5::nfc::f::PICC']]],
   ['request_5fdata_129',['request_data',['../structm5_1_1nfc_1_1f_1_1_p_i_c_c.html#ac0edd79a2abaa04fb42e8bd6d716eed2',1,'m5::nfc::f::PICC']]],
   ['requestcode_130',['RequestCode',['../nfcf_8hpp.html#aa85476c3807a205b8d13cb06347bb144',1,'m5::nfc::f']]],

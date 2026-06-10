@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.3 git rev:59f5362</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.0.2 git rev:864e58d</span>
    </div>
   </td>
  </tr>
@@ -127,9 +127,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a3db1fee95788ddc14b489b059b6fc2d2" id="r_a3db1fee95788ddc14b489b059b6fc2d2"><td class="memItemLeft" align="right" valign="top"><a id="a3db1fee95788ddc14b489b059b6fc2d2" name="a3db1fee95788ddc14b489b059b6fc2d2"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>NFCLayerB</b> (<a class="el" href="classm5_1_1unit_1_1_cap_s_t25_r3916.html">m5::unit::CapST25R3916</a> &amp;u)</td></tr>
 <tr class="separator:a3db1fee95788ddc14b489b059b6fc2d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e75370322d135218de578bf429379e8" id="r_a6e75370322d135218de578bf429379e8"><td class="memItemLeft" align="right" valign="top"><a id="a6e75370322d135218de578bf429379e8" name="a6e75370322d135218de578bf429379e8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>NFCLayerB</b> (m5::unit::UnitWS1850S &amp;u)</td></tr>
-<tr class="separator:a6e75370322d135218de578bf429379e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a122b2ce7114b2c5ed04e7b7457c2e098" id="r_a122b2ce7114b2c5ed04e7b7457c2e098"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a122b2ce7114b2c5ed04e7b7457c2e098">transceive</a> (uint8_t *rx, uint16_t &amp;rx_len, const uint8_t *tx, const uint16_t tx_len, const uint32_t timeout_ms) override</td></tr>
 <tr class="memdesc:a122b2ce7114b2c5ed04e7b7457c2e098"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transceive (RF command)  <br /></td></tr>
 <tr class="separator:a122b2ce7114b2c5ed04e7b7457c2e098"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -152,28 +149,28 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a43e13b709e37cda6e0bd2e63ec0db114"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the currently activated PICC.  <br /></td></tr>
 <tr class="separator:a43e13b709e37cda6e0bd2e63ec0db114"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">Detection and activation</div></td></tr>
-<tr class="memitem:ab515868911273b8f1925bf4d41163eb7" id="r_ab515868911273b8f1925bf4d41163eb7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab515868911273b8f1925bf4d41163eb7">request</a> (uint8_t *atqb, uint16_t &amp;atqb_len, const uint8_t afi=0x00, const <a class="el" href="nfcb_8hpp.html#aa906fade1b147b015c38f75b7f4a0fcd">m5::nfc::b::Require</a> slots=m5::nfc::b::Require::Slot1, const uint32_t timeout_ms=m5::nfc::b::TIMEOUT_REQ_WUP_B)</td></tr>
-<tr class="memdesc:ab515868911273b8f1925bf4d41163eb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send REQB to discover a PICC in IDLE.  <br /></td></tr>
-<tr class="separator:ab515868911273b8f1925bf4d41163eb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a4bd73e6949ae6391316024baa7d310" id="r_a1a4bd73e6949ae6391316024baa7d310"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1a4bd73e6949ae6391316024baa7d310">wakeup</a> (uint8_t *atqb, uint16_t &amp;atqb_len, const uint8_t afi=0x00, const <a class="el" href="nfcb_8hpp.html#aa906fade1b147b015c38f75b7f4a0fcd">m5::nfc::b::Require</a> slots=m5::nfc::b::Require::Slot1, const uint32_t timeout_ms=m5::nfc::b::TIMEOUT_REQ_WUP_B)</td></tr>
-<tr class="memdesc:a1a4bd73e6949ae6391316024baa7d310"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send WUPB to wake a PICC from IDLE or HALT.  <br /></td></tr>
-<tr class="separator:a1a4bd73e6949ae6391316024baa7d310"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c0d0d0f0746fc372d1f9a1599ca00b9" id="r_a8c0d0d0f0746fc372d1f9a1599ca00b9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8c0d0d0f0746fc372d1f9a1599ca00b9">detect</a> (<a class="el" href="structm5_1_1nfc_1_1b_1_1_p_i_c_c.html">m5::nfc::b::PICC</a> &amp;picc, const uint8_t afi=0x00, const uint32_t timeout_ms=50U, const uint32_t req_timeout_ms=m5::nfc::b::TIMEOUT_REQ_WUP_B)</td></tr>
-<tr class="memdesc:a8c0d0d0f0746fc372d1f9a1599ca00b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Detect single idle PICC.  <br /></td></tr>
-<tr class="separator:a8c0d0d0f0746fc372d1f9a1599ca00b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af8c07646909ab393b0c1609a767c7804" id="r_af8c07646909ab393b0c1609a767c7804"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af8c07646909ab393b0c1609a767c7804">detect</a> (std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1b_1_1_p_i_c_c.html">m5::nfc::b::PICC</a> &gt; &amp;piccs, const uint8_t afi=0x00, const uint8_t max_piccs=4, const uint32_t timeout_ms=1000U, const uint32_t req_timeout_ms=m5::nfc::b::TIMEOUT_REQ_WUP_B)</td></tr>
-<tr class="memdesc:af8c07646909ab393b0c1609a767c7804"><td class="mdescLeft">&#160;</td><td class="mdescRight">Detect idle PICCs.  <br /></td></tr>
-<tr class="separator:af8c07646909ab393b0c1609a767c7804"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a69822941ce3155be40d915958018d4d5" id="r_a69822941ce3155be40d915958018d4d5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a69822941ce3155be40d915958018d4d5">select</a> (<a class="el" href="structm5_1_1nfc_1_1b_1_1_p_i_c_c.html">m5::nfc::b::PICC</a> &amp;picc, const uint32_t timeout_ms=m5::nfc::b::TIMEOUT_ATTRIB)</td></tr>
-<tr class="memdesc:a69822941ce3155be40d915958018d4d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send REQB to discover a PICC in IDLE.  <br /></td></tr>
-<tr class="separator:a69822941ce3155be40d915958018d4d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af30da614d7bdcfd7829d70dcd23d9b18" id="r_af30da614d7bdcfd7829d70dcd23d9b18"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af30da614d7bdcfd7829d70dcd23d9b18">request</a> (uint8_t *atqb, uint16_t &amp;atqb_len, const uint8_t afi=0x00, const <a class="el" href="nfcb_8hpp.html#aa906fade1b147b015c38f75b7f4a0fcd">m5::nfc::b::Require</a> slots=m5::nfc::b::Require::Slot1)</td></tr>
+<tr class="memdesc:af30da614d7bdcfd7829d70dcd23d9b18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send REQB to discover a PICC in IDLE.  <br /></td></tr>
+<tr class="separator:af30da614d7bdcfd7829d70dcd23d9b18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43d82222e2f7947b2e52e2c4a10f5dcc" id="r_a43d82222e2f7947b2e52e2c4a10f5dcc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a43d82222e2f7947b2e52e2c4a10f5dcc">wakeup</a> (uint8_t *atqb, uint16_t &amp;atqb_len, const uint8_t afi=0x00, const <a class="el" href="nfcb_8hpp.html#aa906fade1b147b015c38f75b7f4a0fcd">m5::nfc::b::Require</a> slots=m5::nfc::b::Require::Slot1)</td></tr>
+<tr class="memdesc:a43d82222e2f7947b2e52e2c4a10f5dcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send WUPB to wake a PICC from IDLE or HALT.  <br /></td></tr>
+<tr class="separator:a43d82222e2f7947b2e52e2c4a10f5dcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3698c3813530c3d6d039ddef69a6726" id="r_ad3698c3813530c3d6d039ddef69a6726"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad3698c3813530c3d6d039ddef69a6726">detect</a> (<a class="el" href="structm5_1_1nfc_1_1b_1_1_p_i_c_c.html">m5::nfc::b::PICC</a> &amp;picc, const uint8_t afi=0x00, const uint32_t timeout_ms=100U)</td></tr>
+<tr class="memdesc:ad3698c3813530c3d6d039ddef69a6726"><td class="mdescLeft">&#160;</td><td class="mdescRight">Detect single idle PICC.  <br /></td></tr>
+<tr class="separator:ad3698c3813530c3d6d039ddef69a6726"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afef900848a56b2e124205e31a136827d" id="r_afef900848a56b2e124205e31a136827d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#afef900848a56b2e124205e31a136827d">detect</a> (std::vector&lt; <a class="el" href="structm5_1_1nfc_1_1b_1_1_p_i_c_c.html">m5::nfc::b::PICC</a> &gt; &amp;piccs, const uint8_t afi=0x00, const uint8_t max_piccs=4, const uint32_t timeout_ms=1000U)</td></tr>
+<tr class="memdesc:afef900848a56b2e124205e31a136827d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Detect idle PICCs.  <br /></td></tr>
+<tr class="separator:afef900848a56b2e124205e31a136827d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7936a932130b4514d04a225c10e4305" id="r_ad7936a932130b4514d04a225c10e4305"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad7936a932130b4514d04a225c10e4305">select</a> (<a class="el" href="structm5_1_1nfc_1_1b_1_1_p_i_c_c.html">m5::nfc::b::PICC</a> &amp;picc)</td></tr>
+<tr class="memdesc:ad7936a932130b4514d04a225c10e4305"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send REQB to discover a PICC in IDLE.  <br /></td></tr>
+<tr class="separator:ad7936a932130b4514d04a225c10e4305"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">For activated PICC</div></td></tr>
-<tr class="memitem:a793a94c93e909bd2b0eed7835cefb828" id="r_a793a94c93e909bd2b0eed7835cefb828"><td class="memItemLeft" align="right" valign="top"><a id="a793a94c93e909bd2b0eed7835cefb828" name="a793a94c93e909bd2b0eed7835cefb828"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>hlt</b> (const uint8_t pupi[4], const uint32_t timeout_ms=m5::nfc::b::TIMEOUT_HLTB)</td></tr>
-<tr class="separator:a793a94c93e909bd2b0eed7835cefb828"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaeebcde5471a788d40b62b12b467b05e" id="r_aaeebcde5471a788d40b62b12b467b05e"><td class="memItemLeft" align="right" valign="top"><a id="aaeebcde5471a788d40b62b12b467b05e" name="aaeebcde5471a788d40b62b12b467b05e"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>deselect</b> (const uint8_t pupi[4], const uint8_t cid=0xFF, const uint32_t timeout_ms=m5::nfc::b::TIMEOUT_DESELECT)</td></tr>
-<tr class="separator:aaeebcde5471a788d40b62b12b467b05e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad742c25b85e6d72c47fb964d89dade51" id="r_ad742c25b85e6d72c47fb964d89dade51"><td class="memItemLeft" align="right" valign="top"><a id="ad742c25b85e6d72c47fb964d89dade51" name="ad742c25b85e6d72c47fb964d89dade51"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>hlt</b> (const uint8_t pupi[4])</td></tr>
+<tr class="separator:ad742c25b85e6d72c47fb964d89dade51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b02324248a65b7565ded5b7f0b55049" id="r_a2b02324248a65b7565ded5b7f0b55049"><td class="memItemLeft" align="right" valign="top"><a id="a2b02324248a65b7565ded5b7f0b55049" name="a2b02324248a65b7565ded5b7f0b55049"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>deselect</b> (const uint8_t pupi[4], const uint8_t cid=0xFF)</td></tr>
+<tr class="separator:a2b02324248a65b7565ded5b7f0b55049"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7eb3849eb85ec9aa48d0be99bf2e6b35" id="r_a7eb3849eb85ec9aa48d0be99bf2e6b35"><td class="memItemLeft" align="right" valign="top"><a id="a7eb3849eb85ec9aa48d0be99bf2e6b35" name="a7eb3849eb85ec9aa48d0be99bf2e6b35"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>deactivate</b> ()</td></tr>
 <tr class="separator:a7eb3849eb85ec9aa48d0be99bf2e6b35"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -193,9 +190,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>deactivate</b> ()</td
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a53e598bc0243b178ea8fd8012833c3f2" id="r_a53e598bc0243b178ea8fd8012833c3f2"><td class="memItemLeft" align="right" valign="top"><a id="a53e598bc0243b178ea8fd8012833c3f2" name="a53e598bc0243b178ea8fd8012833c3f2"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>request_wakeup</b> (uint8_t *atqb, uint16_t &amp;atqb_len, const uint8_t afi, const <a class="el" href="nfcb_8hpp.html#aa906fade1b147b015c38f75b7f4a0fcd">m5::nfc::b::Require</a> slots, const bool <a class="el" href="#a1a4bd73e6949ae6391316024baa7d310">wakeup</a>, const uint32_t timeout_ms=m5::nfc::b::TIMEOUT_REQ_WUP_B)</td></tr>
-<tr class="separator:a53e598bc0243b178ea8fd8012833c3f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af460001844cb35340601fe8bfe84b828" id="r_af460001844cb35340601fe8bfe84b828"><td class="memItemLeft" align="right" valign="top"><a id="af460001844cb35340601fe8bfe84b828" name="af460001844cb35340601fe8bfe84b828"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>request_wakeup</b> (uint8_t *atqb, uint16_t &amp;atqb_len, const uint8_t afi, const <a class="el" href="nfcb_8hpp.html#aa906fade1b147b015c38f75b7f4a0fcd">m5::nfc::b::Require</a> slots, const bool <a class="el" href="#a43d82222e2f7947b2e52e2c4a10f5dcc">wakeup</a>)</td></tr>
+<tr class="separator:af460001844cb35340601fe8bfe84b828"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4120d13050d0fe0ed607b9e762623111" id="r_a4120d13050d0fe0ed607b9e762623111"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4120d13050d0fe0ed607b9e762623111">read</a> (uint8_t *rx, uint16_t &amp;rx_len, const uint16_t saddr) override</td></tr>
 <tr class="memdesc:a4120d13050d0fe0ed607b9e762623111"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read NDEF (block)  <br /></td></tr>
 <tr class="separator:a4120d13050d0fe0ed607b9e762623111"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -262,8 +259,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a8c0d0d0f0746fc372d1f9a1599ca00b9" name="a8c0d0d0f0746fc372d1f9a1599ca00b9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8c0d0d0f0746fc372d1f9a1599ca00b9">&#9670;&#160;</a></span>detect() <span class="overload">[1/2]</span></h2>
+<a id="ad3698c3813530c3d6d039ddef69a6726" name="ad3698c3813530c3d6d039ddef69a6726"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3698c3813530c3d6d039ddef69a6726">&#9670;&#160;</a></span>detect() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -281,12 +278,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>timeout_ms</em></span><span class="paramdefsep"> = </span><span class="paramdefval">50U</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>req_timeout_ms</em></span><span class="paramdefsep"> = </span><span class="paramdefval">m5::nfc::b::TIMEOUT_REQ_WUP_B</span>&#160;)</td>
+          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>timeout_ms</em></span><span class="paramdefsep"> = </span><span class="paramdefval">100U</span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -305,8 +297,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="af8c07646909ab393b0c1609a767c7804" name="af8c07646909ab393b0c1609a767c7804"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af8c07646909ab393b0c1609a767c7804">&#9670;&#160;</a></span>detect() <span class="overload">[2/2]</span></h2>
+<a id="afef900848a56b2e124205e31a136827d" name="afef900848a56b2e124205e31a136827d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afef900848a56b2e124205e31a136827d">&#9670;&#160;</a></span>detect() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -329,12 +321,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>timeout_ms</em></span><span class="paramdefsep"> = </span><span class="paramdefval">1000U</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>req_timeout_ms</em></span><span class="paramdefsep"> = </span><span class="paramdefval">m5::nfc::b::TIMEOUT_REQ_WUP_B</span>&#160;)</td>
+          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>timeout_ms</em></span><span class="paramdefsep"> = </span><span class="paramdefval">1000U</span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -580,8 +567,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ab515868911273b8f1925bf4d41163eb7" name="ab515868911273b8f1925bf4d41163eb7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab515868911273b8f1925bf4d41163eb7">&#9670;&#160;</a></span>request()</h2>
+<a id="af30da614d7bdcfd7829d70dcd23d9b18" name="af30da614d7bdcfd7829d70dcd23d9b18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af30da614d7bdcfd7829d70dcd23d9b18">&#9670;&#160;</a></span>request()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -607,12 +594,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="nfcb_8hpp.html#aa906fade1b147b015c38f75b7f4a0fcd">m5::nfc::b::Require</a></td>          <td class="paramname"><span class="paramname"><em>slots</em></span><span class="paramdefsep"> = </span><span class="paramdefval">m5::nfc::b::Require::Slot1</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>timeout_ms</em></span><span class="paramdefsep"> = </span><span class="paramdefval">m5::nfc::b::TIMEOUT_REQ_WUP_B</span>&#160;)</td>
+          <td class="paramtype">const <a class="el" href="nfcb_8hpp.html#aa906fade1b147b015c38f75b7f4a0fcd">m5::nfc::b::Require</a></td>          <td class="paramname"><span class="paramname"><em>slots</em></span><span class="paramdefsep"> = </span><span class="paramdefval">m5::nfc::b::Require::Slot1</span>&#160;)</td>
         </tr>
       </table>
   </td>
@@ -638,8 +620,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a69822941ce3155be40d915958018d4d5" name="a69822941ce3155be40d915958018d4d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a69822941ce3155be40d915958018d4d5">&#9670;&#160;</a></span>select()</h2>
+<a id="ad7936a932130b4514d04a225c10e4305" name="ad7936a932130b4514d04a225c10e4305"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7936a932130b4514d04a225c10e4305">&#9670;&#160;</a></span>select()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -647,12 +629,8 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">bool m5::nfc::NFCLayerB::select </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structm5_1_1nfc_1_1b_1_1_p_i_c_c.html">m5::nfc::b::PICC</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>picc</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramtype"><a class="el" href="structm5_1_1nfc_1_1b_1_1_p_i_c_c.html">m5::nfc::b::PICC</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>picc</em></span></td><td>)</td>
           <td></td>
-          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>timeout_ms</em></span><span class="paramdefsep"> = </span><span class="paramdefval">m5::nfc::b::TIMEOUT_ATTRIB</span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -846,8 +824,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a1a4bd73e6949ae6391316024baa7d310" name="a1a4bd73e6949ae6391316024baa7d310"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1a4bd73e6949ae6391316024baa7d310">&#9670;&#160;</a></span>wakeup()</h2>
+<a id="a43d82222e2f7947b2e52e2c4a10f5dcc" name="a43d82222e2f7947b2e52e2c4a10f5dcc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a43d82222e2f7947b2e52e2c4a10f5dcc">&#9670;&#160;</a></span>wakeup()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -873,12 +851,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="nfcb_8hpp.html#aa906fade1b147b015c38f75b7f4a0fcd">m5::nfc::b::Require</a></td>          <td class="paramname"><span class="paramname"><em>slots</em></span><span class="paramdefsep"> = </span><span class="paramdefval">m5::nfc::b::Require::Slot1</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>timeout_ms</em></span><span class="paramdefsep"> = </span><span class="paramdefval">m5::nfc::b::TIMEOUT_REQ_WUP_B</span>&#160;)</td>
+          <td class="paramtype">const <a class="el" href="nfcb_8hpp.html#aa906fade1b147b015c38f75b7f4a0fcd">m5::nfc::b::Require</a></td>          <td class="paramname"><span class="paramname"><em>slots</em></span><span class="paramdefsep"> = </span><span class="paramdefval">m5::nfc::b::Require::Slot1</span>&#160;)</td>
         </tr>
       </table>
   </td>
