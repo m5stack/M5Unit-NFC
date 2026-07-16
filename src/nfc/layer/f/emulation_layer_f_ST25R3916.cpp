@@ -127,19 +127,12 @@ bool ListenerST25R3916ForF::load_config(const m5::nfc::f::PICC& picc)
         return false;
     }
 
-    uint8_t wbuf[21]{};
-    uint32_t offset{};
-    // SC(2)
-    wbuf[offset++] = picc.emulation_sc >> 8;
-    wbuf[offset++] = picc.emulation_sc & 0xFF;
-    // SENSF_RES(19)
-    wbuf[offset++] = m5::stl::to_underlying(ResponseCode::Polling);
-    memcpy(wbuf + offset, picc.m, 16);
-    offset += 16;
-    wbuf[offset++] = 0;  // SENSF_REQ, request code 0x01/0x02 NOT support ST25R3916
-    wbuf[offset++] = 0;  // SENSF_REQ, request code 0x01/0x02 NOT support ST25R3916
+    uint8_t wbuf[FELICA_PT_MEMORY_SIZE]{};
+    if (!make_emulation_polling_memory(wbuf, picc)) {
+        return false;
+    }
 
-    //    m5::utility::log::dump(wbuf, offset, false);
+    //    m5::utility::log::dump(wbuf, sizeof(wbuf), false);
 
     // TSN: 24 4-bit random numbers are stored
     // Make it as even as possible

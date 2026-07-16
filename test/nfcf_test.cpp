@@ -124,6 +124,29 @@ TEST(NFC_F, PICC)
     EXPECT_FALSE(picc3.emulate(Type::FeliCaLite, idm_sample, pmm_sample));
 }
 
+TEST(NFC_F, EmulationPollingMemory)
+{
+    PICC picc{};
+    EXPECT_TRUE(picc.emulate(Type::FeliCaLiteS, idm_sample, pmm_sample));
+
+    uint8_t mem[FELICA_PT_MEMORY_SIZE]{};
+    EXPECT_TRUE(make_emulation_polling_memory(mem, picc));
+
+    EXPECT_EQ(mem[0], 0x88);
+    EXPECT_EQ(mem[1], 0xB4);
+    EXPECT_EQ(mem[2], static_cast<uint8_t>(ResponseCode::Polling));
+    EXPECT_EQ(std::memcmp(mem + 3, idm_sample, sizeof(idm_sample)), 0);
+    EXPECT_EQ(std::memcmp(mem + 11, pmm_sample, sizeof(pmm_sample)), 0);
+    EXPECT_EQ(mem[19], 0x00);
+    EXPECT_EQ(mem[20], 0x83);
+
+    picc.request_data = 0x1234;
+    std::memset(mem, 0, sizeof(mem));
+    EXPECT_TRUE(make_emulation_polling_memory(mem, picc));
+    EXPECT_EQ(mem[19], 0x12);
+    EXPECT_EQ(mem[20], 0x34);
+}
+
 TEST(NFC_F, Reg)
 {
     REG r{};
