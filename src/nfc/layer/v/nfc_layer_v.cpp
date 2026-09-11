@@ -63,6 +63,11 @@ void print_block(const uint8_t* buf, const uint8_t len, const int16_t block)
     ::puts(tmp);
 }
 
+// Almost every ISO/IEC 15693 tag lays its memory out in 4 byte blocks, so this is a safe guess for
+// a PICC that will not say. The block count has no such convention; assume enough to be useful.
+constexpr uint8_t DEFAULT_BLOCK_SIZE{4};
+constexpr uint16_t DEFAULT_BLOCKS{128};
+
 constexpr char dump_header[] =
     "      Block:00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F ";
 constexpr char dump_line[] =
@@ -112,20 +117,16 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             continue;
         }
 
-        // Get system information
+        // Get system information. ISO/IEC 15693-3 only makes inventory and stay quiet mandatory, so a
+        // PICC that turns this down is still a PICC; work its memory layout out from a read instead.
         if (!get_system_information(picc)) {
-            M5_LIB_LOGE("get_system_information failed");
-            // Silence it anyway, or it answers the next inventory and the loop spins until timeout
-            stay_quiet(picc);
-            continue;
+            M5_LIB_LOGW("get_system_information is not supported");
         }
 
         // For ST25DV
         if (picc.uid[1] == m5::stl::to_underlying(m5::nfc::ManufacturerId::STMicroelectronics)) {
             if (!get_system_information_ext(picc)) {
-                M5_LIB_LOGE("get_system_information_ext failed");
-                stay_quiet(picc);
-                continue;
+                M5_LIB_LOGW("get_system_information_ext is not supported");
             }
             if (!picc.blocks || !picc.block_size) {
                 if (picc.icRef == 0x26) {
@@ -138,6 +139,16 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
                     }
                 }
             }
+        }
+
+        // Anything the PICC kept to itself has to be read out of it before it can be addressed
+        if (!picc.valid()) {
+            probe_memory_layout(picc);
+        }
+        if (!picc.valid()) {
+            M5_LIB_LOGE("Failed to work out the memory layout");
+            stay_quiet(picc);
+            continue;
         }
 
         picc.type   = identify_type(picc);
@@ -612,6 +623,66 @@ bool NFCLayerV::reset_to_ready(const PICC* picc)
     // M5_DUMPE(rx, rx_len);
 
     return rx[0] == 0x00;
+}
+
+void NFCLayerV::probe_memory_layout(m5::nfc::v::PICC& picc)
+{
+    // Read block zero while addressing the PICC by UID, which needs nothing we do not have yet
+    uint8_t frame[2 + 8 + 1]{};
+    make_frame(frame, address_flag | data_rate_flag, m5::stl::to_underlying(Command::ReadSingleBlock), &picc);
+    frame[10] = 0x00;
+
+    uint8_t rbuf[32 + 1]{};
+    uint16_t rx_len = sizeof(rbuf);
+    const bool read =
+        _impl->transceive(rbuf, rx_len, frame, sizeof(frame), TIMEOUT_READ_SINGLE_BLOCK, modulationMode()) &&
+        rx_len > 1 && rbuf[0] == 0x00;
+
+    // The answer carries the flags byte and then one block, so its length gives the block size away
+    if (!picc.block_size) {
+        if (!read) {
+            M5_LIB_LOGW("Could not read block 0; assuming %u byte blocks", DEFAULT_BLOCK_SIZE);
+        }
+        picc.block_size = read ? static_cast<uint8_t>(rx_len - 1) : DEFAULT_BLOCK_SIZE;
+    }
+
+    if (picc.blocks) {
+        return;
+    }
+
+    // A tag formatted for NDEF holds a capability container in block zero. It is four bytes, or
+    // eight when MLEN needs more room than one byte, which it signals by leaving the short MLEN
+    // zero. The second half then lives in the next block unless the blocks are big enough to hold
+    // it all. MLEN measures the memory in units of 8 bytes (NFC Forum T5T 4.3.1.17).
+    uint8_t cc[8]{};
+    uint32_t cc_len{};
+    if (read) {
+        cc_len = std::min<uint32_t>(rx_len - 1, sizeof(cc));
+        memcpy(cc, rbuf + 1, cc_len);
+    }
+    if (cc_len >= 4 && (cc[0] == 0xE1 || cc[0] == 0xE2) && !cc[2] && cc_len < sizeof(cc)) {
+        frame[10]    = 0x01;
+        uint16_t len = sizeof(rbuf);
+        const bool more =
+            _impl->transceive(rbuf, len, frame, sizeof(frame), TIMEOUT_READ_SINGLE_BLOCK, modulationMode()) &&
+            len > 1 && rbuf[0] == 0x00;
+        if (more) {
+            const uint32_t take = std::min<uint32_t>(len - 1, sizeof(cc) - cc_len);
+            memcpy(cc + cc_len, rbuf + 1, take);
+            cc_len += take;
+        }
+    }
+
+    if (cc_len >= 4 && (cc[0] == 0xE1 || cc[0] == 0xE2)) {
+        const uint32_t mlen = cc[2] ? cc[2] : (cc_len >= 8 ? (((uint32_t)cc[6] << 8) | cc[7]) : 0U);
+        picc.blocks         = static_cast<uint16_t>(mlen * 8U / picc.block_size);
+    }
+    if (!picc.blocks) {
+        // Neither the PICC nor a capability container said how big it is, so the caller gets a guess
+        M5_LIB_LOGW("Assuming %u blocks of %u bytes; reads past the end of %s will fail", DEFAULT_BLOCKS,
+                    picc.block_size, picc.uidAsString().c_str());
+        picc.blocks = DEFAULT_BLOCKS;
+    }
 }
 
 bool NFCLayerV::stay_quiet(const m5::nfc::v::PICC& picc)
