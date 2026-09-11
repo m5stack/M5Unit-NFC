@@ -140,6 +140,11 @@ bool ListenerST25R3916ForA::load_config(const m5::nfc::a::PICC& picc)
 
 bool ListenerST25R3916ForA::start_emulation(const m5::nfc::a::PICC& picc)
 {
+    if (!_u.isNFCMode(NFC::A)) {
+        M5_LIB_LOGE("Unit is not configured for NFC-A emulation");
+        return false;
+    }
+
     if (!load_config(picc)) {
         return false;
     }

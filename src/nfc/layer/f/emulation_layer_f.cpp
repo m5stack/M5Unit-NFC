@@ -103,6 +103,7 @@ bool EmulationLayerF::begin(const m5::nfc::f::PICC& picc, uint8_t* ptr, const ui
 bool EmulationLayerF::end()
 {
     if (_state == State::None) {
+        M5_LIB_LOGW("Not started");
         return true;
     }
     _state = State::None;
