@@ -457,18 +457,31 @@ TEST(NDEF, Type5CapabilityContainer)
     EXPECT_EQ(cc.major_version(), NDEF_MAJOR_VERSION);
     EXPECT_EQ(cc.minor_version(), NDEF_MINOR_VERSION);
     EXPECT_EQ(cc.ndef_size(), 256);
+    // MLEN counts in units of 8 bytes, so the field holds a value eight times smaller
+    EXPECT_EQ(cc.block[2], 256 / 8);
 
-    // 8-byte CC
+    // 8-byte CC. MLEN is in the same units whatever the size of the container
     type5::CapabilityContainer cc8{};
     cc8.block[0] = MAGIC_NO_CC8;
     cc8.major_version(NDEF_MAJOR_VERSION);
     cc8.minor_version(NDEF_MINOR_VERSION);
-    cc8.block[6] = 0x10;  // ndef_size high byte
-    cc8.block[7] = 0x00;  // ndef_size low byte (4096)
+    cc8.ndef_size(32768);
 
     EXPECT_TRUE(cc8.valid());
     EXPECT_EQ(cc8.size(), 8);
-    EXPECT_EQ(cc8.ndef_size(), 0x1000);
+    EXPECT_EQ(cc8.ndef_size(), 32768);
+    EXPECT_EQ(cc8.block[6], 0x10);
+    EXPECT_EQ(cc8.block[7], 0x00);
+
+    // The container an ST25DV64K carries, which measures 8184 bytes as 1023 units of 8
+    type5::CapabilityContainer st25dv{};
+    st25dv.block[0] = MAGIC_NO_CC8;
+    st25dv.major_version(NDEF_MAJOR_VERSION);
+    st25dv.minor_version(NDEF_MINOR_VERSION);
+    st25dv.ndef_size(8184);
+    EXPECT_EQ(st25dv.block[6], 0x03);
+    EXPECT_EQ(st25dv.block[7], 0xFF);
+    EXPECT_EQ(st25dv.ndef_size(), 8184);
 
     // Additional feature
     cc.additional_feature(0x01);
