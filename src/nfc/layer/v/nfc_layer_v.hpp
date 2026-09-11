@@ -243,6 +243,7 @@ protected:
     bool get_system_information(m5::nfc::v::PICC& picc);
     bool get_system_information_ext(m5::nfc::v::PICC& picc);
     void probe_memory_layout(m5::nfc::v::PICC& picc);
+    bool probe_read_block(const m5::nfc::v::PICC& picc, const uint16_t block, uint8_t* rx, uint16_t& rx_len);
     bool read_block_ext(uint8_t rx[32], const m5::nfc::v::PICC& picc, const uint16_t block);
     bool write_block_ext(const m5::nfc::v::PICC& picc, const uint16_t block, const uint8_t* tx, const uint8_t tx_len);
     bool reset_to_ready(const m5::nfc::v::PICC* picc);

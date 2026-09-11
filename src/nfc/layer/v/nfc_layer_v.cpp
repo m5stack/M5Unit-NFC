@@ -625,25 +625,48 @@ bool NFCLayerV::reset_to_ready(const PICC* picc)
     return rx[0] == 0x00;
 }
 
-void NFCLayerV::probe_memory_layout(m5::nfc::v::PICC& picc)
+// Read one block while addressing the PICC by UID, which needs nothing the inventory did not give
+// us. Blocks past the first 256 need the extended command, which not every PICC carries.
+bool NFCLayerV::probe_read_block(const m5::nfc::v::PICC& picc, const uint16_t block, uint8_t* rx, uint16_t& rx_len)
 {
-    // Read block zero while addressing the PICC by UID, which needs nothing we do not have yet
+    if (block > 0xFF) {
+        uint8_t tmp[32]{};
+        if (!read_block_ext(tmp, picc, block)) {
+            return false;
+        }
+        rx_len = std::min<uint16_t>(rx_len, sizeof(tmp));
+        memcpy(rx, tmp, rx_len);
+        return true;
+    }
+
     uint8_t frame[2 + 8 + 1]{};
     make_frame(frame, address_flag | data_rate_flag, m5::stl::to_underlying(Command::ReadSingleBlock), &picc);
-    frame[10] = 0x00;
+    frame[10] = static_cast<uint8_t>(block);
 
     uint8_t rbuf[32 + 1]{};
-    uint16_t rx_len = sizeof(rbuf);
-    const bool read =
-        _impl->transceive(rbuf, rx_len, frame, sizeof(frame), TIMEOUT_READ_SINGLE_BLOCK, modulationMode()) &&
-        rx_len > 1 && rbuf[0] == 0x00;
+    uint16_t len = sizeof(rbuf);
+    if (!_impl->transceive(rbuf, len, frame, sizeof(frame), TIMEOUT_READ_SINGLE_BLOCK, modulationMode()) || len < 2 ||
+        rbuf[0] != 0x00) {
+        return false;
+    }
+    // The answer carries the flags byte and then the block itself
+    rx_len = std::min<uint16_t>(rx_len, len - 1);
+    memcpy(rx, rbuf + 1, rx_len);
+    return true;
+}
 
-    // The answer carries the flags byte and then one block, so its length gives the block size away
+void NFCLayerV::probe_memory_layout(m5::nfc::v::PICC& picc)
+{
+    uint8_t cc[8]{};
+    uint16_t got    = sizeof(cc);
+    const bool read = probe_read_block(picc, 0, cc, got);
+
+    // One block came back, so its length gives the block size away
     if (!picc.block_size) {
         if (!read) {
             M5_LIB_LOGW("Could not read block 0; assuming %u byte blocks", DEFAULT_BLOCK_SIZE);
         }
-        picc.block_size = read ? static_cast<uint8_t>(rx_len - 1) : DEFAULT_BLOCK_SIZE;
+        picc.block_size = read ? static_cast<uint8_t>(got) : DEFAULT_BLOCK_SIZE;
     }
 
     if (picc.blocks) {
@@ -654,22 +677,11 @@ void NFCLayerV::probe_memory_layout(m5::nfc::v::PICC& picc)
     // eight when MLEN needs more room than one byte, which it signals by leaving the short MLEN
     // zero. The second half then lives in the next block unless the blocks are big enough to hold
     // it all. MLEN measures the memory in units of 8 bytes (NFC Forum T5T 4.3.1.17).
-    uint8_t cc[8]{};
-    uint32_t cc_len{};
-    if (read) {
-        cc_len = std::min<uint32_t>(rx_len - 1, sizeof(cc));
-        memcpy(cc, rbuf + 1, cc_len);
-    }
+    uint16_t cc_len = read ? got : 0;
     if (cc_len >= 4 && (cc[0] == 0xE1 || cc[0] == 0xE2) && !cc[2] && cc_len < sizeof(cc)) {
-        frame[10]    = 0x01;
-        uint16_t len = sizeof(rbuf);
-        const bool more =
-            _impl->transceive(rbuf, len, frame, sizeof(frame), TIMEOUT_READ_SINGLE_BLOCK, modulationMode()) &&
-            len > 1 && rbuf[0] == 0x00;
-        if (more) {
-            const uint32_t take = std::min<uint32_t>(len - 1, sizeof(cc) - cc_len);
-            memcpy(cc + cc_len, rbuf + 1, take);
-            cc_len += take;
+        uint16_t more = sizeof(cc) - cc_len;
+        if (probe_read_block(picc, 1, cc + cc_len, more)) {
+            cc_len += more;
         }
     }
 
@@ -677,6 +689,18 @@ void NFCLayerV::probe_memory_layout(m5::nfc::v::PICC& picc)
         const uint32_t mlen = cc[2] ? cc[2] : (cc_len >= 8 ? (((uint32_t)cc[6] << 8) | cc[7]) : 0U);
         picc.blocks         = static_cast<uint16_t>(mlen * 8U / picc.block_size);
     }
+
+    // A container can be stale, or written by something that got the units wrong, so make sure the
+    // last block it claims really answers before taking its word for it
+    if (picc.blocks) {
+        uint8_t tmp[32]{};
+        uint16_t tmp_len = sizeof(tmp);
+        if (!probe_read_block(picc, picc.blocks - 1, tmp, tmp_len)) {
+            M5_LIB_LOGW("The capability container claims %u blocks but the last one does not answer", picc.blocks);
+            picc.blocks = 0;
+        }
+    }
+
     if (!picc.blocks) {
         // Neither the PICC nor a capability container said how big it is, so the caller gets a guess
         M5_LIB_LOGW("Assuming %u blocks of %u bytes; reads past the end of %s will fail", DEFAULT_BLOCKS,
