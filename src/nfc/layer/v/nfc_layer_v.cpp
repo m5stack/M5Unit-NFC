@@ -115,6 +115,8 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
         // Get system information
         if (!get_system_information(picc)) {
             M5_LIB_LOGE("get_system_information failed");
+            // Silence it anyway, or it answers the next inventory and the loop spins until timeout
+            stay_quiet(picc);
             continue;
         }
 
@@ -122,6 +124,7 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
         if (picc.uid[1] == m5::stl::to_underlying(m5::nfc::ManufacturerId::STMicroelectronics)) {
             if (!get_system_information_ext(picc)) {
                 M5_LIB_LOGE("get_system_information_ext failed");
+                stay_quiet(picc);
                 continue;
             }
             if (!picc.blocks || !picc.block_size) {
@@ -613,7 +616,8 @@ bool NFCLayerV::reset_to_ready(const PICC* picc)
 
 bool NFCLayerV::stay_quiet(const m5::nfc::v::PICC& picc)
 {
-    if (!picc.valid()) {
+    // Stay quiet only addresses the PICC, so the memory information is not needed
+    if (!picc.validUID()) {
         return false;
     }
     uint8_t frame[10]{};
