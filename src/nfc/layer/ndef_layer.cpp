@@ -1736,8 +1736,9 @@ bool NDEFLayer::write_type5(const std::vector<m5::nfc::ndef::TLV>& tlvs, const b
 
     M5_LIB_LOGV("Encoded size:%u", encoded_size);
 
-    // Make CC
-    if (!cc.valid()) {
+    // Make CC. A container that claims more room than the PICC has is stale or was written by
+    // something that got the units wrong, so rebuild it rather than trust it.
+    if (!cc.valid() || cc.ndef_size() > user_size) {
         cc.block[0] = (user_size > CC4_MAX_NDEF_LENGTH) ? MAGIC_NO_CC8 : MAGIC_NO_CC4;
         cc.major_version(NDEF_MAJOR_VERSION);
         cc.minor_version(NDEF_MINOR_VERSION);
