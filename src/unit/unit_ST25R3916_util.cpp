@@ -202,9 +202,19 @@ bool UnitST25R3916::disable_field()
            modify_bit_register8(REG_OPERATION_CONTROL, 0x00, rx_en | tx_en);
 }
 
+bool UnitST25R3916::is_ready_mode()
+{
+    uint8_t oc{};
+    return readOperationControl(oc) && (oc & en);
+}
+
 bool UnitST25R3916::writePtMemoryA(const uint8_t* tx, const uint32_t tx_len)
 {
     if (!tx || !tx_len || tx_len > PT_MEMORY_A_LENGTH) {
+        return false;
+    }
+    if (!is_ready_mode()) {
+        M5_LIB_LOGE("PT memory is not accessible outside Ready mode");
         return false;
     }
     TRANSACTION_GUARD();
@@ -216,6 +226,10 @@ bool UnitST25R3916::writePtMemoryF(const uint8_t* tx, const uint32_t tx_len)
     if (!tx || !tx_len || tx_len > PT_MEMORY_F_LENGTH) {
         return false;
     }
+    if (!is_ready_mode()) {
+        M5_LIB_LOGE("PT memory is not accessible outside Ready mode");
+        return false;
+    }
     TRANSACTION_GUARD();
     return writeRegister(OP_LOAD_PT_MEMORY_F_CONFIG, tx, tx_len, true /*I2C, SPI not used*/);
 }
@@ -223,6 +237,10 @@ bool UnitST25R3916::writePtMemoryF(const uint8_t* tx, const uint32_t tx_len)
 bool UnitST25R3916::writePtMemoryTSN(const uint8_t* tx, const uint32_t tx_len)
 {
     if (!tx || !tx_len || tx_len > PT_MEMORY_TSN_LENGTH) {
+        return false;
+    }
+    if (!is_ready_mode()) {
+        M5_LIB_LOGE("PT memory is not accessible outside Ready mode");
         return false;
     }
     TRANSACTION_GUARD();
@@ -236,8 +254,20 @@ bool UnitST25R3916::readPtMemory(uint8_t* rx, const uint32_t rx_len)
     }
     const uint32_t len = std::min<uint32_t>(rx_len, PT_MEMORY_LENGTH);
 
+    if (!is_ready_mode()) {
+        M5_LIB_LOGE("PT memory is not accessible outside Ready mode");
+        return false;
+    }
+
+    // The chip presents a leading dummy byte before the PT memory contents to support
+    // reading at all SPI speeds, so read one extra byte and drop it.
+    uint8_t buf[PT_MEMORY_LENGTH + 1]{};
     TRANSACTION_GUARD();
-    return readRegister(OP_READ_PT_MEMORY, rx, len, 0, false);
+    if (!readRegister(OP_READ_PT_MEMORY, buf, len + 1, 0, false)) {
+        return false;
+    }
+    memcpy(rx, buf + 1, len);
+    return true;
 }
 
 }  // namespace unit

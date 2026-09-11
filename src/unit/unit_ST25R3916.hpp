@@ -2018,6 +2018,9 @@ protected:
 
     static void IRAM_ATTR on_irq(void* arg);
 
+    // PT memory and FIFO are only reachable in Ready mode (Operation control en bit)
+    bool is_ready_mode();
+
     bool read_register8(const uint8_t reg, uint8_t& v);
     bool read_register8(const uint16_t reg, uint8_t& v);
     bool write_register8(const uint8_t reg, const uint8_t v);
