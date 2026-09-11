@@ -1997,15 +1997,39 @@ public:
     bool nfcvReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const uint16_t min_rx_len = 0);
     ///@}
 
+    /*!
+      @note PT memory is only reachable in Ready mode (en bit of the operation control register).
+      The chip leaves it during emulation to wait for a reader field, so these fail there.
+     */
     ///@name PT_MEMORY
     ///@{
-    //! @brief Write pattern memory for NFC-A target
+    /*!
+      @brief Write pattern memory for NFC-A target
+      @param tx Data to write
+      @param tx_len Length of the data
+      @return True if successful
+     */
     bool writePtMemoryA(const uint8_t* tx, const uint32_t tx_len);
-    //! @brief Write pattern memory for NFC-F target
+    /*!
+      @brief Write pattern memory for NFC-F target
+      @param tx Data to write
+      @param tx_len Length of the data
+      @return True if successful
+     */
     bool writePtMemoryF(const uint8_t* tx, const uint32_t tx_len);
-    //! @brief Write pattern memory TSN block
+    /*!
+      @brief Write pattern memory TSN block
+      @param tx Data to write
+      @param tx_len Length of the data
+      @return True if successful
+     */
     bool writePtMemoryTSN(const uint8_t* tx, const uint32_t tx_len);
-    //! @brief Read pattern memory
+    /*!
+      @brief Read pattern memory
+      @param[out] rx Buffer to receive the whole PT memory
+      @param rx_len Size of the buffer
+      @return True if successful
+     */
     bool readPtMemory(uint8_t* rx, const uint32_t rx_len);
     ///@}
 
