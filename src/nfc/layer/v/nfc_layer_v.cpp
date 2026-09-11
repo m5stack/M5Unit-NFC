@@ -571,8 +571,10 @@ bool NFCLayerV::get_system_information_ext(m5::nfc::v::PICC& picc)
         }
         const uint32_t mem = (uint32_t)rx[idx] | ((uint32_t)rx[idx + 1] << 8) | ((uint32_t)rx[idx + 2] << 16);
         idx += 3;
-        const uint8_t block_size = (uint8_t)((mem >> 17) & 0x3F) + 1U;
-        const uint16_t blocks    = (uint16_t)((mem >> 1) & 0xFFFF) + 1U;
+        // Memory size is bits 1..16 for the block count and 17..22 for the block size, numbered from
+        // one, so the shifts are one less than the bit numbers the datasheet gives.
+        const uint8_t block_size = (uint8_t)((mem >> 16) & 0x3F) + 1U;
+        const uint16_t blocks    = (uint16_t)(mem & 0xFFFF) + 1U;
         picc.blocks              = blocks;
         picc.block_size          = block_size;
     }
