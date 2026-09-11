@@ -674,40 +674,6 @@ TEST_F(TestST25R3916, BeginAppliesConfig)
 // Part 4: NFC-F emulation
 // ============================================================
 
-constexpr uint8_t emulation_idm[m5::nfc::f::FELICA_ID_LENGTH] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
-constexpr uint8_t emulation_pmm[m5::nfc::f::FELICA_ID_LENGTH] = {0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE};
-
-// The first Polling response is answered automatically by the chip from PT memory, before the
-// software receive path runs. Request data must therefore reach PT memory, not only SENSF_RES
-// built in EmulationLayerF. This catches regressions where the trailing 2 bytes stay zero.
-TEST_F(TestST25R3916, EmulationF_PtMemoryHoldsPollingRequestData)
-{
-    const auto cfg_initial = unit->config();
-
-    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, true));
-
-    m5::nfc::f::PICC picc{};
-    EXPECT_TRUE(picc.emulate(m5::nfc::f::Type::FeliCaLiteS, emulation_idm, emulation_pmm));
-
-    uint8_t memory[256]{};
-    m5::nfc::EmulationLayerF emu_f{*unit};
-    EXPECT_TRUE(emu_f.begin(picc, memory, sizeof(memory)));
-
-    uint8_t pt[PT_MEMORY_LENGTH]{};
-    EXPECT_TRUE(unit->readPtMemory(pt, sizeof(pt)));
-
-    // F-config layout: SC(2) + SENSF_RES(19); SENSF_RES is response code(1) + IDm/PMm(16) + request data(2)
-    const uint8_t* f = pt + PT_MEMORY_A_LENGTH;
-    EXPECT_EQ(f[2], 0x01) << "SENSF_RES response code";
-    EXPECT_EQ(std::memcmp(f + 3, emulation_idm, sizeof(emulation_idm)), 0) << "IDm";
-    EXPECT_EQ(std::memcmp(f + 11, emulation_pmm, sizeof(emulation_pmm)), 0) << "PMm";
-    EXPECT_EQ(f[19], 0x00) << "Request data (high)";
-    EXPECT_EQ(f[20], 0x83) << "Request data (low)";
-
-    unit->config(cfg_initial);
-    EXPECT_TRUE(unit->begin());
-}
-
 // Reader NFC-F and emulator NFC-F share m5::nfc::NFC::F, but the chip needs a different role
 // setup for each. Switching from reader to emulator must still rebuild the target registers;
 // this catches regressions where an early return skips configure_emulation_f().
@@ -734,4 +700,48 @@ TEST_F(TestST25R3916, EmulationF_ReconfiguresTargetAfterReaderMode)
 
     unit->config(cfg_initial);
     EXPECT_TRUE(unit->begin());
+}
+
+// ============================================================
+// Part 5: PT memory
+// ============================================================
+
+constexpr uint8_t emulation_idm[m5::nfc::f::FELICA_ID_LENGTH] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+constexpr uint8_t emulation_pmm[m5::nfc::f::FELICA_ID_LENGTH] = {0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE};
+
+// The first Polling response is answered by the chip itself from PT memory, before the software
+// receive path runs, so the request data has to reach the chip and not just the SENSF_RES that
+// EmulationLayerF builds. Emulation is not started here: goto_off() drops the chip to power-down
+// to wait for a reader field, and PT memory is unreachable there. Reading it back also covers the
+// leading dummy byte the chip prepends to a PT memory read.
+TEST_F(TestST25R3916, PtMemoryRoundtrip)
+{
+    m5::nfc::f::PICC picc{};
+    EXPECT_TRUE(picc.emulate(m5::nfc::f::Type::FeliCaLiteS, emulation_idm, emulation_pmm));
+
+    uint8_t wbuf[m5::nfc::f::FELICA_PT_MEMORY_SIZE]{};
+    EXPECT_TRUE(m5::nfc::f::make_emulation_polling_memory(wbuf, picc));
+    EXPECT_EQ(wbuf[19], 0x00) << "Request data (high)";
+    EXPECT_EQ(wbuf[20], 0x83) << "Request data (low)";
+
+    EXPECT_TRUE(unit->writePtMemoryF(wbuf, sizeof(wbuf)));
+
+    uint8_t pt[PT_MEMORY_LENGTH]{};
+    EXPECT_TRUE(unit->readPtMemory(pt, sizeof(pt)));
+    EXPECT_EQ(std::memcmp(pt + PT_MEMORY_A_LENGTH, wbuf, sizeof(wbuf)), 0) << "F-config read back";
+}
+
+// PT memory is only reachable in Ready mode. Outside it the chip returns nothing useful, so the
+// accessors must refuse instead of handing back a silently zeroed buffer.
+TEST_F(TestST25R3916, PtMemoryRejectedOutsideReadyMode)
+{
+    EXPECT_TRUE(unit->writeOperationControl(0x00));  // To power-down mode
+
+    uint8_t pt[PT_MEMORY_LENGTH]{};
+    EXPECT_FALSE(unit->readPtMemory(pt, sizeof(pt)));
+
+    uint8_t wbuf[m5::nfc::f::FELICA_PT_MEMORY_SIZE]{};
+    EXPECT_FALSE(unit->writePtMemoryF(wbuf, sizeof(wbuf)));
+
+    EXPECT_TRUE(unit->begin());  // Restore
 }
