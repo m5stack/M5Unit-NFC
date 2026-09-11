@@ -477,7 +477,7 @@ bool NFCLayerF::read_without_encryption_impl(uint8_t* rx, uint16_t& rx_len, cons
 
     uint8_t rbuf[1 + 1 + 8 + 1 + 1 + 1 + 16 * FELICA_MAX_BLOCKS]{};
     uint16_t actual = sizeof(rbuf);
-    if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 11) ||
+    if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 12) ||
         rbuf[1] != m5::stl::to_underlying(ResponseCode::ReadWithoutEncryption) ||  //
         (rbuf[10] /*status 1*/ != 0x00) || (rbuf[11] /*status 2*/ != 0x00)) {
         M5_LIB_LOGD("Failed to read (%02X, %u) a:%u r[0]:%u %02X%02X", block_list[0].block(), rx_org_len, actual,
@@ -668,7 +668,7 @@ bool NFCLayerF::write_without_encryption_impl(const m5::nfc::f::PICC& picc, cons
 
     uint8_t rbuf[1 + 1 + 8 + 1 + 1]{};
     uint16_t actual = sizeof(rbuf);
-    if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 11) ||
+    if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 12) ||
         rbuf[1] != m5::stl::to_underlying(ResponseCode::WriteWithoutEncryption) ||  //
         (rbuf[10] /*status 1*/ != 0x00) || (rbuf[11] /*status 2*/ != 0x00)) {
         // m5::utility::log::dump(rbuf, actual, false);
