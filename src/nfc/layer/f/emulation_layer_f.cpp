@@ -208,7 +208,7 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
                 uint16_t sc = rx[11] | (uint16_t)rx[12];
 
                 std::vector<uint8_t> tx{};
-                tx.resize(1 + 1 + 8 + 2 + 1 + 16 * rx[13]);
+                tx.resize(1 + 8 + 2 + 1 + 16 * rx[13]);
 
                 uint32_t offset{};
                 tx[offset++] = m5::stl::to_underlying(ResponseCode::ReadWithoutEncryption);  // Response code
@@ -226,7 +226,8 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
                     if (!ptr || !(sc == service_random_read || sc == service_random_read_write)) {
                         tx[9]  = 1U << i;  // Error block bit
                         tx[10] = 0xA8;     // Invalid block
-                        tx.resize(1 + 8 + 2 + 1);
+                        // Number of blocks and block data are only sent when status flag 1 is 00h
+                        tx.resize(1 + 8 + 2);
                         error = true;
                         break;
                     }
