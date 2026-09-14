@@ -477,16 +477,15 @@ bool NFCLayerF::read_without_encryption_impl(uint8_t* rx, uint16_t& rx_len, cons
 
     uint8_t rbuf[1 + 1 + 8 + 1 + 1 + 1 + 16 * FELICA_MAX_BLOCKS]{};
     uint16_t actual = sizeof(rbuf);
-    if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 12) ||
-        rbuf[1] != m5::stl::to_underlying(ResponseCode::ReadWithoutEncryption) ||  //
-        (rbuf[10] /*status 1*/ != 0x00) || (rbuf[11] /*status 2*/ != 0x00)) {
+    uint8_t blocks{};
+    if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) ||
+        !read_response_blocks(rbuf, actual, blocks)) {
         M5_LIB_LOGD("Failed to read (%02X, %u) a:%u r[0]:%u %02X%02X", block_list[0].block(), rx_org_len, actual,
                     rbuf[0], rbuf[10], rbuf[11]);
         return false;
     }
-    //    const uint8_t blocks = rbuf[11];
-    rx_len = std::min<uint16_t>(actual - 13, rx_org_len);
-    memcpy(rx, rbuf + 13, rx_len);
+    rx_len = std::min<uint16_t>(16U * blocks, rx_org_len);
+    memcpy(rx, rbuf + FELICA_READ_RESPONSE_HEADER_SIZE, rx_len);
     return true;
 }
 

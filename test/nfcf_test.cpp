@@ -10,6 +10,7 @@
 #include <M5Unified.h>
 #include "nfc/f/nfcf.hpp"
 #include <cstring>
+#include <vector>
 
 using namespace m5::nfc;
 using namespace m5::nfc::f;
@@ -145,6 +146,98 @@ TEST(NFC_F, EmulationPollingMemory)
     EXPECT_TRUE(make_emulation_polling_memory(mem, picc));
     EXPECT_EQ(mem[19], 0x12);
     EXPECT_EQ(mem[20], 0x34);
+}
+
+// Builds a Read Without Encryption answer the way a conformant card would: length byte, response
+// code, IDm, both status flags, the block count and then that many blocks of sixteen bytes.
+static std::vector<uint8_t> make_read_response(const uint8_t blocks, const uint8_t sf1 = 0x00, const uint8_t sf2 = 0x00)
+{
+    std::vector<uint8_t> res(FELICA_READ_RESPONSE_HEADER_SIZE + 16U * blocks);
+    res[0] = static_cast<uint8_t>(res.size());
+    res[1] = static_cast<uint8_t>(ResponseCode::ReadWithoutEncryption);
+    std::memcpy(res.data() + 2, idm_sample, sizeof(idm_sample));
+    res[10] = sf1;
+    res[11] = sf2;
+    res[12] = blocks;
+    for (uint32_t i = FELICA_READ_RESPONSE_HEADER_SIZE; i < res.size(); ++i) {
+        res[i] = static_cast<uint8_t>(i);
+    }
+    return res;
+}
+
+TEST(NFC_F, ReadResponseBlocks)
+{
+    uint8_t blocks{0xFF};
+
+    // A well formed answer for every block count the layer is willing to ask for
+    for (uint8_t n = 1; n <= FELICA_MAX_BLOCKS; ++n) {
+        auto res = make_read_response(n);
+        EXPECT_TRUE(read_response_blocks(res.data(), static_cast<uint16_t>(res.size()), blocks)) << "blocks:" << (int)n;
+        EXPECT_EQ(blocks, n);
+    }
+
+    // An error answer stops before the block count, so there is nothing to hand back
+    auto err = make_read_response(0);
+    err.resize(12);
+    err[0]  = 12;
+    err[10] = 0xFF;
+    blocks  = 0xFF;
+    EXPECT_FALSE(read_response_blocks(err.data(), static_cast<uint16_t>(err.size()), blocks));
+    EXPECT_EQ(blocks, 0) << "A rejected answer reports no blocks";
+
+    // The length that tripped the original bug: one byte short of a success, but with both status
+    // flags clear. Subtracting the header from this used to wrap around
+    auto shortest = make_read_response(0);
+    shortest.resize(12);
+    shortest[0] = 12;
+    blocks      = 0xFF;
+    EXPECT_FALSE(read_response_blocks(shortest.data(), static_cast<uint16_t>(shortest.size()), blocks));
+    EXPECT_EQ(blocks, 0);
+
+    // The count has to be one the request could have produced
+    auto too_many = make_read_response(1);
+    too_many[12]  = FELICA_MAX_BLOCKS + 1;
+    blocks        = 0xFF;
+    EXPECT_FALSE(read_response_blocks(too_many.data(), static_cast<uint16_t>(too_many.size()), blocks));
+    EXPECT_EQ(blocks, 0);
+
+    // A count the frame is too small to carry
+    auto truncated = make_read_response(4);
+    truncated.resize(truncated.size() - 1);
+    blocks = 0xFF;
+    EXPECT_FALSE(read_response_blocks(truncated.data(), static_cast<uint16_t>(truncated.size()), blocks));
+    EXPECT_EQ(blocks, 0);
+
+    // The length byte has to agree that there is room for a block count
+    auto lying = make_read_response(1);
+    lying[0]   = 12;
+    blocks     = 0xFF;
+    EXPECT_FALSE(read_response_blocks(lying.data(), static_cast<uint16_t>(lying.size()), blocks));
+
+    // Wrong response code, and the status flags each on their own
+    auto wrong_code = make_read_response(1);
+    wrong_code[1]   = static_cast<uint8_t>(ResponseCode::WriteWithoutEncryption);
+    EXPECT_FALSE(read_response_blocks(wrong_code.data(), static_cast<uint16_t>(wrong_code.size()), blocks));
+
+    auto sf1_set = make_read_response(1, 0x01, 0x00);
+    EXPECT_FALSE(read_response_blocks(sf1_set.data(), static_cast<uint16_t>(sf1_set.size()), blocks));
+
+    auto sf2_set = make_read_response(1, 0x00, 0xA8);
+    EXPECT_FALSE(read_response_blocks(sf2_set.data(), static_cast<uint16_t>(sf2_set.size()), blocks));
+
+    // Nothing at all
+    blocks = 0xFF;
+    EXPECT_FALSE(read_response_blocks(nullptr, 32, blocks));
+    EXPECT_EQ(blocks, 0);
+
+    auto ok = make_read_response(1);
+    EXPECT_FALSE(read_response_blocks(ok.data(), 0, blocks));
+
+    // Zero blocks is a well formed answer that simply carries nothing
+    auto empty = make_read_response(0);
+    blocks     = 0xFF;
+    EXPECT_TRUE(read_response_blocks(empty.data(), static_cast<uint16_t>(empty.size()), blocks));
+    EXPECT_EQ(blocks, 0);
 }
 
 TEST(NFC_F, Reg)

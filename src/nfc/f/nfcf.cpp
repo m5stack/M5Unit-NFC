@@ -374,6 +374,22 @@ bool make_emulation_polling_memory(uint8_t out[FELICA_PT_MEMORY_SIZE], const PIC
     return offset == FELICA_PT_MEMORY_SIZE;
 }
 
+bool read_response_blocks(const uint8_t* rbuf, const uint16_t rbuf_len, uint8_t& blocks)
+{
+    blocks = 0;
+    if (!rbuf || rbuf_len < FELICA_READ_RESPONSE_HEADER_SIZE || rbuf[0] < FELICA_READ_RESPONSE_HEADER_SIZE ||
+        rbuf[1] != m5::stl::to_underlying(ResponseCode::ReadWithoutEncryption) || rbuf[10] /*status 1*/ != 0x00 ||
+        rbuf[11] /*status 2*/ != 0x00) {
+        return false;
+    }
+    // The count is only trustworthy if the frame is actually long enough to carry what it claims
+    if (rbuf[12] > FELICA_MAX_BLOCKS || FELICA_READ_RESPONSE_HEADER_SIZE + 16U * rbuf[12] > rbuf_len) {
+        return false;
+    }
+    blocks = rbuf[12];
+    return true;
+}
+
 bool operator==(const PICC& a, const PICC& b)
 {
     return a.valid() && b.valid() && memcmp(a.idm, b.idm, sizeof(a.idm)) == 0 &&
