@@ -188,9 +188,14 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
 
                 // Timeslot
                 if (rx[5]) {
-                    const uint8_t slot_count = 1 << rx[5];
-                    const uint8_t slot       = (_picc.idm[7] ^ _picc.idm[6]) & (slot_count - 1);
-                    m5::utility::delayMicroseconds(2417 + slot * 1208);
+                    // The time slot number names how many slots there are rather than an exponent,
+                    // and the reader side already maps it. Shifting by it made 0Fh a count of zero,
+                    // which left the mask wide open and stretched the wait to a third of a second
+                    const uint8_t slot_count = timeslot_to_slot(static_cast<TimeSlot>(rx[5]));
+                    if (slot_count) {
+                        const uint8_t slot = (_picc.idm[7] ^ _picc.idm[6]) & (slot_count - 1);
+                        m5::utility::delayMicroseconds(2417 + slot * 1208);
+                    }
                 }
 
                 // ret = _impl->transmit(SENSF_RES, sizeof(SENSF_RES), 1) ? State::Selected : s;
@@ -204,7 +209,10 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
         case CommandCode::ReadWithoutEncryption:
             // M5_LIB_LOGE("RD:");
             // m5::utility::log::dump(rx, rx_len, false);
-            if (rx_len >= 15 && memcmp(_picc.idm, rx + 2, sizeof(_picc.idm)) == 0) {
+            // The block count and the list behind it are both the reader's. A count the frame cannot
+            // hold would read past it, and anything above eight has no room in the error bit map
+            if (rx_len >= 15 && memcmp(_picc.idm, rx + 2, sizeof(_picc.idm)) == 0 && rx[13] &&
+                rx[13] <= FELICA_MAX_BLOCKS && rx_len >= 14U + 2U * rx[13]) {
                 uint16_t sc = rx[11] | (uint16_t)rx[12];
 
                 std::vector<uint8_t> tx{};
@@ -221,8 +229,11 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
                 bool error{};
                 for (uint_fast8_t i = 0; i < rx[13]; ++i) {
                     block_t b = block_t::from(rx + block_offset);
+                    // A three byte entry needs one more byte than the count alone guaranteed
                     block_offset += 2 + b.is_3byte();
-                    auto ptr = can_read_lite_s(b) ? block_to_address(_memory, _memory_size, b.block()) : null_data;
+                    auto ptr = (block_offset <= rx_len && can_read_lite_s(b))
+                                   ? block_to_address(_memory, _memory_size, b.block())
+                                   : null_data;
                     if (!ptr || !(sc == service_random_read || sc == service_random_read_write)) {
                         tx[9]  = 1U << i;  // Error block bit
                         tx[10] = 0xA8;     // Invalid block
