@@ -311,12 +311,20 @@ bool NFCLayerV::read(uint8_t* rx, uint16_t& rx_len, const uint16_t sblock)
     auto rx_len_org = rx_len;
     rx_len          = 0;
 
-    const uint8_t block_size = _activePICC.block_size;
-    const uint16_t blocks    = rx_len_org / block_size;
-    const uint16_t last      = std::min<uint16_t>(_activePICC.blocks - 1, (uint16_t)sblock + blocks - 1);
-    if (!_activePICC.valid() || !rx || !rx_len_org) {
+    if (!rx || !rx_len_org) {
         return false;
     }
+
+    // A buffer with no room for a whole block leaves nothing to read. Working the last block out of
+    // a count of zero would wrap and name the end of the tag instead, and the loop below trusts
+    // that count for how much it may copy
+    const uint8_t block_size = _activePICC.block_size;
+    const uint16_t blocks    = rx_len_org / block_size;
+    if (!blocks) {
+        M5_LIB_LOGE("A %u byte buffer has no room for a block of %u", rx_len_org, block_size);
+        return false;
+    }
+    const uint16_t last = std::min<uint16_t>(_activePICC.blocks - 1, (uint16_t)sblock + blocks - 1);
 
     uint16_t read_count{};
     uint16_t block = sblock;
