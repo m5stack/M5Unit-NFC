@@ -1385,6 +1385,7 @@ bool NDEFLayer::write_nfcv(const uint16_t offset, const uint8_t* tx, const uint1
 
     const uint16_t block_size = _interface.unit_size_write();
     if (!block_size || block_size > NDEF_MAX_UNIT_SIZE_READ) {
+        M5_LIB_LOGE("Unusable write unit size %u", block_size);
         return false;
     }
 
@@ -1395,6 +1396,8 @@ bool NDEFLayer::write_nfcv(const uint16_t offset, const uint8_t* tx, const uint1
     const uint16_t end_block   = first_block + end_byte / block_size;
 
     if (end_block > _interface.last_user_block()) {
+        M5_LIB_LOGE("Writing %u bytes at %u reaches block %u, past the last one at %u", len, offset, end_block,
+                    _interface.last_user_block());
         return false;
     }
 
@@ -1410,6 +1413,8 @@ bool NDEFLayer::write_nfcv(const uint16_t offset, const uint8_t* tx, const uint1
         if (blk_start != 0 || blk_end != block_size - 1) {
             uint16_t rlen = block_size;
             if (!_interface.read(wbuf, rlen, block) || rlen != block_size) {
+                M5_LIB_LOGE("Failed to read back block %u of %u..%u for a partial write, got %u of %u bytes", block,
+                            start_block, end_block, rlen, block_size);
                 return false;
             }
         }
@@ -1417,11 +1422,17 @@ bool NDEFLayer::write_nfcv(const uint16_t offset, const uint8_t* tx, const uint1
         memcpy(wbuf + blk_start, tx + src_offset, copy_len);
 
         if (!_interface.write(block, wbuf, block_size)) {
+            M5_LIB_LOGE("Failed to write block %u of %u..%u (%u bytes at offset %u)", block, start_block, end_block,
+                        len, offset);
             return false;
         }
         src_offset += copy_len;
     }
-    return src_offset == len;
+    if (src_offset != len) {
+        M5_LIB_LOGE("Wrote %u of the %u bytes asked for at offset %u", src_offset, len, offset);
+        return false;
+    }
+    return true;
 }
 
 //
