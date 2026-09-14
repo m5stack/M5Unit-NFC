@@ -13,9 +13,9 @@
 //       UnitRFID2 (WS1850S) and M5Dial Builtin (WS1850S) do NOT support emulation.
 // *************************************************************
 #if !defined(USING_UNIT_NFC) && !defined(USING_CAP_CC1101)
-// For UnitNFC (ST25R3916, I2C)
+// For UnitNFC (U216)
 // #define USING_UNIT_NFC
-// For CapCC1101NFC (ST25R3916, SPI)
+// For CapCC1101 (U219)
 // #define USING_CAP_CC1101
 #endif
 #include "main/Emulation.cpp"

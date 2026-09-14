@@ -16,9 +16,9 @@
 // Choose one define symbol to match the unit you are using
 // *************************************************************
 #if !defined(USING_UNIT_NFC) && !defined(USING_CAP_CC1101)
-// For UnitNFC
+// For UnitNFC (U216)
 // #define USING_UNIT_NFC
-// For CapNFC
+// For CapCC1101 (U219)
 // #define USING_CAP_CC1101
 #endif
 #include "main/ReadWriteMAC.cpp"
