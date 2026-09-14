@@ -192,7 +192,7 @@ inline bool is_mifare(const Type t)
  */
 inline bool is_st25ta(const Type t)
 {
-    return t >= Type::ST25TA_2K && t <= Type::ST25TA_64K;
+    return t >= Type::ST25TA_512B && t <= Type::ST25TA_64K;
 }
 
 /*!
