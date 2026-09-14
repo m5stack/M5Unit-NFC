@@ -216,11 +216,14 @@ bool NFCLayerV::deactivate()
 
 bool NFCLayerV::readBlock(uint8_t rx[32], const uint16_t block)
 {
-    if (!rx || !_activePICC.valid()) {
+    // The caller reads a whole block out of rx, so without a block size there is no way to say how
+    // much of the answer is data
+    const uint8_t block_size = _activePICC.block_size;
+    if (!rx || !_activePICC.valid() || !block_size) {
         return false;
     }
 
-    const bool use_ext = (_activePICC.totalSize() > (_activePICC.block_size * 256u));
+    const bool use_ext = (_activePICC.totalSize() > (block_size * 256u));
     if (use_ext || block > 0xFF) {
         return read_block_ext(rx, _activePICC, block);
     }
@@ -231,12 +234,14 @@ bool NFCLayerV::readBlock(uint8_t rx[32], const uint16_t block)
 
     uint8_t rbuf[32 + 1]{};
     uint16_t rx_len = sizeof(rbuf);
+    // The answer carries the flags byte and then the block, so anything shorter than that leaves
+    // the caller reading whatever its buffer held before
     if (!_impl->transceive(rbuf, rx_len, frame, sizeof(frame), TIMEOUT_READ_SINGLE_BLOCK, modulationMode()) ||
-        !rx_len || rbuf[0] != 0x00) {
+        rx_len < 1U + block_size || rbuf[0] != 0x00) {
         M5_LIB_LOGD("Failed to transceive %u %02X", rx_len, rbuf[1] /* error code */);
         return false;
     }
-    memcpy(rx, rbuf + 1, rx_len - 1);
+    memcpy(rx, rbuf + 1, block_size);
     return true;
 }
 
@@ -253,8 +258,10 @@ bool NFCLayerV::read_block_ext(uint8_t rx[32], const m5::nfc::v::PICC& picc, con
 
     uint8_t rbuf[32 + 1]{};
     uint16_t rx_len = sizeof(rbuf);
+    // The block size is not always known when probing, so ask only for the flags byte and at least
+    // one byte of data behind it
     if (!_impl->transceive(rbuf, rx_len, frame, sizeof(frame), TIMEOUT_READ_SINGLE_BLOCK, modulationMode()) ||
-        !rx_len || rbuf[0] != 0x00) {
+        rx_len < 2 || rbuf[0] != 0x00) {
         M5_LIB_LOGD("Failed to ext read %u %02X", rx_len, rbuf[1] /* error code */);
         return false;
     }
