@@ -111,7 +111,9 @@ bool NFCLayerF::polling(m5::nfc::f::PICC& picc, const uint16_t system_code, cons
         memcpy(picc.idm, rbuf + 2, sizeof(picc.idm));
         memcpy(picc.pmm, rbuf + 10, sizeof(picc.pmm));
         picc.request_code = request_code;
-        if (rbuf[0] >= 20) {
+        // The request data is only in the buffer when it was asked for, whatever length the card
+        // claims. Without the request code the buffer stops at eighteen bytes
+        if (request_code != RequestCode::None && rbuf[0] >= 20 && rx_len >= 20) {
             picc.request_data = ((uint16_t)rbuf[18]) << 8;
             picc.request_data |= (uint16_t)rbuf[19];
         }
@@ -349,7 +351,13 @@ bool NFCLayerF::requestService(uint16_t key_version[], const uint16_t* node_code
 
     // m5::utility::log::dump(rbuf, rx_len, false);
 
-    for (uint_fast8_t i = 0; i < rbuf[10]; ++i) {
+    // The answer names one key version per node that was asked about, and the caller sized
+    // key_version for exactly that many. A count of its own choosing would run off the end
+    if (rbuf[10] != node_num) {
+        M5_LIB_LOGE("Asked about %u nodes but the answer names %u", node_num, rbuf[10]);
+        return false;
+    }
+    for (uint_fast8_t i = 0; i < node_num; ++i) {
         key_version[i] = ((uint16_t)rbuf[12 + i * 2] << 8) | rbuf[11 + i * 2];
     }
     return true;
