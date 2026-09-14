@@ -263,6 +263,14 @@ uint32_t TLV::decode(const uint8_t* buf, const uint32_t len)
         return decoded;
     }
 
+    // The declared length has to fit what was actually read. Without this the Message branch below
+    // walks a payload_end that sits past the buffer, and hands the caller back an offset that does
+    // the same
+    if (payload_len > len - decoded) {
+        M5_LIB_LOGE("Payload length %u exceeds the %u bytes left", payload_len, len - decoded);
+        return 0;
+    }
+
     // Message
     if (_tag == Tag::Message) {
         const uint8_t* payload_end = top + decoded + payload_len;
@@ -318,9 +326,6 @@ uint32_t TLV::decode(const uint8_t* buf, const uint32_t len)
     }
 
     // Other
-    if (payload_len > len - (buf - top)) {
-        return 0;
-    }
     _payload.insert(_payload.end(), buf, buf + payload_len);
     buf += payload_len;
     return buf - top;

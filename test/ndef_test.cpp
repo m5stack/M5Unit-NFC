@@ -12,6 +12,7 @@
 #include <nfc/ndef/ndef_tlv.hpp>
 #include <nfc/ndef/ndef_record.hpp>
 #include <cstring>
+#include <vector>
 
 using namespace m5::nfc::ndef;
 
@@ -559,6 +560,123 @@ TEST(NDEF, RecordLengthBoundary)
     decoded = r2.decode(buf.data(), encoded);
     EXPECT_EQ(decoded, encoded);
     EXPECT_FALSE(r2.attribute().shortRecord());
+}
+
+// A tag decides how long the language code of a text record is, and nothing stops it from naming a
+// length its payload cannot hold. Subtracting that from the payload size used to wrap around.
+TEST(NDEF, RecordTextLanguageLengthBeyondPayload)
+{
+    // Minimal well formed record: MB|ME|SR, type "T", one byte of payload announcing 63 bytes of
+    // language code
+    const uint8_t raw[] = {0xD1, 0x01, 0x01, 0x54, 0x3F};
+
+    Record r{};
+    EXPECT_EQ(r.decode(raw, sizeof(raw)), sizeof(raw)) << "The record itself is well formed";
+    EXPECT_EQ(r.tnf(), TNF::Wellknown);
+    EXPECT_STREQ(r.type(), "T");
+
+    const auto s = r.payloadAsString();
+    EXPECT_TRUE(s.empty()) << "Nothing is left once the announced language code is skipped";
+
+    // The exact boundary: a payload that ends where the language code ends
+    const uint8_t exact[] = {0xD1, 0x01, 0x03, 0x54, 0x02, 'e', 'n'};
+    Record r2{};
+    EXPECT_EQ(r2.decode(exact, sizeof(exact)), sizeof(exact));
+    EXPECT_TRUE(r2.payloadAsString().empty()) << "Language code but no text";
+
+    // One byte further and that byte is the text
+    const uint8_t one_more[] = {0xD1, 0x01, 0x04, 0x54, 0x02, 'e', 'n', 'A'};
+    Record r3{};
+    EXPECT_EQ(r3.decode(one_more, sizeof(one_more)), sizeof(one_more));
+    EXPECT_EQ(r3.payloadAsString(), "A");
+}
+
+// The URI prefix plus the payload can be longer than the buffer the string is built in. snprintf
+// reports the length it would have needed, which must not be used as an index.
+TEST(NDEF, RecordUriLongerThanBuffer)
+{
+    Record r(TNF::Wellknown);
+    r.setType("U");
+
+    // Protocol 0x01 is "http://www.", then far more text than the 512 byte buffer holds
+    std::vector<uint8_t> payload(1024, 'a');
+    payload[0] = 0x01;
+    r.setPayload(payload.data(), payload.size());
+
+    const auto s = r.payloadAsString();
+    EXPECT_LT(s.size(), 512u) << "Truncated to what the buffer holds";
+    EXPECT_EQ(s.compare(0, 11, "http://www."), 0);
+
+    // A URI that does fit still comes back whole
+    Record r2(TNF::Wellknown);
+    r2.setType("U");
+    const uint8_t small[] = {0x01, 'm', '5', 's', 't', 'a', 'c', 'k', '.', 'c', 'o', 'm'};
+    r2.setPayload(small, sizeof(small));
+    EXPECT_EQ(r2.payloadAsString(), "http://www.m5stack.com");
+}
+
+// The payload length of a non-short record is four bytes the tag controls. Adding it to the read
+// pointer before comparing can wrap on a 32 bit target and let the check agree.
+TEST(NDEF, RecordPayloadLengthWrapsPointer)
+{
+    // MB|ME (no SR), type length 1, payload length 0xFFFFFFFA, type "T"
+    const uint8_t raw[] = {0xC1, 0x01, 0xFF, 0xFF, 0xFF, 0xFA, 0x54};
+
+    for (uint32_t low = 0xFFFFFFF8U; low != 0U; ++low) {
+        uint8_t frame[sizeof(raw)]{};
+        std::memcpy(frame, raw, sizeof(raw));
+        frame[2] = static_cast<uint8_t>(low >> 24);
+        frame[3] = static_cast<uint8_t>(low >> 16);
+        frame[4] = static_cast<uint8_t>(low >> 8);
+        frame[5] = static_cast<uint8_t>(low);
+
+        Record r{};
+        EXPECT_EQ(r.decode(frame, sizeof(frame)), 0u) << "payload length " << low;
+        EXPECT_EQ(r.payloadSize(), 0u);
+    }
+
+    // A length that merely overruns, without wrapping
+    const uint8_t over[] = {0xC1, 0x01, 0x00, 0x00, 0x10, 0x00, 0x54};
+    Record r{};
+    EXPECT_EQ(r.decode(over, sizeof(over)), 0u);
+
+    // The same record with a length it can actually carry. The payload has to be big enough for the
+    // four byte length field to be the canonical choice, since decode() checks the encoding against
+    // what the record would take to write
+    std::vector<uint8_t> good{0xC1, 0x01, 0x00, 0x00, 0x01, 0x00, 0x54};
+    good.insert(good.end(), 256, 0x41);
+    Record r2{};
+    EXPECT_EQ(r2.decode(good.data(), static_cast<uint32_t>(good.size())), good.size());
+    EXPECT_EQ(r2.payloadSize(), 256u);
+}
+
+// A Message TLV that declares more payload than was read must be refused, or the record walk runs
+// past the buffer and the caller is handed an offset that does too.
+TEST(NDEF, TLVMessageLengthBeyondBuffer)
+{
+    // Message tag, declares 32 bytes, only eight follow
+    uint8_t raw[10]{};
+    raw[0] = 0x03;
+    raw[1] = 0x20;
+
+    TLV tlv{};
+    EXPECT_EQ(tlv.decode(raw, sizeof(raw)), 0u) << "Declared 32 bytes with 8 available";
+
+    // The three byte length format, same idea
+    const uint8_t raw3[] = {0x03, 0xFF, 0x10, 0x00, 0xD1, 0x01, 0x01, 0x54};
+    TLV tlv3{};
+    EXPECT_EQ(tlv3.decode(raw3, sizeof(raw3)), 0u);
+
+    // A proprietary TLV is refused on the same grounds
+    const uint8_t other[] = {0xFD, 0x20, 0x01, 0x02, 0x03};
+    TLV tlv_other{};
+    EXPECT_EQ(tlv_other.decode(other, sizeof(other)), 0u);
+
+    // Declaring exactly what is there still works
+    const uint8_t exact[] = {0xFD, 0x03, 0x01, 0x02, 0x03};
+    TLV tlv_exact{};
+    EXPECT_EQ(tlv_exact.decode(exact, sizeof(exact)), sizeof(exact));
+    EXPECT_EQ(tlv_exact.payload().size(), 3u);
 }
 
 TEST(NDEF, RecordEmptyTNF)

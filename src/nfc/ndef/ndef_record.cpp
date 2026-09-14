@@ -205,7 +205,11 @@ uint32_t Record::decode(const uint8_t* buf, const uint32_t len)
     }
 
     if (payload_len) {
-        if (buf + payload_len - top > len) {
+        // The payload length is four tag-controlled bytes, so advancing the pointer by it before
+        // the comparison can wrap right back into the buffer and make the check agree. The same
+        // shape above is safe because a type or id length is only one byte wide
+        const uint32_t consumed = static_cast<uint32_t>(buf - top);
+        if (payload_len > len - consumed) {
             return 0;
         }
         _payload = std::vector<uint8_t>(buf, buf + payload_len);
@@ -230,15 +234,22 @@ std::string Record::payloadAsString() const
     switch (tnf()) {
         case TNF::Wellknown:
             if (_type == "T") {  // Text
-                auto offset = (*uptr & 0x3F) + 1;
+                // The low six bits of the status byte are the length of the IANA language code, a
+                // number the tag chooses. A payload too small to hold the code it announces leaves
+                // nothing to return
+                const uint32_t offset = (*uptr & 0x3F) + 1U;
+                if (offset >= len) {
+                    return std::string();
+                }
                 cptr += offset;
                 len -= offset;
             } else if (_type == "U") {  // URI
+                // snprintf reports the length it would have needed, which says nothing about how
+                // much fitted, so the result is read back as the terminated string it already is
                 char tmp[512]{};
                 URIProtocol up = static_cast<URIProtocol>(*uptr);
                 std::string s(cptr + 1, cptr + _payload.size());
-                len      = snprintf(tmp, sizeof(tmp), "%s%s", get_uri_idc_string(up), s.c_str());
-                tmp[len] = '\0';
+                snprintf(tmp, sizeof(tmp), "%s%s", get_uri_idc_string(up), s.c_str());
                 return std::string(tmp);
             }
             break;
