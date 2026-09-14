@@ -339,10 +339,9 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
             M5_LIB_LOGD("Colliion");
             uint8_t cbytes = ((cd >> 4) & 0x0F);  // c_byte[3:0]
             uint8_t cbits  = ((cd >> 1) & 0x07);  // c_bit[2:0]
-            if (actual) {
-                coll_byte = rbuf[rbuf_offset + actual - 1];  // from LSB
-                coll_byte |= 1U << cbits;
-            }
+            // The read above already refused an empty answer, so there is a last byte to take
+            coll_byte = rbuf[rbuf_offset + actual - 1];  // from LSB
+            coll_byte |= 1U << cbits;
             M5_LIB_LOGD("   COL:%u bytes, %u bits", cbytes, cbits);
             M5_LIB_LOGD("   coll_byte: %02x", coll_byte);
 

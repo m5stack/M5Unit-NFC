@@ -121,11 +121,8 @@ uint32_t Record::encode(uint8_t* buf, const uint32_t mlen) const
     if (count + tlen > mlen) {
         return 0;
     }
-    auto tp = _type.data();
-    if (tp) {
-        std::memcpy(&buf[count], tp, tlen);
-        count += tlen;
-    }
+    std::memcpy(&buf[count], _type.data(), tlen);
+    count += tlen;
 
     // ID ((Not exists if id length is 0)
     if (_attr.idLength()) {
