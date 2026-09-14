@@ -1784,7 +1784,12 @@ public:
       @return True if successful
      */
     bool nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
-    //! @brief Transmit in emulation (PICC) mode with minimal I2C overhead
+    /*!
+      @brief Transmit in emulation (PICC) mode with minimal I2C overhead
+      @param tx Data to send
+      @param tx_len Length of tx
+      @return True if successful
+     */
     bool nfcaEmulationTransmit(const uint8_t* tx, const uint16_t tx_len);
     /*!
       @brief Receive raw bytes (no transmit)
@@ -1945,7 +1950,12 @@ public:
       @return True if successful
      */
     bool nfcfTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
-    //! @brief Transmit in emulation (PICC) mode with minimal I2C overhead
+    /*!
+      @brief Transmit in emulation (PICC) mode with minimal I2C overhead
+      @param tx Data to send
+      @param tx_len Length of tx
+      @return True if successful
+     */
     bool nfcfEmulationTransmit(const uint8_t* tx, const uint16_t tx_len);
     /*!
       @brief Receive from NFC-F PICC
