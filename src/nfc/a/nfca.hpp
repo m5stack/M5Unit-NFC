@@ -683,16 +683,19 @@ inline bool operator!=(const PICC& a, const PICC& b)
  */
 enum class Command : uint8_t {
     // ISO/IEC 14443-3
-    REQA          = 0x26,  //!< Reequest
-    WUPA          = 0x52,  //!< Wake-up
-    HLTA          = 0x50,  //!< Halt
-    SELECT_CL1    = 0x93,  //!< Anticollison/Select CL1
-    SELECT_CL2    = 0x95,  //!< Anticollison/Select CL2
-    SELECT_CL3    = 0x97,  //!< Anticollison/Select CL3
-    SELCT_CL1_OPT = 0x92,  //!< Select CL1 and switch bit rate to fc/64 after receive SAK
-    SELCT_CL2_OPT = 0x94,  //!< Select CL2 and switch bit rate to fc/64 after receive SAK
-    SELCT_CL3_OPT = 0x96,  //!< Select CL3 and switch bit rate to fc/64 after receive SAK
-    READ          = 0x30,  //!< Read
+    REQA           = 0x26,            //!< Reequest
+    WUPA           = 0x52,            //!< Wake-up
+    HLTA           = 0x50,            //!< Halt
+    SELECT_CL1     = 0x93,            //!< Anticollison/Select CL1
+    SELECT_CL2     = 0x95,            //!< Anticollison/Select CL2
+    SELECT_CL3     = 0x97,            //!< Anticollison/Select CL3
+    SELECT_CL1_OPT = 0x92,            //!< Select CL1 and switch bit rate to fc/64 after receive SAK
+    SELECT_CL2_OPT = 0x94,            //!< Select CL2 and switch bit rate to fc/64 after receive SAK
+    SELECT_CL3_OPT = 0x96,            //!< Select CL3 and switch bit rate to fc/64 after receive SAK
+    SELCT_CL1_OPT  = SELECT_CL1_OPT,  //!< @deprecated typo alias; use SELECT_CL1_OPT
+    SELCT_CL2_OPT  = SELECT_CL2_OPT,  //!< @deprecated typo alias; use SELECT_CL2_OPT
+    SELCT_CL3_OPT  = SELECT_CL3_OPT,  //!< @deprecated typo alias; use SELECT_CL3_OPT
+    READ           = 0x30,            //!< Read
     // ISO/IEC 14443-4
     RATS     = 0xE0,  //!< Request for Answer to Select
     DESELECT = 0xC2,  //!< DESELECT
