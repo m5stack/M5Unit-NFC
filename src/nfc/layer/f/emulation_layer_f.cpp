@@ -195,7 +195,8 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
             // hold would read past it, and anything above eight has no room in the error bit map
             if (rx_len >= 15 && memcmp(_picc.idm, rx + 2, sizeof(_picc.idm)) == 0 && rx[13] &&
                 rx[13] <= FELICA_MAX_BLOCKS && rx_len >= 14U + 2U * rx[13]) {
-                uint16_t sc = rx[11] | (uint16_t)rx[12];
+                // The service code arrives low byte first
+                uint16_t sc = rx[11] | ((uint16_t)rx[12] << 8);
 
                 std::vector<uint8_t> tx{};
                 tx.resize(1 + 8 + 2 + 1 + 16 * rx[13]);
@@ -237,7 +238,8 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
         case CommandCode::WriteWithoutEncryption:
             // M5_LIB_LOGE("WT:%u", rx_len);
             if (rx_len >= 32 && memcmp(_picc.idm, rx + 2, sizeof(_picc.idm)) == 0 && rx[10] == 1) {
-                uint16_t sc = rx[11] | (uint16_t)rx[12];
+                // The service code arrives low byte first
+                uint16_t sc = rx[11] | ((uint16_t)rx[12] << 8);
 
                 uint8_t res[1 + 8 + 2] = {m5::stl::to_underlying(ResponseCode::WriteWithoutEncryption)};
                 memcpy(res + 1, _picc.idm, 8);
