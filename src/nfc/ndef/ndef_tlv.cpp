@@ -12,6 +12,7 @@
 #include <numeric>
 #include <cinttypes>
 #include <cstring>
+#include <string>
 
 namespace {
 uint32_t calculate_record_size(const std::vector<m5::nfc::ndef::Record>& v)
@@ -82,7 +83,10 @@ bool decode_smartag1_external_record(const uint8_t* payload, const uint32_t payl
     const uint8_t* pl_ptr    = payload + idx;
 
     out = m5::nfc::ndef::Record(static_cast<m5::nfc::ndef::TNF>(flags & mask_tnf));
-    out.setType(type_ptr);
+    // The type sits inside the raw tag data with no terminator after it, so it has to be cut to the
+    // length the record declares rather than handed over as a string
+    const std::string type_str(type_ptr, type_len);
+    out.setType(type_str.c_str());
     if (id_len) {
         out.setIdentifier(id_ptr, id_len);
     }
