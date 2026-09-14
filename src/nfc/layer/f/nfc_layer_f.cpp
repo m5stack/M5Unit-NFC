@@ -310,7 +310,7 @@ bool NFCLayerF::deactivate()
 
 bool NFCLayerF::requestService(uint16_t& key_version, const uint16_t node_code)
 {
-    key_version = KEY_VERIOSN_NONE;
+    key_version = KEY_VERSION_NONE;
     return requestService(&key_version, &node_code, 1);
 }
 
