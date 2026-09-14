@@ -2014,7 +2014,9 @@ bool NFCLayerA::nfca_request_ats(m5::nfc::a::ATS& ats, const uint8_t fsdi, const
     // M5_LIB_LOGE(">>>>ATS raw %u bytes", rx_len);
     // M5_DUMPE(rx, rx_len);
 
-    const uint32_t ats_len = rx[0];
+    // The length byte is the card's claim and can outrun what actually arrived, while every field
+    // below is read straight out of the receive buffer
+    const uint32_t ats_len = std::min<uint32_t>(rx[0], rx_len);
     uint32_t offset{};
     ats.TL = rx[offset++];
     ats.T0 = rx[offset++];
@@ -2125,7 +2127,8 @@ bool NFCLayerA::mifare_get_version_L4_wrapped(uint8_t* ver, uint16_t& ver_len)
     // cfg.fwt_ms = saved;
     //_isoDEP.config(cfg);
 
-    if (rx[rx_len - 2] == 0x91 && rx[rx_len - 1] == 0x00) {
+    // A break out of the loop above can leave a frame too short to hold a status word
+    if (rx_len >= 2 && rx[rx_len - 2] == 0x91 && rx[rx_len - 1] == 0x00) {
         ver_len = std::min<uint16_t>(org_ver_len, acc.size());
         std::memcpy(ver, acc.data(), ver_len);
         return true;
@@ -2676,7 +2679,9 @@ bool NFCLayerA::mifare_plus_read_mac_l4(const uint16_t block, const uint8_t coun
     uint8_t rx[128]{};
     const size_t data_len = (size_t)count * 16;
     uint16_t rx_len       = sizeof(rx);
-    if (!_isoDEP.transceiveINF(rx, rx_len, tx, sizeof(tx))) {
+    // A frame shorter than the status byte, the data and the MAC has nothing to take apart, and
+    // subtracting those from it would wrap into a huge length
+    if (!_isoDEP.transceiveINF(rx, rx_len, tx, sizeof(tx)) || rx_len < 1 + data_len + 8) {
         M5_LIB_LOGE("SL3 read transceive failed block=%u rx_len=%u", block, rx_len);
         return false;
     }
