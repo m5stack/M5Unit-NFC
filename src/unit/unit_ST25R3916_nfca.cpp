@@ -372,7 +372,17 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
         // wait_for_interrupt / wait_for_FIFO.
         std::this_thread::yield();
     } while (collision && count--);
-    return !collision;
+    if (collision) {
+        return false;
+    }
+
+    // ISO/IEC 14443-3 has the reader check the block check character. A frame that stopped short
+    // leaves zeroes behind it, and carrying that identifier on would only earn silence from the card
+    if (rbuf_offset + actual != 5 || rbuf[4] != calculate_bcc8(rbuf, 4)) {
+        M5_LIB_LOGD("Anticollision answer of %u bytes failed its check byte %02X", rbuf_offset + actual, rbuf[4]);
+        return false;
+    }
+    return true;
 }
 
 bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, const uint8_t lv)
