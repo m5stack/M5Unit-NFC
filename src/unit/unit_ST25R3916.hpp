@@ -231,7 +231,7 @@ public:
         return read_register8(st25r3916::command::REG_IO_CONFIGURATION_2, value);
     }
     /*!
-      Write the I/O configuration 1
+      @brief Write the I/O configuration 2
       @param value Value
       @return True if successful
      */
@@ -249,7 +249,7 @@ public:
         return read_register16(st25r3916::command::REG_IO_CONFIGURATION_1, value);
     }
     /*!
-      Write the I/O configuration 1-2
+      @brief Write the I/O configuration 1-2
       @param value Value (MSB cfg1, cfg2 LSB)
       @return True if successful
      */
@@ -383,8 +383,8 @@ public:
         return read_register8(st25r3916::command::REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, value);
     }
     /*!
-      Write the NFCIP-1 passive target definition
-      @param[out] value Value
+      @brief Write the NFCIP-1 passive target definition
+      @param value Value
       @return True if successful
      */
     inline bool writeNFCIP1PassiveTargetDefinition(const uint8_t value)
@@ -479,7 +479,7 @@ public:
     }
     /*!
       @brief Write the receiver configuration 1
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeReceiverConfiguration1(const uint8_t value)
@@ -497,7 +497,7 @@ public:
     }
     /*!
       @brief Write the receiver configuration 2
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeReceiverConfiguration2(const uint8_t value)
@@ -515,7 +515,7 @@ public:
     }
     /*!
       @brief Write the receiver configuration 3
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeReceiverConfiguration3(const uint8_t value)
@@ -523,7 +523,7 @@ public:
         return write_register8(st25r3916::command::REG_RECEIVER_CONFIGURATION_3, value);
     }
     /*!
-      Read the receiver configuration 4
+      @brief Read the receiver configuration 4
       @param[out] value Value
       @return True if successful
      */
@@ -533,7 +533,7 @@ public:
     }
     /*!
       @brief Write the receiver configuration 4
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeReceiverConfiguration4(const uint8_t value)
@@ -1003,7 +1003,7 @@ public:
         return read_register8(st25r3916::command::REG_FIFO_STATUS_1, value);
     }
     /*!
-      @brief Read the FIFO status 1
+      @brief Read the FIFO status 2
       @param[out] value Value
       @return True if successful
      */
@@ -1124,7 +1124,7 @@ public:
     ///@name A/D converter output
     ///@{
     /*!
-      @brief Read the number of transmitted bytes 2
+      @brief Read the A/D converter output
       @param[out] value Value
       @return True if successful
      */
@@ -1242,7 +1242,7 @@ public:
     }
     /*!
       @brief Write the auxiliary modulation setting
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeAuxiliaryModulationSetting(const uint8_t value)
@@ -1260,7 +1260,7 @@ public:
     }
     /*!
       @brief Write the TX driver timing
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeTXDriverTiming(const uint8_t value)
@@ -1371,7 +1371,7 @@ public:
     ///@name Receiver state display
     ///@{
     /*!
-      @brief Read the external field detector deactivation threshold
+      @brief Read the RSSI display
       @param[out] value Value
       @return True if successful
      */
