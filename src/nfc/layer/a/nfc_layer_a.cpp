@@ -1479,8 +1479,10 @@ bool NFCLayerA::dump_page_structure(const uint16_t maxPage)
         "Page    :00 01 02 03\n"
         "--------------------");
 
+    // The read command names a page in a single byte, so no tag that gets here has more than 256 of
+    // them. NTAG 216 is the largest at 231
     bool ret{true};
-    for (uint_fast8_t page = 0; page < maxPage; page += 4) {
+    for (uint_fast16_t page = 0; page < maxPage; page += 4) {
         ret &= dump_page(page, maxPage);
     }
     return ret;
@@ -1499,12 +1501,12 @@ bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)
         ok = read16(buf, from);
     } else {
         // The number of pages in an NTAG is not necessarily a multiple of 4
-        for (uint_fast8_t i = 0; i < pages; ++i) {
+        for (uint_fast16_t i = 0; i < pages; ++i) {
             ok &= read4(buf + (i << 2), from + i);
         }
     }
     if (ok) {
-        for (uint_fast8_t off = 0; off < pages; ++off) {
+        for (uint_fast16_t off = 0; off < pages; ++off) {
             auto idx = off << 2;
             printf("[%03d/%02X]:%02X %02X %02X %02X\n", from + off, from + off, buf[idx + 0], buf[idx + 1],
                    buf[idx + 2], buf[idx + 3]);
@@ -1512,7 +1514,7 @@ bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)
         return true;
     }
 
-    for (uint_fast8_t off = 0; off < pages; ++off) {
+    for (uint_fast16_t off = 0; off < pages; ++off) {
         printf("[%3d/%02X] ERROR\n", from + off, from + off);
     }
     return false;
