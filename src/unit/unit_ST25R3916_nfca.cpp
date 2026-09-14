@@ -346,8 +346,15 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
             M5_LIB_LOGD("   COL:%u bytes, %u bits", cbytes, cbits);
             M5_LIB_LOGD("   coll_byte: %02x", coll_byte);
 
-            sbytes            = cbytes + (cbits == 0x07);
-            sbits             = (cbits + 1) & 0x07;
+            sbytes = cbytes + (cbits == 0x07);
+            sbits  = (cbits + 1) & 0x07;
+            // The collision display is a raw register value and its byte field is four bits wide,
+            // so it can name a position the frame does not have. NVB counts the command and itself,
+            // so anything below two is not a position either
+            if (sbytes < 2 || sbytes >= sizeof(anticoll_frame)) {
+                M5_LIB_LOGE("Collision display %02X names byte %u, outside the frame", cd, sbytes);
+                return false;
+            }
             anticoll_frame[1] = (sbytes << 4) | sbits;  // NVB
             memcpy(anticoll_frame + 2 + rbuf_offset, rbuf + rbuf_offset, actual);
             anticoll_frame[sbytes] = coll_byte;
