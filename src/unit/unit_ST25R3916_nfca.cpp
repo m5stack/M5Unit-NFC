@@ -367,9 +367,8 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
             rbuf[rbuf_offset] <<= sbits;
             rbuf[rbuf_offset] |= coll_byte;
         }
-        // Yield to let other I2C consumers (e.g. FT6336 timer callback) acquire
-        // the shared bus between collision retries; matches the pattern used in
-        // wait_for_interrupt / wait_for_FIFO.
+        // Yield to let other I2C consumers (e.g. FT6336 timer callback) acquire the shared bus
+        // between collision retries
         std::this_thread::yield();
     } while (collision && count--);
     if (collision) {
