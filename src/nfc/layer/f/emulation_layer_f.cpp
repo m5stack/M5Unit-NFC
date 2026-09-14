@@ -74,24 +74,9 @@ bool EmulationLayerF::begin(const m5::nfc::f::PICC& picc, uint8_t* ptr, const ui
         return false;
     }
 
-    /*
-    if (!(picc.isNTAG() || picc.type == Type::MIFARE_Ultralight)) {
-        M5_LIB_LOGE("Not support %u %s", picc.type, picc.typeAsString().c_str());
-        return false;
-    }
-    */
-
     _picc        = picc;
     _memory      = ptr;
     _memory_size = size;
-
-    /*
-    if (!_picc.valid() || !_memory || _memory_size < _picc.totalSize()) {
-        M5_LIB_LOGE("Invalid picc setting %s:%s %p %u/%u",  //
-                    picc.uidAsString().c_str(), picc.typeAsString().c_str(), _memory, _memory_size, _picc.totalSize());
-        return false;
-    }
-    */
 
     _state = _impl->start_emulation(_picc) ? State::Off : State::None;
     _prev  = State::None;
@@ -113,9 +98,6 @@ bool EmulationLayerF::end()
 void EmulationLayerF::update()
 {
     auto save = _state;
-    //    if (_state != _prev) {
-    //        _expired_at = m5::utility::millis() + _expired_ms; // IRQ byGT ???
-    //    }
 
     switch (_state) {
         case State::None:
