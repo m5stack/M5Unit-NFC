@@ -20,9 +20,9 @@ namespace {
 constexpr char name_unknown[] = "Unknown";
 // Classic
 constexpr char name_classic_mini[] = "MIFARE Classic Mini";
-constexpr char name_classic_1K[]   = "MIFARE Classsic1K";
-constexpr char name_classic_2K[]   = "MIFARE Classsic2K";
-constexpr char name_classic_4K[]   = "MIFARE Classsic4K";
+constexpr char name_classic_1K[]   = "MIFARE Classic 1K";
+constexpr char name_classic_2K[]   = "MIFARE Classic 2K";
+constexpr char name_classic_4K[]   = "MIFARE Classic 4K";
 // Light
 constexpr char name_ul[]        = "MIFARE Ultralight";
 constexpr char name_ul_ev1_11[] = "MIFARE Ultralight EV1 11";
