@@ -849,3 +849,37 @@ TEST_F(TestST25R3916, PtMemoryRoundtripTSN)
     EXPECT_TRUE(unit->readPtMemory(pt, sizeof(pt)));
     EXPECT_EQ(std::memcmp(pt + PT_MEMORY_A_LENGTH + PT_MEMORY_F_LENGTH, wbuf, sizeof(wbuf)), 0) << "TSN read back";
 }
+
+// A receive call with nothing to receive into must be turned away by the argument check, not by the
+// FIFO timeout. Waiting the timeout out would hide the fact that the buffer was never usable, and
+// the read that follows would copy into a null pointer.
+TEST_F(TestST25R3916, NfcfReceiveRejectsUnusableBuffer)
+{
+    const auto cfg_initial = unit->config();
+
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, false));
+    EXPECT_TRUE(unit->isNFCMode(m5::nfc::NFC::F));
+
+    // Long enough that a timeout is unmistakable next to the immediate refusal we expect
+    constexpr uint32_t timeout_ms{1000};
+    constexpr uint32_t immediate_ms{100};
+
+    uint8_t rx[32]{};
+
+    // No buffer, but a length that says there is one
+    uint16_t rx_len{sizeof(rx)};
+    auto began = m5::utility::millis();
+    EXPECT_FALSE(unit->nfcfReceive(nullptr, rx_len, timeout_ms));
+    EXPECT_EQ(rx_len, 0U);
+    EXPECT_LT(m5::utility::millis() - began, immediate_ms) << "Rejected by the argument check, not by the timeout";
+
+    // A buffer, but no room in it
+    rx_len = 0;
+    began  = m5::utility::millis();
+    EXPECT_FALSE(unit->nfcfReceive(rx, rx_len, timeout_ms));
+    EXPECT_EQ(rx_len, 0U);
+    EXPECT_LT(m5::utility::millis() - began, immediate_ms) << "Rejected by the argument check, not by the timeout";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
