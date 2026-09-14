@@ -142,16 +142,22 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
         case Command::HLTA:
             ret = (rx_len == 2 && rx[1] == 0x00) ? State::Halt : State::Idle;
             break;
-        case Command::READ:  // 16 bytes read
-            ret = (rx_len == 2) && _impl->transmit(_memory + _picc.unitSize() * rx[1], 16, 4) ? State::Active
-                                                                                              : State::Idle;
-            break;
+        case Command::READ: {  // 16 bytes read
+            // The page is the reader's to choose, so without this the answer would carry whatever
+            // sits past the emulated memory out over the air
+            const uint32_t offset = _picc.unitSize() * rx[1];
+            ret = (rx_len == 2) && (offset + 16 <= _memory_size) && _impl->transmit(_memory + offset, 16, 4)
+                      ? State::Active
+                      : State::Idle;
+        } break;
         case Command::FAST_READ:
             if (rx_len == 3) {
                 const uint32_t from = rx[1];
                 const uint32_t to   = rx[2];
                 const uint32_t cnt  = to - from + 1;
-                if (from <= to && from + 4 <= _memory_size && to + 4 <= _memory_size) {
+                // The bound is in bytes while the addresses are pages, so the last byte actually
+                // touched is four times the end page plus three
+                if (from <= to && 4 * to + 4 <= _memory_size) {
                     ret = _impl->transmit(_memory + 4 * from, 4 * cnt, cnt) ? State::Active : State::Idle;
                 }
             }
