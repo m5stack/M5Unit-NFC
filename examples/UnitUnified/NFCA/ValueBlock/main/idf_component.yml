@@ -3,9 +3,7 @@
 ## - M5UnitUnified is declared as a dependency of M5Unit-NFC's root idf_component.yml
 ##   and pulled in transitively by the component manager. That manifest tracks main until
 ##   M5UnitUnified is published to the ESP Component Registry, when it becomes >=x.y.z.
-## - M5Unified >=0.2.17 declares M5GFX as a transitive dependency in its idf_component.yml.
-##   Earlier release 0.2.16 was missing the declaration which caused a manual M5GFX entry
-##   to be required here; with 0.2.17 the registry version is self-contained.
+## - M5Unified >=0.2.17 pulls in M5GFX transitively, so no explicit M5GFX entry is needed here.
 dependencies:
   idf: ">=5.0"
   m5stack/M5Unit-NFC:
