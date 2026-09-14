@@ -78,7 +78,7 @@ void setup()
     bool unit_ready{};
 
 #if defined(USING_M5DIAL_BUILTIN_WS1850S)
-    // Unreachable: gated by #error above. Kept for structural consistency.
+    // Unreachable: gated by #error above.
     unit_ready = m5::unit::wiring::i2cClass(Units, unit, M5.In_I2C) && Units.begin();
 
 #elif defined(USING_UNIT_NFC) || defined(USING_UNIT_RFID2)
