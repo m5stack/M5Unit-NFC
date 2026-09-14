@@ -13,6 +13,8 @@
 #include <M5Utility.h>
 #include <wiring/m5_unit_unified_wiring.hpp>
 #include <vector>
+#include <algorithm>
+#include <cstring>
 
 // *************************************************************
 // Choose one define symbol to match the unit you are using
@@ -80,6 +82,38 @@ uint8_t picc_memory[]    = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // CRC_CHRCK 0xA0
 };
 
+// The emulated memory as it stood at the last hold, so a hold shows only what the reader has
+// written since. A click prints everything and leaves this alone, so the two never interfere
+uint8_t picc_memory_seen[sizeof(picc_memory)]{};
+
+void dump_emulated_memory(const bool only_changed)
+{
+    constexpr uint16_t BLOCK_SIZE{16};
+    const uint16_t blocks = (sizeof(picc_memory) + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    uint16_t shown{};
+
+    M5.Log.printf("==== Emulated memory (%s) ====\n", only_changed ? "changed since the last hold" : "all");
+    for (uint16_t blk = 0; blk < blocks; ++blk) {
+        const uint16_t offset = blk * BLOCK_SIZE;
+        const uint16_t len    = std::min<uint16_t>(BLOCK_SIZE, sizeof(picc_memory) - offset);
+        if (only_changed && memcmp(picc_memory + offset, picc_memory_seen + offset, len) == 0) {
+            continue;
+        }
+        M5.Log.printf("[%03X]:", offset);
+        for (uint16_t i = 0; i < len; ++i) {
+            M5.Log.printf("%02X ", picc_memory[offset + i]);
+        }
+        M5.Log.printf("\n");
+        ++shown;
+    }
+    if (only_changed) {
+        if (!shown) {
+            M5.Log.printf("No block has changed\n");
+        }
+        memcpy(picc_memory_seen, picc_memory, sizeof(picc_memory));
+    }
+}
+
 void embed_idm_pmm(uint8_t* mem, const PICC& picc)
 {
     memcpy(mem + 17 * 16, picc.idm, 8);      // ID
@@ -130,6 +164,7 @@ void setup()
     lcd.fillScreen(TFT_RED);
     if (picc.emulate(type, IDm, PMm)) {
         embed_idm_pmm(picc_memory, picc);
+        memcpy(picc_memory_seen, picc_memory, sizeof(picc_memory));
         if (emu_f.begin(picc, picc_memory, sizeof(picc_memory))) {
             lcd.fillScreen(TFT_DARKGREEN);
             lcd.setCursor(0, 16);
@@ -154,6 +189,14 @@ void loop()
     M5.update();
     Units.update();
     emu_f.update();  // Need call in loop
+
+    // Take the phone away before asking, since printing stops the emulation answering for as long
+    // as it runs
+    if (M5.BtnA.wasClicked()) {
+        dump_emulated_memory(false);
+    } else if (M5.BtnA.wasHold()) {
+        dump_emulated_memory(true);
+    }
 
     static EmulationLayerF::State latest{};
     auto state = emu_f.state();
