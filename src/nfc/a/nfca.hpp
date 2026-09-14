@@ -192,7 +192,7 @@ inline bool is_mifare(const Type t)
  */
 inline bool is_st25ta(const Type t)
 {
-    return t >= Type::ST25TA_2K && t <= Type::ST25TA_64K;
+    return t >= Type::ST25TA_512B && t <= Type::ST25TA_64K;
 }
 
 /*!
@@ -683,16 +683,19 @@ inline bool operator!=(const PICC& a, const PICC& b)
  */
 enum class Command : uint8_t {
     // ISO/IEC 14443-3
-    REQA          = 0x26,  //!< Reequest
-    WUPA          = 0x52,  //!< Wake-up
-    HLTA          = 0x50,  //!< Halt
-    SELECT_CL1    = 0x93,  //!< Anticollison/Select CL1
-    SELECT_CL2    = 0x95,  //!< Anticollison/Select CL2
-    SELECT_CL3    = 0x97,  //!< Anticollison/Select CL3
-    SELCT_CL1_OPT = 0x92,  //!< Select CL1 and switch bit rate to fc/64 after receive SAK
-    SELCT_CL2_OPT = 0x94,  //!< Select CL2 and switch bit rate to fc/64 after receive SAK
-    SELCT_CL3_OPT = 0x96,  //!< Select CL3 and switch bit rate to fc/64 after receive SAK
-    READ          = 0x30,  //!< Read
+    REQA           = 0x26,            //!< Request
+    WUPA           = 0x52,            //!< Wake-up
+    HLTA           = 0x50,            //!< Halt
+    SELECT_CL1     = 0x93,            //!< Anticollision/Select CL1
+    SELECT_CL2     = 0x95,            //!< Anticollision/Select CL2
+    SELECT_CL3     = 0x97,            //!< Anticollision/Select CL3
+    SELECT_CL1_OPT = 0x92,            //!< Select CL1 and switch bit rate to fc/64 after receive SAK
+    SELECT_CL2_OPT = 0x94,            //!< Select CL2 and switch bit rate to fc/64 after receive SAK
+    SELECT_CL3_OPT = 0x96,            //!< Select CL3 and switch bit rate to fc/64 after receive SAK
+    SELCT_CL1_OPT  = SELECT_CL1_OPT,  //!< @deprecated typo alias; use SELECT_CL1_OPT
+    SELCT_CL2_OPT  = SELECT_CL2_OPT,  //!< @deprecated typo alias; use SELECT_CL2_OPT
+    SELCT_CL3_OPT  = SELECT_CL3_OPT,  //!< @deprecated typo alias; use SELECT_CL3_OPT
+    READ           = 0x30,            //!< Read
     // ISO/IEC 14443-4
     RATS     = 0xE0,  //!< Request for Answer to Select
     DESELECT = 0xC2,  //!< DESELECT
@@ -805,49 +808,7 @@ inline Type get_type(const uint8_t ic_ref_or_product_code)
   @brief ST25TA series system file
  */
 struct SystemFile {
-#if 0
-    /*!
-      @struct ST25TA02K
-      @note Include ST25TA512B
-     */
-    struct ST25TA02K {
-        uint16_t sflen;                //!< Length system file
-        uint8_t gpo_config;            //!< GPO config if ST25TA02KB-D/P, reserved(0x80) if ST25TA512B/02KB
-        uint8_t event_counter_config;  //!< Event Counter Config
-        uint8_t counter[3];            //!< 20-bit counter
-        uint8_t product_version;       //!< Product version
-        uint8_t uid[7];                //!< UID
-        uint16_t memory_size;          //!< Memory size - 1
-        uint8_t ic_reference_code;     //!< IC reference code
-    } __attribute__((packed));
-
-    //! @struct ST25TA16K
-    struct ST25TA16K {
-        uint16_t sflen;        //!< Length system file
-        uint8_t reserved[6];   //!< Reserved
-        uint8_t uid[7];        //!< UID
-        uint16_t memory_size;  //!< Memory size - 1
-        uint8_t product_code;  //!< Product code
-    } __attribute__((packed_));
-
-    //! @struct ST25TA64K
-    struct ST25TA64K {
-        uint16_t sflen;        //!< Length system file
-        uint8_t reserved[6];   //!< Reserved
-        uint8_t uid[7];        //!< UID
-        uint16_t memory_size;  //!< Memory size - 1
-        uint8_t product_code;  //!< Product code
-    } __attribute__((packed));
-
-    union{
-        block[18]{};
-        ST25TA02K st25ta02k;
-        ST25TA16K st25ta02k;
-        ST25TA64K st25ta02k;
-    };
-#else
     uint8_t block[18]{};
-#endif
     /*!
       @brief Gets the ST25TA type
       @return ST25TA PICC type

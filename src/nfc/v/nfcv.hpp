@@ -100,12 +100,21 @@ struct PICC {
     uint16_t blocks{};     //!< Number of blocks
 
     /*!
+      @brief Is the UID valid?
+      @return True if the UID is valid
+      @note Commands that only address the PICC need no more than this
+     */
+    inline bool validUID() const
+    {
+        return uid[0] == 0xE0;
+    }
+    /*!
       @brief Valid?
       @return True if UID and memory information are valid
      */
     inline bool valid() const
     {
-        return (uid[0] == 0xE0) && blocks && block_size;
+        return validUID() && blocks && block_size;
     }
     /*!
       @brief Gets manufacturer code

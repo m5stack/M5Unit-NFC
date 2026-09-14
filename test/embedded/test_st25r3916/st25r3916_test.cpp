@@ -43,6 +43,18 @@ static bool stop_field(TestUnit* const u)
 }
 
 // ============================================================
+// Helper: switch the reader/emulation role by re-running begin()
+// ============================================================
+static bool rebegin_as(TestUnit* const u, const m5::nfc::NFC mode, const bool emulation)
+{
+    auto cfg      = u->config();
+    cfg.mode      = mode;
+    cfg.emulation = emulation;
+    u->config(cfg);
+    return u->begin();
+}
+
+// ============================================================
 // Test fixture — uses I2C/SPI ComponentTestBase template
 // ============================================================
 #if defined(USING_UNIT_NFC)
@@ -654,6 +666,220 @@ TEST_F(TestST25R3916, BeginAppliesConfig)
         << "tx_am_modulation should drive high 4 bits of TX driver register";
 
     // Restore the original config and re-apply
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+// ============================================================
+// Part 4: NFC-F emulation
+// ============================================================
+
+constexpr uint8_t emulation_idm[m5::nfc::f::FELICA_ID_LENGTH] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+constexpr uint8_t emulation_pmm[m5::nfc::f::FELICA_ID_LENGTH] = {0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE};
+
+// The chip emulates one technology at a time, so a layer must refuse to start on a unit that was
+// configured for the other one. The refusal happens before any register is written, so the chip is
+// left exactly as it was.
+TEST_F(TestST25R3916, EmulationRejectedInWrongMode)
+{
+    const auto cfg_initial = unit->config();
+    uint8_t memory[256]{};
+
+    // Configured for NFC-A, so the NFC-F layer must refuse
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::A, true));
+
+    m5::nfc::f::PICC picc_f{};
+    EXPECT_TRUE(picc_f.emulate(m5::nfc::f::Type::FeliCaLiteS, emulation_idm, emulation_pmm));
+
+    m5::nfc::EmulationLayerF emu_f{*unit};
+    EXPECT_FALSE(emu_f.begin(picc_f, memory, sizeof(memory)));
+    EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::None);
+
+    // Configured for NFC-F, so the NFC-A layer must refuse
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, true));
+
+    constexpr uint8_t uid[] = {0x04, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE};
+    m5::nfc::a::PICC picc_a{};
+    EXPECT_TRUE(picc_a.emulate(m5::nfc::a::Type::MIFARE_Ultralight, uid, sizeof(uid)));
+
+    m5::nfc::EmulationLayerA emu_a{*unit};
+    EXPECT_FALSE(emu_a.begin(picc_a, memory, sizeof(memory)));
+    EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::None);
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+// Reader NFC-F and emulator NFC-F share m5::nfc::NFC::F, but the chip needs a different role
+// setup for each. Switching from reader to emulator must still rebuild the target registers;
+// this catches regressions where an early return skips configure_emulation_f().
+TEST_F(TestST25R3916, EmulationF_ReconfiguresTargetAfterReaderMode)
+{
+    const auto cfg_initial = unit->config();
+
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, false));
+    EXPECT_TRUE(unit->isNFCMode(m5::nfc::NFC::F));
+
+    // Same mode, but the role changes from initiator to target
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, true));
+    EXPECT_TRUE(unit->isNFCMode(m5::nfc::NFC::F));
+
+    uint8_t value{};
+    EXPECT_TRUE(unit->readModeDefinition(value));
+    EXPECT_EQ(value, 0xE0) << "Target, NFC-F, bit rate detection mode";
+    EXPECT_TRUE(unit->readNFCIP1PassiveTargetDefinition(value));
+    EXPECT_EQ(value, 0x5C) << "Auto response for NFC-F must be enabled";
+    EXPECT_TRUE(unit->readMaskPassiveTargetInterrupt(value));
+    EXPECT_EQ(value, 0x02) << "I_wu_ax masked";
+    EXPECT_TRUE(unit->readTimerAndEMVControl(value));
+    EXPECT_EQ(value, 0x08) << "mrt_setp 512";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+// The NFC-A counterpart of the test above. Reader NFC-A and emulator NFC-A also share
+// m5::nfc::NFC::A, and only the mode definition tells the two target setups apart.
+TEST_F(TestST25R3916, EmulationA_ReconfiguresTargetAfterReaderMode)
+{
+    const auto cfg_initial = unit->config();
+
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::A, false));
+    EXPECT_TRUE(unit->isNFCMode(m5::nfc::NFC::A));
+
+    // Same mode, but the role changes from initiator to target
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::A, true));
+    EXPECT_TRUE(unit->isNFCMode(m5::nfc::NFC::A));
+
+    uint8_t value{};
+    EXPECT_TRUE(unit->readModeDefinition(value));
+    EXPECT_EQ(value, 0xC8) << "Target, NFC-A, bit rate detection mode";
+    EXPECT_TRUE(unit->readNFCIP1PassiveTargetDefinition(value));
+    EXPECT_EQ(value, 0x5C) << "Auto response for NFC-A must be enabled";
+    EXPECT_TRUE(unit->readMaskPassiveTargetInterrupt(value));
+    EXPECT_EQ(value, 0x02) << "I_wu_ax masked";
+    EXPECT_TRUE(unit->readTimerAndEMVControl(value));
+    EXPECT_EQ(value, 0x08) << "mrt_setp 512";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+// Ending an emulation that was never started is a caller mistake, but it stays idempotent so
+// that defensive cleanup does not have to know whether begin() ran.
+TEST_F(TestST25R3916, EmulationEndWithoutBegin)
+{
+    m5::nfc::EmulationLayerF emu_f{*unit};
+    EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::None);
+    EXPECT_TRUE(emu_f.end());
+    EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::None);
+
+    m5::nfc::EmulationLayerA emu_a{*unit};
+    EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::None);
+    EXPECT_TRUE(emu_a.end());
+    EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::None);
+}
+
+// ============================================================
+// Part 5: PT memory
+// ============================================================
+
+// The first Polling response is answered by the chip itself from PT memory, before the software
+// receive path runs, so the request data has to reach the chip and not just the SENSF_RES that
+// EmulationLayerF builds. Emulation is not started here: goto_off() drops the chip to power-down
+// to wait for a reader field, and PT memory is unreachable there. Reading it back also covers the
+// leading dummy byte the chip prepends to a PT memory read.
+TEST_F(TestST25R3916, PtMemoryRoundtrip)
+{
+    m5::nfc::f::PICC picc{};
+    EXPECT_TRUE(picc.emulate(m5::nfc::f::Type::FeliCaLiteS, emulation_idm, emulation_pmm));
+
+    uint8_t wbuf[m5::nfc::f::FELICA_PT_MEMORY_SIZE]{};
+    EXPECT_TRUE(m5::nfc::f::make_emulation_polling_memory(wbuf, picc));
+    EXPECT_EQ(wbuf[19], 0x00) << "Request data (high)";
+    EXPECT_EQ(wbuf[20], 0x83) << "Request data (low)";
+
+    EXPECT_TRUE(unit->writePtMemoryF(wbuf, sizeof(wbuf)));
+
+    uint8_t pt[PT_MEMORY_LENGTH]{};
+    EXPECT_TRUE(unit->readPtMemory(pt, sizeof(pt)));
+    EXPECT_EQ(std::memcmp(pt + PT_MEMORY_A_LENGTH, wbuf, sizeof(wbuf)), 0) << "F-config read back";
+}
+
+// PT memory is only reachable in Ready mode. Outside it the chip returns nothing useful, so the
+// accessors must refuse instead of handing back a silently zeroed buffer.
+TEST_F(TestST25R3916, PtMemoryRejectedOutsideReadyMode)
+{
+    EXPECT_TRUE(unit->writeOperationControl(0x00));  // To power-down mode
+
+    uint8_t pt[PT_MEMORY_LENGTH]{};
+    EXPECT_FALSE(unit->readPtMemory(pt, sizeof(pt)));
+
+    uint8_t wbuf[m5::nfc::f::FELICA_PT_MEMORY_SIZE]{};
+    EXPECT_FALSE(unit->writePtMemoryF(wbuf, sizeof(wbuf)));
+
+    EXPECT_TRUE(unit->begin());  // Restore
+}
+
+// The A-config area is written through its own op code and lands at the head of PT memory.
+TEST_F(TestST25R3916, PtMemoryRoundtripNfcA)
+{
+    uint8_t wbuf[PT_MEMORY_A_LENGTH]{};
+    for (uint32_t i = 0; i < sizeof(wbuf); ++i) {
+        wbuf[i] = static_cast<uint8_t>(0xA0 + i);
+    }
+    EXPECT_TRUE(unit->writePtMemoryA(wbuf, sizeof(wbuf)));
+
+    uint8_t pt[PT_MEMORY_LENGTH]{};
+    EXPECT_TRUE(unit->readPtMemory(pt, sizeof(pt)));
+    EXPECT_EQ(std::memcmp(pt, wbuf, sizeof(wbuf)), 0) << "A-config read back";
+}
+
+// The TSN block has its own op code so the random numbers can be reloaded without rewriting
+// the rest of PT memory. It sits after the A and F areas.
+TEST_F(TestST25R3916, PtMemoryRoundtripTSN)
+{
+    uint8_t wbuf[PT_MEMORY_TSN_LENGTH]{};
+    for (uint32_t i = 0; i < sizeof(wbuf); ++i) {
+        wbuf[i] = static_cast<uint8_t>(0x5A + i);
+    }
+    EXPECT_TRUE(unit->writePtMemoryTSN(wbuf, sizeof(wbuf)));
+
+    uint8_t pt[PT_MEMORY_LENGTH]{};
+    EXPECT_TRUE(unit->readPtMemory(pt, sizeof(pt)));
+    EXPECT_EQ(std::memcmp(pt + PT_MEMORY_A_LENGTH + PT_MEMORY_F_LENGTH, wbuf, sizeof(wbuf)), 0) << "TSN read back";
+}
+
+// A receive call with nothing to receive into must be turned away by the argument check, not by the
+// FIFO timeout. Waiting the timeout out would hide the fact that the buffer was never usable, and
+// the read that follows would copy into a null pointer.
+TEST_F(TestST25R3916, NfcfReceiveRejectsUnusableBuffer)
+{
+    const auto cfg_initial = unit->config();
+
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, false));
+    EXPECT_TRUE(unit->isNFCMode(m5::nfc::NFC::F));
+
+    // Long enough that a timeout is unmistakable next to the immediate refusal we expect
+    constexpr uint32_t timeout_ms{1000};
+    constexpr uint32_t immediate_ms{100};
+
+    uint8_t rx[32]{};
+
+    // No buffer, but a length that says there is one
+    uint16_t rx_len{sizeof(rx)};
+    auto began = m5::utility::millis();
+    EXPECT_FALSE(unit->nfcfReceive(nullptr, rx_len, timeout_ms));
+    EXPECT_EQ(rx_len, 0U);
+    EXPECT_LT(m5::utility::millis() - began, immediate_ms) << "Rejected by the argument check, not by the timeout";
+
+    // A buffer, but no room in it
+    rx_len = 0;
+    began  = m5::utility::millis();
+    EXPECT_FALSE(unit->nfcfReceive(rx, rx_len, timeout_ms));
+    EXPECT_EQ(rx_len, 0U);
+    EXPECT_LT(m5::utility::millis() - began, immediate_ms) << "Rejected by the argument check, not by the timeout";
+
     unit->config(cfg_initial);
     EXPECT_TRUE(unit->begin());
 }

@@ -111,7 +111,9 @@ bool NFCLayerF::polling(m5::nfc::f::PICC& picc, const uint16_t system_code, cons
         memcpy(picc.idm, rbuf + 2, sizeof(picc.idm));
         memcpy(picc.pmm, rbuf + 10, sizeof(picc.pmm));
         picc.request_code = request_code;
-        if (rbuf[0] >= 20) {
+        // The request data is only in the buffer when it was asked for, whatever length the card
+        // claims. Without the request code the buffer stops at eighteen bytes
+        if (request_code != RequestCode::None && rbuf[0] >= 20 && rx_len >= 20) {
             picc.request_data = ((uint16_t)rbuf[18]) << 8;
             picc.request_data |= (uint16_t)rbuf[19];
         }
@@ -308,7 +310,7 @@ bool NFCLayerF::deactivate()
 
 bool NFCLayerF::requestService(uint16_t& key_version, const uint16_t node_code)
 {
-    key_version = KEY_VERIOSN_NONE;
+    key_version = KEY_VERSION_NONE;
     return requestService(&key_version, &node_code, 1);
 }
 
@@ -349,7 +351,13 @@ bool NFCLayerF::requestService(uint16_t key_version[], const uint16_t* node_code
 
     // m5::utility::log::dump(rbuf, rx_len, false);
 
-    for (uint_fast8_t i = 0; i < rbuf[10]; ++i) {
+    // The answer names one key version per node that was asked about, and the caller sized
+    // key_version for exactly that many. A count of its own choosing would run off the end
+    if (rbuf[10] != node_num) {
+        M5_LIB_LOGE("Asked about %u nodes but the answer names %u", node_num, rbuf[10]);
+        return false;
+    }
+    for (uint_fast8_t i = 0; i < node_num; ++i) {
         key_version[i] = ((uint16_t)rbuf[12 + i * 2] << 8) | rbuf[11 + i * 2];
     }
     return true;
@@ -477,16 +485,15 @@ bool NFCLayerF::read_without_encryption_impl(uint8_t* rx, uint16_t& rx_len, cons
 
     uint8_t rbuf[1 + 1 + 8 + 1 + 1 + 1 + 16 * FELICA_MAX_BLOCKS]{};
     uint16_t actual = sizeof(rbuf);
-    if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 11) ||
-        rbuf[1] != m5::stl::to_underlying(ResponseCode::ReadWithoutEncryption) ||  //
-        (rbuf[10] /*status 1*/ != 0x00) || (rbuf[11] /*status 2*/ != 0x00)) {
+    uint8_t blocks{};
+    if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) ||
+        !read_response_blocks(rbuf, actual, blocks)) {
         M5_LIB_LOGD("Failed to read (%02X, %u) a:%u r[0]:%u %02X%02X", block_list[0].block(), rx_org_len, actual,
                     rbuf[0], rbuf[10], rbuf[11]);
         return false;
     }
-    //    const uint8_t blocks = rbuf[11];
-    rx_len = std::min<uint16_t>(actual - 13, rx_org_len);
-    memcpy(rx, rbuf + 13, rx_len);
+    rx_len = std::min<uint16_t>(16U * blocks, rx_org_len);
+    memcpy(rx, rbuf + FELICA_READ_RESPONSE_HEADER_SIZE, rx_len);
     return true;
 }
 
@@ -668,7 +675,7 @@ bool NFCLayerF::write_without_encryption_impl(const m5::nfc::f::PICC& picc, cons
 
     uint8_t rbuf[1 + 1 + 8 + 1 + 1]{};
     uint16_t actual = sizeof(rbuf);
-    if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 11) ||
+    if (!_impl->transceive(rbuf, actual, packet.data(), packet.size(), timeout_ms) || actual < 12 || (rbuf[0] < 12) ||
         rbuf[1] != m5::stl::to_underlying(ResponseCode::WriteWithoutEncryption) ||  //
         (rbuf[10] /*status 1*/ != 0x00) || (rbuf[11] /*status 2*/ != 0x00)) {
         // m5::utility::log::dump(rbuf, actual, false);

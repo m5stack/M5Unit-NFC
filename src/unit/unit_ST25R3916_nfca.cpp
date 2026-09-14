@@ -339,15 +339,21 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
             M5_LIB_LOGD("Colliion");
             uint8_t cbytes = ((cd >> 4) & 0x0F);  // c_byte[3:0]
             uint8_t cbits  = ((cd >> 1) & 0x07);  // c_bit[2:0]
-            if (actual) {
-                coll_byte = rbuf[rbuf_offset + actual - 1];  // from LSB
-                coll_byte |= 1U << cbits;
-            }
+            // The read above already refused an empty answer, so there is a last byte to take
+            coll_byte = rbuf[rbuf_offset + actual - 1];  // from LSB
+            coll_byte |= 1U << cbits;
             M5_LIB_LOGD("   COL:%u bytes, %u bits", cbytes, cbits);
             M5_LIB_LOGD("   coll_byte: %02x", coll_byte);
 
-            sbytes            = cbytes + (cbits == 0x07);
-            sbits             = (cbits + 1) & 0x07;
+            sbytes = cbytes + (cbits == 0x07);
+            sbits  = (cbits + 1) & 0x07;
+            // The collision display is a raw register value and its byte field is four bits wide,
+            // so it can name a position the frame does not have. NVB counts the command and itself,
+            // so anything below two is not a position either
+            if (sbytes < 2 || sbytes >= sizeof(anticoll_frame)) {
+                M5_LIB_LOGE("Collision display %02X names byte %u, outside the frame", cd, sbytes);
+                return false;
+            }
             anticoll_frame[1] = (sbytes << 4) | sbits;  // NVB
             memcpy(anticoll_frame + 2 + rbuf_offset, rbuf + rbuf_offset, actual);
             anticoll_frame[sbytes] = coll_byte;
@@ -360,12 +366,21 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
             rbuf[rbuf_offset] <<= sbits;
             rbuf[rbuf_offset] |= coll_byte;
         }
-        // Yield to let other I2C consumers (e.g. FT6336 timer callback) acquire
-        // the shared bus between collision retries; matches the pattern used in
-        // wait_for_interrupt / wait_for_FIFO.
+        // Yield to let other I2C consumers (e.g. FT6336 timer callback) acquire the shared bus
+        // between collision retries
         std::this_thread::yield();
     } while (collision && count--);
-    return !collision;
+    if (collision) {
+        return false;
+    }
+
+    // ISO/IEC 14443-3 has the reader check the block check character. A frame that stopped short
+    // leaves zeroes behind it, and carrying that identifier on would only earn silence from the card
+    if (rbuf_offset + actual != 5 || rbuf[4] != calculate_bcc8(rbuf, 4)) {
+        M5_LIB_LOGD("Anticollision answer of %u bytes failed its check byte %02X", rbuf_offset + actual, rbuf[4]);
+        return false;
+    }
+    return true;
 }
 
 bool UnitST25R3916::nfcaSelectWithAnticollision(bool& completed, PICC& picc, const uint8_t lv)

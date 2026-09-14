@@ -74,24 +74,9 @@ bool EmulationLayerF::begin(const m5::nfc::f::PICC& picc, uint8_t* ptr, const ui
         return false;
     }
 
-    /*
-    if (!(picc.isNTAG() || picc.type == Type::MIFARE_Ultralight)) {
-        M5_LIB_LOGE("Not support %u %s", picc.type, picc.typeAsString().c_str());
-        return false;
-    }
-    */
-
     _picc        = picc;
     _memory      = ptr;
     _memory_size = size;
-
-    /*
-    if (!_picc.valid() || !_memory || _memory_size < _picc.totalSize()) {
-        M5_LIB_LOGE("Invalid picc setting %s:%s %p %u/%u",  //
-                    picc.uidAsString().c_str(), picc.typeAsString().c_str(), _memory, _memory_size, _picc.totalSize());
-        return false;
-    }
-    */
 
     _state = _impl->start_emulation(_picc) ? State::Off : State::None;
     _prev  = State::None;
@@ -103,6 +88,7 @@ bool EmulationLayerF::begin(const m5::nfc::f::PICC& picc, uint8_t* ptr, const ui
 bool EmulationLayerF::end()
 {
     if (_state == State::None) {
+        M5_LIB_LOGW("Not started");
         return true;
     }
     _state = State::None;
@@ -112,9 +98,6 @@ bool EmulationLayerF::end()
 void EmulationLayerF::update()
 {
     auto save = _state;
-    //    if (_state != _prev) {
-    //        _expired_at = m5::utility::millis() + _expired_ms; // IRQ byGT ???
-    //    }
 
     switch (_state) {
         case State::None:
@@ -187,9 +170,14 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
 
                 // Timeslot
                 if (rx[5]) {
-                    const uint8_t slot_count = 1 << rx[5];
-                    const uint8_t slot       = (_picc.idm[7] ^ _picc.idm[6]) & (slot_count - 1);
-                    m5::utility::delayMicroseconds(2417 + slot * 1208);
+                    // The time slot number names how many slots there are rather than an exponent,
+                    // and the reader side already maps it. Shifting by it made 0Fh a count of zero,
+                    // which left the mask wide open and stretched the wait to a third of a second
+                    const uint8_t slot_count = timeslot_to_slot(static_cast<TimeSlot>(rx[5]));
+                    if (slot_count) {
+                        const uint8_t slot = (_picc.idm[7] ^ _picc.idm[6]) & (slot_count - 1);
+                        m5::utility::delayMicroseconds(2417 + slot * 1208);
+                    }
                 }
 
                 // ret = _impl->transmit(SENSF_RES, sizeof(SENSF_RES), 1) ? State::Selected : s;
@@ -203,11 +191,15 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
         case CommandCode::ReadWithoutEncryption:
             // M5_LIB_LOGE("RD:");
             // m5::utility::log::dump(rx, rx_len, false);
-            if (rx_len >= 15 && memcmp(_picc.idm, rx + 2, sizeof(_picc.idm)) == 0) {
-                uint16_t sc = rx[11] | (uint16_t)rx[12];
+            // The block count and the list behind it are both the reader's. A count the frame cannot
+            // hold would read past it, and anything above eight has no room in the error bit map
+            if (rx_len >= 15 && memcmp(_picc.idm, rx + 2, sizeof(_picc.idm)) == 0 && rx[13] &&
+                rx[13] <= FELICA_MAX_BLOCKS && rx_len >= 14U + 2U * rx[13]) {
+                // The service code arrives low byte first
+                uint16_t sc = rx[11] | ((uint16_t)rx[12] << 8);
 
                 std::vector<uint8_t> tx{};
-                tx.resize(1 + 1 + 8 + 2 + 1 + 16 * rx[13]);
+                tx.resize(1 + 8 + 2 + 1 + 16 * rx[13]);
 
                 uint32_t offset{};
                 tx[offset++] = m5::stl::to_underlying(ResponseCode::ReadWithoutEncryption);  // Response code
@@ -220,12 +212,16 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
                 bool error{};
                 for (uint_fast8_t i = 0; i < rx[13]; ++i) {
                     block_t b = block_t::from(rx + block_offset);
+                    // A three byte entry needs one more byte than the count alone guaranteed
                     block_offset += 2 + b.is_3byte();
-                    auto ptr = can_read_lite_s(b) ? block_to_address(_memory, _memory_size, b.block()) : null_data;
+                    auto ptr = (block_offset <= rx_len && can_read_lite_s(b))
+                                   ? block_to_address(_memory, _memory_size, b.block())
+                                   : null_data;
                     if (!ptr || !(sc == service_random_read || sc == service_random_read_write)) {
                         tx[9]  = 1U << i;  // Error block bit
                         tx[10] = 0xA8;     // Invalid block
-                        tx.resize(1 + 8 + 2 + 1);
+                        // Number of blocks and block data are only sent when status flag 1 is 00h
+                        tx.resize(1 + 8 + 2);
                         error = true;
                         break;
                     }
@@ -242,7 +238,8 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
         case CommandCode::WriteWithoutEncryption:
             // M5_LIB_LOGE("WT:%u", rx_len);
             if (rx_len >= 32 && memcmp(_picc.idm, rx + 2, sizeof(_picc.idm)) == 0 && rx[10] == 1) {
-                uint16_t sc = rx[11] | (uint16_t)rx[12];
+                // The service code arrives low byte first
+                uint16_t sc = rx[11] | ((uint16_t)rx[12] << 8);
 
                 uint8_t res[1 + 8 + 2] = {m5::stl::to_underlying(ResponseCode::WriteWithoutEncryption)};
                 memcpy(res + 1, _picc.idm, 8);

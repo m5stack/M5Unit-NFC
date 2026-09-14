@@ -118,7 +118,7 @@ bool UnitST25R3916::nfcfReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
     const auto rx_len_org = rx_len;
     rx_len                = 0;
 
-    if (!rx && !rx_len_org) {
+    if (!rx || !rx_len_org) {
         return false;
     }
 

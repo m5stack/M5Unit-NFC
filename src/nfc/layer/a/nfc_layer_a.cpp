@@ -1479,8 +1479,10 @@ bool NFCLayerA::dump_page_structure(const uint16_t maxPage)
         "Page    :00 01 02 03\n"
         "--------------------");
 
+    // The read command names a page in a single byte, so no tag that gets here has more than 256 of
+    // them. NTAG 216 is the largest at 231
     bool ret{true};
-    for (uint_fast8_t page = 0; page < maxPage; page += 4) {
+    for (uint_fast16_t page = 0; page < maxPage; page += 4) {
         ret &= dump_page(page, maxPage);
     }
     return ret;
@@ -1499,12 +1501,12 @@ bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)
         ok = read16(buf, from);
     } else {
         // The number of pages in an NTAG is not necessarily a multiple of 4
-        for (uint_fast8_t i = 0; i < pages; ++i) {
+        for (uint_fast16_t i = 0; i < pages; ++i) {
             ok &= read4(buf + (i << 2), from + i);
         }
     }
     if (ok) {
-        for (uint_fast8_t off = 0; off < pages; ++off) {
+        for (uint_fast16_t off = 0; off < pages; ++off) {
             auto idx = off << 2;
             printf("[%03d/%02X]:%02X %02X %02X %02X\n", from + off, from + off, buf[idx + 0], buf[idx + 1],
                    buf[idx + 2], buf[idx + 3]);
@@ -1512,7 +1514,7 @@ bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)
         return true;
     }
 
-    for (uint_fast8_t off = 0; off < pages; ++off) {
+    for (uint_fast16_t off = 0; off < pages; ++off) {
         printf("[%3d/%02X] ERROR\n", from + off, from + off);
     }
     return false;
@@ -2014,7 +2016,9 @@ bool NFCLayerA::nfca_request_ats(m5::nfc::a::ATS& ats, const uint8_t fsdi, const
     // M5_LIB_LOGE(">>>>ATS raw %u bytes", rx_len);
     // M5_DUMPE(rx, rx_len);
 
-    const uint32_t ats_len = rx[0];
+    // The length byte is the card's claim and can outrun what actually arrived, while every field
+    // below is read straight out of the receive buffer
+    const uint32_t ats_len = std::min<uint32_t>(rx[0], rx_len);
     uint32_t offset{};
     ats.TL = rx[offset++];
     ats.T0 = rx[offset++];
@@ -2125,7 +2129,8 @@ bool NFCLayerA::mifare_get_version_L4_wrapped(uint8_t* ver, uint16_t& ver_len)
     // cfg.fwt_ms = saved;
     //_isoDEP.config(cfg);
 
-    if (rx[rx_len - 2] == 0x91 && rx[rx_len - 1] == 0x00) {
+    // A break out of the loop above can leave a frame too short to hold a status word
+    if (rx_len >= 2 && rx[rx_len - 2] == 0x91 && rx[rx_len - 1] == 0x00) {
         ver_len = std::min<uint16_t>(org_ver_len, acc.size());
         std::memcpy(ver, acc.data(), ver_len);
         return true;
@@ -2676,7 +2681,9 @@ bool NFCLayerA::mifare_plus_read_mac_l4(const uint16_t block, const uint8_t coun
     uint8_t rx[128]{};
     const size_t data_len = (size_t)count * 16;
     uint16_t rx_len       = sizeof(rx);
-    if (!_isoDEP.transceiveINF(rx, rx_len, tx, sizeof(tx))) {
+    // A frame shorter than the status byte, the data and the MAC has nothing to take apart, and
+    // subtracting those from it would wrap into a huge length
+    if (!_isoDEP.transceiveINF(rx, rx_len, tx, sizeof(tx)) || rx_len < 1 + data_len + 8) {
         M5_LIB_LOGE("SL3 read transceive failed block=%u rx_len=%u", block, rx_len);
         return false;
     }

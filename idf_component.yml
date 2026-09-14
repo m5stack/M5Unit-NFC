@@ -2,10 +2,12 @@ description: Library for M5Stack UNIT NFC (ST25R3916) using M5UnitUnified.
 url: https://github.com/m5stack/M5Unit-NFC
 issues: https://github.com/m5stack/M5Unit-NFC/issues
 license: MIT
-version: "0.1.0"
+version: "0.1.1"
 
 dependencies:
   idf: ">=5.0"
+  # M5UnitUnified is not yet on the ESP Component Registry, so reference the main
+  # branch via git (switch to a version constraint after publish).
   m5stack/M5UnitUnified:
     git: https://github.com/m5stack/M5UnitUnified.git
     version: main
@@ -24,9 +26,9 @@ files:
     - "examples/**"
     - "test/**"
     - "boards/**"
-    - ".github/**"
     - "platformio.ini"
     - "library.json"
     - "library.properties"
-    - "cap_cc1101_env.ini"
-    - "unit_nfc_env.ini"
+    - "*_env.ini"
+    - ".clang-format"
+    - ".gitignore"

@@ -479,6 +479,10 @@ constexpr uint16_t KEY_VERIOSN_NONE{KEY_VERSION_NONE};  //!< @deprecated typo al
 
 constexpr uint8_t FELICA_ID_LENGTH{8};
 constexpr uint8_t FELICA_MAX_BLOCKS{8};
+constexpr uint8_t FELICA_PT_MEMORY_SIZE{21};
+constexpr uint16_t FELICA_DEFAULT_EMULATION_REQUEST_DATA{0x0083};
+//! @brief Length of a Read Without Encryption answer up to the first block, length byte included
+constexpr uint8_t FELICA_READ_RESPONSE_HEADER_SIZE{13};
 constexpr uint16_t FELICA_MAX_PACKET_LENGTH_REQUEST_SERVICE{1 + 8 + 1 + 2 * 255};
 constexpr uint16_t FELICA_MAX_PACKET_LENGTH_REQUEST_RESPONSE{1 + 8 + 1};
 constexpr uint16_t FELICA_MAX_PACKET_LENGTH_REQUEST_SYSTEM_CODE{1 + 8 + 1 + 2 * 255};
@@ -604,6 +608,25 @@ struct PICC {
     //! @brief Gets the type string
     std::string typeAsString() const;
 };
+
+/*!
+  @brief Make ST25R3916 NFC-F passive target memory contents for emulation Polling response
+  @param[out] out Output buffer (21 bytes)
+  @param picc PICC information for emulation
+  @return True if successful
+ */
+bool make_emulation_polling_memory(uint8_t out[FELICA_PT_MEMORY_SIZE], const PICC& picc);
+
+/*!
+  @brief Checks a Read Without Encryption answer and takes the number of blocks out of it
+  @param rbuf Received frame, length byte first
+  @param rbuf_len Number of bytes actually received
+  @param[out] blocks Number of blocks the answer carries, zero when it is rejected
+  @return True if the answer reports success and is long enough for the blocks it declares
+  @note An answer reporting an error is rejected, since status flag 1 has to be 00h for the block
+  count and the block data to be present at all
+ */
+bool read_response_blocks(const uint8_t* rbuf, const uint16_t rbuf_len, uint8_t& blocks);
 
 /*!
   @brief Equal? (Only IDm,PMm)

@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <vector>
 #include <m5_utility/stl/extension.hpp>
+#include <m5_utility/log/library_log.hpp>
 
 namespace m5 {
 namespace nfc {
@@ -527,8 +528,9 @@ struct CapabilityContainer {
     }
     inline uint16_t ndef_size() const
     {
-        return (block[0] == MAGIC_NO_CC4)   ? (((uint16_t)block[2]) << 3)
-               : (block[0] == MAGIC_NO_CC8) ? (((uint16_t)block[6] << 8) | block[7])
+        // MLEN counts the memory in units of 8 bytes whatever the size of the CC
+        return (block[0] == MAGIC_NO_CC4)   ? ((uint16_t)block[2] << 3)
+               : (block[0] == MAGIC_NO_CC8) ? ((uint16_t)(((uint16_t)block[6] << 8) | block[7]) << 3)
                                             : 0;
     }
     inline uint8_t read_access() const
@@ -557,8 +559,13 @@ struct CapabilityContainer {
         if (block[0] == MAGIC_NO_CC4 && sz <= 2040) {
             block[2] = (sz >> 3);
         } else if (block[0] == MAGIC_NO_CC8) {
-            block[6] = (sz >> 8);
-            block[7] = sz & 0xFF;
+            const uint16_t mlen = sz >> 3;
+            block[6]            = (mlen >> 8);
+            block[7]            = mlen & 0xFF;
+        } else {
+            // A four byte container holds MLEN in one byte, so anything above 2040 needs the eight
+            // byte form. Say so rather than leave the caller thinking the size was taken
+            M5_LIB_LOGW("Cannot store %u bytes in a %02X capability container", sz, block[0]);
         }
     }
     inline void read_access(const uint8_t a)

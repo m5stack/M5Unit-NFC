@@ -57,8 +57,7 @@ bool Record::setTextPayload(const char* str, const char* lang)
     if (tnf() == TNF::Wellknown) {
         _type = "T";  // Text
         _payload.clear();
-        set_text_payload(str, lang);
-        return true;
+        return set_text_payload(str, lang);
     }
     M5_LIB_LOGE("Record is not Wellknown");
     return false;
@@ -69,8 +68,7 @@ bool Record::setURIPayload(const char* uri, URIProtocol protocol)
     if (tnf() == TNF::Wellknown) {
         _type = "U";  // URI
         _payload.clear();
-        set_uri_payload(uri, protocol);
-        return true;
+        return set_uri_payload(uri, protocol);
     }
     M5_LIB_LOGE("Record is not Wellknown");
     return false;
@@ -123,11 +121,8 @@ uint32_t Record::encode(uint8_t* buf, const uint32_t mlen) const
     if (count + tlen > mlen) {
         return 0;
     }
-    auto tp = _type.data();
-    if (tp) {
-        std::memcpy(&buf[count], tp, tlen);
-        count += tlen;
-    }
+    std::memcpy(&buf[count], _type.data(), tlen);
+    count += tlen;
 
     // ID ((Not exists if id length is 0)
     if (_attr.idLength()) {
@@ -205,7 +200,11 @@ uint32_t Record::decode(const uint8_t* buf, const uint32_t len)
     }
 
     if (payload_len) {
-        if (buf + payload_len - top > len) {
+        // The payload length is four tag-controlled bytes, so advancing the pointer by it before
+        // the comparison can wrap right back into the buffer and make the check agree. The same
+        // shape above is safe because a type or id length is only one byte wide
+        const uint32_t consumed = static_cast<uint32_t>(buf - top);
+        if (payload_len > len - consumed) {
             return 0;
         }
         _payload = std::vector<uint8_t>(buf, buf + payload_len);
@@ -230,15 +229,22 @@ std::string Record::payloadAsString() const
     switch (tnf()) {
         case TNF::Wellknown:
             if (_type == "T") {  // Text
-                auto offset = (*uptr & 0x3F) + 1;
+                // The low six bits of the status byte are the length of the IANA language code, a
+                // number the tag chooses. A payload too small to hold the code it announces leaves
+                // nothing to return
+                const uint32_t offset = (*uptr & 0x3F) + 1U;
+                if (offset >= len) {
+                    return std::string();
+                }
                 cptr += offset;
                 len -= offset;
             } else if (_type == "U") {  // URI
+                // snprintf reports the length it would have needed, which says nothing about how
+                // much fitted, so the result is read back as the terminated string it already is
                 char tmp[512]{};
                 URIProtocol up = static_cast<URIProtocol>(*uptr);
                 std::string s(cptr + 1, cptr + _payload.size());
-                len      = snprintf(tmp, sizeof(tmp), "%s%s", get_uri_idc_string(up), s.c_str());
-                tmp[len] = '\0';
+                snprintf(tmp, sizeof(tmp), "%s%s", get_uri_idc_string(up), s.c_str());
                 return std::string(tmp);
             }
             break;
@@ -248,18 +254,19 @@ std::string Record::payloadAsString() const
     return std::string(cptr, cptr + len);
 }
 
-void Record::set_text_payload(const char* str, const char* lang)
+bool Record::set_text_payload(const char* str, const char* lang)
 {
     if (!str || !lang) {
         M5_LIB_LOGE("Invalid arguments");
-        return;
+        return false;
     }
 
     auto lang_len = strlen(lang);
 
+    // The status byte keeps the length of the language code in six bits
     if (lang_len >= 64) {
-        M5_LIB_LOGE("Invalid arguments");
-        return;
+        M5_LIB_LOGE("Language code of %zu bytes does not fit the status byte", lang_len);
+        return false;
     }
 
     uint8_t status =
@@ -272,10 +279,16 @@ void Record::set_text_payload(const char* str, const char* lang)
     _payload.insert(_payload.end(), sp, sp + strlen(str));
 
     _attr.shortRecord(_payload.size() < 256);
+    return true;
 }
 
-void Record::set_uri_payload(const char* uri, URIProtocol protocol)
+bool Record::set_uri_payload(const char* uri, URIProtocol protocol)
 {
+    if (!uri) {
+        M5_LIB_LOGE("Invalid arguments");
+        return false;
+    }
+
     auto diff = find_first_mismatch(uri, get_uri_idc_string(protocol));
     _payload.push_back(m5::stl::to_underlying(protocol));
     if (diff) {
@@ -284,6 +297,7 @@ void Record::set_uri_payload(const char* uri, URIProtocol protocol)
     }
 
     _attr.shortRecord(_payload.size() < 256);
+    return true;
 }
 
 void Record::clear()

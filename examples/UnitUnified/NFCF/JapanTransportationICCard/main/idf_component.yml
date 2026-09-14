@@ -1,13 +1,9 @@
 ## Dependencies for the ESP-IDF build of the NFC-F JapanTransportationICCard example.
-## - M5Unit-NFC is taken from a local checkout (override_path) so in-progress changes on
-##   this dev machine are picked up without re-fetching.
-## - M5UnitUnified is NOT listed here: it is declared as a dependency of M5Unit-NFC's own
-##   idf_component.yml (root manifest), currently pinned to feature/esp-idf-native-support.
-##   The component manager pulls it in transitively. Update the root manifest when the
-##   feature branch is merged / a release ships.
-## - M5Unified >=0.2.17 declares M5GFX as a transitive dependency in its idf_component.yml.
-##   Earlier release 0.2.16 was missing the declaration which caused a manual M5GFX entry
-##   to be required here; with 0.2.17 the registry version is self-contained.
+## - M5Unit-NFC is taken from this repository itself (self reference via path).
+## - M5UnitUnified is declared as a dependency of M5Unit-NFC's root idf_component.yml
+##   and pulled in transitively by the component manager. That manifest tracks main until
+##   M5UnitUnified is published to the ESP Component Registry, when it becomes >=x.y.z.
+## - M5Unified >=0.2.17 pulls in M5GFX transitively, so no explicit M5GFX entry is needed here.
 dependencies:
   idf: ">=5.0"
   m5stack/M5Unit-NFC:

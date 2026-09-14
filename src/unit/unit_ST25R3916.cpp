@@ -334,9 +334,6 @@ bool UnitST25R3916::configureEmulationMode(const m5::nfc::NFC mode)
     if (!_cfg.emulation || mode == NFC::None) {
         return false;
     }
-    if (NFCMode() == mode) {
-        return true;
-    }
     if (!writeDirectCommand(CMD_STOP_ALL_ACTIVITIES) ||            //
         !modify_bit_register8(REG_OPERATION_CONTROL, 0x00, wu)) {  // Disable wakeup mode
         return false;

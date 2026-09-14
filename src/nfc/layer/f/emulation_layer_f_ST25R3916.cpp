@@ -127,19 +127,12 @@ bool ListenerST25R3916ForF::load_config(const m5::nfc::f::PICC& picc)
         return false;
     }
 
-    uint8_t wbuf[21]{};
-    uint32_t offset{};
-    // SC(2)
-    wbuf[offset++] = picc.emulation_sc >> 8;
-    wbuf[offset++] = picc.emulation_sc & 0xFF;
-    // SENSF_RES(19)
-    wbuf[offset++] = m5::stl::to_underlying(ResponseCode::Polling);
-    memcpy(wbuf + offset, picc.m, 16);
-    offset += 16;
-    wbuf[offset++] = 0;  // SENSF_REQ, request code 0x01/0x02 NOT support ST25R3916
-    wbuf[offset++] = 0;  // SENSF_REQ, request code 0x01/0x02 NOT support ST25R3916
+    uint8_t wbuf[FELICA_PT_MEMORY_SIZE]{};
+    if (!make_emulation_polling_memory(wbuf, picc)) {
+        return false;
+    }
 
-    //    m5::utility::log::dump(wbuf, offset, false);
+    //    m5::utility::log::dump(wbuf, sizeof(wbuf), false);
 
     // TSN: 24 4-bit random numbers are stored
     // Make it as even as possible
@@ -164,6 +157,11 @@ bool ListenerST25R3916ForF::load_config(const m5::nfc::f::PICC& picc)
 
 bool ListenerST25R3916ForF::start_emulation(const m5::nfc::f::PICC& picc)
 {
+    if (!_u.isNFCMode(NFC::F)) {
+        M5_LIB_LOGE("Unit is not configured for NFC-F emulation");
+        return false;
+    }
+
     if (!load_config(picc)) {
         return false;
     }
@@ -361,7 +359,10 @@ EmulationLayerF::State ListenerST25R3916ForF::update_communicated()
         _u.readFIFO(actual, rx, rx_len);
         _data_flag = true;
         if (actual) {
-            auto state = _layer.receive_callback(EmulationLayerF::State::Communicated, rx, rx[0]);
+            // The length byte is the reader's claim and can name more than the frame brought,
+            // so the layer is only told about what actually arrived
+            auto state =
+                _layer.receive_callback(EmulationLayerF::State::Communicated, rx, std::min<uint16_t>(rx[0], actual));
             if (state != EmulationLayerF::State::Communicated) {
                 return goto_state(state);
             }
@@ -397,7 +398,10 @@ EmulationLayerF::State ListenerST25R3916ForF::update_selected()
         _u.readFIFO(actual, rx, rx_len);
         _data_flag = true;
         if (actual) {
-            auto state = _layer.receive_callback(EmulationLayerF::State::Communicated, rx, rx[0]);
+            // The length byte is the reader's claim and can name more than the frame brought,
+            // so the layer is only told about what actually arrived
+            auto state =
+                _layer.receive_callback(EmulationLayerF::State::Communicated, rx, std::min<uint16_t>(rx[0], actual));
             if (state != EmulationLayerF::State::Selected) {
                 return goto_state(state);
             }

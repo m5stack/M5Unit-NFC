@@ -132,13 +132,11 @@ protected:
     std::vector<m5::nfc::ndef::TLV> merge_tlv(std::vector<m5::nfc::ndef::TLV>& old_tlvs,
                                               const std::vector<m5::nfc::ndef::TLV>& tlvs);
 
-    ///@name Byte-level access helpers for NFC-V (Type5)
-    ///@{
+    // Byte-level access helpers for NFC-V (Type5)
     // Read bytes from arbitrary byte offset (for NFC-V)
     bool read_nfcv(uint8_t* rx, const uint16_t offset, const uint16_t len);
     // Write bytes to arbitrary byte offset (for NFC-V); performs read-modify-write for partial blocks
     bool write_nfcv(const uint16_t offset, const uint8_t* tx, const uint16_t len);
-    ///@}
 
 private:
     NFCLayerInterface& _interface;

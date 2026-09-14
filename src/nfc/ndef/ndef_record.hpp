@@ -247,9 +247,15 @@ public:
     /*!
       @brief Set the type string
       @param s Null-terminated type string
+      @note A null pointer is reported and leaves the type empty. Pass an empty string to clear it
      */
     inline void setType(const char* s)
     {
+        if (!s) {
+            M5_LIB_LOGW("Ignoring a null type string");
+            _type.clear();
+            return;
+        }
         _type = s;
     }
     ///@}
@@ -388,8 +394,8 @@ public:
 
 protected:
     bool apply_nested_message();
-    void set_text_payload(const char* str, const char* lang);
-    void set_uri_payload(const char* uri, URIProtocol protocol);
+    bool set_text_payload(const char* str, const char* lang);
+    bool set_uri_payload(const char* uri, URIProtocol protocol);
 
 private:
     Attribute _attr{};

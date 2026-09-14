@@ -46,27 +46,59 @@ public:
     //! @brief Maximum FIFO depth
     virtual uint16_t maximum_fifo_depth() const = 0;
 
-    //! @brief Transceive (RF command)
+    /*!
+      @brief Transceive (RF command)
+      @param[out] rx Receive buffer
+      @param[in,out] rx_len Capacity of rx on the way in, bytes received on the way out
+      @param tx Command to send
+      @param tx_len Length of tx
+      @param timeout_ms How long to wait for the answer
+      @return True if successful
+     */
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms)
     {
         return false;
     }
 
-    //! @brief Transmit only
+    /*!
+      @brief Transmit only
+      @param tx Command to send
+      @param tx_len Length of tx
+      @param timeout_ms How long to wait for the transmission to finish
+      @return True if successful
+     */
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
     {
         return false;
     }
-    //! @brief Receive only
+    /*!
+      @brief Receive only
+      @param[out] rx Receive buffer
+      @param[in,out] rx_len Capacity of rx on the way in, bytes received on the way out
+      @param timeout_ms How long to wait for the answer
+      @return True if successful
+     */
     virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)
     {
         return false;
     }
 
-    //! @brief Read NDEF (block)
+    /*!
+      @brief Read NDEF (block)
+      @param[out] rx Receive buffer
+      @param[in,out] rx_len Capacity of rx on the way in, bytes read on the way out
+      @param saddr Block address to start from
+      @return True if successful
+     */
     virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint16_t saddr) = 0;
-    //! @brief Write NDEF (block)
+    /*!
+      @brief Write NDEF (block)
+      @param saddr Block address to start from
+      @param tx Data to write
+      @param tx_len Length of tx
+      @return True if successful
+     */
     virtual bool write(const uint16_t saddr, const uint8_t* tx, const uint16_t tx_len) = 0;
 
     //! @brief First user block

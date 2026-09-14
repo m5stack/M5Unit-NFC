@@ -33,6 +33,8 @@ namespace nfc {
 /*!
   @class EmulationLayerF
   @brief Common interface layer for each chip of the NFC-F emulation
+  @note The chip emulates one technology at a time, so this cannot run alongside EmulationLayerA.
+  The unit must be configured for NFC-F emulation before begin().
  */
 class EmulationLayerF {
 public:

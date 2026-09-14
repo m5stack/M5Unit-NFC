@@ -76,16 +76,18 @@ TEST(NFC_A, TypeCheckers)
     EXPECT_FALSE(is_mifare(Type::NTAG_213));
     EXPECT_FALSE(is_mifare(Type::ST25TA_2K));
 
-    // is_st25ta
-    EXPECT_FALSE(is_st25ta(Type::ST25TA_512B));  // Note: ST25TA_512B < ST25TA_2K
+    // is_st25ta. Every member of the family answers, the smallest one included
+    EXPECT_TRUE(is_st25ta(Type::ST25TA_512B));
     EXPECT_TRUE(is_st25ta(Type::ST25TA_2K));
     EXPECT_TRUE(is_st25ta(Type::ST25TA_16K));
     EXPECT_TRUE(is_st25ta(Type::ST25TA_64K));
     EXPECT_FALSE(is_st25ta(Type::ISO_14443_4));
+    EXPECT_FALSE(is_st25ta(Type::NTAG_216)) << "The entry right before ST25TA_512B";
 
     // is_iso14443_4
     EXPECT_TRUE(is_iso14443_4(Type::MIFARE_Plus_2K));
     EXPECT_TRUE(is_iso14443_4(Type::MIFARE_DESFire_2K));
+    EXPECT_TRUE(is_iso14443_4(Type::ST25TA_512B));
     EXPECT_TRUE(is_iso14443_4(Type::ST25TA_2K));
     EXPECT_TRUE(is_iso14443_4(Type::ISO_14443_4));
     EXPECT_FALSE(is_iso14443_4(Type::MIFARE_Classic_1K));
@@ -95,6 +97,7 @@ TEST(NFC_A, TypeCheckers)
     EXPECT_TRUE(is_iso14443_3(Type::MIFARE_Classic_1K));
     EXPECT_TRUE(is_iso14443_3(Type::NTAG_213));
     EXPECT_FALSE(is_iso14443_3(Type::MIFARE_Plus_2K));
+    EXPECT_FALSE(is_iso14443_3(Type::ST25TA_512B)) << "A Type 4 Tag is not a bare ISO 14443-3 PICC";
 
     // supports_NFC
     EXPECT_TRUE(supports_NFC(Type::MIFARE_Ultralight));
@@ -345,6 +348,13 @@ TEST(NFC_A, ST25TA)
     EXPECT_EQ(get_type(PRODUCT_CODE_ST25TA16K), Type::ST25TA_16K);
     EXPECT_EQ(get_type(PRODUCT_CODE_ST25TA64K), Type::ST25TA_64K);
     EXPECT_EQ(get_type(0x00), Type::Unknown);
+
+    // What get_type() reports has to stay inside the family it names
+    EXPECT_TRUE(is_st25ta(get_type(IC_REFERENCE_ST25TA512B)));
+    EXPECT_TRUE(is_st25ta(get_type(IC_REFERENCE_ST25TA02KB)));
+    EXPECT_TRUE(is_st25ta(get_type(PRODUCT_CODE_ST25TA16K)));
+    EXPECT_TRUE(is_st25ta(get_type(PRODUCT_CODE_ST25TA64K)));
+    EXPECT_FALSE(is_st25ta(get_type(0x00)));
 
     // SystemFile
     SystemFile sf{};

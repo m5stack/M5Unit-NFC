@@ -700,6 +700,12 @@ bool DESFireFileSystem::writeData(const uint8_t file_no, const uint32_t offset, 
     const uint32_t max_cmd_chunk = (safe_inf > apdu_base) ? (safe_inf - apdu_base) : 0;
     const uint32_t max_chunk     = std::min<uint32_t>(max_lc - param_len, max_cmd_chunk);
     M5_LIB_LOGV("max_inf=%u safe_inf=%u max_chunk=%u fsc=%u cap=%u", max_inf_frame, safe_inf, max_chunk, tx_frame_cap);
+    // A PICC that announces the smallest frame size leaves no room for data, and a chunk of zero
+    // would spin the loop below forever without ever advancing
+    if (!max_chunk) {
+        M5_LIB_LOGE("The PICC leaves no room for data in a %u byte frame", max_inf_frame);
+        return false;
+    }
 
     // M5_LIB_LOGE("max inf %u max_chunk %u", max_inf_frame, max_chunk);
 
@@ -755,6 +761,12 @@ bool DESFireFileSystem::writeDataLight(const uint8_t file_no, const uint32_t off
     const uint32_t max_cmd_chunk = (safe_inf > apdu_base) ? (safe_inf - apdu_base) : 0;
     const uint32_t max_chunk     = std::min<uint32_t>(max_lc - param_len, max_cmd_chunk);
     M5_LIB_LOGD("max_inf=%u safe_inf=%u max_chunk=%u fsc=%u cap=%u", max_inf_frame, safe_inf, max_chunk, tx_frame_cap);
+    // A PICC that announces the smallest frame size leaves no room for data, and a chunk of zero
+    // would spin the loop below forever without ever advancing
+    if (!max_chunk) {
+        M5_LIB_LOGE("The PICC leaves no room for data in a %u byte frame", max_inf_frame);
+        return false;
+    }
 
     uint32_t written{};
     while (written < data_len) {

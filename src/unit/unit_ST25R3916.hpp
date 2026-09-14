@@ -231,7 +231,7 @@ public:
         return read_register8(st25r3916::command::REG_IO_CONFIGURATION_2, value);
     }
     /*!
-      Write the I/O configuration 1
+      @brief Write the I/O configuration 2
       @param value Value
       @return True if successful
      */
@@ -249,7 +249,7 @@ public:
         return read_register16(st25r3916::command::REG_IO_CONFIGURATION_1, value);
     }
     /*!
-      Write the I/O configuration 1-2
+      @brief Write the I/O configuration 1-2
       @param value Value (MSB cfg1, cfg2 LSB)
       @return True if successful
      */
@@ -383,8 +383,8 @@ public:
         return read_register8(st25r3916::command::REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, value);
     }
     /*!
-      Write the NFCIP-1 passive target definition
-      @param[out] value Value
+      @brief Write the NFCIP-1 passive target definition
+      @param value Value
       @return True if successful
      */
     inline bool writeNFCIP1PassiveTargetDefinition(const uint8_t value)
@@ -479,7 +479,7 @@ public:
     }
     /*!
       @brief Write the receiver configuration 1
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeReceiverConfiguration1(const uint8_t value)
@@ -497,7 +497,7 @@ public:
     }
     /*!
       @brief Write the receiver configuration 2
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeReceiverConfiguration2(const uint8_t value)
@@ -515,7 +515,7 @@ public:
     }
     /*!
       @brief Write the receiver configuration 3
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeReceiverConfiguration3(const uint8_t value)
@@ -523,7 +523,7 @@ public:
         return write_register8(st25r3916::command::REG_RECEIVER_CONFIGURATION_3, value);
     }
     /*!
-      Read the receiver configuration 4
+      @brief Read the receiver configuration 4
       @param[out] value Value
       @return True if successful
      */
@@ -533,7 +533,7 @@ public:
     }
     /*!
       @brief Write the receiver configuration 4
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeReceiverConfiguration4(const uint8_t value)
@@ -1003,7 +1003,7 @@ public:
         return read_register8(st25r3916::command::REG_FIFO_STATUS_1, value);
     }
     /*!
-      @brief Read the FIFO status 1
+      @brief Read the FIFO status 2
       @param[out] value Value
       @return True if successful
      */
@@ -1124,7 +1124,7 @@ public:
     ///@name A/D converter output
     ///@{
     /*!
-      @brief Read the number of transmitted bytes 2
+      @brief Read the A/D converter output
       @param[out] value Value
       @return True if successful
      */
@@ -1242,7 +1242,7 @@ public:
     }
     /*!
       @brief Write the auxiliary modulation setting
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeAuxiliaryModulationSetting(const uint8_t value)
@@ -1260,7 +1260,7 @@ public:
     }
     /*!
       @brief Write the TX driver timing
-      @param[out] value Value
+      @param value Value
       @return True if successful
      */
     inline bool writeTXDriverTiming(const uint8_t value)
@@ -1371,7 +1371,7 @@ public:
     ///@name Receiver state display
     ///@{
     /*!
-      @brief Read the external field detector deactivation threshold
+      @brief Read the RSSI display
       @param[out] value Value
       @return True if successful
      */
@@ -1784,7 +1784,12 @@ public:
       @return True if successful
      */
     bool nfcaTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
-    //! @brief Transmit in emulation (PICC) mode with minimal I2C overhead
+    /*!
+      @brief Transmit in emulation (PICC) mode with minimal I2C overhead
+      @param tx Data to send
+      @param tx_len Length of tx
+      @return True if successful
+     */
     bool nfcaEmulationTransmit(const uint8_t* tx, const uint16_t tx_len);
     /*!
       @brief Receive raw bytes (no transmit)
@@ -1945,7 +1950,12 @@ public:
       @return True if successful
      */
     bool nfcfTransmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
-    //! @brief Transmit in emulation (PICC) mode with minimal I2C overhead
+    /*!
+      @brief Transmit in emulation (PICC) mode with minimal I2C overhead
+      @param tx Data to send
+      @param tx_len Length of tx
+      @return True if successful
+     */
     bool nfcfEmulationTransmit(const uint8_t* tx, const uint16_t tx_len);
     /*!
       @brief Receive from NFC-F PICC
@@ -1997,15 +2007,39 @@ public:
     bool nfcvReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const uint16_t min_rx_len = 0);
     ///@}
 
+    /*!
+      @note PT memory is only reachable in Ready mode (en bit of the operation control register).
+      The chip leaves it during emulation to wait for a reader field, so these fail there.
+     */
     ///@name PT_MEMORY
     ///@{
-    //! @brief Write pattern memory for NFC-A target
+    /*!
+      @brief Write pattern memory for NFC-A target
+      @param tx Data to write
+      @param tx_len Length of the data
+      @return True if successful
+     */
     bool writePtMemoryA(const uint8_t* tx, const uint32_t tx_len);
-    //! @brief Write pattern memory for NFC-F target
+    /*!
+      @brief Write pattern memory for NFC-F target
+      @param tx Data to write
+      @param tx_len Length of the data
+      @return True if successful
+     */
     bool writePtMemoryF(const uint8_t* tx, const uint32_t tx_len);
-    //! @brief Write pattern memory TSN block
+    /*!
+      @brief Write pattern memory TSN block
+      @param tx Data to write
+      @param tx_len Length of the data
+      @return True if successful
+     */
     bool writePtMemoryTSN(const uint8_t* tx, const uint32_t tx_len);
-    //! @brief Read pattern memory
+    /*!
+      @brief Read pattern memory
+      @param[out] rx Buffer to receive the whole PT memory
+      @param rx_len Size of the buffer
+      @return True if successful
+     */
     bool readPtMemory(uint8_t* rx, const uint32_t rx_len);
     ///@}
 
@@ -2017,6 +2051,9 @@ protected:
     friend struct m5::nfc::ListenerST25R3916ForF;
 
     static void IRAM_ATTR on_irq(void* arg);
+
+    // PT memory and FIFO are only reachable in Ready mode (Operation control en bit)
+    bool is_ready_mode();
 
     bool read_register8(const uint8_t reg, uint8_t& v);
     bool read_register8(const uint16_t reg, uint8_t& v);

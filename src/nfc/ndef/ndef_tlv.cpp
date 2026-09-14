@@ -12,6 +12,7 @@
 #include <numeric>
 #include <cinttypes>
 #include <cstring>
+#include <string>
 
 namespace {
 uint32_t calculate_record_size(const std::vector<m5::nfc::ndef::Record>& v)
@@ -82,7 +83,10 @@ bool decode_smartag1_external_record(const uint8_t* payload, const uint32_t payl
     const uint8_t* pl_ptr    = payload + idx;
 
     out = m5::nfc::ndef::Record(static_cast<m5::nfc::ndef::TNF>(flags & mask_tnf));
-    out.setType(type_ptr);
+    // The type sits inside the raw tag data with no terminator after it, so it has to be cut to the
+    // length the record declares rather than handed over as a string
+    const std::string type_str(type_ptr, type_len);
+    out.setType(type_str.c_str());
     if (id_len) {
         out.setIdentifier(id_ptr, id_len);
     }
@@ -263,6 +267,14 @@ uint32_t TLV::decode(const uint8_t* buf, const uint32_t len)
         return decoded;
     }
 
+    // The declared length has to fit what was actually read. Without this the Message branch below
+    // walks a payload_end that sits past the buffer, and hands the caller back an offset that does
+    // the same
+    if (payload_len > len - decoded) {
+        M5_LIB_LOGE("Payload length %u exceeds the %u bytes left", payload_len, len - decoded);
+        return 0;
+    }
+
     // Message
     if (_tag == Tag::Message) {
         const uint8_t* payload_end = top + decoded + payload_len;
@@ -318,9 +330,6 @@ uint32_t TLV::decode(const uint8_t* buf, const uint32_t len)
     }
 
     // Other
-    if (payload_len > len - (buf - top)) {
-        return 0;
-    }
     _payload.insert(_payload.end(), buf, buf + payload_len);
     buf += payload_len;
     return buf - top;
