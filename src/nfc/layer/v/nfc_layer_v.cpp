@@ -129,6 +129,9 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
                 M5_LIB_LOGW("get_system_information_ext is not supported");
             }
             if (!picc.blocks || !picc.block_size) {
+                // The product code in the fifth byte of the UID names the variant, not the size:
+                // 26h covers both the 16K and the 64K part (ST25DV datasheet, Table 85). So ask the
+                // larger one for a block only it has and let the answer decide.
                 if (picc.icRef == 0x26) {
                     picc.block_size = 4;
                     uint8_t tmp[32]{};
@@ -230,7 +233,7 @@ bool NFCLayerV::readBlock(uint8_t rx[32], const uint16_t block)
     uint16_t rx_len = sizeof(rbuf);
     if (!_impl->transceive(rbuf, rx_len, frame, sizeof(frame), TIMEOUT_READ_SINGLE_BLOCK, modulationMode()) ||
         !rx_len || rbuf[0] != 0x00) {
-        M5_LIB_LOGD("Failed to transcieve %u %02X", rx_len, rbuf[1] /* error code */);
+        M5_LIB_LOGD("Failed to transceive %u %02X", rx_len, rbuf[1] /* error code */);
         return false;
     }
     memcpy(rx, rbuf + 1, rx_len - 1);
@@ -695,7 +698,9 @@ void NFCLayerV::probe_memory_layout(m5::nfc::v::PICC& picc)
 
     if (cc_len >= 4 && (cc[0] == 0xE1 || cc[0] == 0xE2)) {
         const uint32_t mlen = cc[2] ? cc[2] : (cc_len >= 8 ? (((uint32_t)cc[6] << 8) | cc[7]) : 0U);
-        picc.blocks         = static_cast<uint16_t>(mlen * 8U / picc.block_size);
+        // The block size is never zero here: probe_read_block() only reports success for an answer
+        // of at least two bytes, so the size taken from its length above is at least one
+        picc.blocks = static_cast<uint16_t>(mlen * 8U / picc.block_size);
     }
 
     // A container can be stale, or written by something that got the units wrong, so make sure the
