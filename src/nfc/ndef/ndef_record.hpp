@@ -394,8 +394,8 @@ public:
 
 protected:
     bool apply_nested_message();
-    void set_text_payload(const char* str, const char* lang);
-    void set_uri_payload(const char* uri, URIProtocol protocol);
+    bool set_text_payload(const char* str, const char* lang);
+    bool set_uri_payload(const char* uri, URIProtocol protocol);
 
 private:
     Attribute _attr{};
