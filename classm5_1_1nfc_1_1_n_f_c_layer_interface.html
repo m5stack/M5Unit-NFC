@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.1 git rev:9bb1360</span>
    </div>
   </td>
  </tr>
@@ -385,6 +385,15 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~NFCLayerInterface
 </div><div class="memdoc">
 
 <p>Read NDEF (block) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">rx</td><td>Receive buffer </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">rx_len</td><td>Capacity of rx on the way in, bytes read on the way out </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">saddr</td><td>Block address to start from </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 
 <p>Implemented in <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_a.html#afdc37ce8de471e4c439eed5abd73f4be">m5::nfc::NFCLayerA</a>, <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_b.html#a4120d13050d0fe0ed607b9e762623111">m5::nfc::NFCLayerB</a>, <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_f.html#ae283e46dc39f2c24898458aeef09fb75">m5::nfc::NFCLayerF</a>, and <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_v.html#a4e8459bbef08fd87a6b7baff52ac4f00">m5::nfc::NFCLayerV</a>.</p>
 
@@ -423,6 +432,15 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~NFCLayerInterface
 </div><div class="memdoc">
 
 <p>Receive only. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">rx</td><td>Receive buffer </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">rx_len</td><td>Capacity of rx on the way in, bytes received on the way out </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">timeout_ms</td><td>How long to wait for the answer </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 
 <p>Reimplemented in <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_b.html#a1f583ba3a2213ecd3d8c9012080c34ea">m5::nfc::NFCLayerB</a>.</p>
 
@@ -529,6 +547,17 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~NFCLayerInterface
 </div><div class="memdoc">
 
 <p>Transceive (RF command) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">rx</td><td>Receive buffer </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">rx_len</td><td>Capacity of rx on the way in, bytes received on the way out </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">tx</td><td>Command to send </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">tx_len</td><td>Length of tx </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">timeout_ms</td><td>How long to wait for the answer </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 
 <p>Reimplemented in <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_a.html#af922fdf273e872f865fb78312796393b">m5::nfc::NFCLayerA</a>, and <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_b.html#a122b2ce7114b2c5ed04e7b7457c2e098">m5::nfc::NFCLayerB</a>.</p>
 
@@ -567,6 +596,15 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~NFCLayerInterface
 </div><div class="memdoc">
 
 <p>Transmit only. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">tx</td><td>Command to send </td></tr>
+    <tr><td class="paramname">tx_len</td><td>Length of tx </td></tr>
+    <tr><td class="paramname">timeout_ms</td><td>How long to wait for the transmission to finish </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 
 <p>Reimplemented in <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_b.html#a3f248f568f9ce9526593e1eb194073f4">m5::nfc::NFCLayerB</a>.</p>
 
@@ -692,6 +730,15 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~NFCLayerInterface
 </div><div class="memdoc">
 
 <p>Write NDEF (block) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">saddr</td><td>Block address to start from </td></tr>
+    <tr><td class="paramname">tx</td><td>Data to write </td></tr>
+    <tr><td class="paramname">tx_len</td><td>Length of tx </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 
 <p>Implemented in <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_a.html#a3c982e97ad6b66ffb9aa6f685e3f7869">m5::nfc::NFCLayerA</a>, <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_b.html#a4283e90fffaadbda8ab352ec153cd893">m5::nfc::NFCLayerB</a>, <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_f.html#a9ab7eb934accdfa3335a9c4cd6eed63e">m5::nfc::NFCLayerF</a>, and <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_v.html#ab7f845ecfb606ad7b55b6e1a450e0ba4">m5::nfc::NFCLayerV</a>.</p>
 

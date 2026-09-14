@@ -11,7 +11,9 @@ var nfcf_8cpp =
     [ "get_number_of_user_blocks", "nfcf_8cpp.html#ad17a8af57383f9e4559a8352404000df", null ],
     [ "is_read_only_lite", "nfcf_8cpp.html#af04bf1c332c7652d0279807a8eebec9d", null ],
     [ "is_read_only_lite_s", "nfcf_8cpp.html#af179bb4b95076fce93c9aac02c0deb72", null ],
+    [ "make_emulation_polling_memory", "nfcf_8cpp.html#a2cb23dd98270f63dd33f113f2d35f119", null ],
     [ "make_personalized_card_key_lite_s", "nfcf_8cpp.html#a926f212f3a65e9312101a1ce9d8733ca", null ],
     [ "make_session_key", "nfcf_8cpp.html#a79ce96cae934525470db73d1df2de74a", null ],
-    [ "operator==", "nfcf_8cpp.html#a9d5df6f8cc40e297cb675451d4f20774", null ]
+    [ "operator==", "nfcf_8cpp.html#a9d5df6f8cc40e297cb675451d4f20774", null ],
+    [ "read_response_blocks", "nfcf_8cpp.html#ab5f9161426e9fd1f8fa5267c592dfc86", null ]
 ];

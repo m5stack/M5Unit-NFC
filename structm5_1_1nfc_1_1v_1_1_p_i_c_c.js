@@ -11,6 +11,7 @@ var structm5_1_1nfc_1_1v_1_1_p_i_c_c =
     [ "uidAsString", "structm5_1_1nfc_1_1v_1_1_p_i_c_c.html#a092ec7d234407a44662af837d3be9c82", null ],
     [ "userAreaSize", "structm5_1_1nfc_1_1v_1_1_p_i_c_c.html#a104c470214bfaa328415fe87292731eb", null ],
     [ "valid", "structm5_1_1nfc_1_1v_1_1_p_i_c_c.html#a7eaf3275f38b9d1afd90fb80e80290ec", null ],
+    [ "validUID", "structm5_1_1nfc_1_1v_1_1_p_i_c_c.html#af03b281a46ef6064c838a247e3514591", null ],
     [ "afi", "structm5_1_1nfc_1_1v_1_1_p_i_c_c.html#a797a51b710825e4c850283a209b8a0e8", null ],
     [ "block_size", "structm5_1_1nfc_1_1v_1_1_p_i_c_c.html#af42ccce36d6668456d8055043ad9a00e", null ],
     [ "blocks", "structm5_1_1nfc_1_1v_1_1_p_i_c_c.html#abd192cfb8ee34dd6a291131bc466f596", null ],

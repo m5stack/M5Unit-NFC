@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.1 git rev:9bb1360</span>
    </div>
   </td>
  </tr>
@@ -1271,6 +1271,15 @@ Only PICC cards supporting NDEF are valid </dd></dl>
 </div><div class="memdoc">
 
 <p>Read NDEF (block) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">rx</td><td>Receive buffer </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">rx_len</td><td>Capacity of rx on the way in, bytes read on the way out </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">saddr</td><td>Block address to start from </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 
 <p>Implements <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_interface.html#a928d6df7e722c2cf0f44b78eb9d818cf">m5::nfc::NFCLayerInterface</a>.</p>
 
@@ -1690,6 +1699,15 @@ Only PICC cards supporting NDEF are valid </dd></dl>
 </div><div class="memdoc">
 
 <p>Write NDEF (block) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">saddr</td><td>Block address to start from </td></tr>
+    <tr><td class="paramname">tx</td><td>Data to write </td></tr>
+    <tr><td class="paramname">tx_len</td><td>Length of tx </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 
 <p>Implements <a class="el" href="classm5_1_1nfc_1_1_n_f_c_layer_interface.html#a2d84b6050dfca9671d317f9bcbac6943">m5::nfc::NFCLayerInterface</a>.</p>
 

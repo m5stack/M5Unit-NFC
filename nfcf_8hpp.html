@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.0 git rev:93745b5</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.1 git rev:9bb1360</span>
    </div>
   </td>
  </tr>
@@ -258,6 +258,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a9c037fc0ecb47e8ca767344be267ff1f" id="r_a9c037fc0ecb47e8ca767344be267ff1f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfcf_8cpp.html#a9c037fc0ecb47e8ca767344be267ff1f">m5::nfc::f::can_read_lite_s</a> (const <a class="el" href="structm5_1_1nfc_1_1f_1_1block__t.html">block_t</a> block)</td></tr>
 <tr class="memdesc:a9c037fc0ecb47e8ca767344be267ff1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Can the value of the specified block be read? (Permissions are not considered)  <br /></td></tr>
 <tr class="separator:a9c037fc0ecb47e8ca767344be267ff1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cb23dd98270f63dd33f113f2d35f119" id="r_a2cb23dd98270f63dd33f113f2d35f119"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfcf_8cpp.html#a2cb23dd98270f63dd33f113f2d35f119">m5::nfc::f::make_emulation_polling_memory</a> (uint8_t out[FELICA_PT_MEMORY_SIZE], const <a class="el" href="structm5_1_1nfc_1_1f_1_1_p_i_c_c.html">PICC</a> &amp;picc)</td></tr>
+<tr class="memdesc:a2cb23dd98270f63dd33f113f2d35f119"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make ST25R3916 NFC-F passive target memory contents for emulation Polling response.  <br /></td></tr>
+<tr class="separator:a2cb23dd98270f63dd33f113f2d35f119"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5f9161426e9fd1f8fa5267c592dfc86" id="r_ab5f9161426e9fd1f8fa5267c592dfc86"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfcf_8cpp.html#ab5f9161426e9fd1f8fa5267c592dfc86">m5::nfc::f::read_response_blocks</a> (const uint8_t *rbuf, const uint16_t rbuf_len, uint8_t &amp;blocks)</td></tr>
+<tr class="memdesc:ab5f9161426e9fd1f8fa5267c592dfc86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks a Read Without Encryption answer and takes the number of blocks out of it.  <br /></td></tr>
+<tr class="separator:ab5f9161426e9fd1f8fa5267c592dfc86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d5df6f8cc40e297cb675451d4f20774" id="r_a9d5df6f8cc40e297cb675451d4f20774"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nfcf_8cpp.html#a9d5df6f8cc40e297cb675451d4f20774">m5::nfc::f::operator==</a> (const <a class="el" href="structm5_1_1nfc_1_1f_1_1_p_i_c_c.html">PICC</a> &amp;a, const <a class="el" href="structm5_1_1nfc_1_1f_1_1_p_i_c_c.html">PICC</a> &amp;b)</td></tr>
 <tr class="memdesc:a9d5df6f8cc40e297cb675451d4f20774"><td class="mdescLeft">&#160;</td><td class="mdescRight">Equal? (Only IDm,PMm)  <br /></td></tr>
 <tr class="separator:a9d5df6f8cc40e297cb675451d4f20774"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -283,6 +289,16 @@ constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc:
 <tr class="memitem:ad8b76fb3bd5333b82c0f06d99649c782" id="r_ad8b76fb3bd5333b82c0f06d99649c782"><td class="memItemLeft" align="right" valign="top"><a id="ad8b76fb3bd5333b82c0f06d99649c782" name="ad8b76fb3bd5333b82c0f06d99649c782"></a>
 constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::f::FELICA_MAX_BLOCKS</b> {8}</td></tr>
 <tr class="separator:ad8b76fb3bd5333b82c0f06d99649c782"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97741f1cdb820eba3c5e00afa16c252b" id="r_a97741f1cdb820eba3c5e00afa16c252b"><td class="memItemLeft" align="right" valign="top"><a id="a97741f1cdb820eba3c5e00afa16c252b" name="a97741f1cdb820eba3c5e00afa16c252b"></a>
+constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::f::FELICA_PT_MEMORY_SIZE</b> {21}</td></tr>
+<tr class="separator:a97741f1cdb820eba3c5e00afa16c252b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ababf0a20a89efd1335ccb315b39a877a" id="r_ababf0a20a89efd1335ccb315b39a877a"><td class="memItemLeft" align="right" valign="top"><a id="ababf0a20a89efd1335ccb315b39a877a" name="ababf0a20a89efd1335ccb315b39a877a"></a>
+constexpr uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::f::FELICA_DEFAULT_EMULATION_REQUEST_DATA</b> {0x0083}</td></tr>
+<tr class="separator:ababf0a20a89efd1335ccb315b39a877a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a176ca359915e98e7a987f4653a4c7b2f" id="r_a176ca359915e98e7a987f4653a4c7b2f"><td class="memItemLeft" align="right" valign="top"><a id="a176ca359915e98e7a987f4653a4c7b2f" name="a176ca359915e98e7a987f4653a4c7b2f"></a>
+constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::f::FELICA_READ_RESPONSE_HEADER_SIZE</b> {13}</td></tr>
+<tr class="memdesc:a176ca359915e98e7a987f4653a4c7b2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Length of a Read Without Encryption answer up to the first block, length byte included. <br /></td></tr>
+<tr class="separator:a176ca359915e98e7a987f4653a4c7b2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27fe04ec4777c18eab48986c15fe35f2" id="r_a27fe04ec4777c18eab48986c15fe35f2"><td class="memItemLeft" align="right" valign="top"><a id="a27fe04ec4777c18eab48986c15fe35f2" name="a27fe04ec4777c18eab48986c15fe35f2"></a>
 constexpr uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>m5::nfc::f::FELICA_MAX_PACKET_LENGTH_REQUEST_SERVICE</b> {1 + 8 + 1 + 2 * 255}</td></tr>
 <tr class="separator:a27fe04ec4777c18eab48986c15fe35f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1210,6 +1226,37 @@ constexpr <a class="el" href="#aae6a013f27fd62f19dfdd6959ed679e9">Format</a>&#16
 
 </div>
 </div>
+<a id="a2cb23dd98270f63dd33f113f2d35f119" name="a2cb23dd98270f63dd33f113f2d35f119"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2cb23dd98270f63dd33f113f2d35f119">&#9670;&#160;</a></span>make_emulation_polling_memory()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool m5::nfc::f::make_emulation_polling_memory </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>out</em></span>[FELICA_PT_MEMORY_SIZE], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structm5_1_1nfc_1_1f_1_1_p_i_c_c.html">PICC</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>picc</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Make ST25R3916 NFC-F passive target memory contents for emulation Polling response. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">out</td><td>Output buffer (21 bytes) </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">picc</td><td>PICC information for emulation </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
+
+</div>
+</div>
 <a id="a926f212f3a65e9312101a1ce9d8733ca" name="a926f212f3a65e9312101a1ce9d8733ca"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a926f212f3a65e9312101a1ce9d8733ca">&#9670;&#160;</a></span>make_personalized_card_key_lite_s()</h2>
 
@@ -1354,6 +1401,44 @@ constexpr <a class="el" href="#aae6a013f27fd62f19dfdd6959ed679e9">Format</a>&#16
 
 </div>
 </div>
+<a id="ab5f9161426e9fd1f8fa5267c592dfc86" name="ab5f9161426e9fd1f8fa5267c592dfc86"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5f9161426e9fd1f8fa5267c592dfc86">&#9670;&#160;</a></span>read_response_blocks()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool m5::nfc::f::read_response_blocks </td>
+          <td>(</td>
+          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>rbuf</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint16_t</td>          <td class="paramname"><span class="paramname"><em>rbuf_len</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint8_t &amp;</td>          <td class="paramname"><span class="paramname"><em>blocks</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Checks a Read Without Encryption answer and takes the number of blocks out of it. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">rbuf</td><td>Received frame, length byte first </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">rbuf_len</td><td>Number of bytes actually received </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">blocks</td><td>Number of blocks the answer carries, zero when it is rejected </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if the answer reports success and is long enough for the blocks it declares </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>An answer reporting an error is rejected, since status flag 1 has to be 00h for the block count and the block data to be present at all </dd></dl>
+
+</div>
+</div>
 <a id="a89d13d59812d64bb13835a45aebebeba" name="a89d13d59812d64bb13835a45aebebeba"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a89d13d59812d64bb13835a45aebebeba">&#9670;&#160;</a></span>timeslot_to_slot()</h2>
 
@@ -1408,7 +1493,7 @@ constexpr <a class="el" href="#aae6a013f27fd62f19dfdd6959ed679e9">Format</a>&#16
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000003">Deprecated</a></b></dt><dd>typo alias; use KEY_VERSION_NONE </dd></dl>
+<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000006">Deprecated</a></b></dt><dd>typo alias; use KEY_VERSION_NONE </dd></dl>
 
 </div>
 </div>
