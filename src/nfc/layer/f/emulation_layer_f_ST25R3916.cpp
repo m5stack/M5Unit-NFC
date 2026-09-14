@@ -359,7 +359,10 @@ EmulationLayerF::State ListenerST25R3916ForF::update_communicated()
         _u.readFIFO(actual, rx, rx_len);
         _data_flag = true;
         if (actual) {
-            auto state = _layer.receive_callback(EmulationLayerF::State::Communicated, rx, rx[0]);
+            // The length byte is the reader's claim and can name more than the frame brought,
+            // so the layer is only told about what actually arrived
+            auto state =
+                _layer.receive_callback(EmulationLayerF::State::Communicated, rx, std::min<uint16_t>(rx[0], actual));
             if (state != EmulationLayerF::State::Communicated) {
                 return goto_state(state);
             }
@@ -395,7 +398,10 @@ EmulationLayerF::State ListenerST25R3916ForF::update_selected()
         _u.readFIFO(actual, rx, rx_len);
         _data_flag = true;
         if (actual) {
-            auto state = _layer.receive_callback(EmulationLayerF::State::Communicated, rx, rx[0]);
+            // The length byte is the reader's claim and can name more than the frame brought,
+            // so the layer is only told about what actually arrived
+            auto state =
+                _layer.receive_callback(EmulationLayerF::State::Communicated, rx, std::min<uint16_t>(rx[0], actual));
             if (state != EmulationLayerF::State::Selected) {
                 return goto_state(state);
             }
