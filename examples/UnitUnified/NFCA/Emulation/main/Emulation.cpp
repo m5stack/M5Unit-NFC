@@ -49,15 +49,43 @@ m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 #else
 #error Choose unit please!
 #endif
-m5::nfc::EmulationLayerA emu_a{unit};
+// Answering a command the library does not handle: override receive_callback() and send the answer
+// with transmit(). Everything the override does not know is passed to the base class, which keeps
+// the standard behavior. READ_CNT (NTAG 213/5/6) is used here because the library does not answer
+// it, so a reader asking for the counter gets a reply only while this example is running
+class EmulationLayerACounter : public EmulationLayerA {
+public:
+    using EmulationLayerA::EmulationLayerA;
+
+    virtual State receive_callback(const uint8_t* rx, const uint32_t rx_len) override
+    {
+        // READ_CNT belongs to NTAG 213/215/216, so a tag of any other type must not answer it
+        const auto t           = emulatePICC().type;
+        const bool has_counter = (t == Type::NTAG_213 || t == Type::NTAG_215 || t == Type::NTAG_216);
+        if (has_counter && rx_len == 2 && static_cast<Command>(rx[0]) == Command::READ_CNT) {
+            ++_counter;  // The counter of a real NTAG counts the reads of its own
+            const uint8_t res[3] = {static_cast<uint8_t>(_counter & 0xFF), static_cast<uint8_t>((_counter >> 8) & 0xFF),
+                                    static_cast<uint8_t>((_counter >> 16) & 0xFF)};
+            M5.Log.printf("READ_CNT:%u\n", _counter);
+            return transmit(res, sizeof(res), 2) ? State::Active : State::Idle;
+        }
+        return EmulationLayerA::receive_callback(rx, rx_len);
+    }
+
+private:
+    uint32_t _counter{};
+};
+
+EmulationLayerACounter emu_a{unit};
 
 // constexpr Key keyA = DEFAULT_KEY;  // Default as 0xFFFFFFFFFFFF
 // constexpr Key keyB = DEFAULT_KEY;  // Default as 0xFFFFFFFFFFFF
 
 PICC picc{};
 
-#define EMU_MIFARE_ULTRALIGHT
-// #define EMU_NTAG213
+// NTAG 213 is the default so that the READ_CNT answer above has a tag type to run on
+// #define EMU_MIFARE_ULTRALIGHT
+#define EMU_NTAG213
 
 #if defined(EMU_MIFARE_ULTRALIGHT)
 constexpr Type type{Type::MIFARE_Ultralight};

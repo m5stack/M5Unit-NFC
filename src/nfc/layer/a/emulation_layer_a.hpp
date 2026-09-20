@@ -79,10 +79,27 @@ public:
     //! @brief Update emulation state machine
     void update();
 
+    /*!
+      @brief Handles a command received from the reader
+      @param rx Received frame (without CRC)
+      @param rx_len Received length
+      @return State to move to. State::Active keeps the emulation listening for the next command of
+      the same session, State::Idle or State::Halt ends it
+      @note Override this to answer commands that the library does not handle, and call
+      EmulationLayerA::receive_callback for the rest. Answer with transmit()
+     */
     virtual State receive_callback(const uint8_t* rx, const uint32_t rx_len);
 
 protected:
     void update_expired();
+    /*
+      Send a response to the reader
+      @param tx Transmit buffer
+      @param tx_len Transmit length
+      @param timeout_ms Timeout in milliseconds
+      @return True if successful
+     */
+    bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
 
 private:
     void update_off();

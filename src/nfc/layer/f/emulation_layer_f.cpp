@@ -120,6 +120,11 @@ void EmulationLayerF::update()
     _prev = save;
 }
 
+bool EmulationLayerF::transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms)
+{
+    return _impl && tx && tx_len ? _impl->transmit(tx, tx_len, timeout_ms) : false;
+}
+
 void EmulationLayerF::update_off()
 {
     _state = _impl->update_off();
