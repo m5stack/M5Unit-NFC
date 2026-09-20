@@ -27,6 +27,10 @@ using namespace m5::nfc::a::mifare::classic;
 // clang-format on
 
 namespace {
+// An ISO14443-4 reader may send up to its frame size (256 bytes by default), so a listener that
+// hands unknown commands to the application has to be able to hold one
+constexpr uint16_t RX_BUFFER_SIZE{256};
+
 inline bool is_eof(const uint32_t irq)
 {
     return (irq & I_eof32);
@@ -377,7 +381,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_idle()
 
         uint16_t bytes{};
         uint8_t bits{};
-        uint8_t rx[64]{};
+        uint8_t rx[RX_BUFFER_SIZE]{};
         uint16_t rx_len{}, actual{};
         _u.readFIFOSize(bytes, bits);
         rx_len = std::min<uint16_t>(bytes, sizeof(rx));
@@ -446,7 +450,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_active()
     uint16_t bytes{};
     uint8_t bits{};
     uint16_t rx_len{}, actual{};
-    uint8_t rx[64]{};
+    uint8_t rx[RX_BUFFER_SIZE]{};
     if (irq32 & I_rxe32) {
         irq32 |= get_irq(I_par32 | I_crc32 | I_err232 | I_err132);
         _u.readFIFOSize(bytes, bits);

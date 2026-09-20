@@ -26,6 +26,10 @@ using namespace m5::nfc::f;
 #pragma GCC optimize("O3")
 
 namespace {
+// The length byte of a FeliCa frame is a single byte, so no reader can send more than this. The
+// previous 128 was not enough for a write of eight blocks, which needs 166 bytes
+constexpr uint16_t RX_BUFFER_SIZE{256};
+
 inline bool is_eof(const uint32_t irq)
 {
     return (irq & I_eof32);
@@ -352,7 +356,7 @@ EmulationLayerF::State ListenerST25R3916ForF::update_communicated()
         }
         uint16_t bytes{};
         uint8_t bits{};
-        uint8_t rx[128]{};
+        uint8_t rx[RX_BUFFER_SIZE]{};
         uint16_t rx_len{}, actual{};
         _u.readFIFOSize(bytes, bits);
         rx_len = std::min<uint16_t>(bytes, sizeof(rx));
@@ -391,7 +395,7 @@ EmulationLayerF::State ListenerST25R3916ForF::update_selected()
         }
         uint16_t bytes{};
         uint8_t bits{};
-        uint8_t rx[128]{};
+        uint8_t rx[RX_BUFFER_SIZE]{};
         uint16_t rx_len{}, actual{};
         _u.readFIFOSize(bytes, bits);
         rx_len = std::min<uint16_t>(bytes, sizeof(rx));
