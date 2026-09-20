@@ -8,6 +8,7 @@
   @brief ST25R3916 NFC-F emulation adapter for common layer
 */
 #include "nfc/layer/f/emulation_layer_f.hpp"
+#include "nfc/layer/emulation_trace.hpp"
 #include "nfc/layer/ndef_layer.hpp"
 #include "unit/unit_ST25R3916.hpp"
 #include <M5Utility.hpp>
@@ -29,6 +30,10 @@ namespace {
 // The length byte of a FeliCa frame is a single byte, so no reader can send more than this. The
 // previous 128 was not enough for a write of eight blocks, which needs 166 bytes
 constexpr uint16_t RX_BUFFER_SIZE{256};
+
+// Events kept by the trace, see emulation_trace.hpp
+enum : uint8_t { EV_OFF, EV_COMM, EV_SELECTED, EV_COMM_IRQ, EV_SEL_IRQ };
+constexpr const char* trace_names[] = {"OFF", "COMM", "SELECT", "comm_irq", "sel_irq"};
 
 inline bool is_eof(const uint32_t irq)
 {
@@ -104,6 +109,7 @@ struct ListenerST25R3916ForF final : EmulationLayerF::Adapter {
 
     Bitrate _bitrate{Bitrate::Invalid};
     bool _data_flag{};
+    m5::nfc::emulation::Trace _trace{trace_names, (uint8_t)(sizeof(trace_names) / sizeof(trace_names[0]))};
 
     EmulationLayerF& _layer;
     UnitST25R3916& _u;
@@ -237,6 +243,8 @@ EmulationLayerF::State ListenerST25R3916ForF::goto_state(const EmulationLayerF::
 
 EmulationLayerF::State ListenerST25R3916ForF::goto_off()
 {
+    _trace.record(EV_OFF);
+    _trace.dump();  // The field is gone, so printing costs nothing here
     _data_flag = false;
     _bitrate   = Bitrate::Invalid;
 
@@ -268,6 +276,7 @@ EmulationLayerF::State ListenerST25R3916ForF::goto_communicated()
 {
     uint8_t v{}, aux{};
 
+    _trace.record(EV_COMM);
     _data_flag = false;
     if (_u.readOperationControl(v) && ((v & en) == 0)) {
         _u.set_bit_register8(REG_OPERATION_CONTROL, (en | rx_en));
@@ -293,6 +302,7 @@ EmulationLayerF::State ListenerST25R3916ForF::goto_communicated()
 
 EmulationLayerF::State ListenerST25R3916ForF::goto_selected()
 {
+    _trace.record(EV_SELECTED, (uint32_t)_bitrate);
     _data_flag = false;
 
     _u.writeBitrate(_bitrate, _bitrate);
@@ -326,6 +336,7 @@ EmulationLayerF::State ListenerST25R3916ForF::update_communicated()
     if (!irq32) {
         return EmulationLayerF::State::Communicated;
     }
+    _trace.record(EV_COMM_IRQ, irq32, (uint8_t)_bitrate);
 
     // initiator bit rate was recognized
     if (irq32 & I_nfct32) {
@@ -382,6 +393,7 @@ EmulationLayerF::State ListenerST25R3916ForF::update_selected()
     if (!irq32) {
         return EmulationLayerF::State::Selected;
     }
+    _trace.record(EV_SEL_IRQ, irq32, (uint8_t)_bitrate);
 
     if (is_eof(irq32)) {
         return goto_off();
