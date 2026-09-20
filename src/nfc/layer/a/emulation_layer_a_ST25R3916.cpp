@@ -450,7 +450,9 @@ EmulationLayerA::State ListenerST25R3916ForA::update_active()
     if (irq32 & I_rxe32) {
         irq32 |= get_irq(I_par32 | I_crc32 | I_err232 | I_err132);
         _u.readFIFOSize(bytes, bits);
-        rx_len = bytes;
+        // The FIFO holds what the reader sent, which can be longer than rx, and readFIFO() takes
+        // the capacity of the buffer
+        rx_len = std::min<uint16_t>(bytes, sizeof(rx));
 
         if (irq32 & (I_par32 | I_crc32 | I_err132 | I_err232) || rx_len <= 2) {
             _u.readFIFO(actual, rx, rx_len);
@@ -467,7 +469,9 @@ EmulationLayerA::State ListenerST25R3916ForA::update_active()
             _u.readFIFO(actual, rx, rx_len);
             _data_flag = true;
 
-            auto state = _layer.receive_callback(rx, rx_len);
+            // Only what was actually read is valid, which is less than rx_len when the frame did
+            // not fit
+            auto state = _layer.receive_callback(rx, actual);
             if (state != EmulationLayerA::State::Active) {
                 if (state == EmulationLayerA::State::Idle && _wakeup) {
                     state = EmulationLayerA::State::Halt;
