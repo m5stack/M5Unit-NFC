@@ -496,7 +496,10 @@ EmulationLayerA::State ListenerST25R3916ForA::update_halt()
     }
 
     // initiator bit rate was recognized
-    if ((irq32 & I_nfct32) && _bitrate == Bitrate::Invalid) {
+    // The reader wakes a halted PICC with its own frame, so the bit rate has to be taken every
+    // time and not only while it is unknown: a halt entered after a session still holds the rate
+    // of that session
+    if (irq32 & I_nfct32) {
         // M5_LIB_LOGE("  >> BR");
         uint8_t br{};
         _u.readBitrateDetectionDisplay(br);
@@ -505,6 +508,10 @@ EmulationLayerA::State ListenerST25R3916ForA::update_halt()
             br = 2;
         }
         _bitrate = static_cast<Bitrate>(br);
+        // Bit rate detection is meant to be left as soon as a frame has been received, and the
+        // automatic answer only comes once the fixed listen mode is set (datasheet, Bit rate
+        // detection mode). Without this the passive target stays in halt and ignores the wakeup
+        _u.writeModeDefinition(mode_listen_nfc_a);
     }
     if (is_eof(irq32)) {
         // M5_LIB_LOGE("  >> OFF");
