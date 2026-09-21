@@ -244,7 +244,19 @@ protected:
     bool get_system_information_ext(m5::nfc::v::PICC& picc);
     void probe_memory_layout(m5::nfc::v::PICC& picc);
     bool probe_read_block(const m5::nfc::v::PICC& picc, const uint16_t block, uint8_t* rx, uint16_t& rx_len);
-    bool read_block_ext(uint8_t rx[32], const m5::nfc::v::PICC& picc, const uint16_t block);
+    /*
+      Read one block with the extended command
+      @param[out] rx Receive buffer
+      @param picc PICC
+      @param block Block number
+      @param[out] payload_len How many bytes of rx the answer actually filled, when not null
+      @return True if the PICC answered without an error
+      @note The block size is not always known while probing, so an answer shorter than a block is
+      still reported as success. A caller that hands the block to someone else has to ask for
+      payload_len and check it, or it passes on whatever its buffer held before
+     */
+    bool read_block_ext(uint8_t rx[32], const m5::nfc::v::PICC& picc, const uint16_t block,
+                        uint8_t* payload_len = nullptr);
     bool write_block_ext(const m5::nfc::v::PICC& picc, const uint16_t block, const uint8_t* tx, const uint8_t tx_len);
     bool reset_to_ready(const m5::nfc::v::PICC* picc);
     bool stay_quiet(const m5::nfc::v::PICC& picc);
