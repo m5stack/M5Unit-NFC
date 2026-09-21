@@ -119,16 +119,6 @@ public:
     }
 
     /*!
-      @brief Calculate odd parity for one byte
-      @param x Input byte
-      @return Parity bit that makes the byte odd parity
-     */
-    static inline uint8_t oddparity8(uint8_t x) noexcept
-    {
-        return !__builtin_parity(x);
-    }
-
-    /*!
       @brief Encrypt reader nonce and authenticator response
       @param[out] buf Output buffer at least 8 bytes
       @param Nr Reader nonce
@@ -142,7 +132,7 @@ public:
             const uint8_t v = ((Nr >> ((i ^ 0x03) << 3)) & 0xFF);
             buf[i]          = step8(v) ^ v;
             const uint8_t z = filter();
-            parity |= static_cast<uint8_t>((z ^ oddparity8(v)) & 0x01) << i;
+            parity |= static_cast<uint8_t>((z ^ m5::utility::oddParityBit(v)) & 0x01) << i;
         }
 
         for (uint_fast8_t pos = 4; pos < 8; ++pos) {
@@ -152,7 +142,7 @@ public:
             const uint8_t ks = step8(0x00);
             buf[pos]         = ks ^ v;
             const uint8_t z  = filter();
-            parity |= static_cast<uint8_t>((z ^ oddparity8(v)) & 0x01) << pos;
+            parity |= static_cast<uint8_t>((z ^ m5::utility::oddParityBit(v)) & 0x01) << pos;
         }
         return parity;
     }
@@ -170,7 +160,7 @@ public:
         for (uint_fast8_t i = 0; i < in_len; ++i) {
             uint8_t ks = step8(0);
             out[i]     = in[i] ^ ks;
-            parity |= ((filter() ^ oddparity8(in[i])) & 1) << i;
+            parity |= ((filter() ^ m5::utility::oddParityBit(in[i])) & 1) << i;
         }
         return parity;
     }
