@@ -74,6 +74,7 @@ void setup()
     }
     lcd.setFont(&fonts::Font0);
     lcd.fillScreen(0);
+    lcd.setCursor(0, 0);
 }
 
 void loop()
@@ -85,9 +86,16 @@ void loop()
     if (nfc_f.detect(piccs)) {
         M5.Speaker.tone(3000, 10);
         M5.Log.printf("%zu PICC\n", piccs.size());
+        lcd.fillScreen(0);
+        lcd.setCursor(0, 0);
+        lcd.printf("%zu PICC\n", piccs.size());
+        uint16_t idx{};
         for (auto&& picc : piccs) {
             M5.Log.printf("  %s:%s %s F:%02X DF:%04X %u\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
                           picc.typeAsString().c_str(), picc.format, picc.dfc_format, picc.valid());
+            lcd.printf("[%2u]:PICC:<%s> %s\n", static_cast<unsigned>(idx), picc.idmAsString().c_str(),
+                       picc.typeAsString().c_str());
+            ++idx;
         }
     }
 }
