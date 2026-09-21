@@ -99,7 +99,7 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
 {
     piccs.clear();
 
-    auto timeout_at = m5::utility::millis() + timeout_ms;
+    const auto start_at = m5::utility::millis();
 
     do {
         PICC picc{};
@@ -166,7 +166,7 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
         // Append PICC
         piccs.emplace_back(picc);
         m5::utility::delay(1);
-    } while (m5::utility::millis() <= timeout_at);
+    } while (!m5::utility::hasElapsed(start_at, timeout_ms));
 
     _activePICC = {};
     return !piccs.empty();

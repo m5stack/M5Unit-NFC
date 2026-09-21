@@ -265,7 +265,7 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
     auto irq = wait_for_interrupt(I_rxe32 | I_rxs32 | I_col32, TIMEOUT_REQ_WUP);
 
     if (!is_irq32_rxe(irq) && is_irq32_rxs(irq)) {
-        auto timeout_at = m5::utility::millis() + TIMEOUT_REQ_WUP;
+        const auto start_at = m5::utility::millis();
         uint16_t bytes{};
         uint8_t bits{};
         do {
@@ -273,7 +273,7 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
                 break;
             }
             std::this_thread::yield();
-        } while (m5::utility::millis() <= timeout_at);
+        } while (!m5::utility::hasElapsed(start_at, TIMEOUT_REQ_WUP));
         readFIFOSize(bytes, bits);
         irq |= bytes ? I_rxe32 : 0u;
     }

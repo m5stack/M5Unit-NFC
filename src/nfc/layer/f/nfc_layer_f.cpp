@@ -145,7 +145,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
     piccs.clear();
     piccs.reserve(slots);
 
-    auto timeout_at = m5::utility::millis() + timeout_ms;
+    const auto start_at = m5::utility::millis();
     uint8_t detected{};
     do {
         PICC picc1{}, picc2{};
@@ -286,7 +286,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
             ++detected;
         }
         deactivate();
-    } while (detected < slots && m5::utility::millis() <= timeout_at);
+    } while (detected < slots && !m5::utility::hasElapsed(start_at, timeout_ms));
     deactivate();
     return detected > 0;
 }

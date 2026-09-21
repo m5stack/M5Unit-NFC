@@ -623,7 +623,7 @@ bool UnitST25R3916::write_register32(const uint16_t reg, const uint32_t v)
 #if 0
 uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms)
 {
-    auto timeout_at = m5::utility::millis() + timeout_ms;
+    const auto start_at = m5::utility::millis();
     uint32_t flags{};
     do {
         if (!_using_irq || _interrupt_occurred) {
@@ -637,13 +637,13 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t ti
             return flags;
         }
         std::this_thread::yield();
-    } while (m5::utility::millis() <= timeout_at);
+    } while (!m5::utility::hasElapsed(start_at, timeout_ms));
     return flags | I_nre32;  // Timeout
 }
 #else
 uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t bits, const uint32_t timeout_ms)
 {
-    auto timeout_at = m5::utility::millis() + timeout_ms;
+    const auto start_at = m5::utility::millis();
     do {
         if (!_using_irq || _interrupt_occurred || gpio_get_level(static_cast<gpio_num_t>(_cfg.irq))) {
             _interrupt_occurred = false;
@@ -658,7 +658,7 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t bits, const uint32_t t
             return irq32;
         }
         std::this_thread::yield();
-    } while (m5::utility::millis() <= timeout_at);
+    } while (!m5::utility::hasElapsed(start_at, timeout_ms));
     return _stored_irq | I_nre32;  // Timeout
 }
 #endif
@@ -676,7 +676,7 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
 
     // Check the FIFO size in case I_rxe doesn't arrive
     if (is_irq32_rxs(irq)) {
-        auto timeout_at = m5::utility::millis() + timeout_ms;
+        const auto start_at = m5::utility::millis();
         uint16_t bytes{};
         uint8_t bits{};
         do {
@@ -684,7 +684,7 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
                 break;
             }
             std::this_thread::yield();
-        } while (m5::utility::millis() <= timeout_at);
+        } while (!m5::utility::hasElapsed(start_at, timeout_ms));
         // M5_LIB_LOGE("    FIFO:%u,%u/%u", bytes, bits, required_size);
         return readFIFOSize(bytes, bits) && bytes >= reqSize;
     }
