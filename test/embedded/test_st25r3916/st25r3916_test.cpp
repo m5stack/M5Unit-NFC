@@ -918,6 +918,112 @@ TEST_F(TestST25R3916, PtMemoryRoundtripTSN)
     EXPECT_EQ(std::memcmp(pt + PT_MEMORY_A_LENGTH + PT_MEMORY_F_LENGTH, wbuf, sizeof(wbuf)), 0) << "TSN read back";
 }
 
+// The polling loops compare elapsed time rather than a deadline, so that they keep working across
+// the millis() wrap. Getting that comparison backwards gives up on the first round instead, which
+// looks like nothing more than a poor detection rate, so the time each call actually spends is
+// worth pinning down. No PICC is needed: with nothing in the field the loop runs its full budget.
+namespace {
+constexpr uint32_t DETECT_BUDGET_MS{300};
+// Each round carries its own request timeout, so the budget is only checked between rounds and the
+// call runs over it. What matters here is the order of magnitude, not the exact figure
+constexpr uint32_t DETECT_LIMIT_MS{DETECT_BUDGET_MS * 3 + 200};
+}  // namespace
+
+TEST_F(TestST25R3916, NFCLayerA_DetectSpendsItsTimeout)
+{
+    const auto cfg_initial = unit->config();
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::A, false));
+
+    m5::nfc::NFCLayerA nfc_a{*unit};
+    std::vector<m5::nfc::a::PICC> piccs;
+
+    const auto began = m5::utility::millis();
+    EXPECT_FALSE(nfc_a.detect(piccs, DETECT_BUDGET_MS));
+    const auto elapsed = m5::utility::elapsedSince(began);
+
+    EXPECT_GE(elapsed, DETECT_BUDGET_MS) << "Gave up before the budget was spent";
+    EXPECT_LT(elapsed, DETECT_LIMIT_MS) << "Did not stop when the budget ran out";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+TEST_F(TestST25R3916, NFCLayerB_DetectSpendsItsTimeout)
+{
+    const auto cfg_initial = unit->config();
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::B, false));
+
+    m5::nfc::NFCLayerB nfc_b{*unit};
+    std::vector<m5::nfc::b::PICC> piccs;
+
+    const auto began = m5::utility::millis();
+    EXPECT_FALSE(nfc_b.detect(piccs, 0x00, 4, DETECT_BUDGET_MS));
+    const auto elapsed = m5::utility::elapsedSince(began);
+
+    EXPECT_GE(elapsed, DETECT_BUDGET_MS) << "Gave up before the budget was spent";
+    EXPECT_LT(elapsed, DETECT_LIMIT_MS) << "Did not stop when the budget ran out";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+TEST_F(TestST25R3916, NFCLayerV_DetectSpendsItsTimeout)
+{
+    const auto cfg_initial = unit->config();
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::V, false));
+
+    m5::nfc::NFCLayerV nfc_v{*unit};
+    std::vector<m5::nfc::v::PICC> piccs;
+
+    const auto began = m5::utility::millis();
+    EXPECT_FALSE(nfc_v.detect(piccs, DETECT_BUDGET_MS));
+    const auto elapsed = m5::utility::elapsedSince(began);
+
+    EXPECT_GE(elapsed, DETECT_BUDGET_MS) << "Gave up before the budget was spent";
+    EXPECT_LT(elapsed, DETECT_LIMIT_MS) << "Did not stop when the budget ran out";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+// NFC-F leaves the loop as soon as a polling round finds nothing, so it returns well inside the
+// budget even when the comparison is right. Only the upper bound says anything here
+TEST_F(TestST25R3916, NFCLayerF_DetectStopsWithoutHanging)
+{
+    const auto cfg_initial = unit->config();
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, false));
+
+    m5::nfc::NFCLayerF nfc_f{*unit};
+    std::vector<m5::nfc::f::PICC> piccs;
+
+    const auto began = m5::utility::millis();
+    EXPECT_FALSE(nfc_f.detect(piccs, m5::nfc::f::TimeSlot::Slot16, DETECT_BUDGET_MS));
+    EXPECT_LT(m5::utility::elapsedSince(began), DETECT_LIMIT_MS) << "Did not stop when the budget ran out";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+// Reaches the FIFO wait inside the unit, which is where the other elapsed-time comparisons live
+TEST_F(TestST25R3916, NfcfReceiveSpendsItsTimeout)
+{
+    const auto cfg_initial = unit->config();
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, false));
+
+    uint8_t rx[32]{};
+    uint16_t rx_len{sizeof(rx)};
+
+    const auto began = m5::utility::millis();
+    EXPECT_FALSE(unit->nfcfReceive(rx, rx_len, DETECT_BUDGET_MS));
+    const auto elapsed = m5::utility::elapsedSince(began);
+
+    EXPECT_GE(elapsed, DETECT_BUDGET_MS) << "Gave up before the timeout was spent";
+    EXPECT_LT(elapsed, DETECT_LIMIT_MS) << "Did not stop when the timeout ran out";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
 // A receive call with nothing to receive into must be turned away by the argument check, not by the
 // FIFO timeout. Waiting the timeout out would hide the fact that the buffer was never usable, and
 // the read that follows would copy into a null pointer.
