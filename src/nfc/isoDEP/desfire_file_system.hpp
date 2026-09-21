@@ -13,9 +13,9 @@
 #include "nfc/a/mifare.hpp"
 #include "nfc/ndef/ndef.hpp"
 #include <m5_utility/stl/expected.hpp>
+#include <m5_utility/conversion.hpp>
 #include <array>
 #include <algorithm>
-#include <limits>
 
 namespace m5 {
 namespace nfc {
@@ -43,12 +43,6 @@ constexpr uint8_t MAXIMUM_FILES{MAXIMUM_FILE_NO - MINIMUM_FILE_NO + 1};  //!< Fi
 
 namespace detail {
 ///@cond INTERNAL
-
-inline uint16_t clamp_u16_size(const size_t size)
-{
-    constexpr size_t max_u16 = std::numeric_limits<uint16_t>::max();
-    return static_cast<uint16_t>(size > max_u16 ? max_u16 : size);
-}
 
 inline uint16_t default_rx_capacity(const m5::nfc::isodep::IsoDEP& dep)
 {
