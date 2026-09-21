@@ -80,6 +80,18 @@ struct ListenerST25R3916ForA final : EmulationLayerA::Adapter {
     virtual EmulationLayerA::State update_active() override;
     virtual EmulationLayerA::State update_halt() override;
 
+    inline virtual EmulationLayerA::State reset_to_off() override
+    {
+        return goto_off();
+    }
+
+    inline virtual bool consume_rf_activity() override
+    {
+        const bool ret = _rf_activity;
+        _rf_activity   = false;
+        return ret;
+    }
+
     //
     EmulationLayerA::State goto_state(const EmulationLayerA::State s);
     EmulationLayerA::State goto_off();
@@ -100,6 +112,7 @@ struct ListenerST25R3916ForA final : EmulationLayerA::Adapter {
     uint32_t _receive_bits{};
     bool _data_flag{};
     bool _wakeup{};
+    bool _rf_activity{};
     m5::nfc::emulation::Trace _trace{trace_names, (uint8_t)(sizeof(trace_names) / sizeof(trace_names[0]))};
 
     EmulationLayerA& _layer;
@@ -117,6 +130,9 @@ uint32_t ListenerST25R3916ForA::get_irq(const uint32_t bits)
     uint32_t irq32 = _u._stored_irq & bits;
     if (irq32) {
         _u._stored_irq = _u._stored_irq & ~irq32;
+        // Every frame the chip takes part in passes through here, the ones it answers on its own
+        // included, which makes this the one place that sees the whole of the RF traffic
+        _rf_activity = true;
     }
     return irq32;
 }

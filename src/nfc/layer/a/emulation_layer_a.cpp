@@ -55,7 +55,7 @@ bool EmulationLayerA::begin(const m5::nfc::a::PICC& picc, uint8_t* ptr, const ui
     _state = _impl->start_emulation(_picc) ? State::Off : State::None;
     _prev  = State::None;
 
-    _expired_at = m5::utility::millis() + _expired_ms;
+    _activity_at = m5::utility::millis();
     return (_state != State::None);
 }
 
@@ -69,12 +69,26 @@ bool EmulationLayerA::end()
     return _impl->stop_emulation();
 }
 
+void EmulationLayerA::update_expired()
+{
+    // A reader that walks away in the middle of a session leaves the emulation waiting in that
+    // state, and nothing on the RF side will tell it to stop. Going back to Off after a while
+    // makes the next reader find it again
+    if (!_expired_ms || _state == State::None || _state == State::Off) {
+        return;
+    }
+    if (m5::utility::hasElapsed(_activity_at, _expired_ms)) {
+        M5_LIB_LOGI("Expired in state:%u, back to off", static_cast<unsigned>(_state));
+        _state       = _impl->reset_to_off();
+        _activity_at = m5::utility::millis();
+    }
+}
+
 void EmulationLayerA::update()
 {
     auto save = _state;
-    //    if (_state != _prev) {
-    //        _expired_at = m5::utility::millis() + _expired_ms; // IRQ byGT ???
-    //    }
+
+    update_expired();
 
     switch (_state) {
         case State::None:
@@ -101,6 +115,12 @@ void EmulationLayerA::update()
             break;
         default:
             break;
+    }
+    // Asked every round and not only when the state moved, so that a session that keeps talking
+    // inside one state is not mistaken for a reader that walked away
+    const bool active = _impl->consume_rf_activity();
+    if (_state != save || active) {
+        _activity_at = m5::utility::millis();
     }
     _prev = save;
 }

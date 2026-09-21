@@ -585,15 +585,15 @@ TEST_F(TestST25R3916, EmulationLayerA_InitialState)
 {
     m5::nfc::EmulationLayerA emu_a{*unit};
     EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::None);
-    // Default expired time is 60 seconds
-    EXPECT_EQ(emu_a.expiredTime(), 60000U);
+    // Default expired time is 10 seconds
+    EXPECT_EQ(emu_a.expiredTime(), 10000U);
 }
 
 TEST_F(TestST25R3916, EmulationLayerF_InitialState)
 {
     m5::nfc::EmulationLayerF emu_f{*unit};
     EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::None);
-    EXPECT_EQ(emu_f.expiredTime(), 60000U);
+    EXPECT_EQ(emu_f.expiredTime(), 10000U);
 }
 
 TEST_F(TestST25R3916, EmulationLayerA_SetExpiredTime)
@@ -612,6 +612,74 @@ TEST_F(TestST25R3916, EmulationLayerF_SetExpiredTime)
     EXPECT_EQ(emu_f.expiredTime(), 10000U);
     emu_f.setExpiredTime(0);
     EXPECT_EQ(emu_f.expiredTime(), 0U);
+}
+
+// The states that a reader drives (Idle/Ready/Active/Halt for A, Communicated/Selected for F) cannot
+// be reached without a PCD in the field, so what is checked here is the other half: State::None and
+// State::Off are never expired, however short the expiration time is
+TEST_F(TestST25R3916, EmulationLayerA_NoneAndOffNeverExpire)
+{
+    m5::nfc::EmulationLayerA emu_a{*unit};
+    emu_a.setExpiredTime(10);
+
+    // Before begin()
+    for (uint_fast8_t i = 0; i < 10; ++i) {
+        emu_a.update();
+        m5::utility::delay(10);
+    }
+    EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::None);
+
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::A, true));
+
+    m5::nfc::a::PICC picc{};
+    constexpr uint8_t uid[] = {0x04, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE};
+    EXPECT_TRUE(picc.emulate(m5::nfc::a::Type::NTAG_213, uid, sizeof(uid)));
+
+    uint8_t memory[256]{};
+    EXPECT_TRUE(emu_a.begin(picc, memory, sizeof(memory)));
+    EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::Off);
+
+    for (uint_fast8_t i = 0; i < 10; ++i) {
+        emu_a.update();
+        m5::utility::delay(10);
+    }
+    EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::Off);
+
+    EXPECT_TRUE(emu_a.end());
+    EXPECT_TRUE(stop_field(unit.get()));
+}
+
+TEST_F(TestST25R3916, EmulationLayerF_NoneAndOffNeverExpire)
+{
+    m5::nfc::EmulationLayerF emu_f{*unit};
+    emu_f.setExpiredTime(10);
+
+    // Before begin()
+    for (uint_fast8_t i = 0; i < 10; ++i) {
+        emu_f.update();
+        m5::utility::delay(10);
+    }
+    EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::None);
+
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, true));
+
+    m5::nfc::f::PICC picc{};
+    constexpr uint8_t idm[8] = {0x01, 0x2E, 0x50, 0xE5, 0x3C, 0x4B, 0x4F, 0x29};
+    constexpr uint8_t pmm[8] = {0x00, 0xF1, 0x00, 0x00, 0x00, 0x01, 0x43, 0x00};
+    EXPECT_TRUE(picc.emulate(m5::nfc::f::Type::FeliCaLiteS, idm, pmm));
+
+    uint8_t memory[256]{};
+    EXPECT_TRUE(emu_f.begin(picc, memory, sizeof(memory)));
+    EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::Off);
+
+    for (uint_fast8_t i = 0; i < 10; ++i) {
+        emu_f.update();
+        m5::utility::delay(10);
+    }
+    EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::Off);
+
+    EXPECT_TRUE(emu_f.end());
+    EXPECT_TRUE(stop_field(unit.get()));
 }
 
 // ============================================================
