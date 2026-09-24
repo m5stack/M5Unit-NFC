@@ -9,6 +9,7 @@
 */
 #include "emulation_layer_f.hpp"
 #include "nfc/a/nfca.hpp"
+#include <utility>
 #include <M5Utility.hpp>
 
 using namespace m5::nfc;
@@ -64,6 +65,13 @@ inline bool is_system_code_wildcard(const uint8_t sc[2])
 
 namespace m5 {
 namespace nfc {
+
+EmulationLayerF::EmulationLayerF(std::unique_ptr<Adapter> adapter) : _impl(std::move(adapter))
+{
+    if (!_impl) {
+        M5_LIB_LOGE("Adapter is null");
+    }
+}
 
 EmulationLayerF::~EmulationLayerF() = default;
 

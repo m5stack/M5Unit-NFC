@@ -13,6 +13,7 @@
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
+#include <utility>
 #include <esp_random.h>
 
 using namespace m5::nfc;
@@ -78,6 +79,13 @@ const uint8_t* make_rc(uint8_t rc[16])
 
 namespace m5 {
 namespace nfc {
+
+NFCLayerF::NFCLayerF(std::unique_ptr<Adapter> adapter) : _impl(std::move(adapter)), _ndef{*this}
+{
+    if (!_impl) {
+        M5_LIB_LOGE("Adapter is null");
+    }
+}
 
 NFCLayerF::~NFCLayerF() = default;
 

@@ -19,6 +19,7 @@
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
+#include <utility>
 #include <esp_random.h>
 
 using namespace m5::nfc;
@@ -61,6 +62,13 @@ constexpr uint8_t fsdi_for_size(const uint16_t bytes)
 
 namespace m5 {
 namespace nfc {
+
+NFCLayerB::NFCLayerB(std::unique_ptr<Adapter> adapter) : _ndef{*this}, _isoDEP{*this}, _impl(std::move(adapter))
+{
+    if (!_impl) {
+        M5_LIB_LOGE("Adapter is null");
+    }
+}
 
 NFCLayerB::~NFCLayerB() = default;
 

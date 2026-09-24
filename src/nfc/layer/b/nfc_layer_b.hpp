@@ -54,6 +54,14 @@ public:
       @param u UnitWS1850S instance
      */
     explicit NFCLayerB(m5::unit::UnitWS1850S& u);
+    /*!
+      @brief Constructor with a chip adapter
+      @param adapter Adapter that drives the chip
+      @note Lets a chip this library does not know about be used without editing this header. The
+      layer takes ownership of the adapter
+      @warning The adapter must not be null
+     */
+    explicit NFCLayerB(std::unique_ptr<Adapter> adapter);
     virtual ~NFCLayerB();
 
     /*!

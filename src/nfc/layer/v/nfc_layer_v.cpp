@@ -14,6 +14,7 @@
 #include <inttypes.h>
 #include <M5Utility.hpp>
 #include <algorithm>
+#include <utility>
 #include <esp_random.h>
 
 using namespace m5::nfc::v;
@@ -77,6 +78,13 @@ constexpr char dump_line[] =
 
 namespace m5 {
 namespace nfc {
+
+NFCLayerV::NFCLayerV(std::unique_ptr<Adapter> adapter) : _impl(std::move(adapter)), _ndef{*this}
+{
+    if (!_impl) {
+        M5_LIB_LOGE("Adapter is null");
+    }
+}
 
 NFCLayerV::~NFCLayerV() = default;
 

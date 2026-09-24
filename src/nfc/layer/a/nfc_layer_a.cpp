@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <esp_random.h>
 #include <cstring>
+#include <utility>
 
 using namespace m5::nfc;
 using namespace m5::nfc::a;
@@ -175,6 +176,13 @@ using desfire::required_read_key_no_from_access_rights;
 
 namespace m5 {
 namespace nfc {
+
+NFCLayerA::NFCLayerA(std::unique_ptr<Adapter> adapter) : _ndef{*this}, _isoDEP{*this}, _impl(std::move(adapter))
+{
+    if (!_impl) {
+        M5_LIB_LOGE("Adapter is null");
+    }
+}
 
 NFCLayerA::~NFCLayerA() = default;
 
