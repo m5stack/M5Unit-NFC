@@ -41,16 +41,16 @@ auto& lcd = M5.Display;
 m5::unit::UnitUnified Units;
 
 #if defined(USING_UNIT_NFC)
-#pragma message "Choose UnitNFC"
+#pragma message("Choose UnitNFC")
 m5::unit::UnitNFC unit{};  // I2C
 #elif defined(USING_CAP_CC1101)
-#pragma message "Choose CapCC1101NFC"
+#pragma message("Choose CapCC1101NFC")
 m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 #elif defined(USING_UNIT_RFID2)
-#pragma message "Choose UnitRFID2"
+#pragma message("Choose UnitRFID2")
 m5::unit::UnitRFID2 unit{};  // UnitRFID2 external (M5Unit-RFID, GROVE)
 #elif defined(USING_M5DIAL_BUILTIN_WS1850S)
-#pragma message "Choose UnitRFID2 (M5Dial Builtin)"
+#pragma message("Choose UnitRFID2 (M5Dial Builtin)")
 m5::unit::UnitRFID2 unit{};  // M5Dial builtin WS1850S (internal I2C)
 #else
 #error Choose ONE: USING_UNIT_NFC / USING_CAP_CC1101 / USING_UNIT_RFID2 / USING_M5DIAL_BUILTIN_WS1850S

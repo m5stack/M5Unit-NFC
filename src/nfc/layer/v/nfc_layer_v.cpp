@@ -99,7 +99,7 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
 {
     piccs.clear();
 
-    auto timeout_at = m5::utility::millis() + timeout_ms;
+    const auto start_at = m5::utility::millis();
 
     do {
         PICC picc{};
@@ -166,7 +166,7 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
         // Append PICC
         piccs.emplace_back(picc);
         m5::utility::delay(1);
-    } while (m5::utility::millis() <= timeout_at);
+    } while (!m5::utility::hasElapsed(start_at, timeout_ms));
 
     _activePICC = {};
     return !piccs.empty();
@@ -225,7 +225,15 @@ bool NFCLayerV::readBlock(uint8_t rx[32], const uint16_t block)
 
     const bool use_ext = (_activePICC.totalSize() > (block_size * 256u));
     if (use_ext || block > 0xFF) {
-        return read_block_ext(rx, _activePICC, block);
+        // The extended read accepts a short answer, because the probing that sizes the memory has
+        // to call it before the block size is known. Here the size is known and the caller reads a
+        // whole block, so anything shorter would hand it the buffer's previous contents
+        uint8_t got{};
+        if (!read_block_ext(rx, _activePICC, block, &got) || got < block_size) {
+            M5_LIB_LOGD("Failed to ext read block %u, got %u/%u", block, got, block_size);
+            return false;
+        }
+        return true;
     }
 
     uint8_t frame[3]{};
@@ -245,8 +253,11 @@ bool NFCLayerV::readBlock(uint8_t rx[32], const uint16_t block)
     return true;
 }
 
-bool NFCLayerV::read_block_ext(uint8_t rx[32], const m5::nfc::v::PICC& picc, const uint16_t block)
+bool NFCLayerV::read_block_ext(uint8_t rx[32], const m5::nfc::v::PICC& picc, const uint16_t block, uint8_t* payload_len)
 {
+    if (payload_len) {
+        *payload_len = 0;
+    }
     if (!rx || picc.uid[0] != 0xE0) {
         return false;
     }
@@ -266,6 +277,9 @@ bool NFCLayerV::read_block_ext(uint8_t rx[32], const m5::nfc::v::PICC& picc, con
         return false;
     }
     memcpy(rx, rbuf + 1, rx_len - 1);
+    if (payload_len) {
+        *payload_len = static_cast<uint8_t>(rx_len - 1);
+    }
     return true;
 }
 

@@ -2,7 +2,7 @@ description: Library for M5Stack UNIT NFC (ST25R3916) using M5UnitUnified.
 url: https://github.com/m5stack/M5Unit-NFC
 issues: https://github.com/m5stack/M5Unit-NFC/issues
 license: MIT
-version: "0.1.1"
+version: "0.1.2"
 
 dependencies:
   idf: ">=5.0"

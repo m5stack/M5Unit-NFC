@@ -11,9 +11,9 @@
         "url": "https://github.com/m5stack/M5Unit-NFC.git"
     },
     "dependencies": {
-        "m5stack/M5UnitUnified": ">=0.5.5"
+        "m5stack/M5UnitUnified": ">=0.5.7"
     },
-    "version": "0.1.1",
+    "version": "0.1.2",
     "frameworks": [
         "arduino",
         "espidf"

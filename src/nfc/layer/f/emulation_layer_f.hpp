@@ -18,6 +18,7 @@
 #define M5_UNIT_NFC_NFC_LAYER_F_EMULATION_LAYER_F_HPP
 
 #include "nfc/f/nfcf.hpp"
+#include <m5_utility/compatibility_feature.hpp>
 #include <vector>
 #include <memory>
 
@@ -66,7 +67,16 @@ public:
     {
         return _expired_ms;
     }
-    //! @brief Sets the expiration time (ms)
+    /*!
+      @brief Sets the expiration time (ms)
+      @param ms How long a state may last before the emulation returns to State::Off. Zero turns
+      this off
+      @note A reader that leaves in the middle of a session leaves the emulation waiting in that
+      state, and nothing on the RF side tells it to stop. Going back to Off lets the next reader
+      find it again. State::Off itself never expires
+      @note The time is measured from the last RF traffic, so a session that keeps talking is not
+      cut off however long it runs
+     */
     void setExpiredTime(const uint32_t ms)
     {
         _expired_ms = ms;
@@ -79,10 +89,31 @@ public:
     //! @brief Update emulation state machine
     void update();
 
+    /*!
+      @brief Handles a command received from the reader
+      @param s Current state
+      @param rx Received frame (without CRC)
+      @param rx_len Received length
+      @return State to move to. Returning s keeps the current state
+      @note Override this to answer commands that the library does not handle, and call
+      EmulationLayerF::receive_callback for the rest. Answer with transmit()
+     */
     virtual State receive_callback(const State s, const uint8_t* rx, const uint32_t rx_len);
 
 protected:
+    /*
+      Return to State::Off when the current state has lasted longer than the expiration time
+      @note Called at the top of update(). Does nothing while the time is zero, or in None/Off
+     */
     void update_expired();
+    /*
+      Send a response to the reader
+      @param tx Transmit buffer
+      @param tx_len Transmit length
+      @param timeout_ms Timeout in milliseconds
+      @return True if successful
+     */
+    bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms);
 
 private:
     void update_off();
@@ -95,8 +126,8 @@ protected:
 
 private:
     State _state{}, _prev{};
-    uint32_t _expired_ms{60 * 1000u};
-    unsigned int _expired_at{};
+    uint32_t _expired_ms{10 * 1000u};
+    m5::utility::elapsed_time_t _activity_at{};  // When RF traffic or a state change was last seen
     std::unique_ptr<Adapter> _impl;
     m5::nfc::f::PICC _picc{};
 };
@@ -113,6 +144,21 @@ struct EmulationLayerF::Adapter {
     virtual EmulationLayerF::State update_off()          = 0;
     virtual EmulationLayerF::State update_communicated() = 0;
     virtual EmulationLayerF::State update_selected()     = 0;
+
+    // Put the chip back to where it waits for a reader, from whatever state it is in. The default
+    // does nothing, so an adapter that has no such step keeps working
+    virtual EmulationLayerF::State reset_to_off()
+    {
+        return EmulationLayerF::State::Off;
+    }
+
+    // Whether the chip saw RF traffic since this was last asked, which also clears it. Answers the
+    // chip sends by itself are included, since they never reach receive_callback. The default says
+    // no, so an adapter that cannot tell falls back to timing state changes alone
+    virtual bool consume_rf_activity()
+    {
+        return false;
+    }
 };
 ///@endcond
 

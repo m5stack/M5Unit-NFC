@@ -50,7 +50,7 @@ bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, c
     auto cmd               = make_native_wrap_command(ins, auth_key_no, 1);
 
     std::vector<uint8_t> rx(default_rx_capacity(dep));
-    uint16_t rx_len = clamp_u16_size(rx.size());
+    uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!dep.transceiveINF(rx.data(), rx_len, cmd.data(), cmd.size(), nullptr) || rx_len < 2) {
         M5_LIB_LOGE("Failed to auth step1 %u", rx_len);
         return false;
@@ -104,7 +104,7 @@ bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, c
     }
 
     auto cmd2 = make_native_wrap_command(0xAF, ek_AB, sizeof(ek_AB));
-    rx_len    = clamp_u16_size(rx.size());
+    rx_len    = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!dep.transceiveINF(rx.data(), rx_len, cmd2.data(), cmd2.size(), nullptr) || rx_len < 2) {
         wipe();
         M5_LIB_LOGE("Failed to auth step2 %u", rx_len);
@@ -264,7 +264,7 @@ bool transceive_sm_full(m5::nfc::isodep::IsoDEP& iso_dep, const uint8_t cmd, con
     */
 
     std::vector<uint8_t> rx(default_rx_capacity(iso_dep));
-    uint16_t rx_len = clamp_u16_size(rx.size());
+    uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!iso_dep.transceiveINF(rx.data(), rx_len, apdu.data(), apdu.size(), nullptr) || rx_len < 2) {
         return false;
     }
@@ -376,7 +376,7 @@ bool transceive_sm_mac(m5::nfc::isodep::IsoDEP& iso_dep, const uint8_t cmd, cons
     auto apdu = m5::nfc::a::mifare::desfire::make_native_wrap_command(cmd, cmd_data_sm.data(),
                                                                       static_cast<uint16_t>(cmd_data_sm.size()));
     std::vector<uint8_t> rx(default_rx_capacity(iso_dep));
-    uint16_t rx_len = clamp_u16_size(rx.size());
+    uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!iso_dep.transceiveINF(rx.data(), rx_len, apdu.data(), apdu.size(), nullptr) || rx_len < 2) {
         return false;
     }
@@ -585,7 +585,7 @@ bool DESFireFileSystem::readData(std::vector<uint8_t>& out, const uint8_t file_n
         length ? std::max(static_cast<size_t>(default_rx_capacity(_isoDEP)), static_cast<size_t>(length + 2))
                : static_cast<size_t>(default_rx_capacity(_isoDEP));
     std::vector<uint8_t> rx(rx_cap);
-    uint16_t rx_len = clamp_u16_size(rx.size());
+    uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
         M5_LIB_LOGE("readData: transceive failed rx_len=%u tx_len=%u", rx_len, static_cast<unsigned>(cmd.size()));
         M5_DUMPE(cmd.data(), cmd.size());
@@ -632,7 +632,7 @@ bool DESFireFileSystem::readDataLight(std::vector<uint8_t>& out, const uint8_t f
 
     const size_t rx_cap = length ? static_cast<size_t>(length + 2) : static_cast<size_t>(default_rx_capacity(_isoDEP));
     std::vector<uint8_t> rx(rx_cap);
-    uint16_t rx_len = clamp_u16_size(rx.size());
+    uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
         return false;
     }
@@ -1139,7 +1139,7 @@ bool DESFireFileSystem::getFileIDs(std::vector<uint8_t>& out)
     auto cmd = make_native_wrap_command(m5::stl ::to_underlying(INS::DF_GET_FILE_IDS));
 
     std::vector<uint8_t> rx(MAXIMUM_FILES + 2);
-    uint16_t rx_len = clamp_u16_size(rx.size());
+    uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
         M5_LIB_LOGE("Failed to getFileIDs %u", rx_len);
         return false;
@@ -1164,7 +1164,7 @@ bool DESFireFileSystem::getISOFileIDs(std::vector<uint8_t>& out)
 
     // ISO File IDs are 2 bytes each, max 32 files = 64 bytes + status
     std::vector<uint8_t> rx(MAXIMUM_FILES * 2 + 2);
-    uint16_t rx_len = clamp_u16_size(rx.size());
+    uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!transceive(rx.data(), rx_len, cmd.data(), cmd.size()) || rx_len < 2) {
         M5_LIB_LOGE("Failed to getISOFileIDs %u", rx_len);
         return false;
@@ -1346,7 +1346,7 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
     auto cmd               = make_native_wrap_command(m5::stl::to_underlying(INS::DF_AUTHENTICATE_AES), auth_key_no, 1);
 
     std::vector<uint8_t> rx(default_rx_capacity(_isoDEP));
-    uint16_t rx_len = clamp_u16_size(rx.size());
+    uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd.data(), cmd.size(), nullptr) || rx_len < 2) {
         M5_LIB_LOGE("Failed to auth AES step1 %u", rx_len);
         return false;
@@ -1404,7 +1404,7 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
     }
 
     auto cmd2 = make_native_wrap_command(0xAF, ek_AB, sizeof(ek_AB));
-    rx_len    = clamp_u16_size(rx.size());
+    rx_len    = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd2.data(), cmd2.size(), nullptr) || rx_len < 2) {
         M5_LIB_LOGE("Failed to auth AES step2 %u", rx_len);
         wipe();
@@ -1453,7 +1453,7 @@ bool DESFireFileSystem::authenticateEV2First(const uint8_t key_no, const uint8_t
     auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_AUTHENTICATE_EV2), data, sizeof(data));
 
     std::vector<uint8_t> rx(default_rx_capacity(_isoDEP));
-    uint16_t rx_len = clamp_u16_size(rx.size());
+    uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd.data(), cmd.size(), nullptr) || rx_len < 2) {
         M5_LIB_LOGE("Failed to auth EV2 step1 %u", rx_len);
         return false;
@@ -1513,7 +1513,7 @@ bool DESFireFileSystem::authenticateEV2First(const uint8_t key_no, const uint8_t
     }
 
     auto cmd2 = make_native_wrap_command(0xAF, ek_AB, sizeof(ek_AB));
-    rx_len    = clamp_u16_size(rx.size());
+    rx_len    = m5::utility::saturate_cast<uint16_t>(rx.size());
     if (!_isoDEP.transceiveINF(rx.data(), rx_len, cmd2.data(), cmd2.size(), nullptr) || rx_len < 2) {
         M5_LIB_LOGE("Failed to auth EV2 step2 %u", rx_len);
         wipe_ab();

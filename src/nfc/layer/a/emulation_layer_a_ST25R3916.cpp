@@ -8,6 +8,7 @@
   @brief ST25R3916 NFC-A emulation adapter for common layer
 */
 #include "nfc/layer/a/emulation_layer_a.hpp"
+#include "nfc/layer/emulation_trace.hpp"
 #include "nfc/layer/ndef_layer.hpp"
 #include "unit/unit_ST25R3916.hpp"
 #include <M5Utility.hpp>
@@ -27,6 +28,14 @@ using namespace m5::nfc::a::mifare::classic;
 // clang-format on
 
 namespace {
+// An ISO14443-4 reader may send up to its frame size (256 bytes by default), so a listener that
+// hands unknown commands to the application has to be able to hold one
+constexpr uint16_t RX_BUFFER_SIZE{256};
+
+// Events kept by the trace, see emulation_trace.hpp
+enum : uint8_t { EV_OFF, EV_IDLE, EV_READY, EV_ACTIVE, EV_HALT, EV_HALT_IRQ, EV_READY_IRQ, EV_PTA };
+constexpr const char* trace_names[] = {"OFF", "IDLE", "READY", "ACTIVE", "HALT", "halt_irq", "ready_irq", "PTA"};
+
 inline bool is_eof(const uint32_t irq)
 {
     return (irq & I_eof32);
@@ -71,6 +80,18 @@ struct ListenerST25R3916ForA final : EmulationLayerA::Adapter {
     virtual EmulationLayerA::State update_active() override;
     virtual EmulationLayerA::State update_halt() override;
 
+    inline virtual EmulationLayerA::State reset_to_off() override
+    {
+        return goto_off();
+    }
+
+    inline virtual bool consume_rf_activity() override
+    {
+        const bool ret = _rf_activity;
+        _rf_activity   = false;
+        return ret;
+    }
+
     //
     EmulationLayerA::State goto_state(const EmulationLayerA::State s);
     EmulationLayerA::State goto_off();
@@ -91,6 +112,8 @@ struct ListenerST25R3916ForA final : EmulationLayerA::Adapter {
     uint32_t _receive_bits{};
     bool _data_flag{};
     bool _wakeup{};
+    bool _rf_activity{};
+    m5::nfc::emulation::Trace _trace{trace_names, (uint8_t)(sizeof(trace_names) / sizeof(trace_names[0]))};
 
     EmulationLayerA& _layer;
     UnitST25R3916& _u;
@@ -107,6 +130,9 @@ uint32_t ListenerST25R3916ForA::get_irq(const uint32_t bits)
     uint32_t irq32 = _u._stored_irq & bits;
     if (irq32) {
         _u._stored_irq = _u._stored_irq & ~irq32;
+        // Every frame the chip takes part in passes through here, the ones it answers on its own
+        // included, which makes this the one place that sees the whole of the RF traffic
+        _rf_activity = true;
     }
     return irq32;
 }
@@ -218,6 +244,8 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_state(const EmulationLayerA::
 
 EmulationLayerA::State ListenerST25R3916ForA::goto_off()
 {
+    _trace.record(EV_OFF);
+    _trace.dump();  // The field is gone, so printing costs nothing here
     _data_flag    = false;
     _bitrate      = Bitrate::Invalid;
     _receive_bits = 0;
@@ -251,6 +279,7 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_idle()
 {
     uint8_t v{}, aux{};
 
+    _trace.record(EV_IDLE);
     _data_flag = false;
     if (_u.readOperationControl(v) && ((v & en) == 0)) {
         _u.set_bit_register8(REG_OPERATION_CONTROL, (en | rx_en));
@@ -284,6 +313,7 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_idle()
 
 EmulationLayerA::State ListenerST25R3916ForA::goto_ready()
 {
+    _trace.record(EV_READY, _wakeup);
     _data_flag = false;
     if (get_irq(I_eof32)) {
         return goto_off();
@@ -302,6 +332,7 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_ready()
 
 EmulationLayerA::State ListenerST25R3916ForA::goto_active()
 {
+    _trace.record(EV_ACTIVE);
     _data_flag = false;
     _u.set_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Disable auto response for NFC-A
     (void)get_irq(I_par32 | I_crc32 | I_err232 | I_err132);
@@ -314,6 +345,7 @@ EmulationLayerA::State ListenerST25R3916ForA::goto_active()
 
 EmulationLayerA::State ListenerST25R3916ForA::goto_halt()
 {
+    _trace.record(EV_HALT, (uint32_t)_bitrate);
     _data_flag = false;
 
     _u.clear_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, d_106_ac_a);  // Enable auto response for NFC-A
@@ -377,7 +409,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_idle()
 
         uint16_t bytes{};
         uint8_t bits{};
-        uint8_t rx[64]{};
+        uint8_t rx[RX_BUFFER_SIZE]{};
         uint16_t rx_len{}, actual{};
         _u.readFIFOSize(bytes, bits);
         rx_len = std::min<uint16_t>(bytes, sizeof(rx));
@@ -420,6 +452,7 @@ EmulationLayerA::State ListenerST25R3916ForA::update_ready()
     if (!irq32) {
         return EmulationLayerA::State::Ready;
     }
+    _trace.record(EV_READY_IRQ, irq32, _wakeup);
 
     if (is_eof(irq32)) {
         // M5_LIB_LOGE("OFF");
@@ -446,11 +479,13 @@ EmulationLayerA::State ListenerST25R3916ForA::update_active()
     uint16_t bytes{};
     uint8_t bits{};
     uint16_t rx_len{}, actual{};
-    uint8_t rx[64]{};
+    uint8_t rx[RX_BUFFER_SIZE]{};
     if (irq32 & I_rxe32) {
         irq32 |= get_irq(I_par32 | I_crc32 | I_err232 | I_err132);
         _u.readFIFOSize(bytes, bits);
-        rx_len = bytes;
+        // The FIFO holds what the reader sent, which can be longer than rx, and readFIFO() takes
+        // the capacity of the buffer
+        rx_len = std::min<uint16_t>(bytes, sizeof(rx));
 
         if (irq32 & (I_par32 | I_crc32 | I_err132 | I_err232) || rx_len <= 2) {
             _u.readFIFO(actual, rx, rx_len);
@@ -467,7 +502,9 @@ EmulationLayerA::State ListenerST25R3916ForA::update_active()
             _u.readFIFO(actual, rx, rx_len);
             _data_flag = true;
 
-            auto state = _layer.receive_callback(rx, rx_len);
+            // Only what was actually read is valid, which is less than rx_len when the frame did
+            // not fit
+            auto state = _layer.receive_callback(rx, actual);
             if (state != EmulationLayerA::State::Active) {
                 if (state == EmulationLayerA::State::Idle && _wakeup) {
                     state = EmulationLayerA::State::Halt;
@@ -486,9 +523,13 @@ EmulationLayerA::State ListenerST25R3916ForA::update_halt()
     if (!irq32) {
         return EmulationLayerA::State::Halt;
     }
+    _trace.record(EV_HALT_IRQ, irq32, (uint8_t)_bitrate);
 
     // initiator bit rate was recognized
-    if ((irq32 & I_nfct32) && _bitrate == Bitrate::Invalid) {
+    // The reader wakes a halted PICC with its own frame, so the bit rate has to be taken every
+    // time and not only while it is unknown: a halt entered after a session still holds the rate
+    // of that session
+    if (irq32 & I_nfct32) {
         // M5_LIB_LOGE("  >> BR");
         uint8_t br{};
         _u.readBitrateDetectionDisplay(br);
@@ -497,6 +538,9 @@ EmulationLayerA::State ListenerST25R3916ForA::update_halt()
             br = 2;
         }
         _bitrate = static_cast<Bitrate>(br);
+        // The mode is left as it is: a halted target keeps bit rate detection until it moves to
+        // ready, where the bit rate is written before the fixed listen mode (see goto_ready).
+        // Setting the mode here would leave the bit rate register holding the previous value
     }
     if (is_eof(irq32)) {
         // M5_LIB_LOGE("  >> OFF");
@@ -510,7 +554,9 @@ EmulationLayerA::State ListenerST25R3916ForA::update_halt()
     }
     if ((irq32 & I_rxe_pta32) && _bitrate == Bitrate::Bps106K) {
         uint8_t pta{};
-        if (_u.readPassiveTargetDisplay(pta) && ((pta & 0x0F) > pta_state_halt)) {
+        const bool pta_ok = _u.readPassiveTargetDisplay(pta);
+        _trace.record(EV_PTA, irq32, pta);
+        if (pta_ok && ((pta & 0x0F) > pta_state_halt)) {
             // M5_LIB_LOGE("  H PTA:%02X", pta);
             _wakeup = true;
             return goto_ready();

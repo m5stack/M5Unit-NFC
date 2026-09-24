@@ -223,6 +223,10 @@ public:
       @param[in/out] picc PICC
       @return True if successful
       @warning Before calling, the previously active PICC is deactivated
+      @post PICC transitions: ACTIVE -> HALT, whether the type was identified or not
+      @note Telling the types apart means sending commands that only some of them answer, which
+      leaves the PICC in a state that depends on what it is. The PICC is therefore halted before
+      returning, so that it is always left the same way. Call NFCLayerA::reactivate to work with it
      */
     bool identify(m5::nfc::a::PICC& picc);
 

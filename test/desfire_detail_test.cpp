@@ -71,9 +71,9 @@ TEST(DESFireDetail, PackUnpack24)
 
 TEST(DESFireDetail, ClampAndCapacity)
 {
-    EXPECT_EQ(clamp_u16_size(0), 0u);
-    EXPECT_EQ(clamp_u16_size(65535), 65535u);
-    EXPECT_EQ(clamp_u16_size(65536), 65535u);
+    EXPECT_EQ(m5::utility::saturate_cast<uint16_t>(size_t{0}), 0u);
+    EXPECT_EQ(m5::utility::saturate_cast<uint16_t>(size_t{65535}), 65535u);
+    EXPECT_EQ(m5::utility::saturate_cast<uint16_t>(size_t{65536}), 65535u);
 
     DummyLayer layer{};
     m5::nfc::isodep::IsoDEP dep(layer);

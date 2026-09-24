@@ -9,6 +9,10 @@ M5UnitUnified has a unified API and can control multiple units via PaHub, etc.
 
 **Unit NFC** is a near-field communication read/write unit operating at 13.56 MHz. The module features the ST25R3916 high-performance NFC front-end IC, supporting mainstream protocols including ISO 14443A, ISO 14443B, FeliCa™, and ISO 15693, enabling reliable read/write operations and data exchange with a wide variety of NFC/RFID tags and cards. The IC supports reader/writer mode, card emulation mode, and custom protocol mode, with automatic antenna tuning, high-sensitivity reception, and comprehensive protocol handling capabilities.
 
+### SKU:U219
+
+**Cap CC1101** is a wireless expansion module for Cardputer-Adv that combines a CC1101 Sub-1 GHz transceiver (315/433/868/915 MHz) and an ST25R3916 NFC front-end, both accessed over SPI. This library supports the NFC part (ST25R3916) only.
+
 ## PICC Support
 
 Raw R/W includes FileSystem via ISO-DEP when applicable.  
@@ -94,6 +98,7 @@ Use **QWIIC port (port_a)** with a QWIIC-GROVE conversion cable instead.
 ## Related Link
 
 - [Unit NFC & Datasheet](https://docs.m5stack.com/en/products/sku/U216)
+- [Cap CC1101 & Datasheet](https://docs.m5stack.com/en/cap/Cap_CC1101)
 
 ## Required Libraries
 
@@ -135,9 +140,6 @@ Uncomment one of `USING_UNIT_NFC`, `USING_CAP_CC1101` (or `USING_UNIT_RFID2` / `
 // For M5Dial builtin WS1850S  *NFC-A/B Detect only
 // #define USING_M5DIAL_BUILTIN_WS1850S
 ```
-
-**Note:** CapCC1101 / SKU:U219 (SPI connection via ST25R3916) is included in this library for future use.
-The product is not yet publicly available.
 
 Some NFC-A examples are shared with [M5Unit-RFID](https://github.com/m5stack/M5Unit-RFID), which is why other unit definitions may exist.
 

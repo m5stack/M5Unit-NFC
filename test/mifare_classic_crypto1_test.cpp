@@ -48,7 +48,7 @@ TEST(Crypto1, OddParity8)
 {
     for (uint16_t i = 0; i < 256; ++i) {
         uint8_t v = static_cast<uint8_t>(i);
-        EXPECT_EQ(Crypto1::oddparity8(v), even_parity_bit(v));
+        EXPECT_EQ(m5::utility::oddParityBit(v), even_parity_bit(v));
     }
 }
 

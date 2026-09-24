@@ -585,15 +585,15 @@ TEST_F(TestST25R3916, EmulationLayerA_InitialState)
 {
     m5::nfc::EmulationLayerA emu_a{*unit};
     EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::None);
-    // Default expired time is 60 seconds
-    EXPECT_EQ(emu_a.expiredTime(), 60000U);
+    // Default expired time is 10 seconds
+    EXPECT_EQ(emu_a.expiredTime(), 10000U);
 }
 
 TEST_F(TestST25R3916, EmulationLayerF_InitialState)
 {
     m5::nfc::EmulationLayerF emu_f{*unit};
     EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::None);
-    EXPECT_EQ(emu_f.expiredTime(), 60000U);
+    EXPECT_EQ(emu_f.expiredTime(), 10000U);
 }
 
 TEST_F(TestST25R3916, EmulationLayerA_SetExpiredTime)
@@ -612,6 +612,74 @@ TEST_F(TestST25R3916, EmulationLayerF_SetExpiredTime)
     EXPECT_EQ(emu_f.expiredTime(), 10000U);
     emu_f.setExpiredTime(0);
     EXPECT_EQ(emu_f.expiredTime(), 0U);
+}
+
+// The states that a reader drives (Idle/Ready/Active/Halt for A, Communicated/Selected for F) cannot
+// be reached without a PCD in the field, so what is checked here is the other half: State::None and
+// State::Off are never expired, however short the expiration time is
+TEST_F(TestST25R3916, EmulationLayerA_NoneAndOffNeverExpire)
+{
+    m5::nfc::EmulationLayerA emu_a{*unit};
+    emu_a.setExpiredTime(10);
+
+    // Before begin()
+    for (uint_fast8_t i = 0; i < 10; ++i) {
+        emu_a.update();
+        m5::utility::delay(10);
+    }
+    EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::None);
+
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::A, true));
+
+    m5::nfc::a::PICC picc{};
+    constexpr uint8_t uid[] = {0x04, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE};
+    EXPECT_TRUE(picc.emulate(m5::nfc::a::Type::NTAG_213, uid, sizeof(uid)));
+
+    uint8_t memory[256]{};
+    EXPECT_TRUE(emu_a.begin(picc, memory, sizeof(memory)));
+    EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::Off);
+
+    for (uint_fast8_t i = 0; i < 10; ++i) {
+        emu_a.update();
+        m5::utility::delay(10);
+    }
+    EXPECT_EQ(emu_a.state(), m5::nfc::EmulationLayerA::State::Off);
+
+    EXPECT_TRUE(emu_a.end());
+    EXPECT_TRUE(stop_field(unit.get()));
+}
+
+TEST_F(TestST25R3916, EmulationLayerF_NoneAndOffNeverExpire)
+{
+    m5::nfc::EmulationLayerF emu_f{*unit};
+    emu_f.setExpiredTime(10);
+
+    // Before begin()
+    for (uint_fast8_t i = 0; i < 10; ++i) {
+        emu_f.update();
+        m5::utility::delay(10);
+    }
+    EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::None);
+
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, true));
+
+    m5::nfc::f::PICC picc{};
+    constexpr uint8_t idm[8] = {0x01, 0x2E, 0x50, 0xE5, 0x3C, 0x4B, 0x4F, 0x29};
+    constexpr uint8_t pmm[8] = {0x00, 0xF1, 0x00, 0x00, 0x00, 0x01, 0x43, 0x00};
+    EXPECT_TRUE(picc.emulate(m5::nfc::f::Type::FeliCaLiteS, idm, pmm));
+
+    uint8_t memory[256]{};
+    EXPECT_TRUE(emu_f.begin(picc, memory, sizeof(memory)));
+    EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::Off);
+
+    for (uint_fast8_t i = 0; i < 10; ++i) {
+        emu_f.update();
+        m5::utility::delay(10);
+    }
+    EXPECT_EQ(emu_f.state(), m5::nfc::EmulationLayerF::State::Off);
+
+    EXPECT_TRUE(emu_f.end());
+    EXPECT_TRUE(stop_field(unit.get()));
 }
 
 // ============================================================
@@ -848,6 +916,112 @@ TEST_F(TestST25R3916, PtMemoryRoundtripTSN)
     uint8_t pt[PT_MEMORY_LENGTH]{};
     EXPECT_TRUE(unit->readPtMemory(pt, sizeof(pt)));
     EXPECT_EQ(std::memcmp(pt + PT_MEMORY_A_LENGTH + PT_MEMORY_F_LENGTH, wbuf, sizeof(wbuf)), 0) << "TSN read back";
+}
+
+// The polling loops compare elapsed time rather than a deadline, so that they keep working across
+// the millis() wrap. Getting that comparison backwards gives up on the first round instead, which
+// looks like nothing more than a poor detection rate, so the time each call actually spends is
+// worth pinning down. No PICC is needed: with nothing in the field the loop runs its full budget.
+namespace {
+constexpr uint32_t DETECT_BUDGET_MS{300};
+// Each round carries its own request timeout, so the budget is only checked between rounds and the
+// call runs over it. What matters here is the order of magnitude, not the exact figure
+constexpr uint32_t DETECT_LIMIT_MS{DETECT_BUDGET_MS * 3 + 200};
+}  // namespace
+
+TEST_F(TestST25R3916, NFCLayerA_DetectSpendsItsTimeout)
+{
+    const auto cfg_initial = unit->config();
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::A, false));
+
+    m5::nfc::NFCLayerA nfc_a{*unit};
+    std::vector<m5::nfc::a::PICC> piccs;
+
+    const auto began = m5::utility::millis();
+    EXPECT_FALSE(nfc_a.detect(piccs, DETECT_BUDGET_MS));
+    const auto elapsed = m5::utility::elapsedSince(began);
+
+    EXPECT_GE(elapsed, DETECT_BUDGET_MS) << "Gave up before the budget was spent";
+    EXPECT_LT(elapsed, DETECT_LIMIT_MS) << "Did not stop when the budget ran out";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+TEST_F(TestST25R3916, NFCLayerB_DetectSpendsItsTimeout)
+{
+    const auto cfg_initial = unit->config();
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::B, false));
+
+    m5::nfc::NFCLayerB nfc_b{*unit};
+    std::vector<m5::nfc::b::PICC> piccs;
+
+    const auto began = m5::utility::millis();
+    EXPECT_FALSE(nfc_b.detect(piccs, 0x00, 4, DETECT_BUDGET_MS));
+    const auto elapsed = m5::utility::elapsedSince(began);
+
+    EXPECT_GE(elapsed, DETECT_BUDGET_MS) << "Gave up before the budget was spent";
+    EXPECT_LT(elapsed, DETECT_LIMIT_MS) << "Did not stop when the budget ran out";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+TEST_F(TestST25R3916, NFCLayerV_DetectSpendsItsTimeout)
+{
+    const auto cfg_initial = unit->config();
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::V, false));
+
+    m5::nfc::NFCLayerV nfc_v{*unit};
+    std::vector<m5::nfc::v::PICC> piccs;
+
+    const auto began = m5::utility::millis();
+    EXPECT_FALSE(nfc_v.detect(piccs, DETECT_BUDGET_MS));
+    const auto elapsed = m5::utility::elapsedSince(began);
+
+    EXPECT_GE(elapsed, DETECT_BUDGET_MS) << "Gave up before the budget was spent";
+    EXPECT_LT(elapsed, DETECT_LIMIT_MS) << "Did not stop when the budget ran out";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+// NFC-F leaves the loop as soon as a polling round finds nothing, so it returns well inside the
+// budget even when the comparison is right. Only the upper bound says anything here
+TEST_F(TestST25R3916, NFCLayerF_DetectStopsWithoutHanging)
+{
+    const auto cfg_initial = unit->config();
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, false));
+
+    m5::nfc::NFCLayerF nfc_f{*unit};
+    std::vector<m5::nfc::f::PICC> piccs;
+
+    const auto began = m5::utility::millis();
+    EXPECT_FALSE(nfc_f.detect(piccs, m5::nfc::f::TimeSlot::Slot16, DETECT_BUDGET_MS));
+    EXPECT_LT(m5::utility::elapsedSince(began), DETECT_LIMIT_MS) << "Did not stop when the budget ran out";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
+}
+
+// Reaches the FIFO wait inside the unit, which is where the other elapsed-time comparisons live
+TEST_F(TestST25R3916, NfcfReceiveSpendsItsTimeout)
+{
+    const auto cfg_initial = unit->config();
+    EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, false));
+
+    uint8_t rx[32]{};
+    uint16_t rx_len{sizeof(rx)};
+
+    const auto began = m5::utility::millis();
+    EXPECT_FALSE(unit->nfcfReceive(rx, rx_len, DETECT_BUDGET_MS));
+    const auto elapsed = m5::utility::elapsedSince(began);
+
+    EXPECT_GE(elapsed, DETECT_BUDGET_MS) << "Gave up before the timeout was spent";
+    EXPECT_LT(elapsed, DETECT_LIMIT_MS) << "Did not stop when the timeout ran out";
+
+    unit->config(cfg_initial);
+    EXPECT_TRUE(unit->begin());
 }
 
 // A receive call with nothing to receive into must be turned away by the argument check, not by the

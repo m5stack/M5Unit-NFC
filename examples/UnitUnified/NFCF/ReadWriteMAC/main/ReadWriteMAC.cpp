@@ -40,10 +40,10 @@ auto& lcd = M5.Display;
 m5::unit::UnitUnified Units;
 
 #if defined(USING_UNIT_NFC)
-#pragma message "Choose UnitNFC"
+#pragma message("Choose UnitNFC")
 m5::unit::UnitNFC unit{};  // I2C
 #elif defined(USING_CAP_CC1101)
-#pragma message "Choose CapCC1101NFC"
+#pragma message("Choose CapCC1101NFC")
 m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 #else
 #error Choose unit please!

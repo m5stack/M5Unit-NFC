@@ -101,7 +101,7 @@ bool NFCLayerB::detect(std::vector<m5::nfc::b::PICC>& piccs, const uint8_t afi, 
 {
     piccs.clear();
 
-    auto timeout_at = m5::utility::millis() + timeout_ms;
+    const auto start_at = m5::utility::millis();
     do {
         uint8_t rx[ATQB_LENGTH]{};
         uint16_t rx_len = sizeof(rx);
@@ -122,7 +122,7 @@ bool NFCLayerB::detect(std::vector<m5::nfc::b::PICC>& piccs, const uint8_t afi, 
         if (piccs.size() >= max_piccs) {
             break;
         }
-    } while (m5::utility::millis() <= timeout_at);
+    } while (!m5::utility::hasElapsed(start_at, timeout_ms));
 
     return !piccs.empty();
 }
