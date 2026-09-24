@@ -294,8 +294,10 @@ struct NFCLayerB::Adapter {
       @param tx_len Transmit length
       @param timeout_ms Timeout in milliseconds
       @return True if an answer came back
-      @note The layer hands over frames without a CRC_B and expects the answer without one, so the
-      chip has to add and strip it
+      @note The layer hands over frames without a CRC_B, so the chip has to add it
+      @warning The answer is expected to still carry its CRC_B, and rx_len caps how much of it is
+      kept. The ATQB handling reads those two bytes to tell a collision from a good answer, so a
+      chip that strips the CRC itself has to put it back
      */
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms) = 0;

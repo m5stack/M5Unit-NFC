@@ -326,6 +326,8 @@ struct NFCLayerV::Adapter {
       @return True if an answer came back
       @note The layer hands over frames without a CRC and expects the answer without one, so the
       chip has to add and strip it
+      @note NFC-V is the one family where the CRC really is taken off before the answer comes back.
+      NFC-A, NFC-B and NFC-F all leave it on and let rx_len cut it away
      */
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms, const m5::nfc::v::ModulationMode mode) = 0;
