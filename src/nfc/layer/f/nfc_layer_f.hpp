@@ -485,9 +485,13 @@ struct NFCLayerF::Adapter {
       @param timeout_ms Timeout in milliseconds
       @return True if an answer came back
       @note The layer hands over frames without a CRC, so the chip has to add it
-      @warning The answer is expected to still carry its CRC, and rx_len caps how much of it is
-      kept. The layer sizes its buffers to the payload, so the CRC falls off there rather than
-      being stripped by the chip
+      @note Either a CRC-carrying answer or one with the CRC already off works today, because every
+      NFC-F check is a lower bound on the length and nothing here takes two bytes off the end. A
+      chip that leaves the CRC on has it cut away by rx_len, since the layer sizes its buffers to
+      the payload
+      @warning Leaving the CRC on is still the safer choice, and is what NFC-A and NFC-B require.
+      Should NFC-F ever learn to verify or strip the CRC itself, an adapter that already hands it
+      over keeps working while one that dropped it does not
      */
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms) = 0;
