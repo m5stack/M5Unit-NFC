@@ -299,19 +299,55 @@ private:
     m5::nfc::v::ModulationMode _modulation{m5::nfc::v::ModulationMode::OneOf4};
 };
 
-///@cond
-// Impl for units
+/*!
+  @struct NFCLayerV::Adapter
+  @brief Chip interface for NFC-V
+  @note Implement this to drive a chip this library does not know about, then hand it to
+  NFCLayerV(std::unique_ptr<Adapter>)
+ */
 struct NFCLayerV::Adapter {
-    virtual ~Adapter()                      = default;
+    virtual ~Adapter() = default;
+
+    /*!
+      @brief Maximum FIFO depth in bytes
+      @return Maximum FIFO depth in bytes
+      @note Answers NFCLayerV::maximum_fifo_depth(), which spells the same thing in full
+     */
     virtual uint16_t max_fifo_depth() const = 0;
 
+    /*!
+      @brief Send a frame and wait for the answer
+      @param[out] rx Receive buffer
+      @param[in,out] rx_len In: capacity of rx, Out: received length
+      @param tx Transmit buffer
+      @param tx_len Transmit length
+      @param timeout_ms Timeout in milliseconds
+      @param mode Modulation mode to send and listen with
+      @return True if an answer came back
+      @note The layer hands over frames without a CRC and expects the answer without one, so the
+      chip has to add and strip it
+     */
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms, const m5::nfc::v::ModulationMode mode) = 0;
+    /*!
+      @brief Send a frame without waiting for an answer
+      @param tx Transmit buffer
+      @param tx_len Transmit length
+      @param timeout_ms Timeout in milliseconds
+      @param mode Modulation mode to send with
+      @return True if the frame went out
+     */
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms,
-                          const m5::nfc::v::ModulationMode mode)                              = 0;
-    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)            = 0;
+                          const m5::nfc::v::ModulationMode mode) = 0;
+    /*!
+      @brief Receive a frame that was not asked for by transceive()
+      @param[out] rx Receive buffer
+      @param[in,out] rx_len In: capacity of rx, Out: received length
+      @param timeout_ms Timeout in milliseconds
+      @return True if a frame came in
+     */
+    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) = 0;
 };
-///@endcond
 
 }  // namespace nfc
 }  // namespace m5

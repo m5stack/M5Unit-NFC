@@ -270,19 +270,52 @@ private:
     std::unique_ptr<Adapter> _impl;
 };
 
-///@cond
-// Impl for units
+/*!
+  @struct NFCLayerB::Adapter
+  @brief Chip interface for NFC-B
+  @note Implement this to drive a chip this library does not know about, then hand it to
+  NFCLayerB(std::unique_ptr<Adapter>)
+ */
 struct NFCLayerB::Adapter {
     virtual ~Adapter() = default;
 
+    /*!
+      @brief Maximum FIFO depth in bytes
+      @return Maximum FIFO depth in bytes
+      @note Answers NFCLayerB::maximum_fifo_depth(), which spells the same thing in full
+     */
     virtual uint16_t max_fifo_depth() const = 0;
 
+    /*!
+      @brief Send a frame and wait for the answer
+      @param[out] rx Receive buffer
+      @param[in,out] rx_len In: capacity of rx, Out: received length
+      @param tx Transmit buffer
+      @param tx_len Transmit length
+      @param timeout_ms Timeout in milliseconds
+      @return True if an answer came back
+      @note The layer hands over frames without a CRC_B and expects the answer without one, so the
+      chip has to add and strip it
+     */
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                            const uint32_t timeout_ms)                                         = 0;
+                            const uint32_t timeout_ms) = 0;
+    /*!
+      @brief Send a frame without waiting for an answer
+      @param tx Transmit buffer
+      @param tx_len Transmit length
+      @param timeout_ms Timeout in milliseconds
+      @return True if the frame went out
+     */
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) = 0;
-    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms)             = 0;
+    /*!
+      @brief Receive a frame that was not asked for by transceive()
+      @param[out] rx Receive buffer
+      @param[in,out] rx_len In: capacity of rx, Out: received length
+      @param timeout_ms Timeout in milliseconds
+      @return True if a frame came in
+     */
+    virtual bool receive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms) = 0;
 };
-///@endcond
 
 }  // namespace nfc
 }  // namespace m5

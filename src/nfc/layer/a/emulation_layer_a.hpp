@@ -142,37 +142,70 @@ private:
     m5::nfc::a::PICC _picc{};
 };
 
-///@cond
-// Impl for units
+/*!
+  @struct EmulationLayerA::Adapter
+  @brief Chip interface for NFC-A card emulation
+  @note Implement this to emulate with a chip this library does not know about, then hand it to
+  EmulationLayerA(std::unique_ptr<Adapter>)
+  @note One update_*() runs per EmulationLayerA::update() call, chosen by the current state. Each
+  returns the state to continue in, so returning the state it was given means "stay here"
+ */
 struct EmulationLayerA::Adapter {
     virtual ~Adapter() = default;
 
-    virtual bool start_emulation(const m5::nfc::a::PICC& picc)                                 = 0;
-    virtual bool stop_emulation()                                                              = 0;
+    /*!
+      @brief Put the chip into card emulation
+      @param picc PICC to present to a reader
+      @return True if successful
+     */
+    virtual bool start_emulation(const m5::nfc::a::PICC& picc) = 0;
+    /*!
+      @brief Take the chip out of card emulation
+      @return True if successful
+     */
+    virtual bool stop_emulation() = 0;
+    /*!
+      @brief Answer the reader
+      @param tx Transmit buffer
+      @param tx_len Transmit length
+      @param timeout_ms Timeout in milliseconds
+      @return True if the frame went out
+     */
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) = 0;
 
-    virtual EmulationLayerA::State update_off()    = 0;
-    virtual EmulationLayerA::State update_idle()   = 0;
-    virtual EmulationLayerA::State update_ready()  = 0;
+    //! @brief Waits for a reader to turn up. @return State to continue in
+    virtual EmulationLayerA::State update_off() = 0;
+    //! @brief A reader is there but has not addressed this card yet. @return State to continue in
+    virtual EmulationLayerA::State update_idle() = 0;
+    //! @brief Anticollision is running. @return State to continue in
+    virtual EmulationLayerA::State update_ready() = 0;
+    //! @brief The card is selected and answering commands. @return State to continue in
     virtual EmulationLayerA::State update_active() = 0;
-    virtual EmulationLayerA::State update_halt()   = 0;
+    //! @brief The reader halted the card. @return State to continue in
+    virtual EmulationLayerA::State update_halt() = 0;
 
-    // Put the chip back to where it waits for a reader, from whatever state it is in. The default
-    // does nothing, so an adapter that has no such step keeps working
+    /*!
+      @brief Put the chip back to where it waits for a reader, from whatever state it is in
+      @return State to continue in
+      @note The default does nothing, so an adapter that has no such step keeps working
+     */
     virtual EmulationLayerA::State reset_to_off()
     {
         return EmulationLayerA::State::Off;
     }
 
-    // Whether the chip saw RF traffic since this was last asked, which also clears it. Answers the
-    // chip sends by itself are included, since they never reach receive_callback. The default says
-    // no, so an adapter that cannot tell falls back to timing state changes alone
+    /*!
+      @brief Whether the chip saw RF traffic since this was last asked, which also clears it
+      @return True if there was traffic
+      @note Answers the chip sends by itself are included, since they never reach receive_callback
+      @note The default says no, so an adapter that cannot tell falls back to timing state changes
+      alone. EmulationLayerA::setExpiredTime() is what acts on this
+     */
     virtual bool consume_rf_activity()
     {
         return false;
     }
 };
-///@endcond
 
 }  // namespace nfc
 }  // namespace m5

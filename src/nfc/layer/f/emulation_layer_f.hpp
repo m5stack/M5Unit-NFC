@@ -140,35 +140,66 @@ private:
     m5::nfc::f::PICC _picc{};
 };
 
-///@cond
-// Impl for units
+/*!
+  @struct EmulationLayerF::Adapter
+  @brief Chip interface for NFC-F card emulation
+  @note Implement this to emulate with a chip this library does not know about, then hand it to
+  EmulationLayerF(std::unique_ptr<Adapter>)
+  @note One update_*() runs per EmulationLayerF::update() call, chosen by the current state. Each
+  returns the state to continue in, so returning the state it was given means "stay here"
+ */
 struct EmulationLayerF::Adapter {
     virtual ~Adapter() = default;
 
-    virtual bool start_emulation(const m5::nfc::f::PICC& picc)                                 = 0;
-    virtual bool stop_emulation()                                                              = 0;
+    /*!
+      @brief Put the chip into card emulation
+      @param picc PICC to present to a reader
+      @return True if successful
+     */
+    virtual bool start_emulation(const m5::nfc::f::PICC& picc) = 0;
+    /*!
+      @brief Take the chip out of card emulation
+      @return True if successful
+     */
+    virtual bool stop_emulation() = 0;
+    /*!
+      @brief Answer the reader
+      @param tx Transmit buffer
+      @param tx_len Transmit length
+      @param timeout_ms Timeout in milliseconds
+      @return True if the frame went out
+     */
     virtual bool transmit(const uint8_t* tx, const uint16_t tx_len, const uint32_t timeout_ms) = 0;
 
-    virtual EmulationLayerF::State update_off()          = 0;
+    //! @brief Waits for a reader to turn up. @return State to continue in
+    virtual EmulationLayerF::State update_off() = 0;
+    //! @brief A reader polled and this card answered. @return State to continue in
     virtual EmulationLayerF::State update_communicated() = 0;
-    virtual EmulationLayerF::State update_selected()     = 0;
+    //! @brief The reader is addressing this card by its IDm. @return State to continue in
+    virtual EmulationLayerF::State update_selected() = 0;
 
-    // Put the chip back to where it waits for a reader, from whatever state it is in. The default
-    // does nothing, so an adapter that has no such step keeps working
+    /*!
+      @brief Put the chip back to where it waits for a reader, from whatever state it is in
+      @return State to continue in
+      @note The default does nothing, so an adapter that has no such step keeps working
+     */
     virtual EmulationLayerF::State reset_to_off()
     {
         return EmulationLayerF::State::Off;
     }
 
-    // Whether the chip saw RF traffic since this was last asked, which also clears it. Answers the
-    // chip sends by itself are included, since they never reach receive_callback. The default says
-    // no, so an adapter that cannot tell falls back to timing state changes alone
+    /*!
+      @brief Whether the chip saw RF traffic since this was last asked, which also clears it
+      @return True if there was traffic
+      @note Answers the chip sends by itself are included, since they never reach receive_callback
+      @note The default says no, so an adapter that cannot tell falls back to timing state changes
+      alone. EmulationLayerF::setExpiredTime() is what acts on this
+     */
     virtual bool consume_rf_activity()
     {
         return false;
     }
 };
-///@endcond
 
 }  // namespace nfc
 }  // namespace m5
