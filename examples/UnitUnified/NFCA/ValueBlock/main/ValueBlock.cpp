@@ -317,6 +317,11 @@ void rechargeable_value_block(const uint8_t block, const Key& akey, const Key& b
 // Scan all sectors and restore any value blocks to normal read/write blocks
 // Also restores sector trailer access bits to default (001)
 // Tries multiple key combinations: KeyA/KeyB may have been changed by previous operations
+//
+// Kept on purpose although nothing calls it: rewriting every sector trailer is not something the
+// example should do on its own, so both this and the call site below are switched off. Turn the
+// #if on and uncomment the call when a card has to be put back to a plain read/write layout
+#if 0
 void restore_all_value_blocks(const Key& akey, const Key& bkey)
 {
     auto& picc = nfc_a.activatedPICC();
@@ -422,6 +427,7 @@ void restore_all_value_blocks(const Key& akey, const Key& bkey)
 
     M5.Log.printf("Restored %u value blocks\n", restored);
 }
+#endif
 
 }  // namespace
 

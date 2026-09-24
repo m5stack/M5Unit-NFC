@@ -63,7 +63,10 @@ constexpr uint16_t example_ckv{0x0509};
 // A different method is acceptable if it still produces a unique CK per card.
 // #define USE_CUSTOM_CARD_KEY_DERIVATION
 
+#if defined(USE_CUSTOM_CARD_KEY_DERIVATION)
 // HMAC-SHA256 (custom derivation example)
+// Guarded together with its only caller below, so that turning the define off leaves no unused
+// function behind
 void hmac_sha256(uint8_t out[32], const uint8_t* key, const uint32_t key_len, const uint8_t* input,
                  const uint32_t input_len)
 {
@@ -76,7 +79,6 @@ void hmac_sha256(uint8_t out[32], const uint8_t* key, const uint32_t key_len, co
     mbedtls_md_free(&ctx);
 }
 
-#if defined(USE_CUSTOM_CARD_KEY_DERIVATION)
 /*
   Example of Creating a Card Key from the Master Key
   We are uniquely determining each card's CK from the IDm and master_key.
