@@ -25,6 +25,28 @@ namespace {
 constexpr uint16_t known_system_code_table[] = {system_code_wildcard, system_code_ndef, system_code_felica_secure_id,
                                                 system_code_shared,   system_code_lite, system_code_felica_plug};
 
+/*
+  How long a card is allowed to take to answer, from the FeliCa card users manual (2.21j, figure
+  2-5 and table 2-5):
+
+    T * [(B + 1) * n + (A + 1)] * 4^E     T = 256 * 16 / fc, about 0.302 ms
+
+  The parameter is one byte of PMm, picked by the command group, and holds A in b7-b5, B in b4-b2
+  and E in b1-b0. n is the count that table calls for: nodes, blocks, or zero for the commands
+  whose answer does not grow with the request. Working in microseconds keeps this in integers, and
+  the widest case (A=B=7, E=3, n=8) still only reaches about 1.4 s
+ */
+inline uint32_t max_response_time_ms(const uint8_t param, const uint32_t n)
+{
+    constexpr uint32_t T_US{302};
+
+    const uint32_t a  = (param >> 5) & 0x07;
+    const uint32_t b  = (param >> 2) & 0x07;
+    const uint32_t e  = param & 0x03;
+    const uint32_t us = T_US * ((b + 1) * n + (a + 1)) * (1U << (2 * e));
+    return (us + 999) / 1000;  // Round up so a sub-millisecond budget never becomes zero
+}
+
 inline bool exists_known_system_code(const uint16_t code)
 {
     return std::find(std::begin(known_system_code_table), std::end(known_system_code_table), code) !=
@@ -329,7 +351,8 @@ bool NFCLayerF::requestService(uint16_t key_version[], const uint16_t* node_code
     }
 
     std::vector<uint8_t> packet{};
-    uint32_t timeout_ms = 10;  // TODO
+    // PMm D10 covers Request Service, with n counting the nodes asked about
+    const uint32_t timeout_ms = max_response_time_ms(_activePICC.pmm[2], node_num);
 
     packet.resize(1 + 8 + 1 + (2 * node_num));
 
@@ -380,7 +403,8 @@ bool NFCLayerF::request_response_impl(const m5::nfc::f::PICC& picc, m5::nfc::f::
     }
 
     std::vector<uint8_t> packet{};
-    uint32_t timeout_ms = 10;  // TODO
+    // PMm D11 covers Request Response, whose answer is a fixed size, so n is zero
+    const uint32_t timeout_ms = max_response_time_ms(picc.pmm[3], 0);
 
     packet.resize(1 + 8);
 
@@ -424,7 +448,8 @@ bool NFCLayerF::request_system_code_impl(const m5::nfc::f::PICC& picc, uint16_t 
     code_num = 0;
 
     std::vector<uint8_t> packet{};
-    uint32_t timeout_ms = 10;  // TODO
+    // PMm D11 also covers Request System Code, again a fixed size answer
+    const uint32_t timeout_ms = max_response_time_ms(picc.pmm[3], 0);
 
     packet.resize(1 + 8);
 
@@ -471,7 +496,8 @@ bool NFCLayerF::read_without_encryption_impl(uint8_t* rx, uint16_t& rx_len, cons
 
     std::vector<uint8_t> packet{};
     const uint32_t block_size = get_block_list_size(block_list, block_num);
-    uint32_t timeout_ms       = 50;  // TODO
+    // PMm D13 covers Read Without Encryption, with n counting the blocks asked for
+    const uint32_t timeout_ms = max_response_time_ms(picc.pmm[5], block_num);
 
     packet.resize(1 + 8 + 1 + (2 * service_num) + 1 + block_size);
 
@@ -660,7 +686,8 @@ bool NFCLayerF::write_without_encryption_impl(const m5::nfc::f::PICC& picc, cons
 
     std::vector<uint8_t> packet{};
     const uint32_t block_size = get_block_list_size(block_list, block_num);
-    uint32_t timeout_ms       = 10;  // TODO
+    // PMm D14 covers Write Without Encryption, with n counting the blocks written
+    const uint32_t timeout_ms = max_response_time_ms(picc.pmm[6], block_num);
 
     packet.resize(1 + 8 + 1 + (2 * service_num) + 1 + block_size + tx_len);
 
