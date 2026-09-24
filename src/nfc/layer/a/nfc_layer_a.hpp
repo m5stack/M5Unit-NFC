@@ -753,6 +753,12 @@ struct NFCLayerA::Adapter {
       @return True if a PICC was selected
       @note The layer asks for the ATS itself when the PICC turns out to be ISO14443-4, so the chip
       must not send RATS here
+      @warning This is the only place the ATQA can be put into the PICC. The layer never fills it
+      in anywhere else, and activate() takes the PICC by const reference, so whatever this leaves
+      in picc.atqa is what the rest of the library works with. A chip that learns the ATQA in
+      request() has to carry it through, one that learns it here has to write it
+      @note The ATQA is read again after activation to tell MIFARE Plus 2K from 4K, so leaving it
+      at zero misidentifies those cards
      */
     virtual bool select(m5::nfc::a::PICC& picc) = 0;
     /*!
