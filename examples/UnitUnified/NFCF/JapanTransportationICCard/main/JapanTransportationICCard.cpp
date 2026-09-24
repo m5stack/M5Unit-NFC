@@ -93,6 +93,56 @@ void report_failure(const char* step)
     M5.Log.printf("NG: %s\n", step);
 }
 
+// Reads blocks in batches of whatever the chip behind the layer can answer in one go, then hands
+// them back one at a time so the callers below keep their block-by-block shape. Read Without
+// Encryption answers with 13 + 16 * n bytes plus a CRC, so the batch size has to follow
+// maximum_fifo_depth() and not FeliCa alone: 512 bytes on one chip and 64 on another
+struct BlockReader {
+    // blocks is how many the service holds, and the last batch is cut down to what is left. Asking
+    // for even one block past the end makes the card answer the whole request with an error, so a
+    // batch that overruns loses the good blocks in it as well
+    BlockReader(const uint16_t service, const uint8_t blocks) : _service{service}, _blocks{blocks}
+    {
+        const uint16_t cap = nfc_f.maximum_fifo_depth();
+        const uint8_t fits = (cap > 15) ? static_cast<uint8_t>((cap - 15) / 16) : 1;
+        _per_read          = (fits > FELICA_MAX_BLOCKS) ? FELICA_MAX_BLOCKS : (fits ? fits : 1);
+    }
+
+    // The 16 bytes of that block, or nullptr once the card stops answering
+    const uint8_t* at(const uint8_t block)
+    {
+        if (block >= _blocks) {
+            return nullptr;
+        }
+        if (block < _base || block >= _base + _num) {
+            const uint8_t left = static_cast<uint8_t>(_blocks - block);
+            const uint8_t want = (left < _per_read) ? left : _per_read;
+
+            block_t list[FELICA_MAX_BLOCKS]{};
+            for (uint_fast8_t i = 0; i < want; ++i) {
+                list[i] = block + i;
+            }
+            uint16_t rx_len = sizeof(_cache);
+            if (!nfc_f.read(_cache, rx_len, list, want, &_service, 1)) {
+                return nullptr;
+            }
+            _base = block;
+            _num  = static_cast<uint8_t>(rx_len / 16);
+            if (!_num) {
+                return nullptr;
+            }
+        }
+        return _cache + 16 * (block - _base);
+    }
+
+    uint16_t _service{};
+    uint8_t _blocks{};
+    uint8_t _per_read{1};
+    uint8_t _base{};
+    uint8_t _num{};
+    uint8_t _cache[16 * FELICA_MAX_BLOCKS]{};
+};
+
 bool dump_jtic()
 {
     uint16_t sc[255]{};
@@ -131,10 +181,11 @@ bool dump_jtic()
 
     // Usage history
     if (nfc_f.requestService(key_version, service_usage_history) && key_version != 0xFFFF) {
-        uint8_t buf[16]{};
+        BlockReader reader{service_usage_history, 20};
         M5.Log.printf("Usage history:\n");
         for (uint_fast8_t i = 0; i < 20; ++i) {
-            if (!nfc_f.read16(buf, i, service_usage_history)) {
+            const uint8_t* buf = reader.at(i);
+            if (!buf) {
                 break;
             }
             auto dt = buf_to_tm(buf + 4, (buf[1] == 0x46) ? buf + 6 : nullptr);
@@ -191,10 +242,11 @@ bool dump_jtic()
 
     // Ticket Information
     if (nfc_f.requestService(key_version, service_ticket_information) && key_version != 0xFFFF) {
-        uint8_t buf[16]{};
+        BlockReader reader{service_ticket_information, 36};
         M5.Log.printf("Ticket information:\n");
         for (uint_fast8_t i = 0; i < 36; ++i) {
-            if (!nfc_f.read16(buf, i, service_ticket_information) || (!buf[0] && !buf[1])) {
+            const uint8_t* buf = reader.at(i);
+            if (!buf || (!buf[0] && !buf[1])) {
                 break;
             }
             auto dt1 = buf_to_tm(buf + 4, buf + 6);
