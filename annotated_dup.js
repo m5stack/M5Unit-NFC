@@ -29,6 +29,9 @@ var annotated_dup =
         [ "b", null, [
           [ "PICC", "structm5_1_1nfc_1_1b_1_1_p_i_c_c.html", "structm5_1_1nfc_1_1b_1_1_p_i_c_c" ]
         ] ],
+        [ "emulation", null, [
+          [ "Trace", "classm5_1_1nfc_1_1emulation_1_1_trace.html", "classm5_1_1nfc_1_1emulation_1_1_trace" ]
+        ] ],
         [ "f", null, [
           [ "block_t", "structm5_1_1nfc_1_1f_1_1block__t.html", "structm5_1_1nfc_1_1f_1_1block__t" ],
           [ "PICC", "structm5_1_1nfc_1_1f_1_1_p_i_c_c.html", "structm5_1_1nfc_1_1f_1_1_p_i_c_c" ],

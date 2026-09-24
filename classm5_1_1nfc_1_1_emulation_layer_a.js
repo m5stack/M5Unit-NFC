@@ -14,6 +14,7 @@ var classm5_1_1nfc_1_1_emulation_layer_a =
     [ "emulatePICC", "classm5_1_1nfc_1_1_emulation_layer_a.html#a28dc0f0938b70793e278be544e7a6713", null ],
     [ "end", "classm5_1_1nfc_1_1_emulation_layer_a.html#a07691cfc18445903313a853d5e0d1fd1", null ],
     [ "expiredTime", "classm5_1_1nfc_1_1_emulation_layer_a.html#ab6075f2492e9f9fd2b55fc087eca146d", null ],
+    [ "receive_callback", "classm5_1_1nfc_1_1_emulation_layer_a.html#af31a4e6ed78bbf850a4f08b7f60c6b88", null ],
     [ "setExpiredTime", "classm5_1_1nfc_1_1_emulation_layer_a.html#a82370280351c601e7b6092e28132e3ef", null ],
     [ "state", "classm5_1_1nfc_1_1_emulation_layer_a.html#ae825e954296b17714c73850a674e4461", null ],
     [ "update", "classm5_1_1nfc_1_1_emulation_layer_a.html#adf2e24dfe90f26d56de0263ea6a2bbea", null ]

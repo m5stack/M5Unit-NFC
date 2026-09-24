@@ -67,5 +67,6 @@ var hierarchy =
     [ "m5::nfc::isodep::RxInfo", "structm5_1_1nfc_1_1isodep_1_1_rx_info.html", null ],
     [ "m5::nfc::a::st25ta::SystemFile", "structm5_1_1nfc_1_1a_1_1st25ta_1_1_system_file.html", null ],
     [ "m5::nfc::apdu::TLV", "structm5_1_1nfc_1_1apdu_1_1_t_l_v.html", null ],
-    [ "m5::nfc::ndef::TLV", "classm5_1_1nfc_1_1ndef_1_1_t_l_v.html", null ]
+    [ "m5::nfc::ndef::TLV", "classm5_1_1nfc_1_1ndef_1_1_t_l_v.html", null ],
+    [ "m5::nfc::emulation::Trace", "classm5_1_1nfc_1_1emulation_1_1_trace.html", null ]
 ];

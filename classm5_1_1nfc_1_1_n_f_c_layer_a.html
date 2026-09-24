@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.1 git rev:9bb1360</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.2 git rev:63c4caa</span>
    </div>
   </td>
  </tr>
@@ -790,6 +790,8 @@ To identify the type, call <a class="el" href="#aaae6d1f24bed2b0e6bb13697fd11a9e
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if successful </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Before calling, the previously active PICC is deactivated </dd></dl>
+<dl class="section post"><dt>Postcondition</dt><dd>PICC transitions: ACTIVE -&gt; HALT, whether the type was identified or not </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Telling the types apart means sending commands that only some of them answer, which leaves the PICC in a state that depends on what it is. The PICC is therefore halted before returning, so that it is always left the same way. Call <a class="el" href="#a049d81ed5c360b26c4dbf8d93b8e0e46" title="Wake and activate a specific PICC by PICC.">NFCLayerA::reactivate</a> to work with it </dd></dl>
 
 </div>
 </div>

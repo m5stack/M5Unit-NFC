@@ -27,7 +27,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.1 git rev:9bb1360</span>
+   <div id="projectname">M5Unit-NFC<span id="projectnumber">&#160;0.1.2 git rev:63c4caa</span>
    </div>
   </td>
  </tr>
@@ -148,9 +148,8 @@ const <a class="el" href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html">m5::nfc::a::PIC
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>expiredTime</b> () const</td></tr>
 <tr class="memdesc:ab6075f2492e9f9fd2b55fc087eca146d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the expiration time (ms) <br /></td></tr>
 <tr class="separator:ab6075f2492e9f9fd2b55fc087eca146d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82370280351c601e7b6092e28132e3ef" id="r_a82370280351c601e7b6092e28132e3ef"><td class="memItemLeft" align="right" valign="top"><a id="a82370280351c601e7b6092e28132e3ef" name="a82370280351c601e7b6092e28132e3ef"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setExpiredTime</b> (const uint32_t ms)</td></tr>
-<tr class="memdesc:a82370280351c601e7b6092e28132e3ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the expiration time (ms) <br /></td></tr>
+<tr class="memitem:a82370280351c601e7b6092e28132e3ef" id="r_a82370280351c601e7b6092e28132e3ef"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a82370280351c601e7b6092e28132e3ef">setExpiredTime</a> (const uint32_t ms)</td></tr>
+<tr class="memdesc:a82370280351c601e7b6092e28132e3ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the expiration time (ms)  <br /></td></tr>
 <tr class="separator:a82370280351c601e7b6092e28132e3ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7bb388444ceae8784ebc6713af5c4651" id="r_a7bb388444ceae8784ebc6713af5c4651"><td class="memItemLeft" align="right" valign="top"><a id="a7bb388444ceae8784ebc6713af5c4651" name="a7bb388444ceae8784ebc6713af5c4651"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>begin</b> (const <a class="el" href="structm5_1_1nfc_1_1a_1_1_p_i_c_c.html">m5::nfc::a::PICC</a> &amp;picc, uint8_t *ptr, const uint32_t size)</td></tr>
@@ -164,8 +163,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>end</b> ()</td></tr>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> ()</td></tr>
 <tr class="memdesc:adf2e24dfe90f26d56de0263ea6a2bbea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update emulation state machine. <br /></td></tr>
 <tr class="separator:adf2e24dfe90f26d56de0263ea6a2bbea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af31a4e6ed78bbf850a4f08b7f60c6b88" id="r_af31a4e6ed78bbf850a4f08b7f60c6b88"><td class="memItemLeft" align="right" valign="top"><a id="af31a4e6ed78bbf850a4f08b7f60c6b88" name="af31a4e6ed78bbf850a4f08b7f60c6b88"></a>
-virtual <a class="el" href="#a714fb8378088e999ee8726f2431718cb">State</a>&#160;</td><td class="memItemRight" valign="bottom"><b>receive_callback</b> (const uint8_t *rx, const uint32_t rx_len)</td></tr>
+<tr class="memitem:af31a4e6ed78bbf850a4f08b7f60c6b88" id="r_af31a4e6ed78bbf850a4f08b7f60c6b88"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="#a714fb8378088e999ee8726f2431718cb">State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af31a4e6ed78bbf850a4f08b7f60c6b88">receive_callback</a> (const uint8_t *rx, const uint32_t rx_len)</td></tr>
+<tr class="memdesc:af31a4e6ed78bbf850a4f08b7f60c6b88"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles a command received from the reader.  <br /></td></tr>
 <tr class="separator:af31a4e6ed78bbf850a4f08b7f60c6b88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
@@ -173,6 +172,9 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:a58b696f939813d10ab7f60ec14f66fde" id="r_a58b696f939813d10ab7f60ec14f66fde"><td class="memItemLeft" align="right" valign="top"><a id="a58b696f939813d10ab7f60ec14f66fde" name="a58b696f939813d10ab7f60ec14f66fde"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>update_expired</b> ()</td></tr>
 <tr class="separator:a58b696f939813d10ab7f60ec14f66fde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af06977d971ebeb406885c2dd76afa9f4" id="r_af06977d971ebeb406885c2dd76afa9f4"><td class="memItemLeft" align="right" valign="top"><a id="af06977d971ebeb406885c2dd76afa9f4" name="af06977d971ebeb406885c2dd76afa9f4"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>transmit</b> (const uint8_t *tx, const uint16_t tx_len, const uint32_t timeout_ms)</td></tr>
+<tr class="separator:af06977d971ebeb406885c2dd76afa9f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -186,7 +188,84 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>_memory_size</b> 
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Common interface layer for each chip of the NFC-A emulation. </p>
 <dl class="section note"><dt>Note</dt><dd>The chip emulates one technology at a time, so this cannot run alongside <a class="el" href="classm5_1_1nfc_1_1_emulation_layer_f.html" title="Common interface layer for each chip of the NFC-F emulation.">EmulationLayerF</a>. The unit must be configured for NFC-A emulation before <a class="el" href="#a7bb388444ceae8784ebc6713af5c4651" title="Begin NFC-A emulation.">begin()</a>. </dd></dl>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="af31a4e6ed78bbf850a4f08b7f60c6b88" name="af31a4e6ed78bbf850a4f08b7f60c6b88"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af31a4e6ed78bbf850a4f08b7f60c6b88">&#9670;&#160;</a></span>receive_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#a714fb8378088e999ee8726f2431718cb">EmulationLayerA::State</a> m5::nfc::EmulationLayerA::receive_callback </td>
+          <td>(</td>
+          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>rx</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>rx_len</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Handles a command received from the reader. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rx</td><td>Received frame (without CRC) </td></tr>
+    <tr><td class="paramname">rx_len</td><td>Received length </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>State to move to. State::Active keeps the emulation listening for the next command of the same session, State::Idle or State::Halt ends it </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Override this to answer commands that the library does not handle, and call <a class="el" href="#af31a4e6ed78bbf850a4f08b7f60c6b88" title="Handles a command received from the reader.">EmulationLayerA::receive_callback</a> for the rest. Answer with transmit() </dd></dl>
+
+</div>
+</div>
+<a id="a82370280351c601e7b6092e28132e3ef" name="a82370280351c601e7b6092e28132e3ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a82370280351c601e7b6092e28132e3ef">&#9670;&#160;</a></span>setExpiredTime()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void m5::nfc::EmulationLayerA::setExpiredTime </td>
+          <td>(</td>
+          <td class="paramtype">const uint32_t</td>          <td class="paramname"><span class="paramname"><em>ms</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Sets the expiration time (ms) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ms</td><td>How long a state may last before the emulation returns to State::Off. Zero turns this off </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>A reader that leaves in the middle of a session leaves the emulation waiting in that state, and nothing on the RF side tells it to stop. Going back to Off lets the next reader find it again. State::Off itself never expires </dd>
+<dd>
+The time is measured from the last RF traffic, so a session that keeps talking is not cut off however long it runs </dd></dl>
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
