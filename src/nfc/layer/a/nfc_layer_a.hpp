@@ -684,6 +684,10 @@ protected:
 private:
     bool mifare_plus_transceive_raw(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len);
 
+    // Drops the MIFARE Plus session and wipes its keys. Called wherever the active PICC is dropped,
+    // so that an authenticated session never outlives the card it was established with
+    void clear_mifare_plus_session();
+
     // Session state for MIFARE Plus
     struct MifarePlusSession {
         bool authenticated{};
