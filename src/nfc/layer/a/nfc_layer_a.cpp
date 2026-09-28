@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <esp_random.h>
 #include <cstring>
+#include <utility>
 
 using namespace m5::nfc;
 using namespace m5::nfc::a;
@@ -176,6 +177,13 @@ using desfire::required_read_key_no_from_access_rights;
 namespace m5 {
 namespace nfc {
 
+NFCLayerA::NFCLayerA(std::unique_ptr<Adapter> adapter) : _ndef{*this}, _isoDEP{*this}, _impl(std::move(adapter))
+{
+    if (!_impl) {
+        M5_LIB_LOGE("Adapter is null");
+    }
+}
+
 NFCLayerA::~NFCLayerA() = default;
 
 bool NFCLayerA::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
@@ -266,9 +274,19 @@ void NFCLayerA::config(const m5::nfc::a::config_t& cfg)
     _cfg.cid  = std::min<uint8_t>(_cfg.cid, 14);
 }
 
+void NFCLayerA::clear_mifare_plus_session()
+{
+    // Without this the session keys outlive the card they belong to, and a later call still finds
+    // authenticated set and reaches for them, counters and all
+    m5::nfc::crypto::secure_zero(_mfp_session.kenc.data(), _mfp_session.kenc.size());
+    m5::nfc::crypto::secure_zero(_mfp_session.kmac.data(), _mfp_session.kmac.size());
+    _mfp_session = MifarePlusSession{};
+}
+
 bool NFCLayerA::select(m5::nfc::a::PICC& picc)
 {
     _activePICC = PICC{};
+    clear_mifare_plus_session();
     if (_impl->select(picc)) {
         if (picc.isISO14443_4() && !picc.isMifareClassicCompatible()) {
             if (!nfca_request_ats(picc.ats, _cfg.fsdi, _cfg.cid)) {
@@ -284,6 +302,7 @@ bool NFCLayerA::select(m5::nfc::a::PICC& picc)
 bool NFCLayerA::activate(const PICC& picc, const bool force_rats)
 {
     _activePICC = PICC{};
+    clear_mifare_plus_session();
     if (_impl->activate(picc)) {
         // M5_LIB_LOGE(" >>>> SEL");
         if (force_rats || (picc.isISO14443_4() && !picc.isMifareClassicCompatible())) {
@@ -327,6 +346,7 @@ bool NFCLayerA::deactivate()
 {
     auto tmp    = _activePICC;
     _activePICC = PICC{};
+    clear_mifare_plus_session();
 
     auto ret = false;
     if (tmp.isMifareClassicCompatible()) {

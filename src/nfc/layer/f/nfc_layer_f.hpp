@@ -47,6 +47,14 @@ public:
       @param u CapST25R3916 instance
      */
     explicit NFCLayerF(m5::unit::CapST25R3916& u);
+    /*!
+      @brief Constructor with a chip adapter
+      @param adapter Adapter that drives the chip
+      @note Lets a chip this library does not know about be used without editing this header. The
+      layer takes ownership of the adapter
+      @warning The adapter must not be null
+     */
+    explicit NFCLayerF(std::unique_ptr<Adapter> adapter);
     virtual ~NFCLayerF();
 
     /*!
@@ -452,16 +460,42 @@ private:
     bool _authenticated{};
 };
 
-///@cond
-// Impl for units
+/*!
+  @struct NFCLayerF::Adapter
+  @brief Chip interface for NFC-F
+  @note Implement this to drive a chip this library does not know about, then hand it to
+  NFCLayerF(std::unique_ptr<Adapter>). Polling is built by the layer and sent through transceive(),
+  so no polling entry point is needed here
+ */
 struct NFCLayerF::Adapter {
     virtual ~Adapter() = default;
 
-    virtual uint16_t max_fifo_depth() const            = 0;
+    /*!
+      @brief Maximum FIFO depth in bytes
+      @return Maximum FIFO depth in bytes
+      @note Answers NFCLayerF::maximum_fifo_depth(), which spells the same thing in full
+     */
+    virtual uint16_t max_fifo_depth() const = 0;
+    /*!
+      @brief Send a frame and wait for the answer
+      @param[out] rx Receive buffer
+      @param[in,out] rx_len In: capacity of rx, Out: received length
+      @param tx Transmit buffer
+      @param tx_len Transmit length
+      @param timeout_ms Timeout in milliseconds
+      @return True if an answer came back
+      @note The layer hands over frames without a CRC, so the chip has to add it
+      @note Either a CRC-carrying answer or one with the CRC already off works today, because every
+      NFC-F check is a lower bound on the length and nothing here takes two bytes off the end. A
+      chip that leaves the CRC on has it cut away by rx_len, since the layer sizes its buffers to
+      the payload
+      @warning Leaving the CRC on is still the safer choice, and is what NFC-A and NFC-B require.
+      Should NFC-F ever learn to verify or strip the CRC itself, an adapter that already hands it
+      over keeps working while one that dropped it does not
+     */
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms) = 0;
 };
-///@endcond
 
 }  // namespace nfc
 }  // namespace m5

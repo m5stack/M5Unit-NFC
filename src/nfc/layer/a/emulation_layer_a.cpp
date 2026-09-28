@@ -9,6 +9,7 @@
 */
 #include "emulation_layer_a.hpp"
 #include "nfc/a/nfca.hpp"
+#include <utility>
 #include <M5Utility.hpp>
 
 using namespace m5::nfc;
@@ -27,6 +28,13 @@ constexpr uint8_t dummy_signature[32] = {};
 
 namespace m5 {
 namespace nfc {
+
+EmulationLayerA::EmulationLayerA(std::unique_ptr<Adapter> adapter) : _impl(std::move(adapter))
+{
+    if (!_impl) {
+        M5_LIB_LOGE("Adapter is null");
+    }
+}
 
 EmulationLayerA::~EmulationLayerA() = default;
 

@@ -51,11 +51,12 @@ m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 m5::nfc::NFCLayerF nfc_f{unit};
 
 // The master key used for create CK
-// For the sake of this example, it's written as source code, but it should actually outside externally (SD, Cloud...)
+// Embedded in source only for this example. Real applications should keep the key outside the
+// firmware (SD, cloud, ...)
 constexpr uint8_t example_master_key[24] = {0xE3, 0x92, 0xCA, 0xC2, 0xF9, 0x21, 0x3B, 0xF2, 0xC0, 0x4F, 0x65, 0xC4,
                                             0x8E, 0xB6, 0xF6, 0x34, 0x5F, 0x02, 0x36, 0xD6, 0x26, 0xD5, 0x97, 0xA1};
 //  Card key version(Format is free)
-// For the sake of this example, it's written as source code, but it should actually outside externally (SD, Cloud...)
+// Embedded in source only for this example, as with the master key above
 constexpr uint16_t example_ckv{0x0509};
 
 // Enable for custom CK derivation (e.g. HMAC-SHA256); otherwise use make_personalized_card_key_lite_s.
@@ -63,7 +64,10 @@ constexpr uint16_t example_ckv{0x0509};
 // A different method is acceptable if it still produces a unique CK per card.
 // #define USE_CUSTOM_CARD_KEY_DERIVATION
 
+#if defined(USE_CUSTOM_CARD_KEY_DERIVATION)
 // HMAC-SHA256 (custom derivation example)
+// Guarded together with its only caller below, so that turning the define off leaves no unused
+// function behind
 void hmac_sha256(uint8_t out[32], const uint8_t* key, const uint32_t key_len, const uint8_t* input,
                  const uint32_t input_len)
 {
@@ -76,7 +80,6 @@ void hmac_sha256(uint8_t out[32], const uint8_t* key, const uint32_t key_len, co
     mbedtls_md_free(&ctx);
 }
 
-#if defined(USE_CUSTOM_CARD_KEY_DERIVATION)
 /*
   Example of Creating a Card Key from the Master Key
   We are uniquely determining each card's CK from the IDm and master_key.

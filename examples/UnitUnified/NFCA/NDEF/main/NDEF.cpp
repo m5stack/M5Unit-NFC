@@ -129,9 +129,6 @@ void format_desfire()
 
 void read_ndef()
 {
-    // auto& picc = nfc_a.activatedPICC();
-
-    // Disable non-test NDEF read path; keep only the current debug logging.
     bool valid{};
     if (!nfc_a.ndefIsValidFormat(valid)) {
         M5_LOGE("Failed to ndefIsValidFormat");

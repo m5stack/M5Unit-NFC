@@ -51,6 +51,14 @@ public:
     explicit NFCLayerA(m5::unit::UnitST25R3916& u);
     //! @brief Constructor with CapST25R3916 (SPI variant)
     explicit NFCLayerA(m5::unit::CapST25R3916& u);
+    /*!
+      @brief Constructor with a chip adapter
+      @param adapter Adapter that drives the chip
+      @note Lets a chip this library does not know about be used without editing this header. The
+      layer takes ownership of the adapter
+      @warning The adapter must not be null
+     */
+    explicit NFCLayerA(std::unique_ptr<Adapter> adapter);
     virtual ~NFCLayerA();
 
     ///@name override
@@ -676,6 +684,10 @@ protected:
 private:
     bool mifare_plus_transceive_raw(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len);
 
+    // Drops the MIFARE Plus session and wipes its keys. Called wherever the active PICC is dropped,
+    // so that an authenticated session never outlives the card it was established with
+    void clear_mifare_plus_session();
+
     // Session state for MIFARE Plus
     struct MifarePlusSession {
         bool authenticated{};
@@ -692,31 +704,128 @@ private:
     std::unique_ptr<Adapter> _impl;
 };
 
-///@cond
-// Impl for units
+/*!
+  @struct NFCLayerA::Adapter
+  @brief Chip interface for NFC-A
+  @note Implement this to drive a chip this library does not know about, then hand it to
+  NFCLayerA(std::unique_ptr<Adapter>)
+  @warning A chip that keeps a MIFARE Classic cipher session alive has to end it in hlt(),
+  request() or wakeup(). NFCLayerA::deactivate() calls hlt() for a MIFARE Classic compatible PICC,
+  so the layer already gives the adapter that chance
+ */
 struct NFCLayerA::Adapter {
     virtual ~Adapter() = default;
 
+    /*!
+      @brief Maximum FIFO depth in bytes
+      @return Maximum FIFO depth in bytes
+      @note Answers NFCLayerA::maximum_fifo_depth(), which spells the same thing in full
+     */
     virtual uint16_t max_fifo_depth() const = 0;
 
+    /*!
+      @brief Send a frame and wait for the answer
+      @param[out] rx Receive buffer
+      @param[in,out] rx_len In: capacity of rx, Out: received length
+      @param tx Transmit buffer
+      @param tx_len Transmit length
+      @param timeout_ms Timeout in milliseconds
+      @return True if an answer came back
+      @note The layer hands over frames without a CRC_A, so the chip has to add it
+      @warning The answer is expected to still carry its CRC_A, and rx_len caps how much of it is
+      kept. Callers that want the CRC read into a buffer large enough for it; callers that do not
+      pass a buffer that ends where the payload does, which drops the CRC on the floor. A chip that
+      strips the CRC itself has to put it back, or ISO-DEP breaks: it takes two bytes off every
+      answer (see isoDEP.hpp rx_crc)
+      @note REQA and WUPA are the exception and come back without a CRC_A
+      @note RATS and S(DESELECT) go out this way, so the chip must not answer them on its own
+     */
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                             const uint32_t timeout_ms) = 0;
 
+    /*!
+      @brief Look for a PICC that is not halted (REQA)
+      @param[out] atqa ATQA the PICC answered with
+      @return True if a PICC answered
+     */
     virtual bool request(uint16_t& atqa) = 0;
-    virtual bool wakeup(uint16_t& atqa)  = 0;
+    /*!
+      @brief Look for a PICC whether or not it is halted (WUPA)
+      @param[out] atqa ATQA the PICC answered with
+      @return True if a PICC answered
+     */
+    virtual bool wakeup(uint16_t& atqa) = 0;
 
-    virtual bool select(m5::nfc::a::PICC& picc)         = 0;
+    /*!
+      @brief Run anticollision and select the PICC it settles on
+      @param[out] picc PICC that was selected, filled in with its ATQA, SAK and UID
+      @return True if a PICC was selected
+      @note The layer asks for the ATS itself when the PICC turns out to be ISO14443-4, so the chip
+      must not send RATS here
+      @warning This is the only place the ATQA can be put into the PICC. The layer never fills it
+      in anywhere else, and activate() takes the PICC by const reference, so whatever this leaves
+      in picc.atqa is what the rest of the library works with. A chip that learns the ATQA in
+      request() has to carry it through, one that learns it here has to write it
+      @note The ATQA is read again after activation to tell MIFARE Plus 2K from 4K, so leaving it
+      at zero misidentifies those cards
+     */
+    virtual bool select(m5::nfc::a::PICC& picc) = 0;
+    /*!
+      @brief Select a PICC by its UID, waking it if it is halted
+      @param picc PICC to select
+      @return True if the PICC was selected
+      @note As with select(), the layer sends RATS itself
+     */
     virtual bool activate(const m5::nfc::a::PICC& picc) = 0;
-    virtual bool hlt()                                  = 0;
+    /*!
+      @brief Put the selected PICC to sleep (HLTA)
+      @return True if successful
+      @note A PICC answers nothing to HLTA, so silence is the expected outcome
+      @note This is where a chip ends a MIFARE Classic cipher session, see the warning on this
+      struct
+     */
+    virtual bool hlt() = 0;
 
-    virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr)                      = 0;
-    virtual bool nfca_write_block(const uint8_t addr, const uint8_t tx[16])               = 0;
+    /*!
+      @brief Read one 16 byte block
+      @param[out] rx Receive buffer
+      @param addr Block address
+      @return True if successful
+      @note Named after NFC-A rather than the block size because MIFARE Classic and Ultralight
+      answer READ with 16 bytes alike
+     */
+    virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr) = 0;
+    /*!
+      @brief Write one 16 byte block
+      @param addr Block address
+      @param tx Data to write
+      @return True if successful
+     */
+    virtual bool nfca_write_block(const uint8_t addr, const uint8_t tx[16]) = 0;
+    /*!
+      @brief Authenticate a MIFARE Classic sector
+      @param auth_a True to authenticate with key A, false for key B
+      @param picc PICC to authenticate against, needed for its UID
+      @param block Block address in the sector to authenticate
+      @param key Six byte key
+      @return True if the PICC accepted the key
+      @note A chip that runs Crypto1 in hardware keeps the session open until hlt(), request() or
+      wakeup(), see the warning on this struct
+     */
     virtual bool mifare_classic_authenticate(const bool auth_a, const m5::nfc::a::PICC& picc, const uint8_t block,
                                              const m5::nfc::a::mifare::classic::Key& key) = 0;
+    /*!
+      @brief Run a MIFARE Classic value block command
+      @param cmd INCREMENT, DECREMENT, RESTORE or TRANSFER
+      @param block Block address
+      @param arg Operand for INCREMENT and DECREMENT, ignored by RESTORE and TRANSFER
+      @return True if successful
+      @note INCREMENT, DECREMENT and RESTORE only load the internal register; TRANSFER is what
+      writes it back
+     */
     virtual bool mifare_classic_value_block(const m5::nfc::a::Command cmd, const uint8_t block,
-                                            const uint32_t arg = 0)                       = 0;
+                                            const uint32_t arg = 0) = 0;
 };
-///@endcond
 
 }  // namespace nfc
 }  // namespace m5

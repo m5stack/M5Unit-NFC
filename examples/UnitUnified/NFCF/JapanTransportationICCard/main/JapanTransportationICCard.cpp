@@ -44,9 +44,18 @@ m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 #endif
 m5::nfc::NFCLayerF nfc_f{unit};
 
+// A card that answers to none of these is dropped by detect(), so a region-only card needs its
+// own code listed here. 0003h covers the ten cards of the nationwide interoperability scheme.
+// The codes below it are left commented out: only 0003h is corroborated by more than one source,
+// the others come from open-source readers (Metrodroid, nfcpy, TRETJapanNFCReader) rather than a
+// published specification. Uncomment one to try that card
 constexpr uint16_t jtic_system_code[] = {
     0x0003,  // Suica,PASMO,ICOCA,PiTaPa,TOICA ...
     0x80DE,  // IruCa
+    //    0x8592,  // PASPY
+    //    0x865E,  // SAPICA
+    //    0x8B5D,  // Ryuto
+    //    0x8FC1,  // OKICA
 };
 
 // Service code
@@ -74,12 +83,75 @@ struct tm buf_to_tm(const uint8_t date[2], const uint8_t time[2] = nullptr)
     return dt;
 }
 
-void dump_jtic()
+// Name the step that failed on both the LCD and the serial log. The dump itself stays on serial,
+// where there is room for it, but a silent failure leaves nothing to go on at all
+void report_failure(const char* step)
+{
+    lcd.fillScreen(0);
+    lcd.setCursor(0, 0);
+    lcd.printf("NG: %s", step);
+    M5.Log.printf("NG: %s\n", step);
+}
+
+// Reads blocks in batches of whatever the chip behind the layer can answer in one go, then hands
+// them back one at a time so the callers below keep their block-by-block shape. Read Without
+// Encryption answers with 13 + 16 * n bytes plus a CRC, so the batch size has to follow
+// maximum_fifo_depth() and not FeliCa alone: 512 bytes on one chip and 64 on another
+struct BlockReader {
+    // blocks is how many the service holds, and the last batch is cut down to what is left. Asking
+    // for even one block past the end makes the card answer the whole request with an error, so a
+    // batch that overruns loses the good blocks in it as well
+    BlockReader(const uint16_t service, const uint8_t blocks) : _service{service}, _blocks{blocks}
+    {
+        const uint16_t cap = nfc_f.maximum_fifo_depth();
+        const uint8_t fits = (cap > 15) ? static_cast<uint8_t>((cap - 15) / 16) : 1;
+        _per_read          = (fits > FELICA_MAX_BLOCKS) ? FELICA_MAX_BLOCKS : (fits ? fits : 1);
+    }
+
+    // The 16 bytes of that block, or nullptr once the card stops answering
+    const uint8_t* at(const uint8_t block)
+    {
+        if (block >= _blocks) {
+            return nullptr;
+        }
+        if (block < _base || block >= _base + _num) {
+            const uint8_t left = static_cast<uint8_t>(_blocks - block);
+            const uint8_t want = (left < _per_read) ? left : _per_read;
+
+            block_t list[FELICA_MAX_BLOCKS]{};
+            for (uint_fast8_t i = 0; i < want; ++i) {
+                list[i] = block + i;
+            }
+            uint16_t rx_len = sizeof(_cache);
+            if (!nfc_f.read(_cache, rx_len, list, want, &_service, 1)) {
+                return nullptr;
+            }
+            _base = block;
+            _num  = static_cast<uint8_t>(rx_len / 16);
+            if (!_num) {
+                return nullptr;
+            }
+        }
+        return _cache + 16 * (block - _base);
+    }
+
+    uint16_t _service{};
+    uint8_t _blocks{};
+    uint8_t _per_read{1};
+    uint8_t _base{};
+    uint8_t _num{};
+    uint8_t _cache[16 * FELICA_MAX_BLOCKS]{};
+};
+
+bool dump_jtic()
 {
     uint16_t sc[255]{};
     uint8_t sc_num{};
+    // A mobile device does not always list every system code it holds, so this can fail where a
+    // plain card succeeds
     if (!nfc_f.requestSystemCode(sc, sc_num)) {
-        return;
+        report_failure("requestSystemCode");
+        return false;
     }
     M5.Log.printf("System code %u\n", sc_num);
     for (uint_fast8_t i = 0; i < sc_num; ++i) {
@@ -88,7 +160,8 @@ void dump_jtic()
 
     standard::Mode m{};
     if (!nfc_f.requestResponse(m)) {
-        return;
+        report_failure("requestResponse");
+        return false;
     }
     M5.Log.printf("Mode:%u\n", m);
 
@@ -108,10 +181,11 @@ void dump_jtic()
 
     // Usage history
     if (nfc_f.requestService(key_version, service_usage_history) && key_version != 0xFFFF) {
-        uint8_t buf[16]{};
+        BlockReader reader{service_usage_history, 20};
         M5.Log.printf("Usage history:\n");
         for (uint_fast8_t i = 0; i < 20; ++i) {
-            if (!nfc_f.read16(buf, i, service_usage_history)) {
+            const uint8_t* buf = reader.at(i);
+            if (!buf) {
                 break;
             }
             auto dt = buf_to_tm(buf + 4, (buf[1] == 0x46) ? buf + 6 : nullptr);
@@ -168,10 +242,11 @@ void dump_jtic()
 
     // Ticket Information
     if (nfc_f.requestService(key_version, service_ticket_information) && key_version != 0xFFFF) {
-        uint8_t buf[16]{};
+        BlockReader reader{service_ticket_information, 36};
         M5.Log.printf("Ticket information:\n");
         for (uint_fast8_t i = 0; i < 36; ++i) {
-            if (!nfc_f.read16(buf, i, service_ticket_information) || (!buf[0] && !buf[1])) {
+            const uint8_t* buf = reader.at(i);
+            if (!buf || (!buf[0] && !buf[1])) {
                 break;
             }
             auto dt1 = buf_to_tm(buf + 4, buf + 6);
@@ -187,6 +262,7 @@ void dump_jtic()
                 dt2.tm_hour, dt2.tm_min, dt2.tm_sec);
         }
     }
+    return true;
 }
 
 }  // namespace
@@ -238,11 +314,19 @@ void loop()
                 M5.Speaker.tone(2500, 20);
                 M5.Log.printf("%s:%s %s F:%02X DF:%04X\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
                               picc.typeAsString().c_str(), picc.format, picc.dfc_format);
-                dump_jtic();
+                if (dump_jtic()) {
+                    lcd.fillScreen(0);
+                    lcd.setCursor(0, 0);
+                    lcd.printf("OK\n%s\n%s", picc.idmAsString().c_str(), picc.typeAsString().c_str());
+                }
                 nfc_f.deactivate();
+            } else {
+                report_failure("activate");
             }
         } else {
-            M5.Log.printf("PICC NOT exists\n");
+            // Either nothing was on the reader, or the card answered none of jtic_system_code
+            report_failure("detect");
+            M5.Log.printf("PICC NOT exists, or it answers to none of jtic_system_code\n");
         }
     }
 }
