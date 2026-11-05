@@ -198,10 +198,10 @@ static inline void feedIdleTaskPeriodically(void)
 {
     constexpr uint32_t FEED_INTERVAL_MS   = 2000;
     constexpr TickType_t FEED_SLEEP_TICKS = pdMS_TO_TICKS(5);
-    static uint32_t s_next_feed_ms        = 0;
+    static uint32_t s_last_feed_ms        = 0;
     const uint32_t now_ms                 = static_cast<uint32_t>(esp_timer_get_time() / 1000);
-    if (now_ms >= s_next_feed_ms) {
-        s_next_feed_ms = now_ms + FEED_INTERVAL_MS;
+    if (m5::utility::hasElapsed(s_last_feed_ms, FEED_INTERVAL_MS, now_ms)) {
+        s_last_feed_ms = now_ms;
         vTaskDelay(FEED_SLEEP_TICKS);
     }
 }
