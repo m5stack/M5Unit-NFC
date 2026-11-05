@@ -33,12 +33,14 @@ constexpr uint16_t known_system_code_table[] = {system_code_wildcard, system_cod
 
   The parameter is one byte of PMm, picked by the command group, and holds A in b7-b5, B in b4-b2
   and E in b1-b0. n is the count that table calls for: nodes, blocks, or zero for the commands
-  whose answer does not grow with the request. Working in microseconds keeps this in integers, and
-  the widest case (A=B=7, E=3, n=8) still only reaches about 1.4 s
+  whose answer does not grow with the request. Working in microseconds keeps this in integers.
+  Read caps n at FELICA_MAX_BLOCKS and write never passes more, so their widest case (A=B=7, E=3,
+  n=8) reaches about 1.4 s, but Request Service takes n from the caller, where n=255 and the same
+  parameters reach about 40 s
  */
 inline uint32_t max_response_time_ms(const uint8_t param, const uint32_t n)
 {
-    constexpr uint32_t T_US{302};
+    constexpr uint32_t T_US{303};  // 302.06 rounded up, so a long budget is never cut short
 
     const uint32_t a  = (param >> 5) & 0x07;
     const uint32_t b  = (param >> 2) & 0x07;
@@ -143,10 +145,13 @@ bool NFCLayerF::polling(m5::nfc::f::PICC& picc, const uint16_t system_code, cons
 
     uint32_t timeout_ms = TIMEOUT_POLLING * TIMEOUT_POLLING_PICC * timeslot_to_slot(time_slot);
 
-    uint8_t rbuf[18 + ((request_code != RequestCode::None) ? 2 : 0)]{};
-    uint16_t rx_len = sizeof(rbuf);
+    // A variable-length array must not be sized by the request code: it is a GCC extension that
+    // clang rejects outright once an initializer is attached
+    const uint16_t expected_len = 18 + ((request_code != RequestCode::None) ? 2 : 0);
+    uint8_t rbuf[20]{};
+    uint16_t rx_len = expected_len;
     if (!_impl->transceive(rbuf, rx_len, packet, sizeof(packet), timeout_ms)  //
-        || rx_len < sizeof(rbuf) || rbuf[1] != m5::stl::to_underlying(ResponseCode::Polling)) {
+        || rx_len < expected_len || rbuf[1] != m5::stl::to_underlying(ResponseCode::Polling)) {
         if (rx_len) {
             M5_LIB_LOGD("Failed to Polling %u %u %u", rx_len, rbuf[0], rbuf[1]);
         }
