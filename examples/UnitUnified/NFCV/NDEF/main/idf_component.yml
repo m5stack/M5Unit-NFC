@@ -5,7 +5,7 @@
 ##   M5UnitUnified is published to the ESP Component Registry, when it becomes >=x.y.z.
 ## - M5Unified >=0.2.17 pulls in M5GFX transitively, so no explicit M5GFX entry is needed here.
 dependencies:
-  idf: ">=5.0"
+  idf: ">=5.1"
   m5stack/M5Unit-NFC:
     path: "../../../../.."
   m5stack/M5Unified: ">=0.2.17"

@@ -5,7 +5,7 @@ license: MIT
 version: "0.1.2"
 
 dependencies:
-  idf: ">=5.0"
+  idf: ">=5.1"
   # M5UnitUnified is not yet on the ESP Component Registry, so reference the main
   # branch via git (switch to a version constraint after publish).
   m5stack/M5UnitUnified:
