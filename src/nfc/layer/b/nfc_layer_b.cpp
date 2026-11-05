@@ -58,6 +58,30 @@ constexpr uint8_t fsdi_for_size(const uint16_t bytes)
            : (bytes >= 24)  ? 1
                             : 0;
 }
+
+/*
+  Stands in for a null adapter so the layer degrades to "every operation fails" instead of
+  dereferencing a null pointer at each call site
+*/
+struct NullAdapterB final : m5::nfc::NFCLayerB::Adapter {
+    inline virtual uint16_t max_fifo_depth() const override
+    {
+        return 0;
+    }
+    inline virtual bool transceive(uint8_t*, uint16_t&, const uint8_t*, const uint16_t, const uint32_t) override
+    {
+        return false;
+    }
+    inline virtual bool transmit(const uint8_t*, const uint16_t, const uint32_t) override
+    {
+        return false;
+    }
+    inline virtual bool receive(uint8_t*, uint16_t&, const uint32_t) override
+    {
+        return false;
+    }
+};
+
 }  // namespace
 
 namespace m5 {
@@ -66,7 +90,8 @@ namespace nfc {
 NFCLayerB::NFCLayerB(std::unique_ptr<Adapter> adapter) : _ndef{*this}, _isoDEP{*this}, _impl(std::move(adapter))
 {
     if (!_impl) {
-        M5_LIB_LOGE("Adapter is null");
+        M5_LIB_LOGE("Adapter is null, every operation will fail");
+        _impl.reset(new NullAdapterB{});
     }
 }
 

@@ -74,6 +74,31 @@ constexpr char dump_header[] =
 constexpr char dump_line[] =
     "------------------------------------------------------------------------------------------------------------";
 
+/*
+  Stands in for a null adapter so the layer degrades to "every operation fails" instead of
+  dereferencing a null pointer at each call site
+*/
+struct NullAdapterV final : m5::nfc::NFCLayerV::Adapter {
+    inline virtual uint16_t max_fifo_depth() const override
+    {
+        return 0;
+    }
+    inline virtual bool transceive(uint8_t*, uint16_t&, const uint8_t*, const uint16_t, const uint32_t,
+                                   const m5::nfc::v::ModulationMode) override
+    {
+        return false;
+    }
+    inline virtual bool transmit(const uint8_t*, const uint16_t, const uint32_t,
+                                 const m5::nfc::v::ModulationMode) override
+    {
+        return false;
+    }
+    inline virtual bool receive(uint8_t*, uint16_t&, const uint32_t) override
+    {
+        return false;
+    }
+};
+
 }  // namespace
 
 namespace m5 {
@@ -82,7 +107,8 @@ namespace nfc {
 NFCLayerV::NFCLayerV(std::unique_ptr<Adapter> adapter) : _impl(std::move(adapter)), _ndef{*this}
 {
     if (!_impl) {
-        M5_LIB_LOGE("Adapter is null");
+        M5_LIB_LOGE("Adapter is null, every operation will fail");
+        _impl.reset(new NullAdapterV{});
     }
 }
 

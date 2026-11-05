@@ -172,6 +172,58 @@ using desfire::access_denied;
 using desfire::access_free;
 using desfire::required_read_key_no_from_access_rights;
 
+/*
+  Stands in for a null adapter so the layer degrades to "every operation fails" instead of
+  dereferencing a null pointer at each call site
+*/
+struct NullAdapterA final : m5::nfc::NFCLayerA::Adapter {
+    inline virtual uint16_t max_fifo_depth() const override
+    {
+        return 0;
+    }
+    inline virtual bool transceive(uint8_t*, uint16_t&, const uint8_t*, const uint16_t, const uint32_t) override
+    {
+        return false;
+    }
+    inline virtual bool request(uint16_t&) override
+    {
+        return false;
+    }
+    inline virtual bool wakeup(uint16_t&) override
+    {
+        return false;
+    }
+    inline virtual bool select(m5::nfc::a::PICC&) override
+    {
+        return false;
+    }
+    inline virtual bool activate(const m5::nfc::a::PICC&) override
+    {
+        return false;
+    }
+    inline virtual bool hlt() override
+    {
+        return false;
+    }
+    inline virtual bool nfca_read_block(uint8_t[16], const uint8_t) override
+    {
+        return false;
+    }
+    inline virtual bool nfca_write_block(const uint8_t, const uint8_t[16]) override
+    {
+        return false;
+    }
+    inline virtual bool mifare_classic_authenticate(const bool, const m5::nfc::a::PICC&, const uint8_t,
+                                                    const m5::nfc::a::mifare::classic::Key&) override
+    {
+        return false;
+    }
+    inline virtual bool mifare_classic_value_block(const m5::nfc::a::Command, const uint8_t, const uint32_t) override
+    {
+        return false;
+    }
+};
+
 }  // namespace
 
 namespace m5 {
@@ -180,7 +232,8 @@ namespace nfc {
 NFCLayerA::NFCLayerA(std::unique_ptr<Adapter> adapter) : _ndef{*this}, _isoDEP{*this}, _impl(std::move(adapter))
 {
     if (!_impl) {
-        M5_LIB_LOGE("Adapter is null");
+        M5_LIB_LOGE("Adapter is null, every operation will fail");
+        _impl.reset(new NullAdapterA{});
     }
 }
 

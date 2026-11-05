@@ -55,7 +55,8 @@ public:
       @param adapter Adapter that drives the chip
       @note Lets a chip this library does not know about be used without editing this header. The
       layer takes ownership of the adapter
-      @warning The adapter must not be null
+      @warning A null adapter is not a crash but not usable either: an error is logged and every
+      operation of the layer fails
      */
     explicit EmulationLayerF(std::unique_ptr<Adapter> adapter);
     virtual ~EmulationLayerF();

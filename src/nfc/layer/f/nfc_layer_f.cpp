@@ -97,6 +97,21 @@ const uint8_t* make_rc(uint8_t rc[16])
     return rc;
 }
 
+/*
+  Stands in for a null adapter so the layer degrades to "every operation fails" instead of
+  dereferencing a null pointer at each call site
+*/
+struct NullAdapterF final : m5::nfc::NFCLayerF::Adapter {
+    inline virtual uint16_t max_fifo_depth() const override
+    {
+        return 0;
+    }
+    inline virtual bool transceive(uint8_t*, uint16_t&, const uint8_t*, const uint16_t, const uint32_t) override
+    {
+        return false;
+    }
+};
+
 }  // namespace
 
 namespace m5 {
@@ -105,7 +120,8 @@ namespace nfc {
 NFCLayerF::NFCLayerF(std::unique_ptr<Adapter> adapter) : _impl(std::move(adapter)), _ndef{*this}
 {
     if (!_impl) {
-        M5_LIB_LOGE("Adapter is null");
+        M5_LIB_LOGE("Adapter is null, every operation will fail");
+        _impl.reset(new NullAdapterF{});
     }
 }
 
