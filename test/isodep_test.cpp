@@ -300,6 +300,21 @@ TEST(IsoDEP, MaxRetriesOverrideControlsResend)
     }
 }
 
+TEST(IsoDEP, FailurePathKeepsWithinCallerCapacity)
+{
+    // transceive() leaves rx_len at the requested capacity when it fails before receiving, and that
+    // capacity comes from the FSC, not from the caller's buffer. The failure path must not copy
+    // more than the caller asked for.
+    ScriptedLayer layer({});  // empty queue: transceive fails without touching rx_len
+    IsoDEP iso{layer, test_config()};
+    uint8_t rx[2]{};
+    uint16_t rx_len = sizeof(rx);
+    const uint8_t cmd[]{0x00};
+
+    EXPECT_FALSE(iso.transceiveINF(rx, rx_len, cmd, sizeof(cmd)));
+    EXPECT_LE(rx_len, static_cast<uint16_t>(sizeof(rx)));
+}
+
 TEST(IsoDEP, OverrideDoesNotResetBlockNumber)
 {
     // Response I-block BN echoes the request BN, so the PCD block number toggles 0,1,0

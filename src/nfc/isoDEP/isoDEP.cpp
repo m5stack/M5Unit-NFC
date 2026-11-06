@@ -186,8 +186,10 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
                     M5_LIB_LOGE("RX: %02X %02X %02X %02X", rx_buf[0], rx_buf[1], rx_buf[2], rx_buf[3]);
                 }
                 // if (retries++ < pol.max_retries) continue;
-                rx_inf_len = rlen;
-                memcpy(rx_inf, rx_buf, rlen);
+                // rlen is still the requested capacity when transceive failed before receiving, and
+                // that capacity comes from the FSC, not from what the caller handed over
+                rx_inf_len = std::min<uint16_t>(rlen, rx_inf_len_org);
+                memcpy(rx_inf, rx_buf, rx_inf_len);
                 PRINT_ERROR(">>>>ERROR 1 %u %02X", rlen, rx_buf[0]);
                 return false;
             }
