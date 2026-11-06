@@ -1,0 +1,2 @@
+# The "Target unit / board" choice is shared by all UnitUnified examples.
+rsource "../../common/Kconfig.variant.i2c_hub"

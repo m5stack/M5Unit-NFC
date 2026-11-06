@@ -92,6 +92,12 @@ jobs:
           - label: NFCV-Detect-UnitNFC (basic)
             example_path: examples/UnitUnified/NFCV/Detect
             variant: USING_UNIT_NFC
+          # ViaPaHub reaches the unit through a hub and switches family at run time, neither of
+          # which any other example does. UnitNFC only: the i2c_hub variant offers UnitRFID2 too,
+          # but that lives in another repository
+          - label: ViaPaHub-UnitNFC (i2c_hub)
+            example_path: examples/UnitUnified/ViaPaHub
+            variant: USING_UNIT_NFC
 #          - label: NFCV-Detect-CapCC1101 (basic)      # cross design — covered by NFCA CapCC1101
 #            example_path: examples/UnitUnified/NFCV/Detect
 #            variant: USING_CAP_CC1101

@@ -95,6 +95,16 @@ Use **QWIIC port (port_a)** with a QWIIC-GROVE conversion cable instead.
 
 > **Note:** GROVE port support may be added in a future update if SoftwareI2C performance improves.
 
+## Support via [PaHub](https://docs.m5stack.com/en/unit/Unit-PaHub%20v2.1)
+
+|Unit|Support|Note|
+|---|---|---|
+|UnitNFC|OK|NFC-A/B/F/V all verified behind a PaHub|
+
+CapCC1101NFC is not listed: it is an SPI unit, so a PaHub cannot reach it.
+
+See also the [ViaPaHub](examples/UnitUnified/ViaPaHub) example and [M5Unit-HUB](https://github.com/m5stack/M5Unit-HUB)
+
 ## Chip Adapter
 
 Each layer takes a chip adapter, so a reader IC this library does not know about can be driven without editing the library. Implement the nested `Adapter` of the layer you need (`NFCLayerA`, `NFCLayerB`, `NFCLayerF`, `NFCLayerV`, `EmulationLayerA` or `EmulationLayerF`) and hand it to the constructor that takes a `std::unique_ptr<Adapter>`. See the Doxygen pages for the methods each one requires.

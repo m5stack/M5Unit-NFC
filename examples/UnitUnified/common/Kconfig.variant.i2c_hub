@@ -1,0 +1,22 @@
+# Shared "Target unit / board" selection for the M5Unit-NFC UnitUnified examples (ESP-IDF).
+# Used by the ViaPaHub example, which reaches the unit through an I2C multiplexer and therefore
+# only works with units that sit on an external I2C port (UnitNFC, UnitRFID2).
+# rsource'd from each example's main/Kconfig.projbuild. The chosen CONFIG_EXAMPLE_USING_* is mapped
+# to the source-level USING_* macro in common/variant.cmake (shared with the Arduino build).
+menu "M5Unit-NFC example"
+
+choice EXAMPLE_NFC_VARIANT
+    prompt "Target unit / board"
+    default EXAMPLE_USING_UNIT_NFC
+    help
+        Which NFC/RFID unit this example drives through the PaHub.
+        CapCC1101NFC is not listed because it is an SPI unit, and the M5Dial built-in WS1850S is not
+        listed because it sits on the internal I2C bus; neither can be reached through a PaHub.
+
+    config EXAMPLE_USING_UNIT_NFC
+        bool "UnitNFC (ST25R3916, I2C / GROVE)"
+    config EXAMPLE_USING_UNIT_RFID2
+        bool "UnitRFID2 (WS1850S, I2C / GROVE)"
+endchoice
+
+endmenu

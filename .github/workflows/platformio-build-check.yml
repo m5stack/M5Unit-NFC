@@ -118,6 +118,15 @@ jobs:
             framework: Arduino
             espressif32: latest
 
+          # ViaPaHub on Core: the hub puts the unit behind UnitPCA9548AP and a duplicated child
+          # adapter, which no other example exercises. One board is enough - the hub path itself is
+          # chip-agnostic, and the chips are covered by NFCA_Detect.
+          - example: ViaPaHub
+            unit: UnitNFC
+            board: Core
+            framework: Arduino
+            espressif32: latest
+
           # NFCA Specific sketches
           - example: NFCA_Dump
             unit: UnitNFC
