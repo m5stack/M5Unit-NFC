@@ -60,38 +60,6 @@ inline bool is_system_code_wildcard(const uint8_t sc[2])
 {
     return sc && sc[0] == 0xFF && sc[1] == 0xFF;
 }
-
-/*
-  Stands in for a null adapter so the layer degrades to "every operation fails" instead of
-  dereferencing a null pointer at each call site
-*/
-struct NullAdapterEmuF final : m5::nfc::EmulationLayerF::Adapter {
-    inline virtual bool start_emulation(const m5::nfc::f::PICC&) override
-    {
-        return false;
-    }
-    inline virtual bool stop_emulation() override
-    {
-        return false;
-    }
-    inline virtual bool transmit(const uint8_t*, const uint16_t, const uint32_t) override
-    {
-        return false;
-    }
-    inline virtual m5::nfc::EmulationLayerF::State update_off() override
-    {
-        return m5::nfc::EmulationLayerF::State::Off;
-    }
-    inline virtual m5::nfc::EmulationLayerF::State update_communicated() override
-    {
-        return m5::nfc::EmulationLayerF::State::Off;
-    }
-    inline virtual m5::nfc::EmulationLayerF::State update_selected() override
-    {
-        return m5::nfc::EmulationLayerF::State::Off;
-    }
-};
-
 }  // namespace
 
 namespace m5 {
@@ -100,8 +68,7 @@ namespace nfc {
 EmulationLayerF::EmulationLayerF(std::unique_ptr<Adapter> adapter) : _impl(std::move(adapter))
 {
     if (!_impl) {
-        M5_LIB_LOGE("Adapter is null, every operation will fail");
-        _impl.reset(new NullAdapterEmuF{});
+        M5_LIB_LOGE("Adapter is null, the layer must not be used");
     }
 }
 

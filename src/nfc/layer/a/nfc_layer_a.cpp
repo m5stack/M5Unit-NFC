@@ -171,59 +171,6 @@ bool mifare_plus_calculate_mac(const uint8_t kmac[16], const uint8_t ti[4], cons
 using desfire::access_denied;
 using desfire::access_free;
 using desfire::required_read_key_no_from_access_rights;
-
-/*
-  Stands in for a null adapter so the layer degrades to "every operation fails" instead of
-  dereferencing a null pointer at each call site
-*/
-struct NullAdapterA final : m5::nfc::NFCLayerA::Adapter {
-    inline virtual uint16_t max_fifo_depth() const override
-    {
-        return 0;
-    }
-    inline virtual bool transceive(uint8_t*, uint16_t&, const uint8_t*, const uint16_t, const uint32_t) override
-    {
-        return false;
-    }
-    inline virtual bool request(uint16_t&) override
-    {
-        return false;
-    }
-    inline virtual bool wakeup(uint16_t&) override
-    {
-        return false;
-    }
-    inline virtual bool select(m5::nfc::a::PICC&) override
-    {
-        return false;
-    }
-    inline virtual bool activate(const m5::nfc::a::PICC&) override
-    {
-        return false;
-    }
-    inline virtual bool hlt() override
-    {
-        return false;
-    }
-    inline virtual bool nfca_read_block(uint8_t[16], const uint8_t) override
-    {
-        return false;
-    }
-    inline virtual bool nfca_write_block(const uint8_t, const uint8_t[16]) override
-    {
-        return false;
-    }
-    inline virtual bool mifare_classic_authenticate(const bool, const m5::nfc::a::PICC&, const uint8_t,
-                                                    const m5::nfc::a::mifare::classic::Key&) override
-    {
-        return false;
-    }
-    inline virtual bool mifare_classic_value_block(const m5::nfc::a::Command, const uint8_t, const uint32_t) override
-    {
-        return false;
-    }
-};
-
 }  // namespace
 
 namespace m5 {
@@ -232,8 +179,7 @@ namespace nfc {
 NFCLayerA::NFCLayerA(std::unique_ptr<Adapter> adapter) : _ndef{*this}, _isoDEP{*this}, _impl(std::move(adapter))
 {
     if (!_impl) {
-        M5_LIB_LOGE("Adapter is null, every operation will fail");
-        _impl.reset(new NullAdapterA{});
+        M5_LIB_LOGE("Adapter is null, the layer must not be used");
     }
 }
 
@@ -761,9 +707,8 @@ bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t add
         return false;
     }
 
-    // A depth under three wraps the shift below, and a depth under six leaves no room for a whole
-    // page, which makes the first read fail on a length of zero. The no-op adapter installed for a
-    // null Adapter reports zero, so this is reachable without a third-party chip
+    // Adapter is public API. A depth under three wraps the shift below, and a depth under six
+    // leaves no room for a whole page, so refuse up front rather than ask for a batch of zero
     const uint16_t batch_cap = (fifo_depth > 2) ? static_cast<uint16_t>((fifo_depth - 2 /*CRC*/) >> 2) : 0;
     if (!batch_cap) {
         M5_LIB_LOGE("FIFO depth %u leaves no room for a page", fifo_depth);

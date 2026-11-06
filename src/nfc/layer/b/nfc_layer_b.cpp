@@ -58,30 +58,6 @@ constexpr uint8_t fsdi_for_size(const uint16_t bytes)
            : (bytes >= 24)  ? 1
                             : 0;
 }
-
-/*
-  Stands in for a null adapter so the layer degrades to "every operation fails" instead of
-  dereferencing a null pointer at each call site
-*/
-struct NullAdapterB final : m5::nfc::NFCLayerB::Adapter {
-    inline virtual uint16_t max_fifo_depth() const override
-    {
-        return 0;
-    }
-    inline virtual bool transceive(uint8_t*, uint16_t&, const uint8_t*, const uint16_t, const uint32_t) override
-    {
-        return false;
-    }
-    inline virtual bool transmit(const uint8_t*, const uint16_t, const uint32_t) override
-    {
-        return false;
-    }
-    inline virtual bool receive(uint8_t*, uint16_t&, const uint32_t) override
-    {
-        return false;
-    }
-};
-
 }  // namespace
 
 namespace m5 {
@@ -90,8 +66,7 @@ namespace nfc {
 NFCLayerB::NFCLayerB(std::unique_ptr<Adapter> adapter) : _ndef{*this}, _isoDEP{*this}, _impl(std::move(adapter))
 {
     if (!_impl) {
-        M5_LIB_LOGE("Adapter is null, every operation will fail");
-        _impl.reset(new NullAdapterB{});
+        M5_LIB_LOGE("Adapter is null, the layer must not be used");
     }
 }
 
@@ -177,8 +152,8 @@ bool NFCLayerB::select(m5::nfc::b::PICC& picc, const uint32_t timeout_ms)
     //   bit[5:4] = PCD->PICC bit rate divisor
     //   bit[7:6] = PICC->PCD bit rate divisor
     // Take min(PCD FIFO, PICC FSCI) so the PICC chains I-blocks within what we can receive.
-    // The no-op adapter installed for a null Adapter reports a depth of zero, which would wrap
-    // this subtraction and advertise a receive capacity the PCD does not have
+    // Adapter is public API, and a depth under three would wrap this subtraction and advertise a
+    // receive capacity the PCD does not have
     const uint16_t fifo       = maximum_fifo_depth();
     const uint16_t pcd_rx_cap = (fifo > 2) ? static_cast<uint16_t>(fifo - 2 /*CRC*/) : 0;
     const uint8_t pcd_fsdi    = fsdi_for_size(pcd_rx_cap);

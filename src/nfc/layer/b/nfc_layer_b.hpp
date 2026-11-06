@@ -59,8 +59,8 @@ public:
       @param adapter Adapter that drives the chip
       @note Lets a chip this library does not know about be used without editing this header. The
       layer takes ownership of the adapter
-      @warning A null adapter is not a crash but not usable either: an error is logged and every
-      operation of the layer fails
+      @warning The adapter must not be null. A null one is reported on construction but not
+      replaced, so every later call dereferences it and the layer must not be used
      */
     explicit NFCLayerB(std::unique_ptr<Adapter> adapter);
     virtual ~NFCLayerB();

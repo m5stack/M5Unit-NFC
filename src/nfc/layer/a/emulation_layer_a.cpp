@@ -23,46 +23,6 @@ using namespace m5::nfc::a::mifare::classic;
 
 namespace {
 constexpr uint8_t dummy_signature[32] = {};
-
-/*
-  Stands in for a null adapter so the layer degrades to "every operation fails" instead of
-  dereferencing a null pointer at each call site
-*/
-struct NullAdapterEmuA final : m5::nfc::EmulationLayerA::Adapter {
-    inline virtual bool start_emulation(const m5::nfc::a::PICC&) override
-    {
-        return false;
-    }
-    inline virtual bool stop_emulation() override
-    {
-        return false;
-    }
-    inline virtual bool transmit(const uint8_t*, const uint16_t, const uint32_t) override
-    {
-        return false;
-    }
-    inline virtual m5::nfc::EmulationLayerA::State update_off() override
-    {
-        return m5::nfc::EmulationLayerA::State::Off;
-    }
-    inline virtual m5::nfc::EmulationLayerA::State update_idle() override
-    {
-        return m5::nfc::EmulationLayerA::State::Off;
-    }
-    inline virtual m5::nfc::EmulationLayerA::State update_ready() override
-    {
-        return m5::nfc::EmulationLayerA::State::Off;
-    }
-    inline virtual m5::nfc::EmulationLayerA::State update_active() override
-    {
-        return m5::nfc::EmulationLayerA::State::Off;
-    }
-    inline virtual m5::nfc::EmulationLayerA::State update_halt() override
-    {
-        return m5::nfc::EmulationLayerA::State::Off;
-    }
-};
-
 }  // namespace
 
 namespace m5 {
@@ -71,8 +31,7 @@ namespace nfc {
 EmulationLayerA::EmulationLayerA(std::unique_ptr<Adapter> adapter) : _impl(std::move(adapter))
 {
     if (!_impl) {
-        M5_LIB_LOGE("Adapter is null, every operation will fail");
-        _impl.reset(new NullAdapterEmuA{});
+        M5_LIB_LOGE("Adapter is null, the layer must not be used");
     }
 }
 
