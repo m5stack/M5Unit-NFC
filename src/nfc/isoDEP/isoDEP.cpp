@@ -130,9 +130,10 @@ bool IsoDEP::transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t*
 
     // Calculate the maximum amount of INF that can fit within the frame
     // FSC is the max frame size (including prologue: PCB, CID, NAD) the card can receive
-    const uint16_t tx_frame_cap = _cfg.max_frame_cap_tx();
-    const uint16_t max_frame_size_rx =
-        std::min<uint16_t>(_cfg.max_frame_size_rx(), _layer.maximum_fifo_depth() - 2 /*CRC*/);
+    const uint16_t tx_frame_cap      = _cfg.max_frame_cap_tx();
+    const uint16_t layer_fifo        = _layer.maximum_fifo_depth();
+    const uint16_t max_frame_size_rx = std::min<uint16_t>(
+        _cfg.max_frame_size_rx(), (layer_fifo > 2) ? static_cast<uint16_t>(layer_fifo - 2 /*CRC*/) : 0);
     // FSC includes prologue, so max INF = FSC - overhead
     const uint16_t fsc_inf_cap       = _cfg.fsc_inf_cap();
     const uint16_t max_inf_per_frame = std::min(tx_frame_cap, fsc_inf_cap);

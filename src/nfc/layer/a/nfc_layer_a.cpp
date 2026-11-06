@@ -761,8 +761,17 @@ bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t add
         return false;
     }
 
+    // A batch of zero pages would never advance the loop below, and Adapter is public API, so a
+    // chip reporting a depth with no room for a whole page has to be refused rather than clamped
+    const uint16_t batch_cap = (fifo_depth > 2) ? static_cast<uint16_t>((fifo_depth - 2 /*CRC*/) >> 2) : 0;
+    if (!batch_cap) {
+        M5_LIB_LOGE("FIFO depth %u leaves no room for a page", fifo_depth);
+        rx_len = 0;
+        return false;
+    }
+
     uint16_t actual{};
-    uint16_t batch_pages = std::min<uint16_t>((fifo_depth - 2 /*CRC*/) >> 2, pages);
+    uint16_t batch_pages = std::min<uint16_t>(batch_cap, pages);
     uint16_t spage       = from;
     uint16_t epage       = from + batch_pages - 1;
     rx_len               = 0;
