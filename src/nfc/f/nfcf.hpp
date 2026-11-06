@@ -479,6 +479,9 @@ constexpr uint16_t KEY_VERIOSN_NONE{KEY_VERSION_NONE};  //!< @deprecated typo al
 
 constexpr uint8_t FELICA_ID_LENGTH{8};
 constexpr uint8_t FELICA_MAX_BLOCKS{8};
+//! @brief Node count a Request Service may ask about, which bounds its worst-case response
+//! time at the 5.104 s a poller has to support
+constexpr uint8_t FELICA_MAX_NODES{32};
 constexpr uint8_t FELICA_PT_MEMORY_SIZE{21};
 constexpr uint16_t FELICA_DEFAULT_EMULATION_REQUEST_DATA{0x0083};
 //! @brief Length of a Read Without Encryption answer up to the first block, length byte included

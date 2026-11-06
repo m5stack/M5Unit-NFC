@@ -35,8 +35,8 @@ constexpr uint16_t known_system_code_table[] = {system_code_wildcard, system_cod
   and E in b1-b0. n is the count that table calls for: nodes, blocks, or zero for the commands
   whose answer does not grow with the request. Working in microseconds keeps this in integers.
   Read caps n at FELICA_MAX_BLOCKS and write never passes more, so their widest case (A=B=7, E=3,
-  n=8) reaches about 1.4 s, but Request Service takes n from the caller, where n=255 and the same
-  parameters reach about 40 s
+  n=8) reaches about 1.4 s. The widest case overall is Request Service with A=B=7, E=3 and
+  n=FELICA_MAX_NODES, about 5.104 s, which is the timeout a poller is required to support
  */
 inline uint32_t max_response_time_ms(const uint8_t param, const uint32_t n)
 {
@@ -367,7 +367,8 @@ bool NFCLayerF::requestService(uint16_t& key_version, const uint16_t node_code)
 
 bool NFCLayerF::requestService(uint16_t key_version[], const uint16_t* node_code, const uint8_t node_num)
 {
-    if (!_activePICC.valid() || !key_version || !node_code || !node_num || _activePICC.type != Type::FeliCaStandard) {
+    if (!_activePICC.valid() || !key_version || !node_code || !node_num || node_num > FELICA_MAX_NODES ||
+        _activePICC.type != Type::FeliCaStandard) {
         return false;
     }
 
