@@ -50,7 +50,7 @@ m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 #endif
 m5::nfc::NFCLayerF nfc_f{unit};
 
-// The master key used for create CK
+// The master key used to create CK
 // Embedded in source only for this example. Real applications should keep the key outside the
 // firmware (SD, cloud, ...)
 constexpr uint8_t example_master_key[24] = {0xE3, 0x92, 0xCA, 0xC2, 0xF9, 0x21, 0x3B, 0xF2, 0xC0, 0x4F, 0x65, 0xC4,

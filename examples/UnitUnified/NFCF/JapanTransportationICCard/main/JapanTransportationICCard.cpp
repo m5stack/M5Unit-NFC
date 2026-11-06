@@ -46,9 +46,8 @@ m5::nfc::NFCLayerF nfc_f{unit};
 
 // A card that answers to none of these is dropped by detect(), so a region-only card needs its
 // own code listed here. 0003h covers the ten cards of the nationwide interoperability scheme.
-// The codes below it are left commented out: only 0003h is corroborated by more than one source,
-// the others come from open-source readers (Metrodroid, nfcpy, TRETJapanNFCReader) rather than a
-// published specification. Uncomment one to try that card
+// The codes below it come from open-source readers (Metrodroid, nfcpy, TRETJapanNFCReader) and are
+// not in any published specification; uncomment one to try that card
 constexpr uint16_t jtic_system_code[] = {
     0x0003,  // Suica,PASMO,ICOCA,PiTaPa,TOICA ...
     0x80DE,  // IruCa
@@ -326,7 +325,7 @@ void loop()
         } else {
             // Either nothing was on the reader, or the card answered none of jtic_system_code
             report_failure("detect");
-            M5.Log.printf("PICC NOT exists, or it answers to none of jtic_system_code\n");
+            M5.Log.printf("No PICC detected, or it answers to none of jtic_system_code\n");
         }
     }
 }
