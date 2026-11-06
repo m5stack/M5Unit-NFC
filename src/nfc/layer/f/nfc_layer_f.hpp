@@ -188,8 +188,10 @@ public:
       @brief Request service
       @param[out] key_version Key version array (at least node_num)
       @param node_code Node code array
-      @param node_num Number of node_code
+      @param node_num Number of node_code (1 to FELICA_MAX_NODES)
       @return True if successful
+      @pre node_num must not exceed FELICA_MAX_NODES; a larger count is rejected without
+      communicating, because its response time would outrun what a poller has to support
       @warning FeliCa Standard only
      */
     bool requestService(uint16_t key_version[], const uint16_t* node_code, const uint8_t node_num);

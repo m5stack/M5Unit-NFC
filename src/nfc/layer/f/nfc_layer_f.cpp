@@ -36,7 +36,8 @@ constexpr uint16_t known_system_code_table[] = {system_code_wildcard, system_cod
   whose answer does not grow with the request. Working in microseconds keeps this in integers.
   Read caps n at FELICA_MAX_BLOCKS and write never passes more, so their widest case (A=B=7, E=3,
   n=8) reaches about 1.4 s. The widest case overall is Request Service with A=B=7, E=3 and
-  n=FELICA_MAX_NODES, about 5.104 s, which is the timeout a poller is required to support
+  n=FELICA_MAX_NODES: the spec puts it at 5.104 s, the timeout a poller is required to support,
+  and rounding T up lands this at 5.119 s
  */
 inline uint32_t max_response_time_ms(const uint8_t param, const uint32_t n)
 {
