@@ -66,7 +66,6 @@ Support may be expanded in future updates to cover PICCs not listed here.
 | FeliCa Lite | Type3 | Yes | Yes | Yes |  |
 | FeliCa Lite-S | Type3 | Yes | Yes | Yes |  |
 
-
 ### NFC-V
 
 | PICC Type | NFC Forum Tag (NDEF) | Detect | Identify | Raw R/W | Notes |
@@ -90,10 +89,15 @@ See examples: [NFCA Emulation](examples/UnitUnified/NFCA/Emulation) and [NFCF Em
 - I2C version: MIFARE Plus SL3 operation has issues.
 
 ### NessoN1 Connection
+
 GROVE port (port_b) on NessoN1 uses SoftwareI2C (M5HAL Bus), which causes I2C register polling latency too high for ST25R3916 RF timing requirements.  
 Use **QWIIC port (port_a)** with a QWIIC-GROVE conversion cable instead.
 
 > **Note:** GROVE port support may be added in a future update if SoftwareI2C performance improves.
+
+## Chip Adapter
+
+Each layer takes a chip adapter, so a reader IC this library does not know about can be driven without editing the library. Implement the nested `Adapter` of the layer you need (`NFCLayerA`, `NFCLayerB`, `NFCLayerF`, `NFCLayerV`, `EmulationLayerA` or `EmulationLayerF`) and hand it to the constructor that takes a `std::unique_ptr<Adapter>`. See the Doxygen pages for the methods each one requires.
 
 ## Related Link
 
@@ -110,8 +114,8 @@ Use **QWIIC port (port_a)** with a QWIIC-GROVE conversion cable instead.
 
 - [M5Unit-NFC - MIT](LICENSE)
 
-
 ## Examples
+
 See also [examples/UnitUnified](examples/UnitUnified)
 
 ### For ArduinoIDE settings
@@ -122,22 +126,22 @@ Each example contains the following block to select the unit:
 // #define USING_UNIT_NFC
 // For CapCC1101 (U219)
 // #define USING_CAP_CC1101
-// For UnitRFID2 (M5Unit-RFID, external)  *NFC-A/B Detect only
+// For UnitRFID2 (U031-B)
 // #define USING_UNIT_RFID2
-// For M5Dial builtin WS1850S  *NFC-A/B Detect only
+// For M5Dial Builtin WS1850S (K130)
 // #define USING_M5DIAL_BUILTIN_WS1850S
 ```
 
-Uncomment one of `USING_UNIT_NFC`, `USING_CAP_CC1101` (or `USING_UNIT_RFID2` / `USING_M5DIAL_BUILTIN_WS1850S` for NFC-A/B Detect):
+Uncomment one of `USING_UNIT_NFC`, `USING_CAP_CC1101` (or `USING_UNIT_RFID2` / `USING_M5DIAL_BUILTIN_WS1850S`, which do NFC-A/B Detect only):
 
 ```cpp
 // For UnitNFC (U216)
 #define USING_UNIT_NFC
 // For CapCC1101 (U219)
 // #define USING_CAP_CC1101
-// For UnitRFID2 (M5Unit-RFID, external)  *NFC-A/B Detect only
+// For UnitRFID2 (U031-B)
 // #define USING_UNIT_RFID2
-// For M5Dial builtin WS1850S  *NFC-A/B Detect only
+// For M5Dial Builtin WS1850S (K130)
 // #define USING_M5DIAL_BUILTIN_WS1850S
 ```
 
@@ -155,7 +159,7 @@ On ESP-IDF native builds (`idf.py`), the unit/board is selected via Kconfig inst
 | `Kconfig.variant.no_dial` | UnitNFC / CapCC1101NFC / UnitRFID2 | NFC-B Detect / JapanIDCard (M5Dial built-in cannot do NFC-B) |
 | `Kconfig.variant.basic` | UnitNFC / CapCC1101NFC | NFC-A Emulation / all NFC-F / all NFC-V (only ST25R3916-based units supported) |
 
-`examples/UnitUnified/common/variant.cmake` then maps the chosen `CONFIG_EXAMPLE_USING_*` to the source-level `USING_*` macro shared with the Arduino build.
+`examples/UnitUnified/common/variant.cmake` then maps the chosen `CONFIG_EXAMPLE_USING_*` to the source-level `USING_*` macro shared with the Arduino build, so the example source itself does not need to be edited.
 
 Pick the variant with `menuconfig`:
 
@@ -166,8 +170,6 @@ idf.py menuconfig
 # -> M5Unit-NFC example -> Target unit / board -> choose ONE of the options offered
 idf.py build flash monitor
 ```
-
-The selected `CONFIG_EXAMPLE_USING_*` is translated into the Arduino-compatible `USING_*` macro at compile time, so the example source itself does not need to be edited.
 
 ## Doxygen document
 [GitHub Pages](https://m5stack.github.io/M5Unit-NFC/)
