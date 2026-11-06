@@ -11,11 +11,18 @@ dependencies:
   m5stack/M5UnitUnified:
     git: https://github.com/m5stack/M5UnitUnified.git
     version: main
+  # src/ includes <M5Utility.hpp> directly, so it is declared here rather than relied upon as a
+  # transitive dependency of M5UnitUnified. Declaring it here does not conflict with the one
+  # M5UnitUnified pulls in: the same git URL and ref resolve to a single component.
+  m5stack/M5Utility:
+    git: https://github.com/m5stack/M5Utility.git
+    version: main
 
 targets:
   - esp32
   - esp32s3
   - esp32c3
+  - esp32c5
   - esp32c6
   - esp32h2
   - esp32p4
