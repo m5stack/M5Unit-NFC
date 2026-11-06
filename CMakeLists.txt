@@ -1,4 +1,4 @@
-# ESP-IDF component manifest for M5Unit-NFC.
+# ESP-IDF component registration for M5Unit-NFC.
 # Upstream: https://github.com/m5stack/M5Unit-NFC
 #
 # UnitNFC (= UnitST25R3916) over I2C. IRQ wiring and CapCC1101 SPI CS
