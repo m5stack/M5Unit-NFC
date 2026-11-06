@@ -63,8 +63,10 @@ jobs:
       max-parallel: 20
       matrix:
         # idf boundaries: 5.1.7 = oldest legacy-driver (5.0.x dropped: M5GFX needs esp_mm added
-        # in 5.1), 5.4.4 = new driver/*_master.h + touch_sens.h era, 5.5.4 = latest.
-        idf: [v5.1.7, v5.4.4, v5.5.4]
+        # in 5.1), 5.4.4 = new driver/*_master.h + touch_sens.h era, 5.5.4 = latest, 6.1 = GCC 15
+        # and C++26 by default, where the Kconfig default for COMPILER_DISABLE_DEFAULT_ERRORS flips
+        # to n (common/sdkconfig.defaults pins it back to y).
+        idf: [v5.1.7, v5.4.4, v5.5.4, v6.1]
         # Cross design: NFCA Detect gets both variants (UnitNFC / CapCC1101) — primary protocol.
         # NFCB/F/V Detect get UnitNFC only — protocol-specific compile check, no need to repeat
         # the CapCC1101 variant per family (CapCC1101 is exercised by NFCA + chip job suffices).
@@ -124,7 +126,7 @@ jobs:
       max-parallel: 20
       matrix:
         target: [esp32, esp32c6, esp32h2, esp32p4]
-        idf: [v5.1.7, v5.4.4, v5.5.4]
+        idf: [v5.1.7, v5.4.4, v5.5.4, v6.1]
         exclude:
           # esp32p4 stable from IDF v5.3 (M5GFX P4 verified on 5.4/5.5). 5.1.7 not applicable.
           - target: esp32p4
