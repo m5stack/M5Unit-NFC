@@ -1766,7 +1766,7 @@ public:
     /*!
       @brief Transceive
       @param rx Receive buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param[in,out] rx_len in:Size of receive buffer out:actual read size
       @param tx Send buffer
       @param tx_len Size of send buffer
       @param timeout_ms Timeout(ms)
@@ -1794,7 +1794,7 @@ public:
     /*!
       @brief Receive raw bytes (no transmit)
       @param rx Receive buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param[in,out] rx_len in:Size of receive buffer out:actual read size
       @param timeout_ms Timeout(ms)
       @param min_rx_len Minimum expected receive bytes
       @return True if successful
@@ -1902,7 +1902,7 @@ public:
     /*!
       @brief Transceive with NFC-B PICC
       @param[out] rx Receive buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param[in,out] rx_len in:Size of receive buffer out:actual read size
       @param tx Send buffer
       @param tx_len Size of send buffer
       @param timeout_ms Timeout(ms)
@@ -1921,7 +1921,7 @@ public:
     /*!
       @brief Receive from NFC-B PICC
       @param[out] rx Receive buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param[in,out] rx_len in:Size of receive buffer out:actual read size
       @param timeout_ms Timeout(ms)
       @return True if successful
      */
@@ -1934,7 +1934,7 @@ public:
     /*!
       @brief Transceive with NFC-F PICC
       @param[out] rx Receive buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param[in,out] rx_len in:Size of receive buffer out:actual read size
       @param tx Send buffer
       @param tx_len Size of send buffer
       @param timeout_ms Timeout(ms)
@@ -1960,7 +1960,7 @@ public:
     /*!
       @brief Receive from NFC-F PICC
       @param[out] rx Receive buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param[in,out] rx_len in:Size of receive buffer out:actual read size
       @param timeout_ms Timeout(ms)
       @return True if successful
      */
@@ -1973,7 +1973,7 @@ public:
     /*!
       @brief Transceive
       @param[out] rx Receive buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param[in,out] rx_len in:Size of receive buffer out:actual read size
       @param tx Send buffer
       @param tx_bytes Size of send buffer
       @param timeout_ms Timeout(ms)
@@ -1999,7 +1999,7 @@ public:
     /*!
       @brief Receive from NFC-V PICC
       @param[out] rx Receive buffer
-      @param[in/out] rx_len in:Size of receive buffer out:actual read size
+      @param[in,out] rx_len in:Size of receive buffer out:actual read size
       @param timeout_ms Timeout(ms)
       @param min_rx_len Minimum expected receive bytes
       @return True if successful

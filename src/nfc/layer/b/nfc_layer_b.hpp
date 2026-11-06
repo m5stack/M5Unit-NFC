@@ -130,7 +130,7 @@ public:
     /*!
       @brief Send REQB to discover a PICC in IDLE
       @param[out] atqb ATQB received from PICC (at atqb_len)
-      @param[in/out] atqb_len in:atqb length out:actual received length
+      @param[in,out] atqb_len in:atqb length out:actual received length
       @param afi Application Family Identifier (0x00 all)
       @param slots Number of slots required
       @param timeout_ms Timeout in milliseconds
@@ -147,7 +147,7 @@ public:
     /*!
       @brief Send WUPB to wake a PICC from IDLE or HALT
       @param[out] atqb ATQB received from PICC (at least atqb_len)
-      @param[in/out] atqb_len in:atqb length out:actual received length
+      @param[in,out] atqb_len in:atqb length out:actual received length
       @param afi Application Family Identifier (0x00 all)
       @param slots Number of slots required
       @param timeout_ms Timeout in milliseconds
@@ -283,7 +283,7 @@ struct NFCLayerB::Adapter {
     /*!
       @brief Maximum FIFO depth in bytes
       @return Maximum FIFO depth in bytes
-      @note Answers NFCLayerB::maximum_fifo_depth(), which spells the same thing in full
+      @note Answers NFCLayerB::maximum_fifo_depth()
      */
     virtual uint16_t max_fifo_depth() const = 0;
 

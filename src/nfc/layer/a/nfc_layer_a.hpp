@@ -230,7 +230,7 @@ public:
     /*!
       @brief Identify the specified PICC type
       @details Classification Based on AN10883
-      @param[in/out] picc PICC
+      @param[in,out] picc PICC
       @return True if successful
       @warning Before calling, the previously active PICC is deactivated
       @post PICC transitions: ACTIVE -> HALT, whether the type was identified or not
@@ -260,7 +260,7 @@ public:
       @brief Read any bytes from user area
       @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
       @param rx Buffer
-      @param[in/out] rx_len in:buffer size, out:actual read size
+      @param[in,out] rx_len in:buffer size, out:actual read size
       @param saddr Reading start block/page address
       @return True if successful
       @warning For FAST_READ-compatible PICC, the rx is in 4-byte units. for others, it is in 16-byte units
@@ -271,7 +271,7 @@ public:
     /*!
       @brief Read any bytes from user area (MIFARE Plus SL3)
       @param rx Buffer
-      @param[in/out] rx_len in:buffer size, out:actual read size
+      @param[in,out] rx_len in:buffer size, out:actual read size
       @param saddr Reading start block address
       @param key AES sector key (for MIFARE Plus SL3)
       @return True if successful
@@ -721,7 +721,7 @@ struct NFCLayerA::Adapter {
     /*!
       @brief Maximum FIFO depth in bytes
       @return Maximum FIFO depth in bytes
-      @note Answers NFCLayerA::maximum_fifo_depth(), which spells the same thing in full
+      @note Answers NFCLayerA::maximum_fifo_depth()
      */
     virtual uint16_t max_fifo_depth() const = 0;
 

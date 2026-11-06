@@ -259,7 +259,7 @@ public:
       @brief Read any bytes from user area
       @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
       @param[out] rx Buffer
-      @param[in/out] rx_len in:buffer size, out:actual read size
+      @param[in,out] rx_len in:buffer size, out:actual read size
       @param sblock Block to start reading
       @return True if successful
       @warning rx in 16-byte units
@@ -269,7 +269,7 @@ public:
     /*!
       @brief Read the specified block list and service codes
       @param[out] rx Buffer (At least 16 * block_num)
-      @param[in/out] rx_len in:buffer size, out:actual read size
+      @param[in,out] rx_len in:buffer size, out:actual read size
       @param block Target block array
       @param block_num Number of block
       @param service_code Service code array
@@ -474,7 +474,7 @@ struct NFCLayerF::Adapter {
     /*!
       @brief Maximum FIFO depth in bytes
       @return Maximum FIFO depth in bytes
-      @note Answers NFCLayerF::maximum_fifo_depth(), which spells the same thing in full
+      @note Answers NFCLayerF::maximum_fifo_depth()
      */
     virtual uint16_t max_fifo_depth() const = 0;
     /*!
