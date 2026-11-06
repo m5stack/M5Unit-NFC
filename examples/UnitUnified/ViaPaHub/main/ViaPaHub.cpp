@@ -10,6 +10,13 @@
   BtnA: click to detect in the current family, hold to step to the next one. Unlike the other
   examples, which fix the family in config() before begin(), this one calls configureNFCMode()
   while running. A WS1850S offers NFC-A and NFC-B only, so the other two are compiled out.
+
+  Device ---> PaHub (0x70)
+                `- ch:0 UnitNFC
+
+  The PaHub answers on 0x70 by default. Nothing behind it collides (ST25R3916 is 0x50, WS1850S is
+  0x28), but a v2.1 PaHub can be moved to 0x71-0x77 with its DIP switch, and the hub then has to be
+  constructed with that address: m5::unit::UnitPaHub hub{0x71};
 */
 #include <M5Unified.h>
 #include <M5UnitUnified.h>
@@ -18,6 +25,7 @@
 #include <M5Utility.h>
 #include <wiring/m5_unit_unified_wiring.hpp>
 #include <vector>
+#include <algorithm>
 
 // *************************************************************
 // Choose ONE define symbol to match the unit you are using
@@ -120,14 +128,13 @@ bool stop_field()
 
 // Ask the unit for the family, then poll with the matching layer. Returns how many PICCs answered,
 // or a negative value when the unit does not support the family at all. Found PICCs are printed to
-// serial and summarised into detail for the screen.
+// serial and summarized into detail for the screen.
 //
-// This stops at detect() on purpose: what it is here to show is the hub and the family switch, not
-// identification. detect() classifies a PICC only from what the first exchange reveals (the SAK for
-// NFC-A, the PMm for NFC-F), so the type printed below is provisional and can be a generic answer
-// such as ISO14443-4 or, for NFC-B, Unclassified. Settling the type takes more exchanges, which
-// only NFC-A offers (NFCLayerA::identify(); see the NFCA/Detect example) - NFCLayerB / NFCLayerF /
-// NFCLayerV have no identify() at all
+// This goes no further than detect(). detect() classifies a PICC only from what the first exchange
+// reveals (the SAK for NFC-A, the PMm for NFC-F), so the type printed below is provisional and can be
+// a generic answer such as ISO14443-4 or, for NFC-B, Unclassified. Settling the type takes more
+// exchanges, which only NFC-A offers (NFCLayerA::identify(); see the NFCA/Detect example) -
+// NFCLayerB / NFCLayerF / NFCLayerV have no identify() at all
 int detect_family(const NFC mode, char* detail, const size_t detail_len)
 {
     // Reconfiguring the family the unit is already in would drop and raise the RF field for nothing
@@ -229,8 +236,10 @@ void setup()
     hcfg.clock = std::min(hcfg.clock, unit.component_config().clock);
     hub.component_config(hcfg);
 
-    // Board-aware I2C for the PaHub: NessoN1 -> SoftwareI2C(port_b), NanoC6/NanoH2 -> Ex_I2C, others -> Wire
-    if (!m5::unit::wiring::addI2C(Units, hub) || !Units.begin()) {
+    // Board-aware I2C for the PaHub: NessoN1 -> QWIIC (port_a), NanoC6/NanoH2 -> Ex_I2C, others -> Wire.
+    // NessoN1 has to go through port_a: its GROVE port is SoftwareI2C, whose register polling is too
+    // slow for the RF timing the reader needs (see the NessoN1 section of the README)
+    if (!m5::unit::wiring::addI2C(Units, hub, 0, m5::unit::wiring::NessoPort::PortA) || !Units.begin()) {
         M5_LOGE("Failed to begin");
         M5_LOGW("%s", Units.debugInfo().c_str());
         m5::unit::wiring::failStop();
