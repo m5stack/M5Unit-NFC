@@ -237,7 +237,10 @@ NFCLayerA::NFCLayerA(std::unique_ptr<Adapter> adapter) : _ndef{*this}, _isoDEP{*
     }
 }
 
-NFCLayerA::~NFCLayerA() = default;
+NFCLayerA::~NFCLayerA()
+{
+    clear_mifare_plus_session();
+}
 
 bool NFCLayerA::transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
                            const uint32_t timeout_ms)
@@ -262,11 +265,16 @@ file_system_feature_t NFCLayerA::supportsFilesystem() const
 
 bool NFCLayerA::request(uint16_t& atqa)
 {
+    // REQA is only answered by a PICC in IDLE, so any cipher session the layer still holds
+    // belongs to a card that is no longer in that session
+    clear_mifare_plus_session();
     return _impl->request(atqa);
 }
 
 bool NFCLayerA::wakeup(uint16_t& atqa)
 {
+    // WUPA puts the PICC back into READY, which ends any cipher session it was holding
+    clear_mifare_plus_session();
     auto ret = _impl->wakeup(atqa);
     m5::utility::delay(2);
     return ret;
@@ -1516,7 +1524,7 @@ bool NFCLayerA::dump_sector(const uint8_t sector)
 
     uint8_t sbuf[16]{};
     uint8_t permissions[4]{};                 // [3] is sector trailer
-    const uint8_t saddr = base + blocks - 1;  //  sector traler
+    const uint8_t saddr = base + blocks - 1;  //  sector trailer
 
     // Read sector trailer
     if (!read16(sbuf, saddr)) {
@@ -1735,7 +1743,7 @@ bool NFCLayerA::dump_desfire_light()
             return false;
         }
 
-        // Get fileSeetings
+        // Get file settings
         FileSettings settings{};
         if (!dfs.getFileSettings(settings, file_no)) {
             if (!dfs.authenticateEV2First(0x00 /* key 0*/, desfire::DESFIRE_DEFAULT_KEY, ctx) ||
@@ -1846,7 +1854,7 @@ bool NFCLayerA::dump_sector_mifare_plus_sl3(const uint8_t sector)
     const uint16_t base          = (sector < 32) ? sector * blocks : 128U + (sector - 32) * blocks;
     const uint16_t trailer_block = base + blocks - 1;
     uint8_t permissions[4]{};                 // [3] is sector trailer
-    const uint8_t saddr = base + blocks - 1;  //  sector traler
+    const uint8_t saddr = base + blocks - 1;  //  sector trailer
 
     uint8_t trailer[16]{};
     std::vector<uint8_t> data;
@@ -2141,7 +2149,7 @@ bool NFCLayerA::mifare_get_version_L3(uint8_t ver[8])
     if (!ver) {  // Skip check valid (Since it targets unconfirmed items)
         return false;
     }
-    // GetVerison (L3)
+    // GetVersion (L3)
     uint8_t cmd[1]  = {m5::stl::to_underlying(Command::GET_VERSION)};
     uint16_t rx_len = 8;
     return _impl->transceive(ver, rx_len, cmd, sizeof(cmd), TIMEOUT_GET_VERSION);
@@ -2156,7 +2164,7 @@ bool NFCLayerA::mifare_get_version_L4_wrapped(uint8_t* ver, uint16_t& ver_len)
         return false;
     }
 
-    // GetVerison (L4) Native wrappe command style like APDU
+    // GetVersion (L4) Native wrapped command style like APDU
     uint8_t cmd[] = {0x90, m5::stl::to_underlying(Command::GET_VERSION), 0x00, 0x00, 0x00};
     uint8_t rx[128]{};
     uint16_t rx_len = sizeof(rx);

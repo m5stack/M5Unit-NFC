@@ -60,6 +60,7 @@ public:
       operation of the layer fails
      */
     explicit NFCLayerA(std::unique_ptr<Adapter> adapter);
+    //! @brief Destructor, which wipes any MIFARE Plus session keys it still holds
     virtual ~NFCLayerA();
 
     ///@name override
@@ -207,7 +208,7 @@ public:
       Internally performs a WUPA (Wake-Up) followed by anti-collision and SELECT
       sequence using the last known PICC
       @return True if successful
-      @pre A valid`_activePICC is stored (i.e., at least one PICC was previously activated)
+      @pre A valid `_activePICC` is stored (i.e., at least one PICC was previously activated)
       @note Use this to recover from transient communication errors without performing a full REQA/detect cycle
      */
     inline bool reactivate()
@@ -309,6 +310,7 @@ public:
       @param saddr Writing start block/page address
       @param tx Buffer
       @param tx_len buffer size
+      @param key MIFARE classic key
       @return True if successful
       @warning For NTAG and Ultralight series, the tx is in 4-byte units; for others, it is in 16-byte units
       @warning If the value is less than the unit, it is padded with 0x00
@@ -331,17 +333,17 @@ public:
 
     /*!
       @brief Dump all blocks/files
-      @param key MIFARE classic key for Classic
+      @param mkey MIFARE classic key for Classic
       @return True if successful
       @pre All blocks must be authenticatable using the specified key if MIFARE classic
      */
     bool dump(const m5::nfc::a::mifare::classic::Key& mkey = m5::nfc::a::mifare::classic::DEFAULT_KEY);
     /*!
       @brief Dump 1 block
-      @param addr Block address
+      @param block Block address
       @return True if successful
       @note The sector to which the block belongs is dumped
-      @pre The block must be authenticated if MIFARE classic/PlusS3
+      @pre The block must be authenticated if MIFARE Classic / Plus SL3
     */
     bool dump(const uint8_t block);
     ///@}
@@ -386,7 +388,7 @@ public:
       |C1|C2|C3|read|write|increment|decrement,transfer, restore|Application|
       |---|---|---|---|---|---|---|---|
       |0|0|0|keyA/B|keyA/B|keyA/B|keyA/B|transport configuration|
-      |0|1|0|keyA/B|never |neve  |never |read/write block|
+      |0|1|0|keyA/B|never |never |never |read/write block|
       |1|0|0|keyA/B|keyB  |never |never |read/write block|
       |1|1|0|keyA/B|keyB  |keyB  |keyA/B|value block|
       |0|0|1|keyA/B|never |never |keyA/B|value block|
@@ -415,7 +417,6 @@ public:
       @brief Is specific block the value block?
       @param[out] is_value_block true if block is the value block
       @param block Block
-      @param key MIFARE classic key
       @return True if successful
       @pre The specified block is authenticated
      */
@@ -734,11 +735,10 @@ struct NFCLayerA::Adapter {
       @return True if an answer came back
       @note The layer hands over frames without a CRC_A, so the chip has to add it
       @warning The answer is expected to still carry its CRC_A, and rx_len caps how much of it is
-      kept. Callers that want the CRC read into a buffer large enough for it; callers that do not
+      kept. Callers that want the CRC pass a buffer large enough for it; callers that do not
       pass a buffer that ends where the payload does, which drops the CRC on the floor. A chip that
       strips the CRC itself has to put it back, or ISO-DEP breaks: it takes two bytes off every
       answer (see isoDEP.hpp rx_crc)
-      @note REQA and WUPA are the exception and come back without a CRC_A
       @note RATS and S(DESELECT) go out this way, so the chip must not answer them on its own
      */
     virtual bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
@@ -748,25 +748,29 @@ struct NFCLayerA::Adapter {
       @brief Look for a PICC that is not halted (REQA)
       @param[out] atqa ATQA the PICC answered with
       @return True if a PICC answered
+      @note REQA does not go out through transceive(), and its answer comes back without a CRC_A
      */
     virtual bool request(uint16_t& atqa) = 0;
     /*!
       @brief Look for a PICC whether or not it is halted (WUPA)
       @param[out] atqa ATQA the PICC answered with
       @return True if a PICC answered
+      @note WUPA does not go out through transceive(), and its answer comes back without a CRC_A
      */
     virtual bool wakeup(uint16_t& atqa) = 0;
 
     /*!
       @brief Run anticollision and select the PICC it settles on
-      @param[out] picc PICC that was selected, filled in with its ATQA, SAK and UID
+      @param[in,out] picc In: the ATQA when the caller already has it, Out: the PICC that was
+      selected, filled in with its ATQA, SAK and UID
       @return True if a PICC was selected
       @note The layer asks for the ATS itself when the PICC turns out to be ISO14443-4, so the chip
       must not send RATS here
-      @warning This is the only place the ATQA can be put into the PICC. The layer never fills it
-      in anywhere else, and activate() takes the PICC by const reference, so whatever this leaves
-      in picc.atqa is what the rest of the library works with. A chip that learns the ATQA in
-      request() has to carry it through, one that learns it here has to write it
+      @warning This is the last place the ATQA can be put into the PICC, and activate() takes the
+      PICC by const reference, so whatever this leaves in picc.atqa is what the rest of the library
+      works with. detect() fills picc.atqa in from request() before calling this, so a chip that
+      rebuilds the PICC here has to carry that value over, one that learns the ATQA here has to
+      write it
       @note The ATQA is read again after activation to tell MIFARE Plus 2K from 4K, so leaving it
       at zero misidentifies those cards
      */
@@ -792,8 +796,7 @@ struct NFCLayerA::Adapter {
       @param[out] rx Receive buffer
       @param addr Block address
       @return True if successful
-      @note Named after NFC-A rather than the block size because MIFARE Classic and Ultralight
-      answer READ with 16 bytes alike
+      @note MIFARE Classic and Ultralight both answer READ with 16 bytes
      */
     virtual bool nfca_read_block(uint8_t rx[16], const uint8_t addr) = 0;
     /*!
