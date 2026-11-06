@@ -25,6 +25,7 @@ using namespace m5::nfc::a::mifare::classic;
 namespace m5 {
 namespace nfc {
 //
+///@cond INTERNAL
 struct PollerST25R3916ForA final : NFCLayerA::Adapter {
     explicit PollerST25R3916ForA(UnitST25R3916& ref) : _u{ref}
     {
@@ -126,6 +127,7 @@ std::unique_ptr<NFCLayerA::Adapter> make_st25r3916_adapter(UnitST25R3916& u)
     return std::unique_ptr<NFCLayerA::Adapter>(new PollerST25R3916ForA(u));
 }
 }  // namespace
+///@endcond
 
 NFCLayerA::NFCLayerA(UnitST25R3916& u) : _ndef{*this}, _isoDEP{*this}, _impl(make_st25r3916_adapter(u))
 {

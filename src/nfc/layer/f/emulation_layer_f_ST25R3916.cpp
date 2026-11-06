@@ -74,6 +74,7 @@ struct ESP32Rng {
 
 namespace m5 {
 namespace nfc {
+///@cond INTERNAL
 struct ListenerST25R3916ForF final : EmulationLayerF::Adapter {
     explicit ListenerST25R3916ForF(EmulationLayerF& layer, UnitST25R3916& ref) : _layer{layer}, _u{ref}
     {
@@ -455,6 +456,7 @@ std::unique_ptr<EmulationLayerF::Adapter> make_st25r3916_adapter(EmulationLayerF
     return std::unique_ptr<EmulationLayerF::Adapter>(new ListenerST25R3916ForF(l, u));
 }
 }  // namespace
+///@endcond
 
 EmulationLayerF::EmulationLayerF(UnitST25R3916& u) : _impl(make_st25r3916_adapter(*this, u))
 {

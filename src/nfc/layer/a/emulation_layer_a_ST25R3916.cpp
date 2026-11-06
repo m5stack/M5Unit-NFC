@@ -58,6 +58,7 @@ constexpr uint32_t default_irq = I_nfct32 | I_rxs32 | I_eon32 | I_eof32 | I_crc3
 
 namespace m5 {
 namespace nfc {
+///@cond INTERNAL
 struct ListenerST25R3916ForA final : EmulationLayerA::Adapter {
     explicit ListenerST25R3916ForA(EmulationLayerA& layer, UnitST25R3916& ref) : _layer{layer}, _u{ref}
     {
@@ -578,6 +579,7 @@ std::unique_ptr<EmulationLayerA::Adapter> make_st25r3916_adapter(EmulationLayerA
     return std::unique_ptr<EmulationLayerA::Adapter>(new ListenerST25R3916ForA(l, u));
 }
 }  // namespace
+///@endcond
 
 EmulationLayerA::EmulationLayerA(UnitST25R3916& u) : _impl(make_st25r3916_adapter(*this, u))
 {

@@ -20,6 +20,7 @@ namespace m5 {
 namespace nfc {
 
 //
+///@cond INTERNAL
 struct AdapterST25R3916ForB final : NFCLayerB::Adapter {
     explicit AdapterST25R3916ForB(UnitST25R3916& ref) : _u{ref}
     {
@@ -61,6 +62,7 @@ std::unique_ptr<NFCLayerB::Adapter> make_st25r3916_adapter(UnitST25R3916& u)
     return std::unique_ptr<NFCLayerB::Adapter>(new AdapterST25R3916ForB(u));
 }
 }  // namespace
+///@endcond
 
 NFCLayerB::NFCLayerB(UnitST25R3916& u) : _ndef{*this}, _isoDEP{*this}, _impl(make_st25r3916_adapter(u))
 {
