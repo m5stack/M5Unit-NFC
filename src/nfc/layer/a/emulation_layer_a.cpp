@@ -237,7 +237,7 @@ EmulationLayerA::State EmulationLayerA::receive_callback(const uint8_t* rx, cons
             break;
         case Command::GET_VERSION:
             if (rx_len == 1) {
-                const auto res = get_version3_response(_picc.type);  // fiexd 8 bytes
+                const auto res = get_version3_response(_picc.type);  // fixed 8 bytes
                 if (res) {
                     ret = _impl->transmit(res, 8, 2) ? State::Active : State::Idle;
                 }

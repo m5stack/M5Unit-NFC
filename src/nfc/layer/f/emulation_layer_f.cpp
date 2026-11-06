@@ -230,7 +230,7 @@ EmulationLayerF::State EmulationLayerF::receive_callback(const State s, const ui
                 }
                 if (is_system_code_ndef(rx + 2)) {
                     auto ptr = block_to_address(_memory, _memory_size, lite_s::MC.number);
-                    if (!ptr || ptr[3] == 0x00) {  // SYS_OP is not support NDEF
+                    if (!ptr || ptr[3] == 0x00) {  // SYS_OP does not support NDEF
                         break;
                     }
                 }

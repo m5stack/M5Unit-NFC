@@ -270,7 +270,7 @@ public:
       @brief Read the specified block list and service codes
       @param[out] rx Buffer (At least 16 * block_num)
       @param[in,out] rx_len in:buffer size, out:actual read size
-      @param block Target block array
+      @param block_list Target block array
       @param block_num Number of block
       @param service_code Service code array
       @param service_num Number of service code
@@ -344,7 +344,7 @@ public:
       @param[out] rx Output buffer
       @param block Target block
       @return True if successful
-      @pre internalAuthentication
+      @pre internalAuthenticate()
      */
     bool readWithMAC16(uint8_t rx[16], const m5::nfc::f::block_t block);
 

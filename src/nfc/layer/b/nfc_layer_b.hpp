@@ -177,7 +177,7 @@ public:
       @brief Detect idle PICCs
       @param[out] piccs Detected PICCs (one per activated PICC candidate)
       @param afi Application Family Identifier (0x00 all)
-      @param max_picc How many to detect
+      @param max_piccs How many to detect
       @param timeout_ms  Polling time budget in milliseconds
       @param req_timeout_ms Timeout for each REQB/WUPB request in milliseconds
       @return True if detected

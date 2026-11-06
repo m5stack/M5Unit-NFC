@@ -10,7 +10,7 @@
   @note Glossary
   - PCD: Proximity Coupling Device (reader)
   - PICC: Proximity Integrated Circuit Card (card/tag, target device)
-  - IDLE/READY/ACTIVE/HALT: internal state-machine names (borrowed from NFC-A's ISO14443-3 terminology for consistency)
+  - None/Off/Communicated/Selected: internal state-machine names (EmulationLayerF::State)
 
   @note In NFC Forum (NDEF) context, a PICC is often called a "Tag"
 */
