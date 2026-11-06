@@ -348,6 +348,8 @@ void loop()
 #include <esp_timer.h>
 
 #if CONFIG_FREERTOS_UNICORE
+// Single-core SoCs: run loop() back-to-back, but every ~2 s yield a 5 ms slice so the IDLE task
+// runs and feeds the task watchdog (default 5 s).
 static inline void feedIdleTaskPeriodically(void)
 {
     constexpr uint32_t FEED_INTERVAL_MS   = 2000;

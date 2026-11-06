@@ -39,7 +39,7 @@ m5::unit::UnitNFC unit{};  // I2C
 #pragma message("Choose CapCC1101NFC")
 m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 #else
-#error Choose unit please!
+#error Choose ONE: USING_UNIT_NFC / USING_CAP_CC1101
 #endif
 m5::nfc::NFCLayerV nfc_v{unit};
 
@@ -248,6 +248,8 @@ void loop()
 #include <esp_timer.h>
 
 #if CONFIG_FREERTOS_UNICORE
+// Single-core SoCs: run loop() back-to-back, but every ~2 s yield a 5 ms slice so the IDLE task
+// runs and feeds the task watchdog (default 5 s).
 static inline void feedIdleTaskPeriodically(void)
 {
     constexpr uint32_t FEED_INTERVAL_MS   = 2000;
