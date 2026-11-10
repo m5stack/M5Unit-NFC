@@ -69,12 +69,24 @@ NFCLayerV nfc_v{unit};
 
 constexpr uint8_t HUB_CHANNEL{0};
 
-// detect_family() returns how many PICCs answered, or one of these
-constexpr int DETECT_UNSUPPORTED{-1};  // this unit has no layer for the family
-constexpr int DETECT_FAILED{-2};       // the family is supported, but the exchange failed
+// detect_family() returns how many PICCs answered, or this
+constexpr int DETECT_FAILED{-1};
 
-constexpr NFC family_table[]        = {NFC::A, NFC::B, NFC::F, NFC::V};
-constexpr const char* family_name[] = {"NFC-A", "NFC-B", "NFC-F", "NFC-V"};
+struct Family {
+    NFC mode;
+    const char* name;
+};
+
+// Only the families this build has a layer for. A WS1850S has no NFC-F / NFC-V layer, so those are
+// left out of the cycle rather than offered and then refused
+constexpr Family families[] = {
+    {NFC::A, "NFC-A"},
+    {NFC::B, "NFC-B"},
+#if defined(USING_UNIT_NFC)
+    {NFC::F, "NFC-F"},
+    {NFC::V, "NFC-V"},
+#endif
+};
 uint8_t family_index{};
 
 // Font0 is 6x8, so one text size step per 160 px keeps the four lines readable from AtomS3 (128 px)
@@ -131,8 +143,7 @@ bool stop_field()
 }
 
 // Ask the unit for the family, then poll with the matching layer. Returns how many PICCs answered,
-// or a negative value when the unit does not support the family at all. Found PICCs are printed to
-// serial and summarized into detail for the screen.
+// or DETECT_FAILED. Found PICCs are printed to serial and summarized into detail for the screen.
 //
 // This goes no further than detect(). detect() classifies a PICC only from what the first exchange
 // reveals (the SAK for NFC-A, the PMm for NFC-F), so the type printed below is provisional and can be
@@ -148,9 +159,10 @@ int detect_family(const NFC mode, char* detail, const size_t detail_len)
             return DETECT_FAILED;
         }
         if (!unit.configureNFCMode(mode)) {
+            M5.Log.printf("  failed to configure %s\n", families[family_index].name);
             return DETECT_FAILED;
         }
-        M5.Log.printf("  reconfigured to %s\n", family_name[family_index]);
+        M5.Log.printf("  reconfigured to %s\n", families[family_index].name);
     }
     switch (mode) {
         case NFC::A: {
@@ -205,8 +217,8 @@ int detect_family(const NFC mode, char* detail, const size_t detail_len)
             return (int)piccs.size();
         }
 #endif
-        default:
-            return DETECT_UNSUPPORTED;
+        default:  // every family in families[] has a case above
+            return DETECT_FAILED;
     }
 }
 
@@ -252,10 +264,10 @@ void setup()
     M5_LOGI("M5UnitUnified initialized");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
-    draw(UNIT_NAME, family_name[family_index], "click: detect", "hold: next family");
+    draw(UNIT_NAME, families[family_index].name, "click: detect", "hold: next family");
     M5.Log.printf("%s via PaHub ch%u\n", UNIT_NAME, HUB_CHANNEL);
     M5.Log.printf("BtnA click: detect in the current family, hold: step to the next family\n");
-    M5.Log.printf("Family: %s\n", family_name[family_index]);
+    M5.Log.printf("Family: %s\n", families[family_index].name);
 }
 
 void loop()
@@ -264,9 +276,9 @@ void loop()
     Units.update();
 
     if (M5.BtnA.wasHold()) {
-        family_index = (family_index + 1) % m5::stl::size(family_table);
-        M5.Log.printf("Family: %s\n", family_name[family_index]);
-        draw(UNIT_NAME, family_name[family_index], "click: detect", "hold: next family");
+        family_index = (family_index + 1) % m5::stl::size(families);
+        M5.Log.printf("Family: %s\n", families[family_index].name);
+        draw(UNIT_NAME, families[family_index].name, "click: detect", "hold: next family");
         return;
     }
 
@@ -274,16 +286,11 @@ void loop()
         return;
     }
 
-    const auto mode = family_table[family_index];
-    const auto name = family_name[family_index];
+    const auto mode = families[family_index].mode;
+    const auto name = families[family_index].name;
     char detail[64]{};
 
     const int found = detect_family(mode, detail, sizeof(detail));
-    if (found == DETECT_UNSUPPORTED) {
-        M5.Log.printf("%s: not supported by this unit\n", name);
-        draw(UNIT_NAME, name, "unsupported", "hold: next family");
-        return;
-    }
     if (found < 0) {
         M5.Log.printf("%s: failed\n", name);
         draw(UNIT_NAME, name, "failed", "click: retry");
