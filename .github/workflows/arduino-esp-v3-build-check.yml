@@ -2,7 +2,7 @@ name: Build(arduino-esp32:3.x)
 
 env:
   SKETCH_NAMES_FIND_START: ./examples/UnitUnified
-  REQUIRED_LIBRARIES: M5Unified,M5UnitUnified
+  REQUIRED_LIBRARIES: M5Unified,M5UnitUnified,M5Unit-HUB
 
 on:
   push:
@@ -120,6 +120,18 @@ jobs:
           - esp32
 
         include:
+          # ViaPaHub (UnitNFC behind a PaHub, stepping through every NFC family). Its path has
+          # no family level, so nfc is empty. One board is enough: the hub path is chip-agnostic
+          # (the board-aware I2C choice is made at run time), and the chips are covered by NFCA
+          # Detect.
+          - sketch: ViaPaHub
+            nfc: ''
+            platform-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+            platform: esp32
+            archi: esp32
+            platform-version: 3.3.7
+            board: m5stack_core
+            build-properties: "-DUSING_UNIT_NFC"
           # NFCB/F/V Detect on m5stack_core (cross design — see nfc: comment above).
           - sketch: Detect
             nfc: NFCB
