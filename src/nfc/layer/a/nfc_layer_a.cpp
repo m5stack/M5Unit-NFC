@@ -708,7 +708,7 @@ bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t add
     }
 
     // Adapter is public API. A depth under three wraps the shift below, and a depth under six
-    // leaves no room for a whole page, so refuse up front rather than ask for a batch of zero
+    // leaves no room for a whole page
     const uint16_t batch_cap = (fifo_depth > 2) ? static_cast<uint16_t>((fifo_depth - 2 /*CRC*/) >> 2) : 0;
     if (!batch_cap) {
         M5_LIB_LOGE("FIFO depth %u leaves no room for a page", fifo_depth);
