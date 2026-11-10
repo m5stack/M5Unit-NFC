@@ -284,9 +284,8 @@ public:
       @param override_policy Optional per-call timeout/retry override (nullptr uses config values)
       @return True if succeeded
       @note override_policy applies to this exchange only; it does not persist and does not reset the block number
-      @note On a false return rx_inf_len is zero for most failures, but one path reports the bytes
-      of the frame that was in hand instead, which is a raw frame rather than INF. It never exceeds
-      the capacity passed in, so treat rx_inf as INF only when this returns true
+      @note On a false return rx_inf is not INF and rx_inf_len is only guaranteed not to exceed the
+      capacity passed in, so treat rx_inf as INF only when this returns true
      */
     bool transceiveINF(uint8_t* rx_inf, uint16_t& rx_inf_len, const uint8_t* tx_inf, const uint16_t tx_inf_len,
                        RxInfo* info = nullptr, const policy_t* override_policy = nullptr);
