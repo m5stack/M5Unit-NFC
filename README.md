@@ -95,16 +95,6 @@ Use **QWIIC port (port_a)** with a QWIIC-GROVE conversion cable instead.
 
 > **Note:** GROVE port support may be added in a future update if SoftwareI2C performance improves.
 
-## Support via [PaHub](https://docs.m5stack.com/en/unit/Unit-PaHub%20v2.1)
-
-|Unit|Support|Note|
-|---|---|---|
-|UnitNFC|OK|NFC-A/B/F/V all verified behind a PaHub|
-
-CapCC1101NFC is not listed: it is an SPI unit, so a PaHub cannot reach it.
-
-See also the [ViaPaHub](examples/UnitUnified/ViaPaHub) example and [M5Unit-HUB](https://github.com/m5stack/M5Unit-HUB)
-
 ## Chip Adapter
 
 Each layer takes a chip adapter, so a reader IC this library does not know about can be driven without editing the library. Implement the nested `Adapter` of the layer you need (`NFCLayerA`, `NFCLayerB`, `NFCLayerF`, `NFCLayerV`, `EmulationLayerA` or `EmulationLayerF`) and hand it to the constructor that takes a `std::unique_ptr<Adapter>`. See the Doxygen pages for the methods each one requires.
@@ -129,7 +119,7 @@ Each layer takes a chip adapter, so a reader IC this library does not know about
 See also [examples/UnitUnified](examples/UnitUnified)
 
 ### For ArduinoIDE settings
-Each example contains the following block to select the unit:
+Each example contains the following block to select the unit (ViaPaHub offers only two of these):
 
 ```cpp
 // For UnitNFC (U216)
@@ -168,6 +158,7 @@ On ESP-IDF native builds (`idf.py`), the unit/board is selected via Kconfig inst
 | `Kconfig.variant.full` | UnitNFC / CapCC1101NFC / UnitRFID2 / M5Dial built-in WS1850S | NFC-A Detect / Dump / NDEF / PolicyOverride / ReadWrite / ValueBlock |
 | `Kconfig.variant.no_dial` | UnitNFC / CapCC1101NFC / UnitRFID2 | NFC-B Detect / JapanIDCard (M5Dial built-in cannot do NFC-B) |
 | `Kconfig.variant.basic` | UnitNFC / CapCC1101NFC | NFC-A Emulation / all NFC-F / all NFC-V (only ST25R3916-based units supported) |
+| `Kconfig.variant.i2c_hub` | UnitNFC / UnitRFID2 | ViaPaHub (CapCC1101NFC is SPI and the M5Dial built-in sits on the internal I2C bus, so a PaHub can reach neither) |
 
 `examples/UnitUnified/common/variant.cmake` then maps the chosen `CONFIG_EXAMPLE_USING_*` to the source-level `USING_*` macro shared with the Arduino build, so the example source itself does not need to be edited.
 
@@ -180,6 +171,14 @@ idf.py menuconfig
 # -> M5Unit-NFC example -> Target unit / board -> choose ONE of the options offered
 idf.py build flash monitor
 ```
+
+## Support via [PaHub](https://docs.m5stack.com/en/unit/Unit-PaHub%20v2.1)
+
+|Unit|Support|Note|
+|---|---|---|
+|UnitNFC|OK||
+
+See also the [ViaPaHub](examples/UnitUnified/ViaPaHub) example (UnitNFC, every NFC family) and [M5Unit-HUB](https://github.com/m5stack/M5Unit-HUB)
 
 ## Doxygen document
 [GitHub Pages](https://m5stack.github.io/M5Unit-NFC/)
