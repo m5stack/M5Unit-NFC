@@ -487,8 +487,8 @@ constexpr uint8_t FELICA_PT_MEMORY_SIZE{21};
 constexpr uint16_t FELICA_DEFAULT_EMULATION_REQUEST_DATA{0x0083};
 //! @brief Length of a Read Without Encryption answer up to the first block, length byte included
 constexpr uint8_t FELICA_READ_RESPONSE_HEADER_SIZE{13};
-//! @brief Longest Request Service packet the spec allows, command code, IDm, node count and
-//! the node code list of FELICA_MAX_NODES entries
+//! @brief Longest Request Service packet the spec allows, length byte excluded: command code, IDm,
+//! node count and the node code list of FELICA_MAX_NODES entries
 constexpr uint16_t FELICA_MAX_PACKET_LENGTH_REQUEST_SERVICE{1 + 8 + 1 + 2 * FELICA_MAX_NODES};
 constexpr uint16_t FELICA_MAX_PACKET_LENGTH_REQUEST_RESPONSE{1 + 8 + 1};
 constexpr uint16_t FELICA_MAX_PACKET_LENGTH_REQUEST_SYSTEM_CODE{1 + 8 + 1 + 2 * 255};
