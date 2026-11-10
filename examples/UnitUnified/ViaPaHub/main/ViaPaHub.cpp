@@ -69,6 +69,10 @@ NFCLayerV nfc_v{unit};
 
 constexpr uint8_t HUB_CHANNEL{0};
 
+// detect_family() returns how many PICCs answered, or one of these
+constexpr int DETECT_UNSUPPORTED{-1};  // this unit has no layer for the family
+constexpr int DETECT_FAILED{-2};       // the family is supported, but the exchange failed
+
 constexpr NFC family_table[]        = {NFC::A, NFC::B, NFC::F, NFC::V};
 constexpr const char* family_name[] = {"NFC-A", "NFC-B", "NFC-F", "NFC-V"};
 uint8_t family_index{};
@@ -141,10 +145,10 @@ int detect_family(const NFC mode, char* detail, const size_t detail_len)
     if (unit.NFCMode() != mode) {
         if (!stop_field()) {
             M5.Log.printf("  failed to stop the RF field\n");
-            return -1;
+            return DETECT_FAILED;
         }
         if (!unit.configureNFCMode(mode)) {
-            return -1;
+            return DETECT_FAILED;
         }
         M5.Log.printf("  reconfigured to %s\n", family_name[family_index]);
     }
@@ -202,7 +206,7 @@ int detect_family(const NFC mode, char* detail, const size_t detail_len)
         }
 #endif
         default:
-            return -1;
+            return DETECT_UNSUPPORTED;
     }
 }
 
@@ -275,9 +279,14 @@ void loop()
     char detail[64]{};
 
     const int found = detect_family(mode, detail, sizeof(detail));
-    if (found < 0) {
+    if (found == DETECT_UNSUPPORTED) {
         M5.Log.printf("%s: not supported by this unit\n", name);
         draw(UNIT_NAME, name, "unsupported", "hold: next family");
+        return;
+    }
+    if (found < 0) {
+        M5.Log.printf("%s: failed\n", name);
+        draw(UNIT_NAME, name, "failed", "click: retry");
         return;
     }
     if (found == 0) {
