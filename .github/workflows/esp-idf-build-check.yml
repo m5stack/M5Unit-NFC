@@ -20,6 +20,7 @@ on:
       - 'examples/UnitUnified/**.c'
       - 'examples/UnitUnified/**/CMakeLists.txt'
       - 'examples/UnitUnified/**/Kconfig.projbuild'
+      - 'examples/UnitUnified/**/idf_component.yml'
       - 'examples/UnitUnified/common/**'
       - '.github/workflows/esp-idf-build-check.yml'
   pull_request:
@@ -36,6 +37,7 @@ on:
       - 'examples/UnitUnified/**.c'
       - 'examples/UnitUnified/**/CMakeLists.txt'
       - 'examples/UnitUnified/**/Kconfig.projbuild'
+      - 'examples/UnitUnified/**/idf_component.yml'
       - 'examples/UnitUnified/common/**'
       - '.github/workflows/esp-idf-build-check.yml'
   workflow_dispatch:
