@@ -27,6 +27,12 @@ constexpr uint8_t pmm_sample[FELICA_ID_LENGTH] = {0x10, 0x32, 0x54, 0x76, 0x98, 
 // into several systems does (FeliCa card users manual 2.21j, 2.2.1): system 0 answers 0x0?, system
 // 1 answers 0x1?, and so on. Scripting it here is the only way to exercise that, since no card
 // that does it is to hand.
+//
+// Polling a system code is also how a system is switched into (same manual, 4.3: "システム切り替え
+// のために、別システムを指定した Polling コマンドはどのモードでも実行できます"), so this card
+// tracks which system is selected and ignores any command addressed to a different system's IDm,
+// the way a real card does. Without that, a test passes while addressing a system that is not
+// selected.
 class ScriptedCardForF : public NFCLayerF::Adapter {
 public:
     // Each entry is a system this card has, in split order: entry 0 is system 0 and answers the
@@ -49,11 +55,16 @@ public:
         // Answering Request Response is what settles a card as FeliCa Standard, so a card that
         // stays silent here is never detected at all, whatever its systems answer
         if (tx[0] == m5::stl::to_underlying(CommandCode::RequestResponse) && tx_len >= 1 + FELICA_ID_LENGTH) {
+            if (!addressed_to_selected(tx + 1)) {
+                ++_ignored;
+                rx_len = 0;
+                return false;  // the selected system does not own this IDm
+            }
             uint8_t res[11]{};
             res[0] = sizeof(res);
             res[1] = m5::stl::to_underlying(ResponseCode::RequestResponse);
-            memcpy(&res[2], tx + 1, FELICA_ID_LENGTH);  // echo the IDm it was addressed to
-            res[10]          = 0x00;                    // Mode 0
+            memcpy(&res[2], tx + 1, FELICA_ID_LENGTH);
+            res[10]          = 0x00;  // Mode 0
             const uint16_t n = (rx_len < sizeof(res)) ? rx_len : (uint16_t)sizeof(res);
             memcpy(rx, res, n);
             rx_len = n;
@@ -81,6 +92,7 @@ public:
             system = (uint8_t)i;
         }
         ++_answers;
+        _selected = system;  // answering a Polling switches the card into that system
 
         uint8_t res[18]{};
         res[0] = sizeof(res);
@@ -100,9 +112,31 @@ public:
         return _answers;
     }
 
+    //! @brief How many commands were ignored for naming a system other than the selected one
+    uint16_t ignored() const
+    {
+        return _ignored;
+    }
+
+    uint8_t selected() const
+    {
+        return _selected;
+    }
+
 private:
+    // The IDm of the selected system, which is the only one it answers commands addressed to
+    bool addressed_to_selected(const uint8_t* idm) const
+    {
+        uint8_t mine[FELICA_ID_LENGTH]{};
+        memcpy(mine, idm_sample, FELICA_ID_LENGTH);
+        mine[0] = (uint8_t)((idm_sample[0] & 0x0F) | (_selected << 4));
+        return memcmp(mine, idm, FELICA_ID_LENGTH) == 0;
+    }
+
     std::vector<uint16_t> _systems;
     uint16_t _answers{};
+    uint16_t _ignored{};
+    uint8_t _selected{};
 };
 
 }  // namespace
@@ -407,7 +441,8 @@ TEST(NFC_F, DetectSingleSystemCard)
     PICC picc{};
     EXPECT_TRUE(layer.detect(picc));
     EXPECT_EQ(picc.idm[0], idm_sample[0]);  // system 0
-    EXPECT_EQ(card->answers(), 1);          // only the wildcard answered
+    EXPECT_EQ(card->ignored(), 0);          // nothing was addressed to a system it had left
+    EXPECT_EQ(card->selected(), 0);         // and it is left on the system picc belongs to
 }
 
 TEST(NFC_F, DetectCardSplitIntoSystems)
@@ -422,4 +457,8 @@ TEST(NFC_F, DetectCardSplitIntoSystems)
     PICC picc{};
     EXPECT_TRUE(layer.detect(picc));
     EXPECT_GT(card->answers(), 1);  // FE00 did answer, so the card really is split
+    // Polling FE00 switched the card into that system. Everything detect() does afterwards
+    // addresses the IDm the wildcard answered with, so it has to come back to that system first
+    EXPECT_EQ(card->ignored(), 0);
+    EXPECT_EQ(card->selected(), 0);
 }

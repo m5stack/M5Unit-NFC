@@ -87,11 +87,6 @@ void print_block(const uint8_t buf[16], const int16_t block)
     ::puts(tmp);
 }
 
-inline bool is_same_idm_and_pmm(const PICC& a, const PICC& b)
-{
-    return memcmp(a.m, b.m, 16) == 0;
-}
-
 const uint8_t* make_rc(uint8_t rc[16])
 {
     for (uint_fast8_t i = 0; i < 16; ++i) {
@@ -173,6 +168,14 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
                        m5::nfc::f::TimeSlot time_slot, const uint32_t timeout_ms)
 {
     constexpr uint32_t FDT{1};
+    // The probes below only ask whether a system is on this card, so one slot is all they need.
+    // polling() scales its timeout by the slot count, so this keeps a probe from waiting sixteen
+    // times as long as it has to. It does not make the answer trustworthy: a second card in the
+    // field that owns a system this one lacks answers alone, and its answer is then read as this
+    // card's format. Nothing can tell that apart from a card answering for its own second system,
+    // because the IDm must not be compared (FeliCa Networks, handling of the IDm, 1.10, 1.3), so
+    // the misreading is accepted and noted on detect()
+    constexpr TimeSlot PROBE_SLOT{TimeSlot::Slot1};
 
     uint8_t slots = timeslot_to_slot(time_slot);
 
@@ -183,7 +186,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
     const auto start_at = m5::utility::millis();
     uint8_t detected{};
     do {
-        PICC picc1{}, picc2{};
+        PICC picc1{}, probe_answer{};
         Type type{};
         uint8_t format{};
 
@@ -202,6 +205,12 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
         M5_LIB_LOGV("Detect %s", picc1.idmAsString().c_str());
 
         _activePICC = picc1;
+
+        // Asking whether a system code is on this card. The answer identifies that system, not the
+        // card, so it is thrown away: picc1 stays the card's identity
+        const auto has_system = [this, &probe_answer](const uint16_t system_code) {
+            return polling(probe_answer, system_code, RequestCode::None, PROBE_SLOT);
+        };
 
         // 2. Check IDm for NFCIP-1 Transport Protocol / DFC
         if (picc1.idm[0] == 0x01 && picc1.idm[1] == 0xFE) {
@@ -222,10 +231,7 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
                     M5_LIB_LOGW("Skip %04X (known system code)", code);
                     continue;
                 }
-                if (polling(picc2, code, RequestCode::None, time_slot)) {
-                    if (!is_same_idm_and_pmm(picc1, picc2)) {
-                        continue;
-                    }
+                if (has_system(code)) {
                     format |= format_private;
                 }
             }
@@ -237,46 +243,41 @@ bool NFCLayerF::detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* pri
         }
 
         // 4. Check NDEF
-        if (polling(picc2, system_code_ndef, RequestCode::None, time_slot)) {
-            if (!is_same_idm_and_pmm(picc1, picc2)) {
-                continue;
-            }
+        if (has_system(system_code_ndef)) {
             format |= format_ndef;
         }
         m5::utility::delay(FDT);
 
         // 5. Check shared area
-        if (polling(picc2, system_code_shared, RequestCode::None, time_slot)) {
-            if (!is_same_idm_and_pmm(picc1, picc2)) {
-                continue;
-            }
+        if (has_system(system_code_shared)) {
             format |= format_shared;
         }
         m5::utility::delay(FDT);
 
         // 6. Check Lite/S
-        if (polling(picc2, system_code_lite, RequestCode::None, time_slot)) {
-            if (!is_same_idm_and_pmm(picc1, picc2)) {
-                continue;
-            }
+        if (has_system(system_code_lite)) {
             format |= format_lite;
         }
         m5::utility::delay(FDT);
 
         // 7. Check secure
-        if (polling(picc2, system_code_felica_secure_id, RequestCode::None, time_slot)) {
-            if (!is_same_idm_and_pmm(picc1, picc2)) {
-                continue;
-            }
+        if (has_system(system_code_felica_secure_id)) {
             format |= format_secure;
         }
         m5::utility::delay(FDT);
 
         // Type identification
-        if (polling(picc2, system_code_felica_plug, RequestCode::None, time_slot)) {
-            if (!is_same_idm_and_pmm(picc1, picc2)) {
-                continue;
-            }
+        const bool answers_plug = has_system(system_code_felica_plug);
+
+        // Polling a system code is how a system is switched into (FeliCa card users manual 2.21j,
+        // 4.3), so the probes above have left the card on whichever system answered last.
+        // Everything below addresses picc1, which belongs to the system the wildcard answered
+        // with, so go back to it first. A card that has left the field fails here as well
+        if (!has_system(system_code_wildcard)) {
+            continue;
+        }
+
+        if (answers_plug) {
             type = Type::FeliCaPlug;
         } else {
             // Lite or LiteS?

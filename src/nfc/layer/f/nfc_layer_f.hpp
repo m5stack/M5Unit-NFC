@@ -110,6 +110,11 @@ public:
       @param time_slot Maximum number of slots that can be responded
       @param timeout_ms  Polling time budget in milliseconds
       @return True if detected
+      @note time_slot governs the first poll only. Working out a card's format takes one poll per
+      system code, and those always ask for a single slot
+      @warning With more than one PICC in the field, a format may be read from the wrong one: a
+      PICC that owns a system code the reported one lacks answers that poll by itself, and its
+      answer cannot be told from a PICC answering for its own second system
       @warning Misclassification may occur depending on the distance between the reader and the PICC
      */
     inline bool detect(std::vector<m5::nfc::f::PICC>& piccs,
@@ -125,6 +130,11 @@ public:
       @param timeout_ms  Polling time budget in milliseconds
       @return True if detected
       @note If a private code is specified, PICC that does not meet the conditions will not be detected
+      @note time_slot governs the first poll only. Working out a card's format takes one poll per
+      system code, and those always ask for a single slot
+      @warning With more than one PICC in the field, a format may be read from the wrong one: a
+      PICC that owns a system code the reported one lacks answers that poll by itself, and its
+      answer cannot be told from a PICC answering for its own second system
       @warning Misclassification may occur depending on the distance between the reader and the PICC
      */
     inline bool detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t private_code,
@@ -142,6 +152,11 @@ public:
       @return True if detected
       @note If a private code is specified, PICC that does not meet the conditions will not be detected
       @note private codes are OR matching
+      @note time_slot governs the first poll only. Working out a card's format takes one poll per
+      system code, and those always ask for a single slot
+      @warning With more than one PICC in the field, a format may be read from the wrong one: a
+      PICC that owns a system code the reported one lacks answers that poll by itself, and its
+      answer cannot be told from a PICC answering for its own second system
       @warning Misclassification may occur depending on the distance between the reader and the PICC
      */
     bool detect(std::vector<m5::nfc::f::PICC>& piccs, const uint16_t* private_code, const uint8_t pc_size,
