@@ -9,7 +9,9 @@
 #include <gtest/gtest.h>
 #include <M5Unified.h>
 #include "nfc/f/nfcf.hpp"
+#include "nfc/layer/f/nfc_layer_f.hpp"
 #include <cstring>
+#include <memory>
 #include <vector>
 
 using namespace m5::nfc;
@@ -19,6 +21,89 @@ namespace {
 
 constexpr uint8_t idm_sample[FELICA_ID_LENGTH] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
 constexpr uint8_t pmm_sample[FELICA_ID_LENGTH] = {0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE};
+
+// A card that answers the system codes it was given, and nothing else. The IDm it answers with
+// carries the system's number in the top four bits of its first byte, which is what a card split
+// into several systems does (FeliCa card users manual 2.21j, 2.2.1): system 0 answers 0x0?, system
+// 1 answers 0x1?, and so on. Scripting it here is the only way to exercise that, since no card
+// that does it is to hand.
+class ScriptedCardForF : public NFCLayerF::Adapter {
+public:
+    // Each entry is a system this card has, in split order: entry 0 is system 0 and answers the
+    // wildcard as well
+    explicit ScriptedCardForF(std::vector<uint16_t> systems) : _systems{std::move(systems)}
+    {
+    }
+
+    uint16_t max_fifo_depth() const override
+    {
+        return 512;
+    }
+
+    bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len, const uint32_t) override
+    {
+        if (_systems.empty()) {
+            rx_len = 0;
+            return false;
+        }
+        // Answering Request Response is what settles a card as FeliCa Standard, so a card that
+        // stays silent here is never detected at all, whatever its systems answer
+        if (tx[0] == m5::stl::to_underlying(CommandCode::RequestResponse) && tx_len >= 1 + FELICA_ID_LENGTH) {
+            uint8_t res[11]{};
+            res[0] = sizeof(res);
+            res[1] = m5::stl::to_underlying(ResponseCode::RequestResponse);
+            memcpy(&res[2], tx + 1, FELICA_ID_LENGTH);  // echo the IDm it was addressed to
+            res[10]          = 0x00;                    // Mode 0
+            const uint16_t n = (rx_len < sizeof(res)) ? rx_len : (uint16_t)sizeof(res);
+            memcpy(rx, res, n);
+            rx_len = n;
+            return true;
+        }
+        if (tx_len < 5 || tx[0] != m5::stl::to_underlying(CommandCode::Polling)) {
+            rx_len = 0;
+            return false;
+        }
+        const uint16_t sc = (uint16_t)((tx[1] << 8) | tx[2]);
+
+        // The wildcard is answered by system 0; any other code only by the system that owns it
+        uint8_t system{};
+        if (sc != system_code_wildcard) {
+            size_t i = 0;
+            for (; i < _systems.size(); ++i) {
+                if (_systems[i] == sc) {
+                    break;
+                }
+            }
+            if (i == _systems.size()) {
+                rx_len = 0;
+                return false;  // this card has no such system
+            }
+            system = (uint8_t)i;
+        }
+        ++_answers;
+
+        uint8_t res[18]{};
+        res[0] = sizeof(res);
+        res[1] = m5::stl::to_underlying(ResponseCode::Polling);
+        memcpy(&res[2], idm_sample, FELICA_ID_LENGTH);
+        res[2] = (uint8_t)((idm_sample[0] & 0x0F) | (system << 4));
+        memcpy(&res[2 + FELICA_ID_LENGTH], pmm_sample, FELICA_ID_LENGTH);
+
+        const uint16_t len = (rx_len < sizeof(res)) ? rx_len : (uint16_t)sizeof(res);
+        memcpy(rx, res, len);
+        rx_len = len;
+        return true;
+    }
+
+    uint16_t answers() const
+    {
+        return _answers;
+    }
+
+private:
+    std::vector<uint16_t> _systems;
+    uint16_t _answers{};
+};
 
 }  // namespace
 
@@ -309,4 +394,32 @@ TEST(NFC_F, CryptoInvalid)
     EXPECT_FALSE(make_personalized_card_key_lite_s(nullptr, key24, block));
     EXPECT_FALSE(make_personalized_card_key_lite_s(out, nullptr, block));
     EXPECT_FALSE(make_personalized_card_key_lite_s(out, key24, nullptr));
+}
+
+TEST(NFC_F, DetectSingleSystemCard)
+{
+    // A card with one system answers only the wildcard, so nothing is there to disagree with the
+    // first answer. This is the card that already works, kept here so a fix for the multi-system
+    // case cannot quietly break it
+    auto card = new ScriptedCardForF({0x0003});
+    NFCLayerF layer{std::unique_ptr<NFCLayerF::Adapter>(card)};
+
+    PICC picc{};
+    EXPECT_TRUE(layer.detect(picc));
+    EXPECT_EQ(picc.idm[0], idm_sample[0]);  // system 0
+    EXPECT_EQ(card->answers(), 1);          // only the wildcard answered
+}
+
+TEST(NFC_F, DetectCardSplitIntoSystems)
+{
+    // The same card with a second system on FE00. Polling FE00 answers with the system's own IDm,
+    // whose first byte differs from the first answer's, and detect() has to keep the card anyway:
+    // FeliCa Networks' "Handling of the manufacture ID (IDm) of mobile FeliCa IC chips" 1.10
+    // section 1.3 recommends against branching on whether the IDms of different systems match
+    auto card = new ScriptedCardForF({0x0003, system_code_shared});
+    NFCLayerF layer{std::unique_ptr<NFCLayerF::Adapter>(card)};
+
+    PICC picc{};
+    EXPECT_TRUE(layer.detect(picc));
+    EXPECT_GT(card->answers(), 1);  // FE00 did answer, so the card really is split
 }
