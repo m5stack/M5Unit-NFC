@@ -15,6 +15,7 @@
 #include <wiring/m5_unit_unified_wiring.hpp>
 #include <vector>
 #include <ctime>
+#include <cstring>
 
 // *************************************************************
 // Choose one define symbol to match the unit you are using
@@ -90,6 +91,71 @@ void report_failure(const char* step)
     lcd.setCursor(0, 0);
     lcd.printf("NG: %s", step);
     M5.Log.printf("NG: %s\n", step);
+}
+
+// Print what each system code answers, to the screen and the serial log both.
+//
+// detect() re-polls with several system codes to work out the card's format, and discards the card
+// when an answer's IDm+PMm does not match the first one. A card can legitimately answer each of its
+// systems with a different IDm, so that comparison can reject a card that is perfectly readable:
+// FeliCa Networks' "Handling of the manufacture ID (IDm) of mobile FeliCa IC chips" 1.10 section 1.3
+// states that values outside the first byte's top four bits may differ per system too, and
+// recommends against branching on whether the IDms of different systems match. detect() reports
+// none of this, and a card met at an exhibition cannot be kept for later, so probe every system
+// code at the moment of failure. On the screen a code is marked '=' when its IDm matches the first
+// answer and '!' when it differs; a '!' is what detect() rejected the card for.
+void probe_systems()
+{
+    constexpr uint16_t probe[] = {
+        system_code_wildcard,          // FFFF
+        0x0003,                        // Transit (Cybernetics private area)
+        0x86A7,                        // Suica
+        system_code_shared,            // FE00
+        system_code_ndef,              // 12FC
+        system_code_lite,              // 88B4
+        system_code_felica_secure_id,  // 957A
+        system_code_felica_plug,       // FEE1
+    };
+
+    lcd.printf("\n");
+    PICC first{};
+    bool has_first{};
+    uint8_t answered{}, differing{};
+    M5.Log.printf("Probing each system code\n");
+    for (auto&& sc : probe) {
+        PICC p{};
+        if (!nfc_f.polling(p, sc, RequestCode::None, TimeSlot::Slot1)) {
+            M5.Log.printf("  %04X no answer\n", sc);
+            continue;
+        }
+        ++answered;
+        if (!has_first) {
+            first     = p;
+            has_first = true;
+            M5.Log.printf("  %04X IDm:%s PMm:%s  (first)\n", sc, p.idmAsString().c_str(), p.pmmAsString().c_str());
+            lcd.printf("%s\n", p.idmAsString().c_str());
+            continue;
+        }
+        const bool same = memcmp(first.m, p.m, sizeof(first.m)) == 0;
+        differing += same ? 0 : 1;
+        M5.Log.printf("  %04X IDm:%s PMm:%s  %s\n", sc, p.idmAsString().c_str(), p.pmmAsString().c_str(),
+                      same ? "same as first" : "DIFFERS from first <= detect() discards this card");
+        lcd.printf("%04X%c ", sc, same ? '=' : '!');
+    }
+    M5.Log.printf("  %u system code(s) answered, %u with a different IDm/PMm\n", answered, differing);
+
+    uint16_t codes[255]{};
+    uint8_t num{};
+    if (nfc_f.requestSystemCode(codes, num)) {
+        M5.Log.printf("  Request System Code: %u\n", num);
+        for (uint8_t i = 0; i < num; ++i) {
+            M5.Log.printf("    [%u] %04X\n", i, codes[i]);
+        }
+        lcd.printf("\nsys:%u", num);
+    } else {
+        M5.Log.printf("  Request System Code failed\n");
+        lcd.printf("\nsys:NG");
+    }
 }
 
 // Reads blocks in batches of whatever the chip behind the layer can answer in one go, then hands
@@ -321,11 +387,13 @@ void loop()
                 nfc_f.deactivate();
             } else {
                 report_failure("activate");
+                probe_systems();
             }
         } else {
             // Either nothing was on the reader, or the card answered none of jtic_system_code
             report_failure("detect");
             M5.Log.printf("No PICC detected, or it answers to none of jtic_system_code\n");
+            probe_systems();
         }
     }
 }
