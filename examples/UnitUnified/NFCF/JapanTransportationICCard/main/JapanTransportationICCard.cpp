@@ -97,9 +97,15 @@ void report_failure(const char* step)
 //
 // detect() says only yes or no, and a card met at an exhibition cannot be kept for later, so when
 // it says no, ask every system code in turn and print what came back. A card split into several
-// systems answers each one with that system's own IDm, which is why the screen marks a code '='
-// when its IDm matches the first answer and '!' when it differs: a '!' means the card is split,
-// not that anything is wrong with it.
+// systems answers each one with that system's own IDm, so the screen marks a code '=' when its IDm
+// matches the first answer and '!' when it differs.
+//
+// A '!' does not settle what happened: a second card in the field answers a system code the first
+// one lacks all by itself, and that reads exactly the same. Measured on 2026-11-11 with a Suica
+// and a FeliCa Lite-S held together: 0003 answered with the Suica's IDm, 12FC and 88B4 with the
+// Lite-S's, giving "2 with a different IDm/PMm" for two perfectly ordinary single-system cards.
+// So read a '!' as "more than one system answered", and rule out a second card before concluding
+// the card is split.
 void probe_systems()
 {
     constexpr uint16_t probe[] = {
@@ -135,7 +141,7 @@ void probe_systems()
         const bool same = memcmp(first.m, p.m, sizeof(first.m)) == 0;
         differing += same ? 0 : 1;
         M5.Log.printf("  %04X IDm:%s PMm:%s  %s\n", sc, p.idmAsString().c_str(), p.pmmAsString().c_str(),
-                      same ? "same as first" : "different IDm <= this system is a separate one");
+                      same ? "same as first" : "different IDm <= another system of this card, or another card");
         lcd.printf("%04X%c ", sc, same ? '=' : '!');
     }
     M5.Log.printf("  %u system code(s) answered, %u with a different IDm/PMm\n", answered, differing);
