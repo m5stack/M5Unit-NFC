@@ -95,15 +95,11 @@ void report_failure(const char* step)
 
 // Print what each system code answers, to the screen and the serial log both.
 //
-// detect() re-polls with several system codes to work out the card's format, and discards the card
-// when an answer's IDm+PMm does not match the first one. A card can legitimately answer each of its
-// systems with a different IDm, so that comparison can reject a card that is perfectly readable:
-// FeliCa Networks' "Handling of the manufacture ID (IDm) of mobile FeliCa IC chips" 1.10 section 1.3
-// states that values outside the first byte's top four bits may differ per system too, and
-// recommends against branching on whether the IDms of different systems match. detect() reports
-// none of this, and a card met at an exhibition cannot be kept for later, so probe every system
-// code at the moment of failure. On the screen a code is marked '=' when its IDm matches the first
-// answer and '!' when it differs; a '!' is what detect() rejected the card for.
+// detect() says only yes or no, and a card met at an exhibition cannot be kept for later, so when
+// it says no, ask every system code in turn and print what came back. A card split into several
+// systems answers each one with that system's own IDm, which is why the screen marks a code '='
+// when its IDm matches the first answer and '!' when it differs: a '!' means the card is split,
+// not that anything is wrong with it.
 void probe_systems()
 {
     constexpr uint16_t probe[] = {
@@ -139,7 +135,7 @@ void probe_systems()
         const bool same = memcmp(first.m, p.m, sizeof(first.m)) == 0;
         differing += same ? 0 : 1;
         M5.Log.printf("  %04X IDm:%s PMm:%s  %s\n", sc, p.idmAsString().c_str(), p.pmmAsString().c_str(),
-                      same ? "same as first" : "DIFFERS from first <= detect() discards this card");
+                      same ? "same as first" : "different IDm <= this system is a separate one");
         lcd.printf("%04X%c ", sc, same ? '=' : '!');
     }
     M5.Log.printf("  %u system code(s) answered, %u with a different IDm/PMm\n", answered, differing);
