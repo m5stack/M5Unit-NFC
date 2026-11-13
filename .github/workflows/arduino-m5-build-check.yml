@@ -82,7 +82,9 @@ jobs:
           - m5stack_atoms3         # ESP32-S3 small atom
 #          - m5stack_atoms3r        # ESP32-S3 (= atoms3 + IMU)
 #          - m5stack_capsule        # ESP32-S3 small board
-          - m5stack_cardputer      # ESP32-S3 (CapCC1101 built-in)
+#          - m5stack_cardputer      # ESP32-S3: its UnitNFC (I2C) path is the same build as
+#                                   # m5stack_cores3, and its CapCC1101 (SPI) path is built by
+#                                   # the include entries below.
           - m5stack_core           # ESP32 classic representative
           - m5stack_core2          # ESP32 (touch + IMU + RTC)
 #          - m5stack_coreink        # ESP32 e-ink
@@ -120,10 +122,6 @@ jobs:
 
         archi:
           - esp32
-
-        exclude:
-          - board: m5stack_cardputer
-            build-properties: "-DUSING_UNIT_NFC"
 
         include:
           # ViaPaHub (UnitNFC behind a PaHub, stepping through every NFC family). Its path has
