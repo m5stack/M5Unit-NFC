@@ -175,6 +175,8 @@ bool UnitST25R3916::begin()
     // Defensive reset: stop any leftover activities (RF field, transmit, receive) from
     // a prior sketch when the chip is not power-cycled (e.g., USB upload between examples).
     // Without this, enable_osc() may fail because residual chip state interferes with the oscillator startup.
+    // Both results are deliberately ignored: a chip still holding leftover state may refuse them, and
+    // enable_osc() below is what actually reports that the reset did not take.
     writeDirectCommand(CMD_STOP_ALL_ACTIVITIES);
     modify_bit_register8(REG_OPERATION_CONTROL, 0x00, tx_en | rx_en);
     m5::utility::delay(2);
@@ -217,27 +219,35 @@ bool UnitST25R3916::begin()
         return false;
     }
 
-    //
+    // AAT
+    if (!modify_bit_register8(REG_IO_CONFIGURATION_1, 0x07, 0x07) ||  // MCU_CLK disabled, no LF clock on MCU_CLK
+        !writeResistiveAMModulation(0x80) ||                          // Use minimum non-overlap
+        !set_bit_register8(REG_IO_CONFIGURATION_2, aat_en) ||         // Enable AAT D/A
+        !writeResistiveAMModulation(0x00)) {                          // Use normal non-overlap
+        M5_LIB_LOGE("Failed to configure the AAT");
+        return false;
+    }
 
-    //
-    modify_bit_register8(REG_IO_CONFIGURATION_1, 0x07, 0x07);  // MCU_CLK disabled,No LF clock on MCU_CLK
-    writeResistiveAMModulation(0x80);                          // Use minimum non-overlap
-    set_bit_register8(REG_IO_CONFIGURATION_2, aat_en);         // Enable AAT D/A
-    writeResistiveAMModulation(0x00);                          // Use normal non-overlap
-
-    writeExternalFieldDetectorActivationThreshold(0x10 | 0x03);  // trg=0x1 (105), rfe=0x3 (205)
-    writeExternalFieldDetectorDeactivationThreshold(0x02);       // trg=0x0 (75), rfe=0x2 (150)
+    if (!writeExternalFieldDetectorActivationThreshold(0x10 | 0x03) ||  // trg=0x1 (105), rfe=0x3 (205)
+        !writeExternalFieldDetectorDeactivationThreshold(0x02)) {       // trg=0x0 (75), rfe=0x2 (150)
+        M5_LIB_LOGE("Failed to configure the external field detector");
+        return false;
+    }
 
     // clear_register_bit8(REG_AUXILIARY_MODULATION_SETTING, 0x20);   // External load modulation disabled
-    modify_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, 0x05 << 4, 0xF0);  // FDT
-    writePassiveTargetModulation(0x5F);                                            // ptm 17.1, pt HighZ
-    writeEMDSuppressionConfiguration(0x40);  // start on the first four bits of the frame
-    writeAntennaTuningControl1(0x82);
-    writeAntennaTuningControl2(0x82);
+    if (!modify_bit_register8(REG_NFCIP_1_PASSIVE_TARGET_DEFINITION, 0x05 << 4, 0xF0) ||  // FDT
+        !writePassiveTargetModulation(0x5F) ||                                            // ptm 17.1, pt HighZ
+        !writeEMDSuppressionConfiguration(0x40) ||  // start on the first four bits of the frame
+        !writeAntennaTuningControl1(0x82) || !writeAntennaTuningControl2(0x82)) {
+        M5_LIB_LOGE("Failed to configure the passive target and antenna");
+        return false;
+    }
 
-    //
-    set_bit_register8(REG_OPERATION_CONTROL, 0x03);  // 11: Enable external field detector automatically
-    writeDirectCommand(CMD_CLEAR_FIFO);
+    if (!set_bit_register8(REG_OPERATION_CONTROL, 0x03) ||  // 11: Enable external field detector automatically
+        !writeDirectCommand(CMD_CLEAR_FIFO)) {
+        M5_LIB_LOGE("Failed to enable the external field detector");
+        return false;
+    }
 
     // 4) The internal voltage regulators have to be configuration
     // It is recommended to use direct command Adjust regulators to improve the system PSRR.
@@ -250,7 +260,10 @@ bool UnitST25R3916::begin()
         M5_LIB_LOGE("Failed to enable_osc");
         return false;
     }
-    writeMaskInterrupts(0);
+    if (!writeMaskInterrupts(0)) {
+        M5_LIB_LOGE("Failed to unmask the interrupts");
+        return false;
+    }
 
     if (!writeDirectCommand(CMD_ADJUST_REGULATORS)) {
         M5_LIB_LOGE("Failed to CMD_ADJUST_REGULATORS");
