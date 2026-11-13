@@ -284,7 +284,7 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
         uint16_t actual{};
         if (readFIFO(actual, rbuf, sizeof(rbuf)) && actual == 2) {
             atqa = ((uint16_t)rbuf[1] << 8) | (uint16_t)rbuf[0];
-            //  When ocuur collisions, the ATQA value is inaccurate
+            // The ATQA is unreliable when a collision occurs
             return true;
         }
         return false;
@@ -334,9 +334,9 @@ bool UnitST25R3916::nfca_anti_collision(uint8_t rbuf[5], const uint8_t lv)
             return false;
         }
 
-        // OCCUR collision
+        // Collision occurred
         if (collision) {
-            M5_LIB_LOGD("Colliion");
+            M5_LIB_LOGD("Collision");
             uint8_t cbytes = ((cd >> 4) & 0x0F);  // c_byte[3:0]
             uint8_t cbits  = ((cd >> 1) & 0x07);  // c_bit[2:0]
             // The read above already refused an empty answer, so there is a last byte to take
