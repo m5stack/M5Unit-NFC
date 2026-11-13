@@ -24,7 +24,7 @@ namespace isodep {
 /*!
   @brief Calculate waiting time(ms) by fwi and fc
   @param fwi Frame Waiting Integer
-  @param fc Carrier frequency in MHz
+  @param fc Carrier frequency in Hz (13.56e6f for NFC)
   @return Frame waiting time in milliseconds
  */
 uint32_t fwi_to_ms(const uint8_t fwi, const float fc);
