@@ -599,9 +599,9 @@ bool NFCLayerF::readWithMAC16(uint8_t rx[16], const m5::nfc::f::block_t block)
         return false;
     }
 
-    const bool liteS     = (_activePICC.type == Type::FeliCaLiteS);
-    block_t mac_block    = liteS ? lite_s::MAC_A : lite::MAC;
-    block_t block_list[] = {block, mac_block};
+    const bool liteS           = (_activePICC.type == Type::FeliCaLiteS);
+    block_t mac_block          = liteS ? lite_s::MAC_A : lite::MAC;
+    const block_t block_list[] = {block, mac_block};
 
     uint8_t rbuf[16 * 2]{};
     uint16_t rx_len = sizeof(rbuf);
@@ -779,7 +779,7 @@ bool NFCLayerF::writeWithMAC16(const m5::nfc::f::block_t block, const uint8_t tx
     std::memcpy(wbuf, tx2, 16);
     std::memcpy(wbuf + 16, mac_host, 8);
     std::memcpy(wbuf + 24, wcnt, 4);
-    block_t block_list[2] = {block, mac_block};  // 2nd block must be MAC_A
+    const block_t block_list[2] = {block, mac_block};  // 2nd block must be MAC_A
     return write_without_encryption_impl(_activePICC, block_list, 2, &service_random_read_write, 1, wbuf, sizeof(wbuf));
 }
 
@@ -1005,7 +1005,7 @@ bool NFCLayerF::external_authenticate_lite_s(const uint8_t ck[16], const uint16_
     std::memcpy(tx + 16, mac_w, 8);
     std::memcpy(tx + 24, wcnt, 4);
 
-    block_t block_list[2] = {lite_s::STATE, lite_s::MAC_A};  // 2nd block must be MAC_A
+    const block_t block_list[2] = {lite_s::STATE, lite_s::MAC_A};  // 2nd block must be MAC_A
     if (!write_without_encryption_impl(_activePICC, block_list, 2, &service_random_read_write, 1, tx, sizeof(tx))) {
         M5_LIB_LOGE("Failed to write_32");
         return false;

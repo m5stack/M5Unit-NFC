@@ -46,8 +46,8 @@ bool authenticate_legacy(IsoDEP& dep, const uint8_t ins, const uint8_t key_no, c
     TripleDES::Key16 key16{};
     std::memcpy(key16.data(), key, 16);
 
-    uint8_t auth_key_no[1] = {key_no};
-    auto cmd               = make_native_wrap_command(ins, auth_key_no, 1);
+    const uint8_t auth_key_no[1] = {key_no};
+    auto cmd                     = make_native_wrap_command(ins, auth_key_no, 1);
 
     std::vector<uint8_t> rx(default_rx_capacity(dep));
     uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());
@@ -1342,8 +1342,8 @@ bool DESFireFileSystem::authenticateAES(const uint8_t key_no, const uint8_t key[
         return false;
     }
 
-    uint8_t auth_key_no[1] = {key_no};
-    auto cmd               = make_native_wrap_command(m5::stl::to_underlying(INS::DF_AUTHENTICATE_AES), auth_key_no, 1);
+    const uint8_t auth_key_no[1] = {key_no};
+    auto cmd = make_native_wrap_command(m5::stl::to_underlying(INS::DF_AUTHENTICATE_AES), auth_key_no, 1);
 
     std::vector<uint8_t> rx(default_rx_capacity(_isoDEP));
     uint16_t rx_len = m5::utility::saturate_cast<uint16_t>(rx.size());

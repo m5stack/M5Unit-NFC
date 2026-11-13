@@ -338,8 +338,8 @@ void Record::dump() const
     }
 
     if (!_id.empty()) {
-        auto p         = _id.data();
-        char line[128] = "";
+        const uint8_t* p = _id.data();
+        char line[128]   = "";
         uint32_t idx{};
         while (idx < _id.size()) {
             uint32_t left{};
@@ -351,8 +351,8 @@ void Record::dump() const
     }
 
     if (!_payload.empty()) {
-        auto p         = _payload.data();
-        char line[128] = "";
+        const uint8_t* p = _payload.data();
+        char line[128]   = "";
         uint32_t idx{};
         while (idx < _payload.size()) {
             uint32_t left{};
