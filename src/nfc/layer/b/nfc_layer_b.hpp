@@ -214,7 +214,7 @@ public:
     bool hlt(const uint8_t pupi[4], const uint32_t timeout_ms = m5::nfc::b::TIMEOUT_HLTB);
     /*!
       @brief Deselect (S(DESELECT)) the specified PICC
-      @param pupi PUPI (4 bytes)
+      @param pupi PUPI (4 bytes, unused: S(DESELECT) addresses the PICC by CID)
       @param cid CID (0xFF if not used)
       @param timeout_ms Timeout(ms)
       @return True if successful
