@@ -647,9 +647,19 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t bits, const uint32_t t
 
 bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size)
 {
-    auto irq               = wait_for_interrupt(I_rxe32, timeout_ms);
+    // Only these three mean the frame itself is unusable. I_par is left out because the anticollision
+    // and MIFARE Classic paths turn parity off on purpose (no_tx_par), and the MIFARE Classic
+    // authentication also turns the receive CRC off (no_crc_rx), so the chip raises neither there.
+    // The wake-up bits that share the same register (I_wt / I_wam / I_wph / I_wcap) are not errors.
+    constexpr uint32_t frame_error32 = I_crc32 | I_err132 | I_err232;
+
+    auto irq               = wait_for_interrupt(I_rxe32 | frame_error32, timeout_ms);
     const uint16_t reqSize = required_size ? required_size : 1;
 
+    if (irq & frame_error32) {
+        M5_LIB_LOGD("Frame error: %08X", irq);
+        return false;
+    }
     if (is_irq32_rxe(irq)) {
         // M5_LIB_LOGE(" rxe OK IRQ:%08X", irq);
         return true;
