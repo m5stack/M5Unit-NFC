@@ -405,22 +405,27 @@ struct ATS {
     std::array<uint8_t, 32> historical{};  //!< Historical bytes(optional)
     uint8_t historical_len{};              //!< Length of historical bytes
 
+    //! @brief Is TA valid?
     inline bool validTA() const
     {
         return T0 & 0x10;
     }
+    //! @brief Is TB valid?
     inline bool validTB() const
     {
         return T0 & 0x20;
     }
+    //! @brief Is TC valid?
     inline bool validTC() const
     {
         return T0 & 0x40;
     }
+    //! @brief Gets the FSCI (frame size code)
     inline uint8_t fsci() const
     {
         return T0 & 0x0F;
     }
+    //! @brief Gets the maximum bitrate for PICC to PCD (DR)
     inline Bitrate maximumBitrateDR() const
     {
         if (!validTA()) {
@@ -429,6 +434,7 @@ struct ATS {
         const uint8_t v = TA & 0x07;
         return (v <= 3) ? static_cast<Bitrate>(v) : Bitrate::Invalid;
     }
+    //! @brief Gets the maximum bitrate for PCD to PICC (DS)
     inline Bitrate maximumBitrateDS() const
     {
         if (!validTA()) {
@@ -437,23 +443,31 @@ struct ATS {
         const uint8_t v = (TA >> 4) & 0x07;
         return (v <= 3) ? static_cast<Bitrate>(v) : Bitrate::Invalid;
     }
+    //! @brief Does the PICC support different DR and DS?
     inline bool supportsAsymmetricSpeed() const
     {
         return validTA() && (TA & 0x80);
     }
+    //! @brief Gets the FWI (frame waiting integer)
     inline uint8_t fwi() const
     {
         return validTB() ? (TB >> 4) : 0x00;
     }
+    //! @brief Gets the SFGI (start-up frame guard integer)
     inline uint8_t sfgi() const
     {
         return validTB() ? (TB & 0x0F) : 0x00;
     }
+    //! @brief Gets the start-up frame guard time in carrier cycles
     inline uint32_t sfgt_fc() const
     {
         const uint8_t v = sfgi();
         return (v == 0 || v == 15) ? 0u : (256u * 16u * (1u << v));
     }
+    /*!
+      @brief Gets the start-up frame guard time in milliseconds
+      @param fc Carrier frequency in Hz (13.56e6f for NFC)
+     */
     inline uint32_t sfgt_ms(const float fc) const
     {
         const uint32_t sfgt = sfgt_fc();
@@ -464,10 +478,12 @@ struct ATS {
         uint32_t ms    = static_cast<uint32_t>(us / 1000.f);
         return ms ? ms : 1;
     }
+    //! @brief Does the PICC support NAD?
     inline bool supportsNAD() const
     {
         return validTC() && (TC & 0x01);
     }
+    //! @brief Does the PICC support CID?
     inline bool supportsCID() const
     {
         return validTC() && (TC & 0x02);
