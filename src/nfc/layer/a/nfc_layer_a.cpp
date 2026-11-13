@@ -1684,13 +1684,6 @@ bool NFCLayerA::dump_desfire_light()
     for (const auto file_no : file_nos) {
         ++idx;
 
-#if 0        
-        if (file_no == 0x0F /*TMAC*/) {
-            printf("---- [%02u]:file_no %u Probably TMAC, so it can't be read\n", idx - 1, file_no);
-            continue;
-        }
-#endif
-
         // For clear auth status
         if (!dfs.selectDfNameAuto(desfire::DESFIRE_LIGHT_DF_NAME, sizeof(desfire::DESFIRE_LIGHT_DF_NAME)) &&
             !dfs.selectDfNameAuto(type4::NDEF_AID, sizeof(type4::NDEF_AID))) {
@@ -2581,111 +2574,6 @@ bool NFCLayerA::mifare_plus_read_plain_mac(const uint16_t block, const uint8_t c
     _mfp_session.r_ctr = r_ctr + 1;
     return true;
 }
-
-#if 0
-bool NFCLayerA::mifare_plus_read_plain_mac_l4(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out)
-{
-    out.clear();
-    if (!_mfp_session.authenticated || count == 0 || count > 3 || block > 0xFF) {
-        return false;
-    }
-
-    const uint16_t r_ctr = _mfp_session.r_ctr;
-    const uint16_t w_ctr = _mfp_session.w_ctr;
-
-    const uint8_t cmd = 0x33;  // ReadPlainMAC_MACed
-    uint8_t rcmd1[4]  = {cmd, (uint8_t)(block & 0xFF), 0x00, count};
-    uint8_t mac[8]{};
-    if (!mifare_plus_calculate_mac(_mfp_session.kmac.data(), _mfp_session.ti.data(), r_ctr, w_ctr, MfpMacType::ReadCmd,
-                                   (uint8_t)block, count, rcmd1, sizeof(rcmd1), mac)) {
-        return false;
-    }
-
-    uint8_t tx[12]{};
-    memcpy(tx, rcmd1, sizeof(rcmd1));
-    memcpy(tx + sizeof(rcmd1), mac, sizeof(mac));
-
-    uint8_t rx[128]{};
-    const size_t data_len = (size_t)count * 16;
-    uint16_t rx_len       = sizeof(rx);
-    if (!_isoDEP.transceiveINF(rx, rx_len, tx, sizeof(tx)) || rx_len < 1) {
-        return false;
-    }
-
-    // M5_LIB_LOGE("RX:>>>");
-    // M5_DUMPE(rx,rx_len);
-
-    if (rx[0] != 0x90) {
-        return false;
-    }
-    if (rx_len < 1 + data_len) {
-        return false;
-    }
-
-    size_t status_len = 0;
-    if (rx_len >= 1 + data_len + 2 && rx[rx_len - 2] == 0x90 && rx[rx_len - 1] == 0x00) {
-        status_len = 2;
-    }
-    if (rx_len < 1 + data_len + status_len + 8) {
-        return false;
-    }
-
-    uint8_t mac_resp[8]{};
-    const uint16_t resp_ctr = r_ctr + 1;
-    mifare_plus_calculate_mac(_mfp_session.kmac.data(), _mfp_session.ti.data(), resp_ctr, w_ctr, MfpMacType::ReadResp,
-                              (uint8_t)block, count, rx, 1 + data_len, mac_resp);
-    if (memcmp(rx + 1 + data_len, mac_resp, sizeof(mac_resp)) != 0) {
-        M5_LIB_LOGW("SL3 mac mismatch");
-    }
-
-    out.insert(out.end(), rx + 1, rx + 1 + data_len);
-    _mfp_session.r_ctr++;
-    return true;
-}
-
-bool NFCLayerA::mifare_plus_write_plain_mac_l4(const uint16_t block, const uint8_t* data, const uint16_t data_len)
-{
-    if (!data || data_len == 0 || !_mfp_session.authenticated || block > 0xFF) {
-        M5_LIB_LOGE(">>>>ERROR1");
-        return false;
-    }
-    if (data_len > 16) {
-        M5_LIB_LOGE(">>>>ERROR2");
-        return false;
-    }
-
-    const uint16_t r_ctr = _mfp_session.r_ctr;
-    const uint16_t w_ctr = _mfp_session.w_ctr;
-
-    uint8_t payload[16]{};
-    memcpy(payload, data, std::min<uint16_t>(16, data_len));
-
-    const uint8_t cmd            = 0xA1;  // WritePlainMAC_MACed
-    uint8_t rcmd[1 + 2 + 16 + 8] = {cmd, (uint8_t)(block & 0xFF), 0x00};
-    memcpy(rcmd + 3, payload, 16);
-
-    if (!mifare_plus_calculate_mac(_mfp_session.kmac.data(), _mfp_session.ti.data(), r_ctr, w_ctr, MfpMacType::WriteCmd,
-                                   (uint8_t)block, 1, rcmd, 1 + 2 + 16, rcmd + 19)) {
-        M5_LIB_LOGE(">>>>ERROR3");
-        return false;
-    }
-
-    uint8_t rx[32]{};
-    uint16_t rx_len = sizeof(rx);
-    if (!_isoDEP.transceiveINF(rx, rx_len, rcmd, sizeof(rcmd)) || rx_len < 1) {
-        M5_LIB_LOGE(">>>>ERROR4");
-        return false;
-    }
-    if (rx[0] != 0x90) {
-        M5_LIB_LOGE(">>>>ERROR5");
-        M5_DUMPE(rx, rx_len);
-        return false;
-    }
-
-    _mfp_session.w_ctr++;
-    return true;
-}
-#endif
 
 bool NFCLayerA::mifare_plus_read_mac_l4(const uint16_t block, const uint8_t count, std::vector<uint8_t>& out,
                                         const bool plain)

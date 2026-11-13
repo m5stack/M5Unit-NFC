@@ -20,34 +20,6 @@ namespace m5 {
 namespace unit {
 namespace st25r3916 {
 
-#if 0
-uint16_t calculate_nrt(const uint32_t ms, const bool nrt_step)
-{
-    auto step_sec      = (nrt_step ? 4096 : 64) / 13560000.f;
-    uint32_t nrt       = (uint32_t)std::round((ms / 1000.f) / step_sec);
-    const uint32_t max = nrt_step ? 0xFFFF : 0xF857;
-    if (nrt > max) {
-        nrt = max;
-    }
-    // M5_LIB_LOGE(">>>> %ums fc4096:%u => %04X", ms, nrt_step, nrt);
-    return nrt;
-}
-
-uint8_t calculate_mrt(const uint32_t us, const bool mrt_step)
-{
-    constexpr float fc  = 13.56e6f;  // 13.56 MHz
-    const uint32_t step = mrt_step ? 512 : 64;
-
-    float mrt_f  = (us * fc) / (1e6f * step);
-    uint32_t mrt = static_cast<uint32_t>(std::round(mrt_f));
-
-    mrt = std::max(std::min(mrt, 255u), 4u);  // clamp 4...255
-    // auto actual = mrt * (step / fc) * 1e6f;
-    // M5_LIB_LOGE("MRT: %u us -> reg=%02X (%0.2f us)", us, mrt, actual);
-    return static_cast<uint8_t>(mrt);
-}
-#endif
-
 uint16_t calculate_nrt(const uint32_t ms, const bool nrt_step)
 {
     constexpr uint32_t FC_HZ{13560000};

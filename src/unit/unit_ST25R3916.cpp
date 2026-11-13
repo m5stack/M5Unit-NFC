@@ -218,17 +218,6 @@ bool UnitST25R3916::begin()
     }
 
     //
-#if 0
-    // MRT/SQT
-    if (!write_mask_receiver_timer(0) || !write_squelch_timer(0)) {
-        M5_LIB_LOGE("Failed to MRT/SQT");
-        return false;
-    }
-    uint8_t mrt{}, sqt{};
-    readMaskReceiveTimer(mrt);
-    readSquelchTimer(sqt);
-    M5_LIB_LOGE("====== MRT:%02X SQT:%02X", mrt, sqt);
-#endif
 
     //
     modify_bit_register8(REG_IO_CONFIGURATION_1, 0x07, 0x07);  // MCU_CLK disabled,No LF clock on MCU_CLK
@@ -374,7 +363,6 @@ bool UnitST25R3916::nfc_initial_field_on()
     return modify_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en, 0x00);
 
 #if 0
-    
     if (!writeNFCFieldOnGuardTimer(0x00)) {
         return false;
     }
@@ -620,27 +608,6 @@ bool UnitST25R3916::write_register32(const uint16_t reg, const uint32_t v)
     return writeRegister32BE(to_write_reg(reg), v, true /*I2C, SPI not used*/);
 }
 
-#if 0
-uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms)
-{
-    const auto start_at = m5::utility::millis();
-    uint32_t flags{};
-    do {
-        if (!_using_irq || _interrupt_occurred) {
-            _interrupt_occurred = false;
-            uint32_t v{};
-            if (readInterrupts(v)) {
-                flags |= v;
-            }
-        }
-        if (flags & irq) {
-            return flags;
-        }
-        std::this_thread::yield();
-    } while (!m5::utility::hasElapsed(start_at, timeout_ms));
-    return flags | I_nre32;  // Timeout
-}
-#else
 uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t bits, const uint32_t timeout_ms)
 {
     const auto start_at = m5::utility::millis();
@@ -661,7 +628,6 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t bits, const uint32_t t
     } while (!m5::utility::hasElapsed(start_at, timeout_ms));
     return _stored_irq | I_nre32;  // Timeout
 }
-#endif
 
 bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size)
 {

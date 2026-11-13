@@ -192,14 +192,6 @@ public:
       @return True if successful
      */
     bool select(m5::nfc::b::PICC& picc, const uint32_t timeout_ms = m5::nfc::b::TIMEOUT_ATTRIB);
-#if 0
-    bool activate(m5::nfc::b::PICC& picc);
-    bool reactivate(const m5::nfc::b::PICC& picc);
-    inline bool reactivate()
-    {
-        return reactivate(_activePICC);
-    }
-#endif
 
     ///@}
 
