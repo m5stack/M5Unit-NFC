@@ -232,7 +232,7 @@ public:
     | WLCFOD           | WLC JiFOD               | Wireless Charging                         |
     | WLCINF           | WLC Poll Information    | Wireless Charging                         |
 
-    If TNF is TNF::Media, type is MIME type string e.g. "text/plain" , "image/png"...
+    If TNF is TNF::MIMEMedia, type is MIME type string e.g. "text/plain" , "image/png"...
     */
     ///@name Type
     ///@{

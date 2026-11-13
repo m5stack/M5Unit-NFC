@@ -136,7 +136,7 @@ public:
                         const m5::nfc::apdu::SelectResponse res   = m5::nfc::apdu::SelectResponse::FCI,
                         const m5::nfc::apdu::SelectOccurrence occ = m5::nfc::apdu::SelectOccurrence::FirstOrOnly);
     /*!
-      @brief SELECT by File ID with auto response fallback (None->FCI->FCP)
+      @brief SELECT by File ID with auto response fallback (FCI->None->FCP)
       @param fid File ID
       @param occ Selection occurrence
       @return True if successful

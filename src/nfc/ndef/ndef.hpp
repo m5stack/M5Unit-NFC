@@ -376,7 +376,7 @@ enum class FileControlTag : uint8_t {
 };
 
 /*!
-  @typedef FileControTagBlits
+  @typedef FileControlTagBits
   @brief File control TLV tag bit group for type4
 */
 using FileControlTagBits = uint8_t;

@@ -62,12 +62,12 @@ const uint8_t inventory_flag{0x04};
 const uint8_t data_rate_flag{0x02};
 const uint8_t subcarrier_flag{0x01};
 const uint8_t nb_slots_flag{0x20};  // if inventory_flag is 1
-const uint8_t AFI_flag{0x10};       // // if inventory_flag is 1
+const uint8_t AFI_flag{0x10};       // if inventory_flag is 1
 constexpr uint8_t MAX_BLOCK_SIZE{32};
 ///@}
 
 /*!
-  @enum VCDMode
+  @enum ModulationMode
   @brief VCD encode flag
  */
 enum class ModulationMode : uint8_t {
