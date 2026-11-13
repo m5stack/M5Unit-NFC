@@ -95,10 +95,10 @@ void report_failure(const char* step)
 
 // Print what each system code answers, to the screen and the serial log both.
 //
-// detect() says only yes or no, and a card met at an exhibition cannot be kept for later, so when
-// it says no, ask every system code in turn and print what came back. A card split into several
-// systems answers each one with that system's own IDm, so the screen marks a code '=' when its IDm
-// matches the first answer and '!' when it differs.
+// detect() says only yes or no, and a card you only get one pass at cannot be retried later, so
+// when it says no, ask every system code in turn and print what came back. A card split into
+// several systems answers each one with that system's own IDm, so the screen marks a code '='
+// when its IDm matches the first answer and '!' when it differs.
 //
 // A '!' does not settle what happened: a second card in the field answers a system code the first
 // one lacks all by itself, and that reads exactly the same. Measured on 2026-11-11 with a Suica
