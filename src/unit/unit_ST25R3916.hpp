@@ -156,8 +156,7 @@ public:
      */
     bool writeInitiatorOperationMode(const st25r3916::InitiatorOperationMode mode, const uint8_t optional = 0);
     /*!
-      @brief Write the initiator operation mode and transition to target mode
-      @details writeModeDefinition
+      @brief Write the target operation mode and transition to target mode
       @param mode TargetOperationMode
       @param optional Other setting bits
       @return True if successful
@@ -971,7 +970,7 @@ public:
       @brief Read the error and wake-up interrupt
       @param[out] value Value
       @return True if successful
-      @warning After Main interrupt register has been read, its content is set to 0
+      @warning Reading this register clears its content
      */
     inline bool readErrorAndWakeupInterrupt(uint8_t& value)
     {
@@ -1101,7 +1100,7 @@ public:
     /*!
       @brief Write the number of transmitted bytes and after bytes
       @param bytes Number of full bytes to be transmitted
-      @param afterBytes Number of bits to transmit after the last full byte
+      @param bits Number of bits to transmit after the last full byte
       @return True if successful
      */
     inline bool writeNumberOfTransmittedBytes(const uint16_t bytes, const uint8_t bits)
@@ -1906,6 +1905,7 @@ public:
       @param tx Send buffer
       @param tx_len Size of send buffer
       @param timeout_ms Timeout(ms)
+      @param min_rx_len Minimum expected receive bytes
       @return True if successful
      */
     bool nfcbTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
@@ -1923,6 +1923,7 @@ public:
       @param[out] rx Receive buffer
       @param[in,out] rx_len in:Size of receive buffer out:actual read size
       @param timeout_ms Timeout(ms)
+      @param min_rx_len Minimum expected receive bytes
       @return True if successful
      */
     bool nfcbReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const uint16_t min_rx_len = 0);
@@ -1938,6 +1939,7 @@ public:
       @param tx Send buffer
       @param tx_len Size of send buffer
       @param timeout_ms Timeout(ms)
+      @param min_rx_len Minimum expected receive bytes
       @return True if successful
      */
     bool nfcfTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
@@ -1962,6 +1964,7 @@ public:
       @param[out] rx Receive buffer
       @param[in,out] rx_len in:Size of receive buffer out:actual read size
       @param timeout_ms Timeout(ms)
+      @param min_rx_len Minimum expected receive bytes
       @return True if successful
      */
     bool nfcfReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t timeout_ms, const uint16_t min_rx_len = 0);
