@@ -7,7 +7,8 @@
   @file aes.hpp
   @brief AES/CMAC helpers
 */
-#pragma once
+#ifndef M5_UNIT_NFC_NFC_CRYPTO_AES_HPP
+#define M5_UNIT_NFC_NFC_CRYPTO_AES_HPP
 
 #include <cstddef>
 #include <cstdint>
@@ -60,3 +61,4 @@ bool cmac_aes_128(uint8_t out[16], const uint8_t key[16], const uint8_t* msg, si
 }  // namespace crypto
 }  // namespace nfc
 }  // namespace m5
+#endif

@@ -7,7 +7,8 @@
   @file secure_zero.hpp
   @brief Secure memory wipe helpers
 */
-#pragma once
+#ifndef M5_UNIT_NFC_NFC_CRYPTO_SECURE_ZERO_HPP
+#define M5_UNIT_NFC_NFC_CRYPTO_SECURE_ZERO_HPP
 
 #include <cstddef>
 
@@ -34,3 +35,4 @@ inline void secure_zero(void* p, const size_t n)
 }  // namespace crypto
 }  // namespace nfc
 }  // namespace m5
+#endif
