@@ -572,7 +572,7 @@ struct PICC {
     /*!
       @brief Check format
       @param f Format bits to test
-      @return True if all specified format bits are set
+      @return True if any of the specified format bits is set
      */
     inline bool checkFormat(const Format f) const
     {
@@ -601,7 +601,7 @@ struct PICC {
       @param t Type
       @param idm IDm
       @param pmm PMm
-      @param sc System code
+      @param sc System code (reserved for future use; the emulated system code is fixed to 0x88B4)
       @return True if successful
      */
     bool emulate(const Type t, const uint8_t idm[FELICA_ID_LENGTH], const uint8_t pmm[FELICA_ID_LENGTH],
