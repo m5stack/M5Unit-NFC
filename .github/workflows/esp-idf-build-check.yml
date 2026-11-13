@@ -21,6 +21,8 @@ on:
       - 'examples/UnitUnified/**/CMakeLists.txt'
       - 'examples/UnitUnified/**/Kconfig.projbuild'
       - 'examples/UnitUnified/**/idf_component.yml'
+      - 'examples/UnitUnified/**/sdkconfig.defaults*'
+      - 'examples/UnitUnified/**/partitions.csv'
       - 'examples/UnitUnified/common/**'
       - '.github/workflows/esp-idf-build-check.yml'
   pull_request:
@@ -38,6 +40,8 @@ on:
       - 'examples/UnitUnified/**/CMakeLists.txt'
       - 'examples/UnitUnified/**/Kconfig.projbuild'
       - 'examples/UnitUnified/**/idf_component.yml'
+      - 'examples/UnitUnified/**/sdkconfig.defaults*'
+      - 'examples/UnitUnified/**/partitions.csv'
       - 'examples/UnitUnified/common/**'
       - '.github/workflows/esp-idf-build-check.yml'
   workflow_dispatch:
@@ -133,7 +137,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        target: [esp32, esp32c5, esp32c6, esp32h2, esp32p4]
+        target: [esp32, esp32c3, esp32c5, esp32c6, esp32h2, esp32p4]
         idf: [v5.1.7, v5.4.4, v5.5.4, v6.1]
         exclude:
           # esp32p4 stable from IDF v5.3 (M5GFX P4 verified on 5.4/5.5). 5.1.7 not applicable.
