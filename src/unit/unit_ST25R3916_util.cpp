@@ -155,7 +155,7 @@ bool UnitST25R3916::enable_osc()
         }
         set_bit_register8(REG_OPERATION_CONTROL, en);
         // Typical startup ~700us; allow 50ms for warm boot scenarios where I_osc can be missed
-        auto irq32 = wait_for_interrupt(I_osc, 50);
+        auto irq32 = wait_for_interrupt(I_osc32, 50);
         modify_bit_register8(REG_MASK_MAIN_INTERRUPT, I_osc, 0x00);
         if ((irq32 & I_osc32) == 0) {
             // Fallback: poll osc_ok directly (warm boot may miss the I_osc interrupt edge)
