@@ -257,10 +257,11 @@ public:
     bool read16(uint8_t rx[16], const uint8_t addr);
     /*!
       @brief Read any bytes from user area
-      @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
+      @details Continue reading only the user area from saddr until rx_len is satisfied
       @param rx Buffer
       @param[in,out] rx_len in:buffer size, out:actual read size
       @param saddr Reading start block/page address
+      @param key MIFARE classic key
       @return True if successful
       @warning For FAST_READ-compatible PICC, the rx is in 4-byte units. for others, it is in 16-byte units
       @pre Target blocks must be authenticatable using the specified key if MIFARE classic
@@ -305,7 +306,7 @@ public:
     bool write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len, const bool safety = true);
     /*!
       @brief Write any bytes to user area
-      @details Continue writing only the user area from the first block of the user area until tx_len is satisfied
+      @details Continue writing only the user area from saddr until tx_len is satisfied
       @param saddr Writing start block/page address
       @param tx Buffer
       @param tx_len buffer size
