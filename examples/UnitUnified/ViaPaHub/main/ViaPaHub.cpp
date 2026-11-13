@@ -12,7 +12,7 @@
   while running. A WS1850S offers NFC-A and NFC-B only, so the other two are compiled out.
 
   Device ---> PaHub (0x70)
-                `- ch:0 UnitNFC
+                `- ch:0 UnitNFC / UnitRFID2
 
   The PaHub answers on 0x70 by default. Nothing behind it collides (ST25R3916 is 0x50, WS1850S is
   0x28), but a v2.1 PaHub can be moved to 0x71-0x77 with its DIP switch, and the hub then has to be

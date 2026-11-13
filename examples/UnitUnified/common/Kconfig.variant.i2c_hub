@@ -19,9 +19,9 @@ choice EXAMPLE_NFC_VARIANT
         bool "UnitRFID2 (WS1850S, I2C / GROVE)"
         help
             The Arduino build gets M5Unit-RFID from lib_deps, but an ESP-IDF native build does not:
-            this example's idf_component.yml names only the libraries of the repository it sits in,
-            because the self-reference is rewritten when the example is propagated. Build the
-            UnitRFID2 variant from M5Unit-RFID's own copy of this example.
+            this example's idf_component.yml names only the libraries of the repository it sits in.
+            An ESP-IDF native build of M5Unit-NFC's copy therefore cannot build this variant; use
+            M5Unit-RFID's copy.
 endchoice
 
 endmenu
