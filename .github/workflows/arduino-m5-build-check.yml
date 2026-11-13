@@ -73,7 +73,7 @@ jobs:
         build-properties:
           - "-DUSING_UNIT_NFC"
 
-        # Reduced from 23 → 11 boards. One representative per chip family + the boards where
+        # One representative per chip family, plus the boards where
         # NFC is actually deployed in the field (NessoN1/Dial for PortA, Cardputer for CapCC1101).
         # Uncomment any line below to widen coverage.
         board:

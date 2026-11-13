@@ -73,7 +73,7 @@ jobs:
         build-properties:
           - "-DUSING_UNIT_NFC"
 
-        # Reduced from 18 → 10 boards. One representative per chip family + the boards where
+        # One representative per chip family, plus the boards where
         # NFC is actually deployed (NessoN1/Dial for PortA, Cardputer for CapCC1101). Uncomment
         # any line below to widen coverage. m5stack fork-specific boards (atoms3r, papers3,
         # sticks3, nano_h2) are not in the espressif:esp32 FQBN set; see arduino-m5 workflow.
