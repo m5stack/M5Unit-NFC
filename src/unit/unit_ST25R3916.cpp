@@ -362,6 +362,9 @@ bool UnitST25R3916::nfc_initial_field_on()
     m5::utility::delay(5);
     return modify_bit_register8(REG_OPERATION_CONTROL, tx_en | rx_en, 0x00);
 
+// Kept for reference: the manual collision-avoidance path, which drives field detection through
+// en_fd_manual_ca instead of letting the chip run automatic CA. The automatic path above works on
+// every board tested so far.
 #if 0
     if (!writeNFCFieldOnGuardTimer(0x00)) {
         return false;

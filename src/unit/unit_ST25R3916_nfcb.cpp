@@ -129,6 +129,9 @@ bool UnitST25R3916::nfcbReceive(uint8_t* rx, uint16_t& rx_len, const uint32_t ti
         return false;
     }
 
+// Two receive paths, of which the enabled one below reads the FIFO straight into the caller's
+// buffer. The disabled one stages the whole frame in a 256-byte buffer first; it is kept so the
+// alternative stays visible.
 #if 0
     uint8_t rbuf[256]{};
     if (!wait_for_FIFO(timeout_ms, sizeof(rbuf))) {

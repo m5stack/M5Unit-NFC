@@ -129,6 +129,9 @@ bool UnitST25R3916::configure_nfc_a()
     writeCorrelatorConfiguration1(0x47);
     writeCorrelatorConfiguration2(0x00);
 
+// Three receiver-sensitivity settings, of which the stability-focused one is in use. The other two
+// are kept so the trade-off stays visible: a higher sensitivity reads weaker tags but picks up more
+// noise.
 #if 0
     // Sensitivity Priority
     constexpr uint8_t recv_3{0x00};
