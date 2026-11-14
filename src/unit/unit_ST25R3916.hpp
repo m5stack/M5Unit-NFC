@@ -133,7 +133,7 @@ public:
      */
     inline m5::nfc::NFC NFCMode() const
     {
-        return _nfcMode;
+        return _nfc_mode;
     }
     /*!
       @brief Configure NFC mode
@@ -2175,7 +2175,7 @@ private:
     uint32_t _update_failed{};
 
     volatile bool _interrupt_occurred{};
-    m5::nfc::NFC _nfcMode{};
+    m5::nfc::NFC _nfc_mode{};
     bool _encrypted{};
     bool _using_irq{};
 

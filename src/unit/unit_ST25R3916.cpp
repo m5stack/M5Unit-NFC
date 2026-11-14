@@ -339,7 +339,7 @@ bool UnitST25R3916::configureNFCMode(const m5::nfc::NFC mode)
     */
     if (ok) {
         M5_LIB_LOGV("Change NFC mode to %u", mode);
-        _nfcMode = mode;
+        _nfc_mode = mode;
     }
     return ok;
 }
@@ -368,7 +368,7 @@ bool UnitST25R3916::configureEmulationMode(const m5::nfc::NFC mode)
     }
     if (ok) {
         M5_LIB_LOGV("Change emulation mode to %u", mode);
-        _nfcMode = mode;
+        _nfc_mode = mode;
     }
     return ok;
 }
