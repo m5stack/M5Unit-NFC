@@ -153,10 +153,17 @@ bool UnitST25R3916::enable_osc()
         if (!modify_bit_register8(REG_MASK_MAIN_INTERRUPT, 0x00, I_osc) || !clearInterrupts()) {
             return false;
         }
-        set_bit_register8(REG_OPERATION_CONTROL, en);
+        if (!set_bit_register8(REG_OPERATION_CONTROL, en)) {
+            M5_LIB_LOGE("Failed to start the oscillator");
+            return false;
+        }
         // Typical startup ~700us; allow 50ms for warm boot scenarios where I_osc can be missed
         auto irq32 = wait_for_interrupt(I_osc32, 50);
-        modify_bit_register8(REG_MASK_MAIN_INTERRUPT, I_osc, 0x00);
+        // Worth knowing about but not worth giving up for: the oscillator is up either way, and all
+        // that is left undone is masking an interrupt nobody waits for again.
+        if (!modify_bit_register8(REG_MASK_MAIN_INTERRUPT, I_osc, 0x00)) {
+            M5_LIB_LOGW("Failed to mask I_osc again");
+        }
         if ((irq32 & I_osc32) == 0) {
             // Fallback: poll osc_ok directly (warm boot may miss the I_osc interrupt edge)
             uint8_t aux{};
