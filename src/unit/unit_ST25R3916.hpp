@@ -59,9 +59,19 @@ public:
     virtual bool begin() override;
     /*!
       @brief Update the unit state
-      @param force Force update regardless of internal interval
+      @param force Poll the interrupts even if config_t::update_interval_ms has not elapsed
      */
     virtual void update(const bool force = false) override;
+    /*!
+      @brief Number of interrupt polls in update() that failed
+      @return Failed poll count since begin()
+      @note A failed poll loses nothing by itself: the chip holds each interrupt bit until it is
+      read, so the next poll picks it up. A count that climbs says the I2C bus is unreliable
+     */
+    inline uint32_t updateFailedCount() const
+    {
+        return _update_failed;
+    }
 
     /*!
       @struct config_t
@@ -84,6 +94,15 @@ public:
           refuses a smaller buffer. Has no effect on SPI, which has no such limit.
          */
         uint16_t i2c_read_chunk{st25r3916::I2C_READ_CHUNK_DEFAULT};
+        /*!
+          @brief Shortest gap between two interrupt polls in update(), in milliseconds
+          @details Only meaningful without an IRQ pin, where update() reads the interrupt
+          registers to keep track of what the chip has raised. That read costs three I2C
+          transactions, so a loop that returns quickly can spend a lot of bus time on it. Zero,
+          the default, polls on every call. A larger value delays when the stored interrupts
+          catch up without losing any, since the chip holds each bit until it is read.
+         */
+        uint16_t update_interval_ms{};
     };
 
     ///@name Settings for begin
@@ -2147,6 +2166,8 @@ private:
 
     volatile uint32_t _stored_irq{};
     uint32_t _enabled_irq{};  // for !_using_irq
+    m5::utility::elapsed_time_t _latest_update{};
+    uint32_t _update_failed{};
 
     volatile bool _interrupt_occurred{};
     m5::nfc::NFC _nfcMode{};

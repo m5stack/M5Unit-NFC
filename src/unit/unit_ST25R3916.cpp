@@ -280,13 +280,26 @@ bool UnitST25R3916::begin()
     return !_cfg.emulation ? configureNFCMode(_cfg.mode) : configureEmulationMode(_cfg.mode);
 }
 
-void UnitST25R3916::update(const bool /*force*/)
+void UnitST25R3916::update(const bool force)
 {
-    // For I2C
-    if (!_using_irq) {
-        uint32_t v{};
-        (void)readInterrupts(v);
+    // Only needed without an IRQ pin. The chip holds each interrupt bit until it is read, and
+    // wait_for_interrupt() reads them itself, so throttling this poll delays when the stored
+    // interrupts catch up but never loses one. readInterrupts() costs three I2C transactions, which
+    // is what makes the throttle worth having: a loop that returns quickly can reach well over a
+    // thousand calls a second.
+    if (_using_irq) {
+        return;
+    }
+    if (!force && _cfg.update_interval_ms && !m5::utility::hasElapsed(_latest_update, _cfg.update_interval_ms)) {
+        return;
+    }
+    _latest_update = m5::utility::millis();
+
+    uint32_t v{};
+    if (readInterrupts(v)) {
         _stored_irq = _stored_irq | (v & _enabled_irq);
+    } else {
+        ++_update_failed;
     }
 }
 
