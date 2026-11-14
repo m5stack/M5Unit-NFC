@@ -260,14 +260,18 @@ bool UnitST25R3916::nfca_request_wakeup(uint16_t& atqa, const bool request)
         const auto start_at = m5::utility::millis();
         uint16_t bytes{};
         uint8_t bits{};
+        // Carry the result out of the loop instead of reading the size again: readFIFOSize() zeroes
+        // bytes when it fails, so a second read that happens to fail would bury an answer the loop
+        // had already seen.
+        bool filled = false;
         do {
-            if (readFIFOSize(bytes, bits) && bytes >= 2) {
+            filled = readFIFOSize(bytes, bits) && bytes >= 2;
+            if (filled) {
                 break;
             }
             std::this_thread::yield();
         } while (!m5::utility::hasElapsed(start_at, TIMEOUT_REQ_WUP));
-        readFIFOSize(bytes, bits);
-        irq |= bytes ? I_rxe32 : 0u;
+        irq |= filled ? I_rxe32 : 0u;
     }
 
     if (is_irq32_rxe(irq)) {

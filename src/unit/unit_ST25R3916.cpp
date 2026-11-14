@@ -702,14 +702,15 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
         const auto start_at = m5::utility::millis();
         uint16_t bytes{};
         uint8_t bits{};
+        bool filled = false;
         do {
-            if (readFIFOSize(bytes, bits) && bytes >= reqSize) {
+            filled = readFIFOSize(bytes, bits) && bytes >= reqSize;
+            if (filled) {
                 break;
             }
             std::this_thread::yield();
         } while (!m5::utility::hasElapsed(start_at, timeout_ms));
         // M5_LIB_LOGE("    FIFO:%u,%u/%u", bytes, bits, required_size);
-        const bool filled = readFIFOSize(bytes, bits) && bytes >= reqSize;
         // TEMPORARY instrumentation: remove before release. Silent unless the fallback is taken.
         {
             static uint32_t n_rxs = 0, n_rxs_ok = 0;
