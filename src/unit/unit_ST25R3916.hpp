@@ -37,7 +37,9 @@ struct AdapterST25R3916;
   @brief ST25R3916 Unit
  */
 class UnitST25R3916 : public Component {
-    M5_UNIT_COMPONENT_HPP_BUILDER(UnitST25R3916, 0x50 /* I2C address */);
+    // No move: begin() hands `this` to gpio_isr_handler_add(), so a moved-from object would stay
+    // the one the ISR calls back into.
+    M5_UNIT_COMPONENT_HPP_BUILDER_WITHOUT_MOVE(UnitST25R3916, 0x50 /* I2C address */);
 
 public:
     /*!
