@@ -323,9 +323,9 @@ bool NFCLayerV::write_block_ext(const m5::nfc::v::PICC& picc, const uint16_t blo
     // Verify
     {
         m5::utility::delay(10);
-        uint8_t rx[32]{};
-        if (read_block_ext(rx, picc, block)) {
-            return memcmp(rx, tx, tx_len) == 0;
+        uint8_t verify[32]{};
+        if (read_block_ext(verify, picc, block)) {
+            return memcmp(verify, tx, tx_len) == 0;
         } else {
             M5_LIB_LOGD("Failed to read for verify (ext)");
         }
@@ -411,9 +411,9 @@ bool NFCLayerV::writeBlock(const uint16_t block, const uint8_t* tx, const uint8_
     // Verify
     {
         m5::utility::delay(10);
-        uint8_t rx[32]{};
-        if (readBlock(rx, block)) {
-            return memcmp(rx, tx, tx_len) == 0;
+        uint8_t verify[32]{};
+        if (readBlock(verify, block)) {
+            return memcmp(verify, tx, tx_len) == 0;
         } else {
             M5_LIB_LOGD("Failed to read for verify");
         }
@@ -697,15 +697,15 @@ bool NFCLayerV::probe_read_block(const m5::nfc::v::PICC& picc, const uint16_t bl
 void NFCLayerV::probe_memory_layout(m5::nfc::v::PICC& picc)
 {
     uint8_t cc[8]{};
-    uint16_t got    = sizeof(cc);
-    const bool read = probe_read_block(picc, 0, cc, got);
+    uint16_t got       = sizeof(cc);
+    const bool read_ok = probe_read_block(picc, 0, cc, got);
 
     // One block came back, so its length gives the block size away
     if (!picc.block_size) {
-        if (!read) {
+        if (!read_ok) {
             M5_LIB_LOGW("Could not read block 0; assuming %u byte blocks", DEFAULT_BLOCK_SIZE);
         }
-        picc.block_size = read ? static_cast<uint8_t>(got) : DEFAULT_BLOCK_SIZE;
+        picc.block_size = read_ok ? static_cast<uint8_t>(got) : DEFAULT_BLOCK_SIZE;
     }
 
     if (picc.blocks) {
@@ -716,7 +716,7 @@ void NFCLayerV::probe_memory_layout(m5::nfc::v::PICC& picc)
     // eight when MLEN needs more room than one byte, which it signals by leaving the short MLEN
     // zero. The second half then lives in the next block unless the blocks are big enough to hold
     // it all. MLEN measures the memory in units of 8 bytes (NFC Forum T5T 4.3.1.17).
-    uint16_t cc_len = read ? got : 0;
+    uint16_t cc_len = read_ok ? got : 0;
     if (cc_len >= 4 && (cc[0] == 0xE1 || cc[0] == 0xE2) && !cc[2] && cc_len < sizeof(cc)) {
         uint16_t more = sizeof(cc) - cc_len;
         if (probe_read_block(picc, 1, cc + cc_len, more)) {
