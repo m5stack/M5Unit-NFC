@@ -412,7 +412,9 @@ constexpr uint8_t en_ac{0x01};
 
 inline bool has_irq32_error(const uint32_t irq32)
 {
-    return irq32 & 0x0000FF00;
+    // The upper nibble of the error register only. Its lower nibble carries the wake-up interrupts
+    // (I_wt / I_wam / I_wph / I_wcap), which report a measurement, not a failure.
+    return irq32 & (regval::I_crc32 | regval::I_par32 | regval::I_err132 | regval::I_err232);
 }
 
 inline bool is_irq32_timeout(const uint32_t irq32)
