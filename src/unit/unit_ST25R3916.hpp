@@ -213,11 +213,15 @@ public:
     bool readFIFOSize(uint16_t& bytes, uint8_t& bits);
     /*!
       @brief Read from FIFO
-      @param[out] actual Actual read size
+      @param[out] actual Number of bytes placed in buf
       @param[out] buf Buffer
       @param buf_size Buffer size
       @retval == 0 Failed
-      @retval != 0 Upper 16 bits: Number of bits read Lower 16 bits: Number of bytes read
+      @retval != 0 What the FIFO held before the read: upper 16 bits the bits of its last byte if that
+      byte was incomplete, lower 16 bits its byte count
+      @note The byte count is what the FIFO held, not what was read. They differ once buf_size is the
+      smaller of the two, and the FIFO count also covers the CRC the chip appends. Read sizes come from
+      actual
      */
     uint32_t readFIFO(uint16_t& actual, uint8_t* buf, const uint16_t buf_size);
     /*!
