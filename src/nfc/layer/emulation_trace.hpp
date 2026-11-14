@@ -60,7 +60,7 @@ public:
     void record(const uint8_t ev, const uint32_t irq = 0, const uint8_t detail = 0)
     {
 #if defined(M5_UNIT_NFC_EMULATION_TRACE)
-        const uint32_t now = m5::utility::millis();
+        const m5::utility::elapsed_time_t now = m5::utility::millis();
 
         // A reader polling a halted PICC produces two events in turn, so matching only the entry
         // just before would never fold them. The interrupt bits are left out of the comparison
@@ -74,8 +74,8 @@ public:
                     ++e.count;
                 }
                 e.irq |= irq;
-                const uint32_t span = now - e.ms;
-                e.span              = (span > 0xFFFF) ? 0xFFFF : (uint16_t)span;
+                const m5::utility::elapsed_time_t span = now - e.ms;
+                e.span                                 = (span > 0xFFFF) ? 0xFFFF : (uint16_t)span;
                 return;
             }
         }
@@ -137,12 +137,12 @@ public:
 private:
 #if defined(M5_UNIT_NFC_EMULATION_TRACE)
     struct Entry {
-        uint32_t ms;     // When the first of the repeats was seen
-        uint32_t irq;    //
-        uint16_t count;  // How many times in a row
-        uint16_t span;   // Milliseconds between the first and the last repeat
-        uint8_t ev;      //
-        uint8_t detail;  //
+        m5::utility::elapsed_time_t ms;  // When the first of the repeats was seen
+        uint32_t irq;                    //
+        uint16_t count;                  // How many times in a row
+        uint16_t span;                   // Milliseconds between the first and the last repeat
+        uint8_t ev;                      //
+        uint8_t detail;                  //
     };
     static constexpr uint16_t MAX{M5_UNIT_NFC_EMULATION_TRACE_MAX};
     // How far back a repeat is looked for. Two is enough for the pairs a polling reader produces
