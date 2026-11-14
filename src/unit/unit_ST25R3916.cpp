@@ -668,7 +668,10 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t bits, const uint32_t t
         }
         std::this_thread::yield();
     } while (!m5::utility::hasElapsed(start_at, timeout_ms));
-    return _stored_irq | I_nre32;  // Timeout
+    // Report only the timeout. Reaching here means none of the requested bits were set, and handing
+    // back the rest of _stored_irq instead would let a caller act on a bit it never asked for -- how
+    // enable_osc() passed its wait for years while asking for the wrong one.
+    return I_nre32;  // Timeout
 }
 
 bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size)
@@ -679,7 +682,7 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     // The wake-up bits that share the same register (I_wt / I_wam / I_wph / I_wcap) are not errors.
     constexpr uint32_t frame_error32 = I_crc32 | I_err132 | I_err232;
 
-    auto irq               = wait_for_interrupt(I_rxe32 | frame_error32, timeout_ms);
+    auto irq               = wait_for_interrupt(I_rxe32 | I_rxs32 | frame_error32, timeout_ms);
     const uint16_t reqSize = required_size ? required_size : 1;
 
     if (irq & frame_error32) {
@@ -692,7 +695,9 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     }
     // M5_LIB_LOGE("IRQ:%08X %u", irq, timeout_ms);
 
-    // Check the FIFO size in case I_rxe doesn't arrive
+    // The reception started but its end never arrived, so fall back to watching the FIFO fill up.
+    // I_rxs has to be in the mask above for this to be reachable: wait_for_interrupt() hands back only
+    // the bits it was asked for.
     if (is_irq32_rxs(irq)) {
         const auto start_at = m5::utility::millis();
         uint16_t bytes{};
@@ -704,12 +709,22 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
             std::this_thread::yield();
         } while (!m5::utility::hasElapsed(start_at, timeout_ms));
         // M5_LIB_LOGE("    FIFO:%u,%u/%u", bytes, bits, required_size);
-        return readFIFOSize(bytes, bits) && bytes >= reqSize;
+        const bool filled = readFIFOSize(bytes, bits) && bytes >= reqSize;
+        // TEMPORARY instrumentation: remove before release. Silent unless the fallback is taken.
+        {
+            static uint32_t n_rxs = 0, n_rxs_ok = 0;
+            ++n_rxs;
+            if (filled) {
+                ++n_rxs_ok;
+            }
+            M5_LIB_LOGW("TEMPORARY waitFIFO rxs=%u rxs_ok=%u bytes=%u/%u irq=%08X", n_rxs, n_rxs_ok, bytes, reqSize,
+                        irq);
+        }
+        return filled;
     }
 
-    if (has_irq32_error(irq)) {
-        M5_LIB_LOGE("Error: %08X", irq);
-    }
+    // Nothing else can be here: every bit this function asks for is handled above, and a timeout now
+    // reports only I_nre.
     return false;
 }
 
