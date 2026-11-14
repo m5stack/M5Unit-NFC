@@ -106,14 +106,6 @@ void setup()
     unit_ready = m5::unit::wiring::i2cClass(Units, unit, M5.In_I2C) && Units.begin();
 
 #elif defined(USING_UNIT_NFC) || defined(USING_UNIT_RFID2)
-#if defined(WIRE_HAS_BUFFER_SIZE)
-    // Arduino's Wire reads at most I2C_BUFFER_LENGTH (128 by default) bytes in one transaction and
-    // truncates anything longer instead of splitting it, which breaks a FIFO read past that size: an
-    // NFC-F read of 8 blocks answers 141 bytes and an ISO-DEP response may reach 256. Raise it before
-    // addI2C() calls Wire.begin(). The boards whose addI2C picks another backend are unaffected either
-    // way, and so is a native ESP-IDF build, which has no Wire at all.
-    Wire.setBufferSize(256);
-#endif
     unit_ready = m5::unit::wiring::addI2C(Units, unit, 0, m5::unit::wiring::NessoPort::PortA) && Units.begin();
 
 #elif defined(USING_CAP_CC1101)
