@@ -114,7 +114,7 @@ void IRAM_ATTR UnitST25R3916::on_irq(void* arg)
     /*
     uint32_t v{};
     (void)u->readInterrupts(v);
-    u->_stored_irq |= v;
+    u->_stored_irq = u->_stored_irq | v;
     */
 }
 
