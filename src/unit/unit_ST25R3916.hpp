@@ -1803,11 +1803,10 @@ public:
       @param tx_len Size of send buffer
       @param timeout_ms Timeout(ms)
       @param min_rx_len Minimum expected receive bytes
-      @retval == 0 Failed
-      @retval != 0 Upper 16 bits: Number of bits read Lower 16 bits: Number of bytes read
+      @return True if successful
      */
-    uint32_t nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                            const uint32_t timeout_ms, const uint16_t min_rx_len = 0);
+    bool nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                        const uint32_t timeout_ms, const uint16_t min_rx_len = 0);
     /*!
       @brief Transmit raw bytes (no receive)
       @param tx Send buffer

@@ -169,8 +169,8 @@ bool UnitST25R3916::configure_emulation_a()
            writeTimerAndEMVControl(0x08);               // mrt_setp 512
 }
 
-uint32_t UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
-                                       const uint32_t timeout_ms, const uint16_t min_rx_len)
+bool UnitST25R3916::nfcaTransceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len,
+                                   const uint32_t timeout_ms, const uint16_t min_rx_len)
 {
     if (!nfcaTransmit(tx, tx_len, timeout_ms)) {
         M5_LIB_LOGE("nfcaTransmit FAILED tx_len=%u", tx_len);
