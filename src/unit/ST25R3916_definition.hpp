@@ -208,6 +208,15 @@ constexpr uint8_t CMD_TEST_ACCESS{0xFC};                  // Enable R/W access t
 
 constexpr uint8_t VALID_IDENTIFY_TYPE{0x05};  // 00000101b (ST25R3916/7)
 constexpr uint16_t MAX_FIFO_DEPTH{512};       //!< Maximum FIFO depth
+/*!
+  @brief Default for UnitST25R3916::config_t::i2c_read_chunk, in bytes
+  @details Matches the buffer Arduino's Wire allocates unless the sketch changes it. The macro
+  that holds the real value lives in Wire.h, which these headers do not reach, and TwoWire has
+  no way to read the size back at run time, so the number is spelled out here instead.
+ */
+constexpr uint16_t I2C_READ_CHUNK_DEFAULT{128};
+//! @brief Smallest buffer Arduino's Wire accepts, and so the floor for i2c_read_chunk
+constexpr uint16_t I2C_READ_CHUNK_MIN{32};
 constexpr uint16_t PREFIX_SPACE_B{(uint16_t)command::CMD_REGISTER_SPACEB_ACCESS << 8};
 
 // Operation modes

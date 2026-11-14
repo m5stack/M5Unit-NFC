@@ -74,6 +74,16 @@ public:
         bool using_irq{};                    //!< Exists IRQ PIN?
         uint8_t irq{};                       //!< IRQ PIN
         bool emulation{};                    //!< Emulation mode?
+        /*!
+          @brief Largest FIFO read issued in one I2C transaction, in bytes
+          @details Arduino's Wire reads at most as many bytes as its buffer holds (128 by
+          default), and a core before 3.3.11 writes past that buffer instead of refusing the
+          read, so a longer FIFO read is taken in pieces no larger than this. Raise it to match a
+          larger Wire::setBufferSize() and spend fewer transactions, or lower it to match a
+          smaller one. Values below st25r3916::I2C_READ_CHUNK_MIN are raised to it, since Wire
+          refuses a smaller buffer. Has no effect on SPI, which has no such limit.
+         */
+        uint16_t i2c_read_chunk{st25r3916::I2C_READ_CHUNK_DEFAULT};
     };
 
     ///@name Settings for begin

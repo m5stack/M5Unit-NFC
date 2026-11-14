@@ -494,8 +494,21 @@ uint32_t UnitST25R3916::readFIFO(uint16_t& actual, uint8_t* buf, const uint16_t 
             return false;
         }
         TRANSACTION_GUARD();
-        if (!readRegister(OP_READ_FIFO, buf, readSz, 0, false)) {
-            return false;
+        // The FIFO read pointer advances as it is read and is reset only at the start of a reception
+        // (I_rxs), at power-up and by Set Default / Clear FIFO, so a long read can be taken in pieces
+        // that carry on where the previous one stopped. Each piece has to stay within what a single
+        // transaction can bring back: Arduino's Wire reads at most as many bytes as its buffer holds,
+        // and a core before 3.3.11 writes past that buffer rather than refusing the read. SPI has no
+        // such limit and reads the whole lot in one go.
+        const uint16_t chunk = (adapter()->type() == Adapter::Type::I2C)
+                                   ? std::max<uint16_t>(I2C_READ_CHUNK_MIN, _cfg.i2c_read_chunk)
+                                   : readSz;
+        for (uint16_t done = 0; done < readSz;) {
+            const uint16_t len = std::min<uint16_t>(chunk, static_cast<uint16_t>(readSz - done));
+            if (!readRegister(OP_READ_FIFO, buf + done, len, 0, false)) {
+                return false;
+            }
+            done = static_cast<uint16_t>(done + len);
         }
         actual = readSz;
         return ((uint16_t)bits << 16) | bytes;
