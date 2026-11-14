@@ -691,7 +691,8 @@ bool NFCLayerA::read_using_read16(uint8_t* rx, uint16_t& rx_len, const uint8_t a
 bool NFCLayerA::read_using_fast(uint8_t* rx, uint16_t& rx_len, const uint8_t addr)
 {
     const Type t = _activePICC.type;
-    //  ST25R3916 512 but cannot use long length...why?
+    // Capped at 64 even though the chip's FIFO holds 512: a longer FAST_READ was found not to work,
+    // and why has never been established.
     uint16_t fifo_depth = std::min<uint16_t>(_impl->max_fifo_depth(), 64);
 
     const uint16_t last = get_last_user_block(t);
@@ -1628,7 +1629,6 @@ bool NFCLayerA::dump_desfire()
             }
 
             uint32_t offset = 0;
-            uint32_t total  = 0;
             std::vector<uint8_t> data{};
             while (offset < settings.file_size) {
                 const uint32_t remain = settings.file_size - offset;
@@ -1644,7 +1644,6 @@ bool NFCLayerA::dump_desfire()
                     break;
                 }
                 offset += chunk.size();
-                total += chunk.size();
                 data.insert(data.end(), chunk.begin(), chunk.end());
                 if (chunk.size() < len) {
                     break;
@@ -1735,7 +1734,7 @@ bool NFCLayerA::dump_desfire_light()
                 break;
         }
 
-        uint32_t offset{}, total{};
+        uint32_t offset{};
         std::vector<uint8_t> data{};
         while (offset < settings.file_size) {
             const uint32_t remain = settings.file_size - offset;
@@ -1759,7 +1758,6 @@ bool NFCLayerA::dump_desfire_light()
                 break;
             }
             offset += chunk.size();
-            total += chunk.size();
             data.insert(data.end(), chunk.begin(), chunk.end());
             if (chunk.size() < len) {
                 break;
@@ -1817,9 +1815,9 @@ bool NFCLayerA::dump_sector_mifare_plus_sl3(const uint8_t sector)
 
     // Data
     for (int_fast8_t i = 0; i < blocks - 1; ++i) {
-        std::vector<uint8_t> data;
+        std::vector<uint8_t> block_data;
         uint8_t daddr = base + i;
-        if (!mifare_plus_read_mac_l4(daddr, 1, data, use_plain) || data.size() < 16) {
+        if (!mifare_plus_read_mac_l4(daddr, 1, block_data, use_plain) || block_data.size() < 16) {
             M5_LIB_LOGE("SL3 read failed block %u", daddr);
             return false;
         }
@@ -1827,7 +1825,7 @@ bool NFCLayerA::dump_sector_mifare_plus_sl3(const uint8_t sector)
         const uint8_t poffset      = (blocks == 4) ? i : i / 5;
         const uint8_t permission   = (poffset < 4) ? permissions[poffset] : 0xFF;
         const bool show_permission = (blocks == 4) ? true : (i % 5) == 0;
-        print_block(data.data(), base + i, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, error,
+        print_block(block_data.data(), base + i, (i == 0) ? sector : -1, show_permission ? permission : 0xFF, error,
                     can_value_block_permission(permission));
     }
     // Sector trailer
