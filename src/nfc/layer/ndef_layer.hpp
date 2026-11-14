@@ -25,7 +25,10 @@ namespace ndef {
 class TLV;
 class Record;
 
-constexpr uint8_t NDEF_MAX_UNIT_SIZE_READ{32};
+//! @brief Largest block the layer buffers on the stack, in either direction
+constexpr uint8_t NDEF_MAX_UNIT_SIZE{32};
+//! @brief Deprecated alias for NDEF_MAX_UNIT_SIZE
+[[deprecated("Use NDEF_MAX_UNIT_SIZE instead")]] constexpr uint8_t NDEF_MAX_UNIT_SIZE_READ{NDEF_MAX_UNIT_SIZE};
 constexpr uint8_t NDEF_MAX_CC_BLOCK_SIZE{32};
 
 /*!

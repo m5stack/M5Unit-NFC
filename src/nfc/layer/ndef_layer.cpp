@@ -626,11 +626,11 @@ bool NDEFLayer::readCapabilityContainer(m5::nfc::ndef::type2::CapabilityContaine
     cc = CapabilityContainer{};
 
     const uint16_t block_size = _interface.unit_size_read();
-    if (!block_size || block_size > NDEF_MAX_UNIT_SIZE_READ) {
+    if (!block_size || block_size > NDEF_MAX_UNIT_SIZE) {
         return false;
     }
 
-    uint8_t rx[NDEF_MAX_UNIT_SIZE_READ]{};
+    uint8_t rx[NDEF_MAX_UNIT_SIZE]{};
     uint16_t rx_len = block_size;
     uint8_t ccb     = (block_size == 4) ? TYPE2_CC_BLOCK : 0 /* 0-3 page*/;
     if (!_interface.read(rx, rx_len, ccb) || (rx_len != block_size)) {
@@ -1345,7 +1345,7 @@ bool NDEFLayer::read_nfcv(uint8_t* rx, const uint16_t offset, const uint16_t len
     }
 
     const uint16_t block_size = _interface.unit_size_read();
-    if (!block_size || block_size > NDEF_MAX_UNIT_SIZE_READ) {
+    if (!block_size || block_size > NDEF_MAX_UNIT_SIZE) {
         return false;
     }
 
@@ -1361,7 +1361,7 @@ bool NDEFLayer::read_nfcv(uint8_t* rx, const uint16_t offset, const uint16_t len
 
     uint16_t written = 0;
     for (uint16_t block = start_block; block <= end_block; ++block) {
-        uint8_t rbuf[NDEF_MAX_UNIT_SIZE_READ]{};
+        uint8_t rbuf[NDEF_MAX_UNIT_SIZE]{};
         uint16_t rlen = block_size;
         if (!_interface.read(rbuf, rlen, block) || rlen != block_size) {
             return false;
@@ -1384,7 +1384,7 @@ bool NDEFLayer::write_nfcv(const uint16_t offset, const uint8_t* tx, const uint1
     }
 
     const uint16_t block_size = _interface.unit_size_write();
-    if (!block_size || block_size > NDEF_MAX_UNIT_SIZE_READ) {
+    if (!block_size || block_size > NDEF_MAX_UNIT_SIZE) {
         M5_LIB_LOGE("Unusable write unit size %u", block_size);
         return false;
     }
@@ -1407,7 +1407,7 @@ bool NDEFLayer::write_nfcv(const uint16_t offset, const uint8_t* tx, const uint1
         const uint8_t blk_end   = (block == end_block) ? (end_byte % block_size) : (block_size - 1);
         const uint8_t copy_len  = blk_end - blk_start + 1;
 
-        uint8_t wbuf[NDEF_MAX_UNIT_SIZE_READ]{};
+        uint8_t wbuf[NDEF_MAX_UNIT_SIZE]{};
 
         // Read-modify-write for partial blocks
         if (blk_start != 0 || blk_end != block_size - 1) {
