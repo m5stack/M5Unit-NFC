@@ -255,6 +255,14 @@ void setup()
     // Board-aware I2C for the PaHub: NessoN1 -> QWIIC (port_a), NanoC6/NanoH2 -> Ex_I2C, others -> Wire.
     // NessoN1 has to go through port_a: its GROVE port is SoftwareI2C, whose register polling is too
     // slow for the RF timing the reader needs (see the NessoN1 section of the README)
+#if defined(WIRE_HAS_BUFFER_SIZE)
+    // Arduino's Wire reads at most I2C_BUFFER_LENGTH (128 by default) bytes in one transaction and
+    // truncates anything longer instead of splitting it, which breaks a FIFO read past that size: an
+    // NFC-F read of 8 blocks answers 141 bytes and an ISO-DEP response may reach 256. Raise it before
+    // addI2C() calls Wire.begin(). The boards whose addI2C picks another backend are unaffected either
+    // way, and so is a native ESP-IDF build, which has no Wire at all.
+    Wire.setBufferSize(256);
+#endif
     if (!m5::unit::wiring::addI2C(Units, hub, 0, m5::unit::wiring::NessoPort::PortA) || !Units.begin()) {
         M5_LOGE("Failed to begin");
         M5_LOGW("%s", Units.debugInfo().c_str());
