@@ -97,6 +97,7 @@ jobs:
           - Cardputer      # ESP32-S3 (CapCC1101 built-in)
           - Tab5           # ESP32-P4 (Tab5)
           - NessoN1        # ESP32-C6 (RISC-V single, NFC PortA primary)
+          - ToughC5        # ESP32-C5 (RISC-V, C5 image target)
 
         framework:
           - Arduino
