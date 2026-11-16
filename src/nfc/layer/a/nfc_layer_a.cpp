@@ -152,7 +152,9 @@ bool mifare_plus_calculate_mac(const uint8_t kmac[16], const uint8_t ti[4], cons
             macdata[7] = block;
             macdata[8] = 0x00;
             macdata[9] = count;
-            memcpy(&macdata[10], &data[1], data_len - 1);
+            // data() + 10 instead of &macdata[10]: with data_len == 1 the vector holds exactly ten
+            // bytes and the subscript would be one past the last, which data() + n is allowed to be
+            memcpy(macdata.data() + 10, &data[1], data_len - 1);
             mac_len = data_len + 9;
             break;
         case MfpMacType::WriteCmd:

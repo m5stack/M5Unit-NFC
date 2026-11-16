@@ -220,14 +220,14 @@ struct config_t {
 struct policy_t {
     uint32_t fwt_ms{};      //!< Frame waiting time (ms). 0 is clamped to 1 internally
     uint32_t wtx_max_ms{};  //!< Upper bound for WTX extension (ms)
-    uint8_t max_retries{};  //!< Number of resends (0 = no resend)
+    uint8_t max_retries{};  //!< Number of resends (0 = no resend). 255 allows up to 256 attempts
 
     policy_t() = default;
     /*!
       @brief Construct with explicit values (enables positional brace-init under C++11)
       @param fwt Frame waiting time in milliseconds
       @param wtx Upper bound for WTX extension in milliseconds
-      @param retries Number of resends
+      @param retries Number of resends (0 = no resend). 255 allows up to 256 attempts
      */
     policy_t(const uint32_t fwt, const uint32_t wtx, const uint8_t retries)
         : fwt_ms(fwt), wtx_max_ms(wtx), max_retries(retries)
