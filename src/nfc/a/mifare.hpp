@@ -214,9 +214,9 @@ constexpr int8_t access_free{-2};
 /*!
   @brief Obtain read permissions from access rights
   @param access_rights Access rights
-  @retval >= 0 Key number to use
-  @retval == access_denied Access denied
-  @retval == access_free Access free
+  @retval >=0 Key number to use
+  @retval access_denied Access denied
+  @retval access_free Access free
 */
 inline int8_t required_read_key_no_from_access_rights(const uint16_t access_rights)
 {
@@ -239,9 +239,9 @@ inline int8_t required_read_key_no_from_access_rights(const uint16_t access_righ
 /*!
   @brief Obtain write permissions from access rights
   @param access_rights Access rights
-  @retval >= 0 Key number to use
-  @retval == access_denied Access denied
-  @retval == access_free Access free
+  @retval >=0 Key number to use
+  @retval access_denied Access denied
+  @retval access_free Access free
 */
 inline int8_t required_write_key_no_from_access_rights(const uint16_t access_rights)
 {
