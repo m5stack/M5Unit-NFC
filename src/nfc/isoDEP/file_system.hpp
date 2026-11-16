@@ -239,8 +239,8 @@ public:
     ///@}
 
     /*!
-      @brief Last SELECT response data (SW excluded)
-      @return Response data
+      @brief Data the last SELECT returned, SW excluded
+      @return Response data, empty unless that SELECT asked for SelectResponse::FCI
      */
     inline const std::vector<uint8_t>& lastSelectData() const
     {

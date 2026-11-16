@@ -172,7 +172,7 @@ public:
     bool writeBlock(const uint16_t block, const uint8_t* tx, const uint8_t tx_len);
     /*!
       @brief Read any bytes from user area
-      @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
+      @details Continue reading only the user area from sblock until rx_len is satisfied
       @param rx Buffer
       @param[in,out] rx_len in:buffer size, out:actual read size
       @param sblock Reading start block
@@ -181,7 +181,7 @@ public:
     virtual bool read(uint8_t* rx, uint16_t& rx_len, const uint16_t sblock) override;
     /*!
       @brief Write any bytes to user area
-      @details Continue writing only the user area from the first block of the user area until tx_len is satisfied
+      @details Continue writing only the user area from sblock until tx_len is satisfied
       @param sblock Writing start block
       @param tx Buffer
       @param tx_len buffer size

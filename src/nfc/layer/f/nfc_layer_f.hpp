@@ -279,7 +279,7 @@ public:
 
     /*!
       @brief Read any bytes from user area
-      @details Continue reading only the user area from the first block of the user area until rx_len is satisfied
+      @details Continue reading only the user area from sblock until rx_len is satisfied
       @param[out] rx Buffer
       @param[in,out] rx_len in:buffer size, out:actual read size
       @param sblock Block to start reading
@@ -318,7 +318,7 @@ public:
     bool write16(const m5::nfc::f::block_t block, const uint8_t tx[16], const uint16_t tx_len);
     /*!
       @brief Write any bytes to user area
-      @details Continue writing only the user area from the first block of the user area until tx_len is satisfied
+      @details Continue writing only the user area from sblock until tx_len is satisfied
       @param sblock Block to start writing
       @param tx Buffer
       @param tx_len Buffer size

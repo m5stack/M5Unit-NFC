@@ -407,7 +407,7 @@ public:
 
     /*!
       @brief Delete TransactionMAC file (required for ISOReadBinary to work)
-      @param file_no File number of TMAC file (default 0)
+      @param file_no File number of TMAC file
       @param ctx EV2 context (must be authenticated with AppMasterKey)
       @return True if successful
       @note DESFire Light blocks ISOReadBinary when TMAC file exists

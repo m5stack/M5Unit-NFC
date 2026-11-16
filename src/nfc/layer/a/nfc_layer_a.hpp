@@ -244,7 +244,8 @@ public:
       @param rx Buffer (at least 4 bytes)
       @param addr Block/Page address
       @return True if successful
-      @warning Only PICC supporting the FAST_READ command is possible
+      @note A PICC without FAST_READ costs a whole 16-byte block read, from which the page is taken
+      @pre The block must be authenticated if MIFARE classic
      */
     bool read4(uint8_t rx[4], const uint8_t addr);
     /*!

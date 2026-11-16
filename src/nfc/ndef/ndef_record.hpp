@@ -311,7 +311,8 @@ public:
     ///@{
     /*!
       @brief Obtain the payload as a string
-      @return Payload interpreted as a string
+      @return Payload read as text. A well-known Text record drops the language code and a URI record
+      expands its protocol byte; every other TNF answers with the record type instead of the payload
      */
     std::string payloadAsString() const;
 
