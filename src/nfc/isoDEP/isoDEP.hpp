@@ -151,20 +151,31 @@ inline uint16_t fsci_to_fsc(const uint8_t fsci)
   @brief ISO-DEP configuration
  */
 struct config_t {
+    //! @brief Frame Size for proximity Card: the largest frame the PICC can receive, prologue included
     uint16_t fsc{};
+    //! @brief Largest frame this reader will send, in bytes
     uint16_t pcd_max_frame_tx{};
+    //! @brief Largest frame this reader will accept, in bytes
     uint16_t pcd_max_frame_rx{};
+    //! @brief Frame waiting time: how long a response is waited for, in milliseconds
     uint32_t fwt_ms{100};
+    //! @brief Upper bound for the extension a PICC may ask for with an S(WTX), in milliseconds
     uint32_t wtx_max_ms{5000};
 
     // options
+    //! @brief Carry a CID byte in the prologue
     bool use_cid{};
+    //! @brief Card IDentifier to send when use_cid is set (low 4 bits)
     uint8_t cid{};
+    //! @brief Carry a NAD byte in the prologue
     bool use_nad{};
+    //! @brief Node ADdress to send when use_nad is set
     uint8_t nad{};
 
+    //! @brief Number of resends (0 = no resend). 255 allows up to 256 attempts
     uint8_t max_retries{2};
-    bool rx_crc{true};  // Remove CRC if true in INF
+    //! @brief Strip the two trailing CRC bytes the layer hands back with a received frame
+    bool rx_crc{true};
 
     /*!
       @brief Maximum INF payload capacity for transmission
