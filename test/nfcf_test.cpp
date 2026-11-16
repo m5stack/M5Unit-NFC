@@ -10,6 +10,7 @@
 #include <M5Unified.h>
 #include "nfc/f/nfcf.hpp"
 #include "nfc/layer/f/nfc_layer_f.hpp"
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <vector>
@@ -48,7 +49,7 @@ public:
 
     bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len, const uint32_t) override
     {
-        if (_systems.empty()) {
+        if (!tx || tx_len < 1 || _systems.empty()) {
             rx_len = 0;
             return false;
         }
@@ -92,6 +93,7 @@ public:
             system = (uint8_t)i;
         }
         ++_answers;
+        _answered_systems.push_back(system);
         _selected = system;  // answering a Polling switches the card into that system
 
         uint8_t res[18]{};
@@ -110,6 +112,12 @@ public:
     uint16_t answers() const
     {
         return _answers;
+    }
+
+    //! @brief Which systems answered a Polling, in the order they did
+    const std::vector<uint8_t>& answeredSystems() const
+    {
+        return _answered_systems;
     }
 
     //! @brief How many commands were ignored for naming a system other than the selected one
@@ -134,6 +142,7 @@ private:
     }
 
     std::vector<uint16_t> _systems;
+    std::vector<uint8_t> _answered_systems{};
     uint16_t _answers{};
     uint16_t _ignored{};
     uint8_t _selected{};
@@ -456,7 +465,11 @@ TEST(NFC_F, DetectCardSplitIntoSystems)
 
     PICC picc{};
     EXPECT_TRUE(layer.detect(picc));
-    EXPECT_GT(card->answers(), 1);  // FE00 did answer, so the card really is split
+    // The shared system is index 1 of the list this card was built with, and only a Polling that
+    // names its code reaches it: the wildcard is always answered by system 0
+    const auto& answered = card->answeredSystems();
+    EXPECT_NE(std::find(answered.begin(), answered.end(), 1), answered.end())
+        << "The second system never answered, so this card was not split after all";
     // Polling FE00 switched the card into that system. Everything detect() does afterwards
     // addresses the IDm the wildcard answered with, so it has to come back to that system first
     EXPECT_EQ(card->ignored(), 0);

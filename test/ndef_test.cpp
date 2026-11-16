@@ -122,12 +122,21 @@ TEST(NDEF, Record)
         auto ilen  = r.identifierSize();
         auto ilen2 = r2.identifierSize();
         EXPECT_EQ(ilen, ilen2);
-        EXPECT_TRUE(std::memcmp(r.identifier(), r2.identifier(), ilen) == 0);
+        // identifier() answers nullptr when there is none, and memcmp may not be handed a null even
+        // for zero bytes
+        EXPECT_EQ(r.identifier() == nullptr, r2.identifier() == nullptr);
+        if (r.identifier() && r2.identifier()) {
+            EXPECT_TRUE(std::memcmp(r.identifier(), r2.identifier(), ilen) == 0);
+        }
 
         auto plen  = r.payloadSize();
         auto plen2 = r2.payloadSize();
         EXPECT_EQ(plen, plen2);
-        EXPECT_TRUE(std::memcmp(r.payload(), r2.payload(), plen) == 0);
+        // payload() answers nullptr the same way identifier() does
+        EXPECT_EQ(r.payload() == nullptr, r2.payload() == nullptr);
+        if (r.payload() && r2.payload()) {
+            EXPECT_TRUE(std::memcmp(r.payload(), r2.payload(), plen) == 0);
+        }
     }
 
     // Decode error cases

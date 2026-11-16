@@ -15,7 +15,8 @@ using namespace m5::nfc::a::mifare::classic;
 
 namespace {
 
-uint8_t even_parity_bit(const uint8_t v)
+// The bit that makes the number of ones odd: the reference the library's oddParityBit must match
+uint8_t reference_odd_parity_bit(const uint8_t v)
 {
     uint8_t ones{};
     for (uint8_t i = 0; i < 8; ++i) {
@@ -48,7 +49,7 @@ TEST(Crypto1, OddParity8)
 {
     for (uint16_t i = 0; i < 256; ++i) {
         uint8_t v = static_cast<uint8_t>(i);
-        EXPECT_EQ(m5::utility::oddParityBit(v), even_parity_bit(v));
+        EXPECT_EQ(m5::utility::oddParityBit(v), reference_odd_parity_bit(v));
     }
 }
 

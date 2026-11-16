@@ -81,6 +81,9 @@ TEST(APDU, MakeCommandCases)
     if (c3.size() >= 5u) {
         EXPECT_EQ(c3[4], sizeof(data3));
     }
+    if (c3.size() == 4u + 1u + sizeof(data3)) {
+        EXPECT_TRUE(std::memcmp(c3.data() + 5, data3, sizeof(data3)) == 0) << "The data was not carried over";
+    }
 
     // Case 3 extended Lc
     std::vector<uint8_t> data_long(260, 0xAA);
@@ -91,12 +94,19 @@ TEST(APDU, MakeCommandCases)
         EXPECT_EQ(c3e[5], 0x01);
         EXPECT_EQ(c3e[6], 0x04);
     }
+    if (c3e.size() == 4u + 3u + data_long.size()) {
+        EXPECT_TRUE(std::memcmp(c3e.data() + 7, data_long.data(), data_long.size()) == 0)
+            << "The data was not carried over";
+    }
 
     // Case 4 (Lc + Le)
     auto c4 = make_apdu_case4(cla_sample, ins_sample, 0x00, 0x00, data3, sizeof(data3), 0x20);
     EXPECT_EQ(c4.size(), 4u + 1u + sizeof(data3) + 1u);
     if (!c4.empty()) {
         EXPECT_EQ(c4.back(), 0x20);
+    }
+    if (c4.size() == 4u + 1u + sizeof(data3) + 1u) {
+        EXPECT_TRUE(std::memcmp(c4.data() + 5, data3, sizeof(data3)) == 0) << "The data was not carried over";
     }
 
     // data_len > 0 with nullptr should return empty
@@ -114,7 +124,9 @@ TEST(APDU, ParseTLV)
         EXPECT_EQ(tlvs1[0].tag, 0x5Au);
         EXPECT_EQ(tlvs1[0].len, 3u);
         EXPECT_EQ(tlvs1[0].tag_len, 1u);
-        EXPECT_TRUE(std::memcmp(tlvs1[0].v, buf1 + 2, 3) == 0);
+        // parse_tlv points into the buffer it was given rather than copying, so the pointer itself
+        // is the stronger claim; a copy holding the same bytes would slip past memcmp
+        EXPECT_EQ(tlvs1[0].v, buf1 + 2);
     }
 
     // Extended tag + long length
@@ -125,7 +137,7 @@ TEST(APDU, ParseTLV)
         EXPECT_EQ(tlvs2[0].tag, 0x1F8101u);
         EXPECT_EQ(tlvs2[0].len, 3u);
         EXPECT_EQ(tlvs2[0].tag_len, 3u);
-        EXPECT_TRUE(std::memcmp(tlvs2[0].v, buf2 + 5, 3) == 0);
+        EXPECT_EQ(tlvs2[0].v, buf2 + 5);
     }
 }
 
@@ -134,7 +146,7 @@ TEST(APDU, ParseTLVInvalid)
     // Null/empty
     EXPECT_TRUE(parse_tlv(nullptr, 10).empty());
     EXPECT_TRUE(parse_tlv(nullptr, 0).empty());
-    const uint8_t empty[] = {};
+    const uint8_t empty[1]{};  // A zero-element array is a GNU extension, not standard C++
     EXPECT_TRUE(parse_tlv(empty, 0).empty());
 
     // Extended tag continuation beyond limit
@@ -144,6 +156,14 @@ TEST(APDU, ParseTLVInvalid)
     // Invalid length (indefinite/too large)
     const uint8_t bad_len[] = {0x5A, 0x83, 0x00, 0x01, 0x02};
     EXPECT_TRUE(parse_tlv(bad_len, sizeof(bad_len)).empty());
+
+    // 0x80 asks for the indefinite form, which this parser does not take either
+    const uint8_t indefinite_len[] = {0x5A, 0x80, 0x01};
+    EXPECT_TRUE(parse_tlv(indefinite_len, sizeof(indefinite_len)).empty());
+
+    // The long form announces two length bytes but only one of them is there
+    const uint8_t truncated_len[] = {0x5A, 0x82, 0x01};
+    EXPECT_TRUE(parse_tlv(truncated_len, sizeof(truncated_len)).empty());
 
     // Length exceeds buffer
     const uint8_t bad_vlen[] = {0x5A, 0x04, 0x01, 0x02, 0x03};

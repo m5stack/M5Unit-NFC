@@ -44,22 +44,24 @@ TEST(AES, CBCVector)
 {
     uint8_t key[16]{};
     uint8_t iv[16]{};
-    uint8_t in[16]{};
-    uint8_t out[16]{};
-    uint8_t back[16]{};
-    uint8_t expected[16]{};
+    uint8_t in[32]{};
+    uint8_t out[32]{};
+    uint8_t back[32]{};
+    uint8_t expected[32]{};
 
     hex_to_bytes("2B7E151628AED2A6ABF7158809CF4F3C", key, 16);
     hex_to_bytes("000102030405060708090A0B0C0D0E0F", iv, 16);
-    hex_to_bytes("6BC1BEE22E409F96E93D7E117393172A", in, 16);
-    hex_to_bytes("7649ABAC8119B246CEE98E9B12E9197D", expected, 16);
+    // NIST SP 800-38A F.2.1, two blocks. One block alone would pass even if the second block were
+    // never chained to the first one's ciphertext
+    hex_to_bytes("6BC1BEE22E409F96E93D7E117393172AAE2D8A571E03AC9C9EB76FAC45AF8E51", in, 32);
+    hex_to_bytes("7649ABAC8119B246CEE98E9B12E9197D5086CB9B507219EE95DB113A917678B2", expected, 32);
 
     EXPECT_TRUE(aes_cbc_crypt(out, key, iv, in, sizeof(in), true));
-    EXPECT_TRUE(std::memcmp(out, expected, 16) == 0);
+    EXPECT_TRUE(std::memcmp(out, expected, sizeof(expected)) == 0);
 
     // Decrypt back
     EXPECT_TRUE(aes_cbc_crypt(back, key, iv, out, sizeof(out), false));
-    EXPECT_TRUE(std::memcmp(back, in, 16) == 0);
+    EXPECT_TRUE(std::memcmp(back, in, sizeof(in)) == 0);
 }
 
 TEST(AES, CMACVectors)
@@ -112,6 +114,14 @@ TEST(AES, InvalidArgs)
     EXPECT_FALSE(aes_cbc_crypt(out, nullptr, iv, in, sizeof(in), true));
     EXPECT_FALSE(aes_cbc_crypt(out, key, nullptr, in, sizeof(in), true));
     EXPECT_FALSE(aes_cbc_crypt(out, key, iv, nullptr, sizeof(in), true));
+
+    // CBC takes whole blocks only. The length is checked before the input is touched, so a length
+    // longer than in[] never reads past it
+    uint8_t big[48]{};
+    EXPECT_FALSE(aes_cbc_crypt(big, key, iv, in, 1, true));
+    EXPECT_FALSE(aes_cbc_crypt(big, key, iv, in, 15, true));
+    EXPECT_FALSE(aes_cbc_crypt(big, key, iv, in, 17, true));
+    EXPECT_TRUE(aes_cbc_crypt(big, key, iv, in, 0, true)) << "Nothing to do is not a failure";
 
     EXPECT_FALSE(cmac_subkeys(nullptr, out, key));
     EXPECT_FALSE(cmac_subkeys(out, nullptr, key));

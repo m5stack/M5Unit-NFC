@@ -22,6 +22,14 @@ TEST(FileSystem, FCPToTLVAndParseFCI)
 
     const auto fcp_tlv = fcp.to_tlv();
     EXPECT_FALSE(fcp_tlv.empty());
+    // Pin the encoding itself: a roundtrip through parseFCI() passes even when to_tlv() and the
+    // parser agree on the wrong tags. ISO 7816-4: 62 = FCP, 82 = file descriptor, 83 = file ID,
+    // 80 = file size (the default of FCP::file_size_tag)
+    const uint8_t expected_tlv[] = {0x62, 0x0B, 0x82, 0x01, 0x11, 0x83, 0x02, 0x12, 0x34, 0x80, 0x02, 0x00, 0x42};
+    EXPECT_EQ(fcp_tlv.size(), sizeof(expected_tlv));
+    if (fcp_tlv.size() == sizeof(expected_tlv)) {
+        EXPECT_TRUE(std::memcmp(fcp_tlv.data(), expected_tlv, sizeof(expected_tlv)) == 0);
+    }
     if (!fcp_tlv.empty()) {
         std::vector<uint8_t> fci;
         fci.push_back(0x6F);
