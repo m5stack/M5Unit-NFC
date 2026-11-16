@@ -20,6 +20,8 @@
 #include <nfc/layer/f/emulation_layer_f.hpp>
 #include <wiring/m5_unit_unified_wiring.hpp>
 #include <cstring>
+#include <memory>
+#include <vector>
 
 // Unit type is selected by build_flags: -D USING_UNIT_NFC or -D USING_CAP_CC1101
 #if defined(USING_UNIT_NFC)
@@ -1056,4 +1058,92 @@ TEST_F(TestST25R3916, NfcfReceiveRejectsUnusableBuffer)
 
     unit->config(cfg_initial);
     EXPECT_TRUE(unit->begin());
+}
+
+namespace {
+// Records what the layer puts on the air, so what a page write carries can be checked without a card
+struct RecordingAdapterForA : m5::nfc::NFCLayerA::Adapter {
+    std::vector<std::vector<uint8_t>> frames{};
+
+    uint16_t max_fifo_depth() const override
+    {
+        return 64;
+    }
+    bool transceive(uint8_t* rx, uint16_t& rx_len, const uint8_t* tx, const uint16_t tx_len, const uint32_t) override
+    {
+        frames.emplace_back(tx, tx + tx_len);
+        if (rx && rx_len) {
+            rx[0]  = 0x0A;  // ACK
+            rx_len = 1;
+        }
+        return true;
+    }
+    bool request(uint16_t&) override
+    {
+        return true;
+    }
+    bool wakeup(uint16_t&) override
+    {
+        return true;
+    }
+    bool select(m5::nfc::a::PICC&) override
+    {
+        return true;
+    }
+    bool activate(const m5::nfc::a::PICC&) override
+    {
+        return true;
+    }
+    bool hlt() override
+    {
+        return true;
+    }
+    bool nfca_read_block(uint8_t*, const uint8_t) override
+    {
+        return false;
+    }
+    bool nfca_write_block(const uint8_t, const uint8_t*) override
+    {
+        return false;
+    }
+    bool mifare_classic_authenticate(const bool, const m5::nfc::a::PICC&, const uint8_t,
+                                     const m5::nfc::a::mifare::classic::Key&) override
+    {
+        return false;
+    }
+    bool mifare_classic_value_block(const m5::nfc::a::Command, const uint8_t, const uint32_t) override
+    {
+        return false;
+    }
+};
+}  // namespace
+
+// A tail shorter than a page has to reach the card zero-filled. The three bytes after the five handed
+// over are a sentinel: a write that rounds the length up to the page would carry them instead.
+TEST(NFCLayerAWrite, ShortTailIsZeroFilled)
+{
+    auto* rec = new RecordingAdapterForA{};
+    m5::nfc::NFCLayerA layer{std::unique_ptr<m5::nfc::NFCLayerA::Adapter>(rec)};
+
+    m5::nfc::a::PICC picc{};
+    picc.type   = m5::nfc::a::Type::NTAG_213;  // Has FAST_READ, so the four-byte page path is taken
+    picc.size   = 7;
+    picc.blocks = 45;
+    EXPECT_TRUE(layer.activate(picc));
+
+    const uint8_t buf[8]{0x11, 0x22, 0x33, 0x44, 0x55, 0xAA, 0xBB, 0xCC};
+    const uint8_t first = static_cast<uint8_t>(m5::nfc::a::get_first_user_block(picc.type));
+    EXPECT_TRUE(layer.write(first, buf, 5));
+
+    EXPECT_EQ(rec->frames.size(), 2U) << "One full page and one that carries the single byte left";
+    if (rec->frames.size() >= 2) {
+        const auto& f = rec->frames[1];  // WRITE_PAGE, page, d0..d3
+        EXPECT_EQ(f.size(), 6U);
+        if (f.size() >= 6) {
+            EXPECT_EQ(f[2], 0x55);
+            EXPECT_EQ(f[3], 0x00) << "Read past the five bytes handed over";
+            EXPECT_EQ(f[4], 0x00) << "Read past the five bytes handed over";
+            EXPECT_EQ(f[5], 0x00) << "Read past the five bytes handed over";
+        }
+    }
 }

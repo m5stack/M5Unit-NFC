@@ -888,9 +888,12 @@ bool NFCLayerA::write_using_write4(const uint8_t addr, const uint8_t* tx, const 
 
     uint8_t cur         = from;
     const uint8_t* data = tx;
-    while (written < total) {
-        uint16_t sz = std::min<uint16_t>(4, total - written);
-        M5_LIB_LOGD("  WRITE:%u %u %u/%u", cur, sz, written, total);
+    // Hand write4() only the bytes that are there. Rounding the length up to the page would walk past
+    // the caller's buffer, and write4() fills the rest of the page with zeros only when it is told the
+    // short length.
+    while (written < tx_len) {
+        uint16_t sz = std::min<uint16_t>(4, static_cast<uint16_t>(tx_len - written));
+        M5_LIB_LOGD("  WRITE:%u %u %u/%u", cur, sz, written, tx_len);
         if (!write4(cur, data, sz)) {
             break;
         }
@@ -898,7 +901,7 @@ bool NFCLayerA::write_using_write4(const uint8_t addr, const uint8_t* tx, const 
         data += sz;
         ++cur;
     }
-    return written == total;
+    return written == tx_len;
 }
 
 bool NFCLayerA::write_using_write16(const uint8_t addr, const uint8_t* tx, const uint16_t tx_len,
