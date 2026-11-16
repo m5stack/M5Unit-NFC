@@ -666,7 +666,7 @@ TEST_F(TestST25R3916, EmulationLayerF_NoneAndOffNeverExpire)
     EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::F, true));
 
     m5::nfc::f::PICC picc{};
-    constexpr uint8_t idm[8] = {0x01, 0x2E, 0x50, 0xE5, 0x3C, 0x4B, 0x4F, 0x29};
+    constexpr uint8_t idm[8] = {0x02, 0xFE, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
     constexpr uint8_t pmm[8] = {0x00, 0xF1, 0x00, 0x00, 0x00, 0x01, 0x43, 0x00};
     EXPECT_TRUE(picc.emulate(m5::nfc::f::Type::FeliCaLiteS, idm, pmm));
 
