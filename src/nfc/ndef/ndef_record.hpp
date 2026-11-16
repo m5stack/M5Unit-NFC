@@ -165,10 +165,17 @@ struct Attribute {
  */
 class Record {
 public:
+    /*!
+      @brief Constructor
+      @details Takes TNF::Wellknown, the format an NFC Forum record carries
+     */
     Record() noexcept : Record(TNF::Wellknown)
     {
     }
-
+    /*!
+      @brief Constructor
+      @param tnf Type Name Format of the record
+     */
     explicit Record(const TNF tnf) noexcept
     {
         _attr.tnf(tnf);
