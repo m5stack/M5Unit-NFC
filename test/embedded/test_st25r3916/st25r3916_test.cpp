@@ -64,7 +64,8 @@ class TestST25R3916 : public I2CComponentTestBase<TestUnit> {
 protected:
     virtual bool begin() override
     {
-        return m5::unit::wiring::addI2C(Units, *unit, 400 * 1000U, m5::unit::wiring::NessoPort::PortA) && Units.begin();
+        // Clock 0 keeps the unit's own 400kHz; repeating the number here would let the two drift apart
+        return m5::unit::wiring::addI2C(Units, *unit, 0, m5::unit::wiring::NessoPort::PortA) && Units.begin();
     }
     virtual TestUnit* get_instance() override
     {
@@ -223,15 +224,19 @@ TEST_F(TestST25R3916, Reg_MaskInterrupts_WrittenBitsReadBack)
     uint32_t original{};
     EXPECT_TRUE(unit->readMaskInterrupts(original));
 
-    // Write a known pattern
-    const uint32_t pattern = 0xAAAAAAAAUL;
-    EXPECT_TRUE(unit->writeMaskInterrupts(pattern));
+    // Every bit the datasheet names has to survive the trip. The two RFU bits stay out of the
+    // comparison: the chip owes no answer for them, and measurement shows they do not even agree
+    // with each other (I_RFU1 reads back what was written, I_RFU4 always reads 0)
+    constexpr uint32_t documented = 0xFFFFFFFFUL & ~((static_cast<uint32_t>(regval::I_RFU1) << 24) | regval::I_RFU4);
 
-    uint32_t readback{};
-    EXPECT_TRUE(unit->readMaskInterrupts(readback));
-    // Verify writable bits match (some bits may be reserved)
-    // At minimum, the written bits that ARE writable should be set
-    EXPECT_NE(readback, 0U) << "At least some bits should be writable";
+    // One pattern leaves half the bits at zero, so the inverse follows to cover both states
+    for (const uint32_t pattern : {0xAAAAAAAAUL, 0x55555555UL}) {
+        EXPECT_TRUE(unit->writeMaskInterrupts(pattern));
+        uint32_t readback{};
+        EXPECT_TRUE(unit->readMaskInterrupts(readback));
+        EXPECT_EQ(readback & documented, pattern & documented)
+            << "A documented mask bit did not read back, pattern 0x" << std::hex << pattern;
+    }
 
     // Restore
     EXPECT_TRUE(unit->writeMaskInterrupts(original));
@@ -416,8 +421,14 @@ TEST_F(TestST25R3916, FIFOWrite_Succeeds)
 
     const uint8_t pattern[] = {0xDE, 0xAD, 0xBE, 0xEF};
     EXPECT_TRUE(unit->writeFIFO(pattern, sizeof(pattern)));
-    // Note: FIFO read-back behavior varies by transport (I2C vs Ex_I2C vs SPI).
-    // Full roundtrip verification is not reliable across all boards.
+
+    // The FIFO status counts what went in, which holds on every transport. Reading the bytes back
+    // does not: that part varies between I2C, Ex_I2C and SPI, so it stays out of this test
+    uint16_t bytes{};
+    uint8_t bits{};
+    EXPECT_TRUE(unit->readFIFOSize(bytes, bits));
+    EXPECT_EQ(bytes, sizeof(pattern));
+    EXPECT_EQ(bits, 0) << "A whole number of bytes was written";
 }
 
 TEST_F(TestST25R3916, FIFOWrite_RejectOversize)
@@ -516,6 +527,9 @@ TEST_F(TestST25R3916, ModeDefinition_ReadWrite)
     EXPECT_TRUE(unit->configureNFCMode(m5::nfc::NFC::A));
     uint8_t mode_val{};
     EXPECT_TRUE(unit->readModeDefinition(mode_val));
+    // configureNFCMode(A) ends up at writeInitiatorOperationMode(ISO14443A, nfc_ar8_auto): om takes
+    // 0x01, targ stays 0 for an initiator, and the low three bits carry nfc_ar
+    EXPECT_EQ(mode_val, 0x09) << "om=ISO14443A, targ=0, nfc_ar=auto";
 
     EXPECT_TRUE(unit->writeModeDefinition(original));
 }
@@ -931,7 +945,7 @@ constexpr uint32_t DETECT_BUDGET_MS{300};
 constexpr uint32_t DETECT_LIMIT_MS{DETECT_BUDGET_MS * 3 + 200};
 }  // namespace
 
-TEST_F(TestST25R3916, NFCLayerA_DetectSpendsItsTimeout)
+TEST_F(TestST25R3916, NFCLayerA_DetectSpendsItsTimeoutWithoutTarget)
 {
     const auto cfg_initial = unit->config();
     EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::A, false));
@@ -950,7 +964,7 @@ TEST_F(TestST25R3916, NFCLayerA_DetectSpendsItsTimeout)
     EXPECT_TRUE(unit->begin());
 }
 
-TEST_F(TestST25R3916, NFCLayerB_DetectSpendsItsTimeout)
+TEST_F(TestST25R3916, NFCLayerB_DetectSpendsItsTimeoutWithoutTarget)
 {
     const auto cfg_initial = unit->config();
     EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::B, false));
@@ -969,7 +983,7 @@ TEST_F(TestST25R3916, NFCLayerB_DetectSpendsItsTimeout)
     EXPECT_TRUE(unit->begin());
 }
 
-TEST_F(TestST25R3916, NFCLayerV_DetectSpendsItsTimeout)
+TEST_F(TestST25R3916, NFCLayerV_DetectSpendsItsTimeoutWithoutTarget)
 {
     const auto cfg_initial = unit->config();
     EXPECT_TRUE(rebegin_as(unit.get(), m5::nfc::NFC::V, false));
