@@ -716,16 +716,6 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
             std::this_thread::yield();
         } while (!m5::utility::hasElapsed(start_at, timeout_ms));
         // M5_LIB_LOGE("    FIFO:%u,%u/%u", bytes, bits, required_size);
-        // TEMPORARY instrumentation: remove before release. Silent unless the fallback is taken.
-        {
-            static uint32_t n_rxs = 0, n_rxs_ok = 0;
-            ++n_rxs;
-            if (filled) {
-                ++n_rxs_ok;
-            }
-            M5_LIB_LOGW("TEMPORARY waitFIFO rxs=%u rxs_ok=%u bytes=%u/%u irq=%08X", n_rxs, n_rxs_ok, bytes, reqSize,
-                        irq);
-        }
         return filled;
     }
 
