@@ -114,20 +114,22 @@ bool UnitST25R3916::configure_nfc_a()
 {
     _encrypted = false;
 
+    // 1. Mode and bitrate configuration
     if (!writeInitiatorOperationMode(InitiatorOperationMode::ISO14443A, nfc_ar8_auto /* 0x01 */) ||  //
         !writeBitrate(Bitrate::Bps106K, Bitrate::Bps106K) ||                                         //
         !writeSettingsISO14443A(0x00)) {
+        M5_LIB_LOGE("Failed to configure the mode and the bitrate");
         return false;
     }
 
-    clear_bit_register8(REG_AUXILIARY_DEFINITION, dis_corr);
-    writeOvershootProtectionConfiguration1(0x40);
-    writeOvershootProtectionConfiguration2(0x03);
-    writeUndershootProtectionConfiguration1(0x40);
-    writeUndershootProtectionConfiguration2(0x03);
-
-    writeCorrelatorConfiguration1(0x47);
-    writeCorrelatorConfiguration2(0x00);
+    // 2. Correlator and over/undershoot protection
+    if (!clear_bit_register8(REG_AUXILIARY_DEFINITION, dis_corr) ||  //
+        !writeOvershootProtectionConfiguration1(0x40) || !writeOvershootProtectionConfiguration2(0x03) ||
+        !writeUndershootProtectionConfiguration1(0x40) || !writeUndershootProtectionConfiguration2(0x03) ||
+        !writeCorrelatorConfiguration1(0x47) || !writeCorrelatorConfiguration2(0x00)) {
+        M5_LIB_LOGE("Failed to configure the correlator and the shoot protection");
+        return false;
+    }
 
 // Three receiver-sensitivity settings, of which the stability-focused one is in use. The other two
 // are kept so the trade-off stays visible: a higher sensitivity reads weaker tags but picks up more
@@ -148,9 +150,15 @@ bool UnitST25R3916::configure_nfc_a()
     constexpr uint8_t recv_4{0x11};
 #endif
 
-    enable_interrupts(I_wl32 | I_txe32 | I_rxs32 | I_rxe32 | I_par32 | I_crc32 | I_err132 | I_err232 | I_nre32 |
-                      I_col32);
+    // 3. Interrupts. Losing this write is what makes a half-configured NFC-A look like an empty field:
+    // nothing reports a reception, so every detect() spends its timeout and comes back with no PICC
+    if (!enable_interrupts(I_wl32 | I_txe32 | I_rxs32 | I_rxe32 | I_par32 | I_crc32 | I_err132 | I_err232 | I_nre32 |
+                           I_col32)) {
+        M5_LIB_LOGE("Failed to enable the interrupts");
+        return false;
+    }
 
+    // 4. Receiver
     return writeReceiverConfiguration1(z_600k) &&                              // z600k
            writeReceiverConfiguration2(sqm_dyn | agc_en | agc_m | agc6_3) &&   //
            writeReceiverConfiguration3(recv_3) &&                              // rx gain
