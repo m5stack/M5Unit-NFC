@@ -34,6 +34,19 @@ using TestUnit = m5::unit::CapCC1101NFC;  // SPI (CapST25R3916)
 
 using namespace m5::unit::googletest;
 using namespace m5::unit::st25r3916;
+
+// A door onto the two protected waits. The fixture builds this instead of TestUnit, so casting the
+// fixture's pointer down to it is well defined, and no test reaches into the driver any other way.
+struct TestUnitProbe : public TestUnit {
+    using TestUnit::wait_for_FIFO;
+    using TestUnit::wait_for_interrupt;
+    // A reception that starts and never ends cannot be staged with no card in the field, so the
+    // interrupt that says it started is planted by hand
+    void plantStoredInterrupts(const uint32_t irq)
+    {
+        _stored_irq = irq;
+    }
+};
 using namespace m5::unit::st25r3916::command;
 
 // ============================================================
@@ -69,7 +82,7 @@ protected:
     }
     virtual TestUnit* get_instance() override
     {
-        return new TestUnit();
+        return new TestUnitProbe();
     }
 };
 #elif defined(USING_CAP_CC1101)
@@ -81,7 +94,7 @@ protected:
     }
     virtual TestUnit* get_instance() override
     {
-        return new TestUnit();
+        return new TestUnitProbe();
     }
     virtual SPISettings get_spi_settings() override
     {
@@ -429,6 +442,69 @@ TEST_F(TestST25R3916, FIFOWrite_Succeeds)
     EXPECT_TRUE(unit->readFIFOSize(bytes, bits));
     EXPECT_EQ(bytes, sizeof(pattern));
     EXPECT_EQ(bits, 0) << "A whole number of bytes was written";
+}
+
+TEST_F(TestST25R3916, WaitForInterrupt_IgnoresBitsItWasNotAskedFor)
+{
+    auto* probe = static_cast<TestUnitProbe*>(unit.get());
+
+    // Starting the oscillator is the one interrupt this test can raise on demand: it needs no RF
+    // field and no card. Clearing first makes the one that follows the only one pending.
+    EXPECT_TRUE(unit->writeDirectCommand(CMD_STOP_ALL_ACTIVITIES));
+    EXPECT_TRUE(unit->writeOperationControl(0x00));
+    EXPECT_TRUE(unit->clearInterrupts());
+    EXPECT_TRUE(unit->writeOperationControl(regval::en));
+
+    // Asking for the end of reception must not be answered by the oscillator. A wait that hands back
+    // whichever interrupt turned up first is how wait_for_FIFO() came to return mid-frame: I_rxs
+    // (reception started) always arrives before I_rxe (reception ended), so a mask holding both ends
+    // the wait at the start of the frame and leaves the FIFO with only its first bytes.
+    EXPECT_EQ(probe->wait_for_interrupt(regval::I_rxe32, 50), regval::I_nre32)
+        << "the wait ended on an interrupt it did not ask for";
+}
+
+TEST_F(TestST25R3916, WaitForFIFO_WaitsForTheEndOfReception)
+{
+    auto* probe = static_cast<TestUnitProbe*>(unit.get());
+
+    // Ready mode, with the FIFO already holding more than the wait will ask for, so the fill-level
+    // fallback is satisfied the instant it looks. What is left to measure is whether it looked early.
+    EXPECT_TRUE(unit->writeDirectCommand(CMD_STOP_ALL_ACTIVITIES));
+    EXPECT_TRUE(unit->writeOperationControl(regval::en));
+    EXPECT_TRUE(unit->writeDirectCommand(CMD_CLEAR_FIFO));
+    const uint8_t pattern[] = {0xDE, 0xAD, 0xBE, 0xEF};
+    EXPECT_TRUE(unit->writeFIFO(pattern, sizeof(pattern)));
+    EXPECT_TRUE(unit->clearInterrupts());
+
+    // I_rxs says a reception started; I_rxe says it finished. With only the former pending, the whole
+    // timeout has to go on looking for the latter, because a frame that is still arriving must not be
+    // handed back as a frame. Returning early here is the regression this test exists for.
+    constexpr uint32_t timeout_ms = 100;
+    probe->plantStoredInterrupts(regval::I_rxs32);
+    const auto start_at = m5::utility::millis();
+    const bool filled   = probe->wait_for_FIFO(timeout_ms, 1);
+    const auto elapsed  = m5::utility::elapsedSince(start_at);
+
+    EXPECT_TRUE(filled) << "the FIFO held four bytes, which is more than the one that was asked for";
+    EXPECT_GE(elapsed, timeout_ms) << "returned on the start of a reception instead of waiting for its end";
+
+    probe->plantStoredInterrupts(0);
+    EXPECT_TRUE(unit->writeDirectCommand(CMD_CLEAR_FIFO));
+    EXPECT_TRUE(unit->clearInterrupts());
+}
+
+TEST_F(TestST25R3916, WaitForFIFO_FailsWhenNothingWasReceived)
+{
+    auto* probe = static_cast<TestUnitProbe*>(unit.get());
+
+    EXPECT_TRUE(unit->writeDirectCommand(CMD_STOP_ALL_ACTIVITIES));
+    EXPECT_TRUE(unit->writeOperationControl(regval::en));
+    EXPECT_TRUE(unit->writeDirectCommand(CMD_CLEAR_FIFO));
+    EXPECT_TRUE(unit->clearInterrupts());
+
+    // No field, no card, so no frame can arrive. Reporting success here would mean the wait settled
+    // for something other than a received frame.
+    EXPECT_FALSE(probe->wait_for_FIFO(50, 1)) << "a frame was reported without a reception";
 }
 
 TEST_F(TestST25R3916, FIFOWrite_RejectOversize)

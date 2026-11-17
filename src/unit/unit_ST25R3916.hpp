@@ -2166,10 +2166,12 @@ protected:
     bool mifare_classic_authenticate(const m5::nfc::a::Command cmd, const m5::nfc::a::PICC& picc, const uint8_t block,
                                      const m5::nfc::a::mifare::classic::Key& key);
 
+    // Protected so a test can plant a stale I_rxs and hold wait_for_FIFO() to waiting for the end of
+    // the reception instead of settling for its start.
+    volatile uint32_t _stored_irq{};
+
 private:
     config_t _cfg{};
-
-    volatile uint32_t _stored_irq{};
     uint32_t _enabled_irq{};  // for !_using_irq
     m5::utility::elapsed_time_t _latest_update{};
     uint32_t _update_failed{};
