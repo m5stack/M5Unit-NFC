@@ -2111,6 +2111,17 @@ protected:
 
     uint32_t wait_for_interrupt(const uint32_t irq, const uint32_t timeout_ms = 100);
 
+    /*
+      Wait until a frame has been received
+      @param timeout_ms How long to wait for the end of the reception
+      @param required_size Smallest number of bytes the caller can work with
+      @return True when a frame is there to read
+      @note I_rxe is the only thing that says the frame is complete, so that is what the wait is for.
+      Should it never arrive while the reception did start, the FIFO fill level stands in for it, and
+      then required_size is the whole of the test. Leaving required_size at its default means the
+      caller is taken to accept a single byte, which on that fallback path reports a frame while it
+      may still be arriving: pass the smallest response the protocol allows instead.
+     */
     bool wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size = 0);
     bool read_FIFO(std::vector<uint8_t>& out);
 
