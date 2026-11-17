@@ -122,7 +122,7 @@ bool NFCLayerB::detect(std::vector<m5::nfc::b::PICC>& piccs, const uint8_t afi, 
         PICC picc{};
         memcpy(picc.atqb, rx, ATQB_LENGTH);
 
-        M5_LIB_LOGE("Detected: %s", picc.pupiAsString().c_str());
+        M5_LIB_LOGV("Detected: %s", picc.pupiAsString().c_str());
         if (!exists_picc(piccs, picc)) {
             picc.type = Type::Unclassified;
             piccs.emplace_back(picc);
