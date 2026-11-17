@@ -116,7 +116,7 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
             m5::utility::delay(1);
             continue;
         }
-        // M5_LIB_LOGE("detect");
+        M5_LIB_LOGV("Detected: %s", picc.uidAsString().c_str());
 
         // Already exists?
         if (exists_picc(piccs, picc)) {
