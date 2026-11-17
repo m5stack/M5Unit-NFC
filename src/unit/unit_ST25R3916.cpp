@@ -682,7 +682,11 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     // The wake-up bits that share the same register (I_wt / I_wam / I_wph / I_wcap) are not errors.
     constexpr uint32_t frame_error32 = I_crc32 | I_err132 | I_err232;
 
-    auto irq               = wait_for_interrupt(I_rxe32 | I_rxs32 | frame_error32, timeout_ms);
+    // I_rxs only says the reception started, and it always arrives before I_rxe. Asking for it here
+    // would end the wait at the start of the frame and hand the caller a FIFO holding just its first
+    // bytes, so the wait is for the end alone. I_rxs is read out of the stored interrupts below, only
+    // to decide whether the FIFO fallback is worth trying.
+    auto irq               = wait_for_interrupt(I_rxe32 | frame_error32, timeout_ms);
     const uint16_t reqSize = required_size ? required_size : 1;
 
     if (irq & frame_error32) {
@@ -696,9 +700,10 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     // M5_LIB_LOGE("IRQ:%08X %u", irq, timeout_ms);
 
     // The reception started but its end never arrived, so fall back to watching the FIFO fill up.
-    // I_rxs has to be in the mask above for this to be reachable: wait_for_interrupt() hands back only
-    // the bits it was asked for.
-    if (is_irq32_rxs(irq)) {
+    // wait_for_interrupt() hands back only the bits it was asked for, so I_rxs is still sitting in
+    // _stored_irq. Take it from there and consume it, so a later wait does not act on a stale start.
+    if (is_irq32_rxs(_stored_irq)) {
+        _stored_irq         = _stored_irq & ~I_rxs32;
         const auto start_at = m5::utility::millis();
         uint16_t bytes{};
         uint8_t bits{};
