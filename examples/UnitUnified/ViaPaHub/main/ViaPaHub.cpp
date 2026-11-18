@@ -228,6 +228,26 @@ constexpr const char* UNIT_NAME = "UnitNFC";
 constexpr const char* UNIT_NAME = "UnitRFID2";
 #endif
 
+// Put the unit into a family and say so on the screen and the serial. The RF field is already up
+// after begin(), and configureNFCMode() refuses to raise it again, so the transmitter and receiver
+// have to come down first (see stop_field above).
+bool switch_family(const NFC mode, const char* name)
+{
+    if (!stop_field()) {
+        M5.Log.printf("  failed to stop the RF field\n");
+        draw(UNIT_NAME, name, "field failed", "hold: retry");
+        return false;
+    }
+    if (!unit.configureNFCMode(mode)) {
+        M5.Log.printf("  failed to configure %s\n", name);
+        draw(UNIT_NAME, name, "config failed", "hold: retry");
+        return false;
+    }
+    M5.Log.printf("Family: %s\n", name);
+    draw(UNIT_NAME, name, "click: detect", "hold: next family");
+    return true;
+}
+
 }  // namespace
 
 void setup()
@@ -264,10 +284,15 @@ void setup()
     M5_LOGI("M5UnitUnified initialized");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
-    draw(UNIT_NAME, families[family_index].name, "click: detect", "hold: next family");
     M5.Log.printf("%s via PaHub ch%u\n", UNIT_NAME, HUB_CHANNEL);
     M5.Log.printf("BtnA click: detect in the current family, hold: step to the next family\n");
-    M5.Log.printf("Family: %s\n", families[family_index].name);
+
+    // Settle the first family here rather than on the first click, so that what the screen says is
+    // what the unit is in. A family that cannot be configured is as fatal as a unit that cannot begin
+    if (!switch_family(families[family_index].mode, families[family_index].name)) {
+        M5_LOGE("Failed to configure %s", families[family_index].name);
+        m5::unit::wiring::failStop();
+    }
 }
 
 void loop()
@@ -276,9 +301,13 @@ void loop()
     Units.update();
 
     if (M5.BtnA.wasHold()) {
-        family_index = (family_index + 1) % m5::stl::size(families);
-        M5.Log.printf("Family: %s\n", families[family_index].name);
-        draw(UNIT_NAME, families[family_index].name, "click: detect", "hold: next family");
+        const auto previous = family_index;
+        family_index        = (family_index + 1) % m5::stl::size(families);
+        // Step back when the switch does not take, so the screen never names a family the unit is not
+        // in. Holding again comes back to this one and tries it afresh
+        if (!switch_family(families[family_index].mode, families[family_index].name)) {
+            family_index = previous;
+        }
         return;
     }
 
