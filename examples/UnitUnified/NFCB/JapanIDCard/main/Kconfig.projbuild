@@ -1,2 +1,14 @@
 # The "Target unit / board" choice is shared by all UnitUnified examples.
 rsource "../../../common/Kconfig.variant.no_dial"
+
+menu "JapanIDCard"
+
+config EXAMPLE_JAPANID_PIN
+    string "Card PIN"
+    default ""
+    help
+        PIN that unlocks the card, as a string of digits. Left empty, the example stops before
+        VERIFY and only the activation and the APDU exchange run. A wrong PIN spends one of the
+        card's few retries, and running out of them LOCKS it.
+
+endmenu

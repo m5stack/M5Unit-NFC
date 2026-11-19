@@ -40,6 +40,22 @@ Use USING_UNIT_RFID2 with external Unit-RFID2 instead.
 #include <M5UnitUnifiedRFID.h>
 #endif
 
+// *************************************************************
+// The PIN is never written in this file. Inject it instead:
+//   ESP-IDF : idf.py menuconfig -> JapanIDCard -> Card PIN
+//   Arduino : build_flags = -DEXAMPLE_JAPANID_PIN="\"1234\""
+// A wrong PIN spends one of the card's few retries, and running out of them locks it.
+// *************************************************************
+#if !defined(ARDUINO)
+#if !defined(EXAMPLE_JAPANID_PIN)
+#define EXAMPLE_JAPANID_PIN CONFIG_EXAMPLE_JAPANID_PIN
+#endif
+#endif
+
+#if !defined(EXAMPLE_JAPANID_PIN)
+#define EXAMPLE_JAPANID_PIN ""  // Empty: stop before VERIFY instead of spending a retry
+#endif
+
 using namespace m5::nfc;
 using namespace m5::nfc::b;
 
@@ -82,18 +98,17 @@ void dump()
         return;
     }
 
-    // ********************************************
-    // Password (YOU MUST CHANGE IT!) as string
-    constexpr char pass[] = "XXXX";
-    // ********************************************
+    // The PIN comes from menuconfig or build_flags; see the top of this file.
+    constexpr char pass[]       = EXAMPLE_JAPANID_PIN;
+    constexpr uint16_t pass_len = static_cast<uint16_t>(sizeof(pass) - 1);
 
-    if (strcmp(pass, "XXXX") == 0) {
+    if (pass_len == 0) {
         M5_LOGE(
-            "PIN is placeholder \"XXXX\". Edit the source before running. (Repeated wrong verifies will LOCK the "
-            "card!)");
+            "PIN is not set, so VERIFY is skipped. Inject it with menuconfig (ESP-IDF) or "
+            "-DEXAMPLE_JAPANID_PIN (Arduino). (Repeated wrong verifies will LOCK the card!)");
         return;
     }
-    if (!fs.verifyGlobal(reinterpret_cast<const uint8_t*>(pass), 4)) {
+    if (!fs.verifyGlobal(reinterpret_cast<const uint8_t*>(pass), pass_len)) {
         M5_LOGE("Failed to verify");
         return;
     }
