@@ -22,9 +22,14 @@ namespace nfc {
 
 NFCBFileSystem::NFCBFileSystem(m5::nfc::NFCLayerB& layer) : FileSystem{*layer.isoDEP() /* always exists _isoDEP*/}
 {
-    const auto& picc     = layer.activatedPICC();
-    auto cfg             = _isoDEP.config();
-    cfg.fwt_ms           = fwi_to_ms(picc.fwi(), 13.56e6f);
+    const auto& picc = layer.activatedPICC();
+    auto cfg         = _isoDEP.config();
+    // A tag that hands over a reserved FWI gets no frame waiting time out of the conversion, and
+    // overwriting the default with zero would leave the exchange with the 1 ms floor
+    const auto fwt_ms = fwi_to_ms(picc.fwi(), 13.56e6f);
+    if (fwt_ms) {
+        cfg.fwt_ms = fwt_ms;
+    }
     cfg.fsc              = picc.maximumFrameLength();
     cfg.pcd_max_frame_tx = cfg.pcd_max_frame_rx = 256;  // TODO FIFO_DEPTH
     _isoDEP.config(cfg);

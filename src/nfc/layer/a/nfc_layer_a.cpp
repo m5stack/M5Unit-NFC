@@ -1984,7 +1984,7 @@ bool NFCLayerA::mifare_ultralightC_authenticate1(uint8_t ek[8])
     uint8_t cmd[2] = {m5::stl::to_underlying(Command::AUTHENTICATE_1), 0x00};
     uint8_t rx[9]{};
     uint16_t rx_len{9};
-    if (ek && _impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_AUTH1) && rx_len == 9 && rx[0] == 0xAF) {
+    if (ek && _impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_3DES) && rx_len == 9 && rx[0] == 0xAF) {
         memcpy(ek, rx + 1, 8);
         return true;
     }

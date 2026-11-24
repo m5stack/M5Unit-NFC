@@ -768,14 +768,19 @@ constexpr uint32_t TIMEOUT_SELECT{8};    // 4
 constexpr uint32_t TIMEOUT_ANTICOLL{8};  // 8
 constexpr uint32_t TIMEOUT_HALT{2};
 constexpr uint32_t TIMEOUT_GET_VERSION{5};  // 5
+// Ultralight C answers the first half of the 3DES authentication within 5 ms (MF0ICU2 Table 24),
+// where the MIFARE Classic authentication below answers within 1 ms (MF1S50YYX Table 12)
 constexpr uint32_t TIMEOUT_3DES{10};
 constexpr uint32_t TIMEOUT_AUTH1{4};   // 2
 constexpr uint32_t TIMEOUT_AUTH2{16};  // 10
 constexpr uint32_t TIMEOUT_READ{12};
-constexpr uint32_t TIMEOUT_FAST_READ{2};
-constexpr uint32_t TIMEOUT_FAST_READ_4PAGE{4};    // 3.7
-constexpr uint32_t TIMEOUT_FAST_READ_12PAGE{4};   // 3.7
-constexpr uint32_t TIMEOUT_FAST_READ_32PAGE{12};  // 11.8
+// FAST_READ answers within 5 ms (NTAG213/215/216 Table 32) and then takes 0.85 ms for every four
+// pages it sends at 106 kbps, and the wait covers both because the end of the reception is what it
+// waits for. The numbers below are that sum, rounded up, plus the end of communication
+constexpr uint32_t TIMEOUT_FAST_READ{8};          // 1 page:      5 + 0.5
+constexpr uint32_t TIMEOUT_FAST_READ_4PAGE{10};   // 2-3 pages:   5 + 1.3
+constexpr uint32_t TIMEOUT_FAST_READ_12PAGE{12};  // 4-11 pages:  5 + 3.9
+constexpr uint32_t TIMEOUT_FAST_READ_32PAGE{20};  // 12-31 pages: 5 + 10.7
 constexpr uint32_t TIMEOUT_WRITE1{5};
 constexpr uint32_t TIMEOUT_WRITE2{10};
 // The WRITE of a Type 2 Tag carries its data in the same frame as the command, so the answer only
