@@ -29,6 +29,11 @@ using namespace m5::nfc::a::mifare::desfire;
 using namespace m5::nfc::ndef;
 
 namespace {
+// A PICC taken out of the field answers nothing, and then every block of the dump costs the whole
+// per-block timeout: an ST25DV 8K holds 2048 of them, which is more than half a minute of waiting
+// before the dump admits it failed. Giving up after a few unanswered blocks in a row keeps that to a
+// fraction of a second. A PICC that is still there answers, so it never reaches the limit
+constexpr uint16_t DUMP_UNANSWERED_LIMIT{8};
 
 using m5::nfc::crypto::aes_cbc_crypt;
 
@@ -1523,11 +1528,30 @@ bool NFCLayerA::dump_page_structure(const uint16_t maxPage)
 
     // The read command names a page in a single byte, so no tag that gets here has more than 256 of
     // them. NTAG 216 is the largest at 231
-    bool ret{true};
+    // A page the PICC refuses is not a failure of the dump: a locked or protected area answers nothing
+    // while the rest reads out fine, and the count below says how much was missed. Only a run that had
+    // to give up, or one the PICC never answered at all, is a failure
+    uint16_t reads{};
+    uint16_t unanswered{};
+    uint16_t run{};
+    bool gave_up{};
     for (uint_fast16_t page = 0; page < maxPage; page += 4) {
-        ret &= dump_page(page, maxPage);
+        ++reads;
+        if (dump_page(page, maxPage)) {
+            run = 0;
+            continue;
+        }
+        ++unanswered;
+        if (++run >= DUMP_UNANSWERED_LIMIT) {
+            printf("Gave up at page %u: %u reads in a row went unanswered\n", (unsigned)page, run);
+            gave_up = true;
+            break;
+        }
     }
-    return ret;
+    if (unanswered) {
+        printf("%u of %u reads went unanswered\n", unanswered, reads);
+    }
+    return !gave_up && unanswered < reads;
 }
 
 bool NFCLayerA::dump_page(const uint8_t page, uint16_t maxPage)

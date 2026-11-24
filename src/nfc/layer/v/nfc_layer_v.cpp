@@ -21,6 +21,11 @@ using namespace m5::nfc::v;
 using namespace m5::nfc::ndef;
 
 namespace {
+// A PICC taken out of the field answers nothing, and then every block of the dump costs the whole
+// per-block timeout: an ST25DV 8K holds 2048 of them, which is more than half a minute of waiting
+// before the dump admits it failed. Giving up after a few unanswered blocks in a row keeps that to a
+// fraction of a second. A PICC that is still there answers, so it never reaches the limit
+constexpr uint16_t DUMP_UNANSWERED_LIMIT{8};
 
 void parse_inventory(PICC& picc, const uint8_t rx[10])
 {
@@ -792,11 +797,28 @@ bool NFCLayerV::dump_all()
     printf("%.*s\n", block_size * 3 + 11, dump_header);
     printf("%.*s\n", block_size * 3 + 11, dump_line);
 
-    bool ret{true};
+    // A block the PICC refuses is not a failure of the dump: a protected area answers nothing while
+    // the rest of the memory reads out fine, and the count below says how much was missed. Only a run
+    // that had to give up, or one the PICC never answered at all, is a failure
+    uint16_t unanswered{};
+    uint16_t run{};
+    bool gave_up{};
     for (uint16_t block = 0; block < blocks; ++block) {
-        ret &= dump_block(block);
+        if (dump_block(block)) {
+            run = 0;
+            continue;
+        }
+        ++unanswered;
+        if (++run >= DUMP_UNANSWERED_LIMIT) {
+            printf("Gave up at block %u: %u blocks in a row went unanswered\n", block, run);
+            gave_up = true;
+            break;
+        }
     }
-    return ret;
+    if (unanswered) {
+        printf("%u of %u blocks went unanswered\n", unanswered, blocks);
+    }
+    return !gave_up && unanswered < blocks;
 }
 
 bool NFCLayerV::dump_block(const uint16_t block)
