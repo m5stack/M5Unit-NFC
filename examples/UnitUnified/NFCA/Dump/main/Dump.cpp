@@ -62,6 +62,51 @@ m5::nfc::NFCLayerA nfc_a{unit};
 // KeyA that can authenticate all blocks
 // If it's a different key value, change it
 constexpr Key keyA = DEFAULT_KEY;  // Default as 0xFFFFFFFFFFFF
+
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. Black means the round finished, red means it failed.
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_READ     = TFT_BLUE;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, lcd.height() / 2);
+    lcd.printf("%s", stage);
+}
+
+void show_failure(const char* reason)
+{
+    show_stage(COLOR_FAILED, reason);
+    M5.Speaker.tone(TONE_FAILED, 200);
+}
+
+// The log has scrolled away by the time a whole card is read out, so the screen keeps which PICC it
+// was and how big it is. Two beeps instead of one, because the wait is long.
+// The sizes are what the PICC reports it holds, NOT how much this dump read off it: dump() answers
+// with a bool, and on a file based PICC (DESFire, ST25TA) it walks a set of files whose count and
+// total length only reach the log. Reporting the bytes actually read needs a summary from the
+// library side and is left for a later version
+void show_dumped(const PICC& picc)
+{
+    show_stage(COLOR_DONE, "OK\n");
+    lcd.printf("%s\n%s\ncapacity total %u / user %u bytes\n(not the amount read)", picc.uidAsString().c_str(),
+               picc.typeAsString().c_str(), picc.totalSize(), picc.userAreaSize());
+    M5.Speaker.tone(TONE_DONE, 60);
+    m5::utility::delay(90);
+    M5.Speaker.tone(TONE_DONE, 60);
+}
+
+void show_prompt()
+{
+    show_stage(COLOR_DONE, "Please put the PICC and click BtnA");
+    M5.Log.printf("Please put the PICC and click BtnA\n");
+}
 }  // namespace
 
 void setup()
@@ -103,10 +148,7 @@ void setup()
     M5_LOGI("%s", Units.debugInfo().c_str());
 
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(TFT_DARKGREEN);
-    lcd.setCursor(0, lcd.height() / 2);
-    lcd.printf("Please put the PICC and click BtnA");
-    M5.Log.printf("Please put the PICC and click BtnA\n");
+    show_prompt();
 }
 
 void loop()
@@ -115,23 +157,40 @@ void loop()
     Units.update();
 
     if (M5.BtnA.wasClicked()) {
-        lcd.fillScreen(TFT_DARKGREEN);
-        lcd.setCursor(0, lcd.height() / 2);
         PICC picc{};
         if (nfc_a.detect(picc)) {
             if (nfc_a.identify(picc) && nfc_a.reactivate(picc)) {
-                M5.Speaker.tone(3000, 20);
+                // Green only once a PICC has been found and named, so a click into empty air does not
+                // paint the color that means a card is there
+                show_stage(COLOR_DETECTED, "");
+                M5.Speaker.tone(TONE_DETECTED, 30);
                 lcd.printf("%s\n%s", picc.uidAsString().c_str(), picc.typeAsString().c_str());
                 M5.Log.printf("==== Dump %s %s %u/%u ====\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
                               picc.userAreaSize(), picc.totalSize());
-                nfc_a.dump(keyA);  // Need key if MIFARE classic, Ignore key if not MIFARE classic
+                // A whole card takes seconds to read out, so the reading stage gets its own color and
+                // the screen only turns black once every block has been read
+                show_stage(COLOR_READ, "READ");
+                const bool ok = nfc_a.dump(keyA);  // Need key if MIFARE classic, Ignore key if not MIFARE classic
+                if (!ok) {
+                    // A dump that reported a failure names itself. Looking for the PICC here would
+                    // only mislead: a failed MIFARE Plus SL3 authentication leaves the session in a
+                    // state where the PICC cannot be activated again either
+                    show_failure("FAILED: dump");
+                } else if (!nfc_a.reactivate(picc)) {
+                    // On a file based PICC (DESFire, ST25TA) dump() carries on past a file it could
+                    // not read and still answers true, so a card taken away in the middle of the walk
+                    // would look like a finished run. The PICC being gone is what gives it away
+                    show_failure("FAILED: PICC was removed");
+                } else {
+                    show_dumped(picc);
+                }
                 nfc_a.deactivate();
             } else {
-                lcd.printf("Failed to identify");
+                show_failure("FAILED: identify");
                 M5_LOGE("Failed to identify/activate %s", picc.uidAsString().c_str());
             }
         } else {
-            lcd.printf("PICC NOT exists");
+            show_failure("PICC NOT exists");
             M5.Log.printf("PICC NOT exists\n");
         }
     }

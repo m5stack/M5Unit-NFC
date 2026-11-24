@@ -47,6 +47,43 @@ namespace {
 auto& lcd = M5.Display;
 m5::unit::UnitUnified Units;
 
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. The last color says how the sequence ended: black
+// for a run that reached the end with the data verified, red for one that stopped on the way.
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_WRITTEN  = TFT_ORANGE;
+constexpr uint16_t COLOR_READ     = TFT_BLUE;
+constexpr uint16_t COLOR_CLEARED  = TFT_MAGENTA;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+constexpr uint32_t TONE_NOTICE    = 1000;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, lcd.height() / 2);
+    lcd.printf("%s", stage);
+}
+
+// A card this example cannot work with is not a failure of anything: it gets the idle color and says
+// so, with a single mid tone that is neither the success nor the failure one
+void show_notice(const char* text)
+{
+    show_stage(COLOR_DONE, text);
+    M5.Speaker.tone(TONE_NOTICE, 50);
+}
+
+// Printed over whatever color the run ended on, so the result stays readable while waiting
+void show_prompt()
+{
+    lcd.setCursor(0, lcd.height() / 2);
+    lcd.printf("Please put the PICC and click/hold BtnA");
+    M5.Log.printf("Please put the PICC and click/hold BtnA\n");
+}
+
 #if defined(USING_UNIT_NFC)
 #pragma message("Choose UnitNFC")
 m5::unit::UnitNFC unit{};  // I2C
@@ -201,26 +238,28 @@ bool read_write(const uint8_t sblock, const char* msg)
     // Write
     M5.Log.printf("================================ WRITE %s %u len:%zu\n", ops.label, sblock, buf.size());
     if (ops.write(sblock, (const uint8_t*)msg, len)) {
-        lcd.fillScreen(TFT_ORANGE);
+        show_stage(COLOR_WRITTEN, "WRITE");
         ops.dump_block(sblock);
 
         // Verify
         if (ops.read(buf.data(), rx_len, sblock)) {
-            lcd.fillScreen(TFT_BLUE);
-            M5.Log.printf("================================ VERIFY:%s\n",
-                          memcmp(buf.data(), msg, len) == 0 ? "OK" : "NG");
-            if (memcmp(buf.data(), msg, len)) {
+            const bool verified = memcmp(buf.data(), msg, len) == 0;
+            show_stage(COLOR_READ, verified ? "VERIFY OK" : "VERIFY NG");
+            M5.Log.printf("================================ VERIFY:%s\n", verified ? "OK" : "NG");
+            if (!verified) {
                 m5::utility::log::dump(buf.data(), rx_len, false);
                 M5_LOGE("VERIFY NG!!");
             }
 
             // Clear
             std::fill(buf.begin(), buf.end(), 0);
-            lcd.fillScreen(TFT_MAGENTA);
+            show_stage(COLOR_CLEARED, "CLEAR");
             if (ops.write(sblock, buf.data(), buf.size())) {
                 M5.Log.printf("================================ CLEAR\n");
                 ops.dump_block(sblock);
-                return true;
+                // What the PICC gave back decides the outcome: a clear that worked does not make a
+                // mismatch a success
+                return verified;
             } else {
                 M5_LOGE("Failed to write");
             }
@@ -234,14 +273,14 @@ bool read_write(const uint8_t sblock, const char* msg)
 }
 
 // Using read16/write16 for MIFARE classic
-void read_write_sector_structure(const uint8_t block)
+bool read_write_sector_structure(const uint8_t block)
 {
     constexpr char msg[] = "M5Unit-RFID";
 
     // Read and write access with A authentication
     if (!nfc_a.mifareClassicAuthenticateA(block, keyA)) {
         M5_LOGE("Failed to AuthA");
-        return;
+        return false;
     }
 
     M5.Log.printf("Before[%u] ----\n", block);
@@ -250,7 +289,7 @@ void read_write_sector_structure(const uint8_t block)
     M5.Log.printf("Write\n");
     if (!nfc_a.write16(block, (const uint8_t*)msg, sizeof(msg))) {
         M5_LOGE("Failed to write");
-        return;
+        return false;
     }
     M5.Log.printf("After[%u] ----\n", block);
     nfc_a.dump(block);
@@ -259,7 +298,7 @@ void read_write_sector_structure(const uint8_t block)
     uint8_t rbuf[16]{};
     if (!nfc_a.read16(rbuf, block)) {
         M5_LOGE("Failed to read");
-        return;
+        return false;
     }
 
     // Verify
@@ -271,13 +310,14 @@ void read_write_sector_structure(const uint8_t block)
     uint8_t c[1]{};
     if (!nfc_a.write16(block, c, sizeof(c))) {
         M5_LOGE("Failed to write");
-        return;
+        return false;
     }
     nfc_a.dump(block);
+    return verify;
 }
 
 // Using read4,write4 for Ultralight,NTAG
-void read_write_page_structure(const PICC& picc, const uint8_t page)
+bool read_write_page_structure(const PICC& picc, const uint8_t page)
 {
     constexpr char msg[] = "M5";
 
@@ -289,7 +329,7 @@ void read_write_page_structure(const PICC& picc, const uint8_t page)
 
     if (!nfc_a.write4(page, (const uint8_t*)msg, sizeof(msg))) {
         M5_LOGE("Failed to write");
-        return;
+        return false;
     }
     M5.Log.printf("After[%u] ----\n", page);
     nfc_a.dump(aligned_page);
@@ -298,7 +338,7 @@ void read_write_page_structure(const PICC& picc, const uint8_t page)
     uint8_t rbuf[4]{};
     if (!nfc_a.read4(rbuf, page)) {
         M5_LOGE("Failed to read");
-        return;
+        return false;
     }
 
     bool verify = std::memcmp(rbuf, (const uint8_t*)msg, sizeof(msg)) == 0;
@@ -314,9 +354,10 @@ void read_write_page_structure(const PICC& picc, const uint8_t page)
     uint8_t c[1]{};
     if (!nfc_a.write4(page, c, sizeof(c))) {
         M5_LOGE("Failed to write");
-        return;
+        return false;
     }
     nfc_a.dump(aligned_page);
+    return verify;
 }
 
 // For DESFire
@@ -432,7 +473,7 @@ bool read_write_desfire()
         M5_LOGE("Failed to write");
         return false;
     }
-    lcd.fillScreen(TFT_ORANGE);
+    show_stage(COLOR_WRITTEN, "WRITE");
 
     // Read
     if (!dfs.selectApplication(aid)) {
@@ -450,9 +491,9 @@ bool read_write_desfire()
         M5_LOGE("Failed to read");
         return false;
     }
-    lcd.fillScreen(TFT_BLUE);
 
-    bool compare = (rbuf.size() == file_size) && (memcmp(rbuf.data(), data, file_size) == 0);
+    const bool compare = (rbuf.size() == file_size) && (memcmp(rbuf.data(), data, file_size) == 0);
+    show_stage(COLOR_READ, compare ? "VERIFY OK" : "VERIFY NG");
     M5.Log.printf("================================ VERIFY:%s\n", compare ? "OK" : "NG");
     if (!compare) {
         M5_LOGE("VERIFY NG!!");
@@ -461,7 +502,7 @@ bool read_write_desfire()
 
     // Clear (write 0x00...)
     const uint8_t clear[sizeof(data)]{};
-    lcd.fillScreen(TFT_MAGENTA);
+    show_stage(COLOR_CLEARED, "CLEAR");
     if (!dfs.writeData(file_no, 0, clear, sizeof(clear))) {
         M5_LOGE("Failed to write(clear)");
         return false;
@@ -583,7 +624,7 @@ bool read_write_desfire_light()
         M5_LOGE("Failed to write");
         return false;
     }
-    lcd.fillScreen(TFT_ORANGE);
+    show_stage(COLOR_WRITTEN, "WRITE");
 
     bool read_ok = false;
     if (!auth_with_key(read_key)) {
@@ -600,9 +641,9 @@ bool read_write_desfire_light()
         M5_LOGE("Failed to read");
         return false;
     }
-    lcd.fillScreen(TFT_BLUE);
 
-    bool compare = (rbuf.size() == data_len) && (memcmp(rbuf.data(), data, data_len) == 0);
+    const bool compare = (rbuf.size() == data_len) && (memcmp(rbuf.data(), data, data_len) == 0);
+    show_stage(COLOR_READ, compare ? "VERIFY OK" : "VERIFY NG");
     M5.Log.printf("================================ VERIFY:%s\n", compare ? "OK" : "NG");
     if (!compare) {
         M5_LOGE("VERIFY NG!!");
@@ -610,7 +651,7 @@ bool read_write_desfire_light()
     m5::utility::log::dump(rbuf.data(), rbuf.size(), false);
 
     const uint8_t clear[sizeof(data)]{};
-    lcd.fillScreen(TFT_MAGENTA);
+    show_stage(COLOR_CLEARED, "CLEAR");
     bool clear_ok = false;
     if (!auth_with_key(write_key)) {
         return false;
@@ -687,9 +728,7 @@ void setup()
     M5_LOGI("M5UnitUnified initialized");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
-    lcd.setCursor(0, lcd.height() / 2);
-    lcd.printf("Please put the PICC and click/hold BtnA");
-    M5.Log.printf("Please put the PICC and click/hold BtnA\n");
+    show_prompt();
 }
 
 void loop()
@@ -702,8 +741,10 @@ void loop()
     if (clicked || held) {
         PICC picc{};
         if (nfc_a.detect(picc)) {
-            lcd.fillScreen(TFT_DARKGREEN);
             if (nfc_a.identify(picc) && nfc_a.reactivate(picc)) {
+                // Green once the PICC has been found and named, so a click into empty air never paints
+                // the color that means a card is there
+                show_stage(COLOR_DETECTED, "PICC");
                 M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
                               picc.userAreaSize(), picc.totalSize());
                 if (clicked) {
@@ -712,33 +753,42 @@ void loop()
                         (picc.isMifarePlus() ? (picc.security_level == 1 || picc.security_level == 3) : true)) {
                         // read_all_user_area();
                         auto ret = read_write(picc.firstUserBlock(), picc.userAreaSize() >= 120 ? long_msg : short_msg);
-                        lcd.fillScreen(ret ? 0 : TFT_RED);
+                        show_stage(ret ? COLOR_DONE : COLOR_FAILED, ret ? "OK" : "FAILED");
                     } else if (picc.isMifareDESFire()) {
                         auto ret =
                             picc.type == Type::MIFARE_DESFire_Light ? read_write_desfire_light() : read_write_desfire();
-                        lcd.fillScreen(ret ? 0 : TFT_RED);
+                        show_stage(ret ? COLOR_DONE : COLOR_FAILED, ret ? "OK" : "FAILED");
                     } else {
+                        show_notice("This PICC is not supported");
                         M5.Log.printf("This example is not supported\n");
                     }
                 } else if (held) {
                     // nfc_a.dump();
                     M5.Speaker.tone(4000, 30);
                     if (picc.isMifareClassic()) {
-                        read_write_sector_structure(picc.blocks - 2);
+                        auto ret = read_write_sector_structure(picc.blocks - 2);
+                        show_stage(ret ? COLOR_DONE : COLOR_FAILED, ret ? "OK" : "FAILED");
                     } else if (picc.supportsNFC()) {
-                        read_write_page_structure(picc, 10);
+                        auto ret = read_write_page_structure(picc, 10);
+                        show_stage(ret ? COLOR_DONE : COLOR_FAILED, ret ? "OK" : "FAILED");
                     } else {
+                        show_notice("This PICC is not supported");
                         M5.Log.printf("This example is not supported\n");
                     }
                 }
                 nfc_a.deactivate();
             } else {
+                show_stage(COLOR_FAILED, "FAILED: identify");
+                M5.Speaker.tone(TONE_FAILED, 200);
                 M5_LOGE("Failed to identify/activate %s", picc.uidAsString().c_str());
             }
         } else {
+            show_stage(COLOR_FAILED, "PICC NOT exists");
+            M5.Speaker.tone(TONE_FAILED, 200);
             M5.Log.printf("PICC NOT exists\n");
         }
-        lcd.setCursor(0, lcd.height() / 2);
+        // Printed over the color the round ended on, so the result stays readable while waiting
+        lcd.setCursor(0, lcd.height() / 2 + lcd.fontHeight());
         lcd.printf("Please put the PICC and click/hold BtnA");
         M5.Log.printf("Please put the PICC and click/hold BtnA\n");
     }

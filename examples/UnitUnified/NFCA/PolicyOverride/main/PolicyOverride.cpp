@@ -70,16 +70,46 @@ m5::nfc::NFCLayerA nfc_a{unit};
 constexpr uint8_t SELECT_NDEF_AID[]{0x00, 0xA4, 0x04, 0x00, 0x07, 0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01, 0x00};
 
 // Send SELECT_NDEF_AID once with the given per-call override (nullptr = use config) and log the result.
-void send_select(m5::nfc::isodep::IsoDEP* dep, const char* label, const m5::nfc::isodep::policy_t* override_policy)
+bool send_select(m5::nfc::isodep::IsoDEP* dep, const char* label, const m5::nfc::isodep::policy_t* override_policy)
 {
     uint8_t rx[64]{};
     uint16_t rx_len = sizeof(rx);
     const bool ok   = dep->transceiveAPDU(rx, rx_len, SELECT_NDEF_AID, sizeof(SELECT_NDEF_AID), override_policy);
     if (ok && rx_len >= 2) {
         M5.Log.printf("  [%s] OK  SW=%02X%02X (rx_len=%u)\n", label, rx[rx_len - 2], rx[rx_len - 1], rx_len);
-    } else {
-        M5.Log.printf("  [%s] FAILED (timeout/no response) ok=%d rx_len=%u\n", label, ok, rx_len);
+        return true;
     }
+    M5.Log.printf("  [%s] FAILED (timeout/no response) ok=%d rx_len=%u\n", label, ok, rx_len);
+    return false;
+}
+
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. Black means the round finished, red means it failed.
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_WORKING  = TFT_ORANGE;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, lcd.height() / 2);
+    lcd.printf("%s", stage);
+}
+
+void show_failure(const char* reason)
+{
+    show_stage(COLOR_FAILED, reason);
+    M5.Speaker.tone(TONE_FAILED, 200);
+}
+
+void show_prompt()
+{
+    show_stage(COLOR_DONE, "Put an ISO14443-4 PICC and click BtnA");
+    M5.Log.printf("Put an ISO14443-4 PICC and click BtnA\n");
 }
 }  // namespace
 
@@ -122,9 +152,7 @@ void setup()
     M5_LOGI("%s", Units.debugInfo().c_str());
 
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(0);
-    lcd.setCursor(0, lcd.height() / 2);
-    lcd.printf("Put an ISO14443-4 PICC and click BtnA");
+    show_prompt();
     M5.Log.printf("Put an ISO14443-4 PICC and click BtnA\n");
 }
 
@@ -139,43 +167,55 @@ void loop()
 
     PICC picc{};
     if (!nfc_a.detect(picc) || !nfc_a.identify(picc)) {
+        show_failure("No PICC");
         M5.Log.printf("No PICC\n");
         return;
     }
+    show_stage(COLOR_DETECTED, "PICC");
+    M5.Speaker.tone(TONE_DETECTED, 30);
     // MIFARE Plus SL1 reports as ISO14443-4 but communicates as MIFARE Classic (no ISO-DEP APDU),
     // so skip Classic-compatible PICCs (mirrors the RATS condition in NFCLayerA::activate).
     if (!picc.isISO14443_4() || picc.isMifareClassicCompatible()) {
+        show_failure("Not an ISO-DEP PICC");
         M5.Log.printf("Not an ISO-DEP (14443-4) PICC: %s\n", picc.typeAsString().c_str());
         return;
     }
     // reactivate() runs WUPA + anti-collision + SELECT + RATS, establishing the ISO-DEP session
     if (!nfc_a.reactivate(picc)) {
+        show_failure("FAILED: reactivate");
         M5_LOGE("Failed to reactivate %s", picc.uidAsString().c_str());
         return;
     }
     auto* dep = nfc_a.isoDEP();
     if (!dep) {
+        show_failure("FAILED: no ISO-DEP");
         M5_LOGE("ISO-DEP not available");
         nfc_a.deactivate();
         return;
     }
 
-    M5.Speaker.tone(2000, 30);
+    show_stage(COLOR_WORKING, "ISO-DEP");
     M5.Log.printf("=== ISO-DEP per-call policy override: %s %s ===\n", picc.uidAsString().c_str(),
                   picc.typeAsString().c_str());
 
     // (a) Default policy (timeout/retries derived from the activation-time ISO-DEP config)
-    send_select(dep, "default", nullptr);
+    const bool default_ok = send_select(dep, "default", nullptr);
 
     // (b) Override: long fwt and no retry (e.g. a slow, non-idempotent command)
     const m5::nfc::isodep::policy_t long_policy{2000, 8000, 0};
-    send_select(dep, "override fwt=2000ms retries=0", &long_policy);
+    const bool long_ok = send_select(dep, "override fwt=2000ms retries=0", &long_policy);
 
     // (c) Override: deliberately tiny fwt to show the override controls the per-exchange timeout.
     //     Usually times out, proving the override value reaches the transceive. A very fast PICC
     //     (e.g. ST25TA) may still answer within 1 ms and succeed.
     const m5::nfc::isodep::policy_t tiny_policy{1, 8000, 0};
     send_select(dep, "override fwt=1ms (usually times out)", &tiny_policy);
+
+    // The 1 ms exchange is meant to time out, so only the two exchanges that are supposed to answer
+    // decide the outcome
+    const bool ok = default_ok && long_ok;
+    show_stage(ok ? COLOR_DONE : COLOR_FAILED, ok ? "OK" : "FAILED: exchange");
+    M5.Speaker.tone(ok ? TONE_DONE : TONE_FAILED, ok ? 30 : 200);
 
     nfc_a.deactivate();
 }

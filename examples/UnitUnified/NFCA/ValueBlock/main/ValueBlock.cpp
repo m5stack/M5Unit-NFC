@@ -121,35 +121,35 @@ void print_access_conditions(const Key& akey, const Key& key)
 }
 #endif
 
-void non_rechargeable_value_block(const uint8_t block, const Key& akey, const Key& bkey)
+bool non_rechargeable_value_block(const uint8_t block, const Key& akey, const Key& bkey)
 {
     auto& picc = nfc_a.activatedPICC();
     if (!picc.isUserBlock(block) || !picc.isUserBlock(block - 1)) {
         M5_LOGE("block and block - 1 must be user block %u %u", block, block - 1);
-        return;
+        return false;
     }
 
     if (!nfc_a.mifareClassicAuthenticateA(block, akey)) {
         M5_LOGE("Failed to AUTH A %u/%u", block, block);
-        return;
+        return false;
     }
 
     // Change read/write block
     if (!nfc_a.mifareClassicWriteAccessCondition(block, READ_WRITE_BLOCK, akey, bkey)) {
         M5_LOGE("Failed to WriteAccessCondition %u", block);
-        return;
+        return false;
     }
 
     // Write value
     if (!nfc_a.mifareClassicWriteValueBlock(block, 1234567)) {
         M5_LOGE("Failed to WriteValue %u", block);
-        return;
+        return false;
     }
 
     // After writing the value, change it to the value block (Non rechargeable)
     if (!nfc_a.mifareClassicWriteAccessCondition(block, VALUE_BLOCK_NON_RECHARGEABLE, akey, bkey)) {
         M5_LOGE("Failed to WriteAccessCondition %u", block);
-        return;
+        return false;
     }
     M5.Log.printf("==== Initial value\n");
     nfc_a.dump(block);
@@ -157,7 +157,7 @@ void non_rechargeable_value_block(const uint8_t block, const Key& akey, const Ke
     // Decrement and transfer value
     if (!nfc_a.mifareClassicDecrementValueBlock(block, 4567u)) {
         M5_LOGE("Failed to decrement %u", block);
-        return;
+        return false;
     }
     M5.Log.printf("==== Decrement done\n");
     nfc_a.dump(block);
@@ -165,18 +165,18 @@ void non_rechargeable_value_block(const uint8_t block, const Key& akey, const Ke
     // Incremental operations cannot be performed because charging is not possible
     if (nfc_a.mifareClassicIncrementValueBlock(block, 9876543)) {
         M5_LOGE("Oops!?!?");
-        return;
+        return false;
     } else {
         // Passing through this block is normal
         M5.Log.printf("Incremental operations cannot be performed because charging is not possible\n");
         // The Increment command failed, causing a HALT, so need reactivate and auth
         if (!nfc_a.reactivate()) {
             M5_LOGE("Failed to reactivate");
-            return;
+            return false;
         }
         if (!nfc_a.mifareClassicAuthenticateA(block, akey)) {
             M5_LOGE("Failed to AUTH %u/%u", block, block);
-            return;
+            return false;
         }
         M5.Log.printf("==== Can NOT increment\n");
         nfc_a.dump(block);
@@ -185,11 +185,11 @@ void non_rechargeable_value_block(const uint8_t block, const Key& akey, const Ke
     // Copy value block
     if (!nfc_a.mifareClassicRestoreValueBlock(block)) {
         M5_LOGE("Failed to restore %u", block);
-        return;
+        return false;
     }
     if (!nfc_a.mifareClassicTransferValueBlock(block - 1)) {
         M5_LOGE("Failed to transfer %u", block);
-        return;
+        return false;
     }
     M5.Log.printf("==== Copy from %u to %u\n", block, block - 1);
     nfc_a.dump(block);
@@ -197,31 +197,32 @@ void non_rechargeable_value_block(const uint8_t block, const Key& akey, const Ke
     // Change read/write block and clear
     if (!nfc_a.mifareClassicWriteAccessCondition(block, READ_WRITE_BLOCK, akey, bkey)) {
         M5_LOGE("Failed to WriteAccessCondition%u", block);
-        return;
+        return false;
     }
     uint8_t c[1]{};
     if (!nfc_a.write16(block, c, sizeof(c)) || !nfc_a.write16(block - 1, c, sizeof(c))) {
         M5_LOGE("Failed to Write %u/%u", block, block - 1);
-        return;
+        return false;
     }
 
     M5.Log.printf("==== To be normal block\n");
     nfc_a.dump(block);
+    return true;
 }
 
-void rechargeable_value_block(const uint8_t block, const Key& akey, const Key& bkey)
+bool rechargeable_value_block(const uint8_t block, const Key& akey, const Key& bkey)
 {
     auto& picc = nfc_a.activatedPICC();
     if (!picc.isUserBlock(block) || !picc.isUserBlock(block - 1)) {
         M5_LOGE("block and block - 1 must be user block %u %u", block, block - 1);
-        return;
+        return false;
     }
 
     // Auth A
     uint8_t stb = get_sector_trailer_block(block);
     if (!nfc_a.mifareClassicAuthenticateA(stb, akey)) {
         M5_LOGE("Failed to AUTH A %u/%u", block, stb);
-        return;
+        return false;
     }
 
     // KeyB authentication is required for Increment operations
@@ -233,30 +234,30 @@ void rechargeable_value_block(const uint8_t block, const Key& akey, const Key& b
     // 011 | never | key B | key A|B | key B | ***never*** | key B |
     if (!nfc_a.mifareClassicWriteAccessCondition(stb, 0x03 /*011*/, akey, bkey)) {
         M5_LOGE("Failed to WriteAccessCondition %u", stb);
-        return;
+        return false;
     }
 
     // Auth B
     if (!nfc_a.mifareClassicAuthenticateB(block, bkey)) {
         M5_LOGE("Failed to AUTH B %u/%u", block, stb);
-        return;
+        return false;
     }
 
     // Change read/write block
     if (!nfc_a.mifareClassicWriteAccessCondition(block, READ_WRITE_BLOCK, akey, bkey)) {
         M5_LOGE("Failed to WriteAccessCondition %u", block);
-        return;
+        return false;
     }
     // Write value
     if (!nfc_a.mifareClassicWriteValueBlock(block, 1234567)) {
         M5_LOGE("Failed to WriteValue %u", block);
-        return;
+        return false;
     }
 
     // After writing the value, change it to the value block (rechargeable)
     if (!nfc_a.mifareClassicWriteAccessCondition(block, VALUE_BLOCK_RECHARGEABLE, akey, bkey)) {
         M5_LOGE("Failed to WriteAccessCondition %u", block);
-        return;
+        return false;
     }
     M5.Log.printf("==== Initial value\n");
     nfc_a.dump(block);
@@ -264,7 +265,7 @@ void rechargeable_value_block(const uint8_t block, const Key& akey, const Key& b
     // Decrement and transfer value
     if (!nfc_a.mifareClassicDecrementValueBlock(block, 4567u)) {
         M5_LOGE("Failed to decrement %u", block);
-        return;
+        return false;
     }
     M5.Log.printf("==== Decrement done\n");
     nfc_a.dump(block);
@@ -272,7 +273,7 @@ void rechargeable_value_block(const uint8_t block, const Key& akey, const Key& b
     // Increment and transfer value
     if (!nfc_a.mifareClassicIncrementValueBlock(block, 99u)) {
         M5_LOGE("Failed to increment %u", block);
-        return;
+        return false;
     }
     M5.Log.printf("==== Increment done\n");
     nfc_a.dump(block);
@@ -280,11 +281,11 @@ void rechargeable_value_block(const uint8_t block, const Key& akey, const Key& b
     // Copy value block
     if (!nfc_a.mifareClassicRestoreValueBlock(block)) {
         M5_LOGE("Failed to restore %u", block);
-        return;
+        return false;
     }
     if (!nfc_a.mifareClassicTransferValueBlock(block - 1)) {
         M5_LOGE("Failed to transfer %u", block);
-        return;
+        return false;
     }
     M5.Log.printf("==== Copy from %u to %u\n", block, block - 1);
     nfc_a.dump(block);
@@ -292,26 +293,27 @@ void rechargeable_value_block(const uint8_t block, const Key& akey, const Key& b
     // Change read/write block and clear
     if (!nfc_a.mifareClassicWriteAccessCondition(block, READ_WRITE_BLOCK, akey, bkey)) {
         M5_LOGE("Failed to WriteAccessCondition%u", block);
-        return;
+        return false;
     }
     uint8_t c[1]{};
     if (!nfc_a.write16(block, c, sizeof(c)) || !nfc_a.write16(block - 1, c, sizeof(c))) {
         M5_LOGE("Failed to Write %u/%u", block, block - 1);
-        return;
+        return false;
     }
 
     // Restore access bits
     if (!nfc_a.mifareClassicWriteAccessCondition(stb, 0x01 /*001*/, akey, bkey)) {
         M5_LOGE("Failed to WriteAccessCondition %u", stb);
-        return;
+        return false;
     }
     if (!nfc_a.mifareClassicAuthenticateA(stb, akey)) {
         M5_LOGE("Failed to AUTH A %u/%u", block, stb);
-        return;
+        return false;
     }
 
     M5.Log.printf("==== To be normal block\n");
     nfc_a.dump(block);
+    return true;
 }
 
 // Scan all sectors and restore any value blocks to normal read/write blocks
@@ -428,6 +430,37 @@ void restore_all_value_blocks(const Key& akey, const Key& bkey)
 }
 #endif
 
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. Black means the round finished, red means it failed.
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_WORKING  = TFT_ORANGE;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+constexpr uint32_t TONE_NOTICE    = 1000;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, lcd.height() / 2);
+    lcd.printf("%s", stage);
+}
+
+// A card this example cannot work with is not a failure of anything: it gets the idle color and says
+// so, with a single mid tone that is neither the success nor the failure one
+void show_notice(const char* text)
+{
+    show_stage(COLOR_DONE, text);
+    M5.Speaker.tone(TONE_NOTICE, 50);
+}
+
+void show_result(const bool ok, const char* reason)
+{
+    show_stage(ok ? COLOR_DONE : COLOR_FAILED, ok ? "OK" : reason);
+    M5.Speaker.tone(ok ? TONE_DONE : TONE_FAILED, ok ? 30 : 200);
+}
 }  // namespace
 
 void setup()
@@ -468,8 +501,7 @@ void setup()
     M5_LOGI("M5UnitUnified initialized");
     M5_LOGI("%s", Units.debugInfo().c_str());
 
-    lcd.setCursor(0, lcd.height() / 2);
-    lcd.printf("Please put the PICC and click/hold BtnA");
+    show_stage(COLOR_DONE, "Please put the PICC and click/hold BtnA");
     M5.Log.printf("Please put the PICC and click/hold BtnA\n");
 }
 
@@ -487,32 +519,34 @@ void loop()
                 M5.Log.printf("PICC:%s %s %u/%u\n", picc.uidAsString().c_str(), picc.typeAsString().c_str(),
                               picc.userAreaSize(), picc.totalSize());
                 if (picc.isMifareClassic()) {
+                    M5.Speaker.tone(TONE_DETECTED, 30);
                     if (clicked) {
-                        M5.Speaker.tone(2000, 30);
-                        lcd.fillScreen(TFT_BLUE);
+                        show_stage(COLOR_WORKING, "NON RECHARGEABLE");
                         M5.Log.print("Non rechargeable\n");
-                        non_rechargeable_value_block(picc.blocks - 2, keyA, keyB);
+                        show_result(non_rechargeable_value_block(picc.blocks - 2, keyA, keyB),
+                                    "FAILED: non rechargeable");
                         // nfc_a.dump(DEFAULT_KEY);
                     } else if (held) {
-                        M5.Speaker.tone(4000, 30);
-                        lcd.fillScreen(TFT_YELLOW);
+                        show_stage(COLOR_WORKING, "RECHARGEABLE");
                         M5.Log.print("Rechargeable\n");
-                        rechargeable_value_block(picc.blocks - 2, keyA, keyB);
+                        show_result(rechargeable_value_block(picc.blocks - 2, keyA, keyB), "FAILED: rechargeable");
                         // restore_all_value_blocks(DEFAULT_KEY, DEFAULT_KEY);
                     }
                     M5.Log.printf("Please remove the PICC from the reader\n");
                 } else {
+                    show_notice("Not a MIFARE Classic");
                     M5.Log.printf("Not support the value block\n");
                 }
                 nfc_a.deactivate();
             } else {
+                show_stage(COLOR_FAILED, "FAILED: identify");
                 M5_LOGE("Failed to identify/activate %s", picc.uidAsString().c_str());
             }
         } else {
             M5.Log.printf("PICC NOT exists\n");
         }
         lcd.setCursor(0, lcd.height() / 2);
-        lcd.printf("Please put the PICC and click/hold BtnA");
+        lcd.printf("\nPlease put the PICC and click/hold BtnA");
         M5.Log.printf("Please put the PICC and click/hold BtnA\n");
     }
 }

@@ -56,6 +56,34 @@ m5::unit::UnitRFID2 unit{};  // M5Dial builtin WS1850S (internal I2C)
 #error Choose ONE: USING_UNIT_NFC / USING_CAP_CC1101 / USING_UNIT_RFID2 / USING_M5DIAL_BUILTIN_WS1850S
 #endif
 m5::nfc::NFCLayerA nfc_a{unit};
+
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. Black means the round finished, red means it failed.
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, lcd.height() / 2);
+    lcd.printf("%s", stage);
+}
+
+void show_failure(const char* reason)
+{
+    show_stage(COLOR_FAILED, reason);
+    M5.Speaker.tone(TONE_FAILED, 200);
+}
+
+void show_prompt()
+{
+    show_stage(COLOR_DONE, "Please put the PICC");
+    M5.Log.printf("Please put the PICC\n");
+}
 }  // namespace
 
 void setup()
@@ -97,8 +125,7 @@ void setup()
     M5_LOGI("%s", Units.debugInfo().c_str());
 
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(0);
-    lcd.setCursor(0, lcd.height() / 2);
+    show_prompt();
 }
 
 void loop()
@@ -108,11 +135,10 @@ void loop()
 
     std::vector<PICC> piccs;
     if (nfc_a.detect(piccs)) {
-        lcd.fillScreen(0);
-        lcd.setCursor(0, lcd.height() / 2);
+        show_stage(COLOR_DETECTED, "");
         uint16_t idx{};
         for (auto&& u : piccs) {
-            M5.Speaker.tone(6000, 5);
+            M5.Speaker.tone(TONE_DETECTED, 30);
             // detect only performs a provisional classification based on sak, so further identification is required
             if (nfc_a.identify(u)) {
                 M5.Log.printf("PICC:%s %s %04X/%02X %u/%u\n", u.uidAsString().c_str(), u.typeAsString().c_str(), u.atqa,
@@ -126,9 +152,13 @@ void loop()
             }
         }
         if (idx) {
-            M5.Speaker.tone(3000, 10);
+            M5.Speaker.tone(TONE_DONE, 30);
             lcd.printf("==> %u PICC\n", idx);
             M5.Log.printf("==> %u PICC\n", idx);
+        } else {
+            // Something answered the poll, so saying nothing here would leave the screen on the color
+            // of a detection with no line under it
+            show_failure("FAILED: identify");
         }
         nfc_a.deactivate();
     }
