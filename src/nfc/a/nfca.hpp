@@ -778,7 +778,14 @@ constexpr uint32_t TIMEOUT_FAST_READ_12PAGE{4};   // 3.7
 constexpr uint32_t TIMEOUT_FAST_READ_32PAGE{12};  // 11.8
 constexpr uint32_t TIMEOUT_WRITE1{5};
 constexpr uint32_t TIMEOUT_WRITE2{10};
+// The WRITE of a Type 2 Tag carries its data in the same frame as the command, so the answer only
+// comes once the page has been programmed. NTAG213/215/216 (Table 34), NTAG210/212 and Ultralight C
+// all ask for 10 ms, and the tables exclude the end of communication, so the wait is set past it
+constexpr uint32_t TIMEOUT_WRITE_PAGE{15};
 constexpr uint32_t TIMEOUT_VALUE_BLOCK{5};  // Value block operation
+// Transfer writes the value back to the memory, which takes longer than the three commands that only
+// load it: 10 ms instead of 5 (MF1S50YYX Table 29 against Table 27), again plus the end of communication
+constexpr uint32_t TIMEOUT_TRANSFER{15};
 constexpr uint32_t TIMEOUT_RATS{5};
 constexpr uint32_t TIMEOUT_DESELECT{8};
 ///@}

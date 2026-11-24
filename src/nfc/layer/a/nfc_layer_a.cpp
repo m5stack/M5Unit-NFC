@@ -2787,7 +2787,7 @@ bool NFCLayerA::ntag_write_page(const uint8_t page, const uint8_t tx[4])
 
     uint8_t rx[1]{};
     uint16_t rx_len{1};
-    return _impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_WRITE1);
+    return _impl->transceive(rx, rx_len, cmd, sizeof(cmd), TIMEOUT_WRITE_PAGE);
 }
 
 }  // namespace nfc
