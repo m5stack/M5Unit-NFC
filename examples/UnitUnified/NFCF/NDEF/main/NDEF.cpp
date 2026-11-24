@@ -43,15 +43,67 @@ m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 #endif
 m5::nfc::NFCLayerF nfc_f{unit};
 
-void read_ndef()
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. Black means the round finished, red means it failed.
+// TFT_* are RGB565, so the constants are uint16_t: a uint32_t picks the RGB888 overload of
+// fillScreen() and paints a different color
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_READ     = TFT_BLUE;
+constexpr uint16_t COLOR_WRITTEN  = TFT_ORANGE;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+constexpr uint32_t TONE_NOTICE    = 1000;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, 0);
+    lcd.printf("%s", stage);
+}
+
+void show_failure(const char* reason)
+{
+    show_stage(COLOR_FAILED, reason);
+    M5.Speaker.tone(TONE_FAILED, 200);
+}
+
+void show_result(const bool ok, const char* reason)
+{
+    show_stage(ok ? COLOR_DONE : COLOR_FAILED, ok ? "OK" : reason);
+    M5.Speaker.tone(ok ? TONE_DONE : TONE_FAILED, ok ? 30 : 200);
+}
+
+// A card this example cannot work with is not a failure of anything: it gets the idle color and says
+// so, with a single mid tone that is neither the success nor the failure one
+void show_notice(const char* text)
+{
+    show_stage(COLOR_DONE, text);
+    M5.Speaker.tone(TONE_NOTICE, 50);
+}
+
+// The records the read printed are the point of the round, so the verdict goes under them and the
+// screen keeps its contents. A failed read has nothing worth keeping, so that one paints over
+void report_read(const bool ok)
+{
+    if (!ok) {
+        show_failure("FAILED: read");
+        return;
+    }
+    lcd.printf("\n-- OK --");
+    M5.Speaker.tone(TONE_DONE, 30);
+}
+
+bool read_ndef()
 {
     TLV msg{};
 
     // Read NDEF message TLV
     if (!nfc_f.ndefRead(msg)) {
         M5_LOGE("Failed to read");
-        lcd.fillScreen(TFT_RED);
-        return;
+        return false;
     }
 
     // If it does not exist, a Null TLV is returned
@@ -73,9 +125,10 @@ void read_ndef()
     } else {
         M5.Log.printf("NDEF Message TLV is NOT exists\n");
     }
+    return true;
 }
 
-void write_ndef()
+bool write_ndef()
 {
     TLV msg{Tag::Message};  // NDEF Message TLV
     Record r[4] = {};       // Wellknown as default
@@ -84,8 +137,9 @@ void write_ndef()
     // Change format to support NDEF
     // *********************************************************
     if (!nfc_f.writeSupportNDEF(true)) {
+        show_failure("FAILED: change format");
         M5_LOGE("Failed to writeSupportNDEF");
-        return;
+        return false;
     }
 
     // URI record
@@ -109,10 +163,11 @@ void write_ndef()
     }
 
     if (!nfc_f.ndefWrite(msg)) {
+        show_failure("FAILED: write");
         M5_LOGE("Failed to write");
-        return;
+        return false;
     }
-    nfc_f.dump();
+    return nfc_f.dump();
 }
 
 }  // namespace
@@ -145,9 +200,7 @@ void setup()
         lcd.setRotation(1);
     }
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(0);
-    lcd.setCursor(0, 0);
-    lcd.printf("Please put the PICC and click BtnA");
+    show_stage(COLOR_DONE, "Please put the PICC and click/hold BtnA");
     M5.Log.printf("Please put the PICC and click BtnA\n");
 }
 
@@ -165,24 +218,25 @@ void loop()
                 M5.Log.printf("%s:%s %s F:%02X DF:%04X\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
                               picc.typeAsString().c_str(), picc.format, picc.dfc_format);
 
+                M5.Speaker.tone(TONE_DETECTED, 30);
                 if (clicked) {
-                    M5.Speaker.tone(2000, 30);
-                    lcd.fillScreen(TFT_BLUE);
+                    show_stage(COLOR_READ, "READ\n");
                     // nfc_f.dump();
-                    read_ndef();
+                    report_read(read_ndef());
                 } else if (held) {
-                    M5.Speaker.tone(4000, 30);
-                    lcd.fillScreen(TFT_YELLOW);
-                    write_ndef();
-                    lcd.fillScreen(0);
+                    show_stage(COLOR_WRITTEN, "WRITE");
+                    show_result(write_ndef(), "FAILED: write");
                 }
                 M5.Log.printf("Please remove the PICC from the reader\n");
                 nfc_f.deactivate();
+            } else {
+                show_failure("FAILED: activate");
             }
-            lcd.setCursor(0, 0);
-            lcd.printf("Please put the PICC and click/hold BtnA");
+            // Printed over the color the round ended on, so the result stays readable while waiting
+            lcd.printf("\nPlease put the PICC and click/hold BtnA");
             M5.Log.printf("Please put the PICC and click/hold BtnA\n");
         } else {
+            show_failure("PICC NOT exists");
             M5.Log.printf("PICC NOT exists\n");
         }
     }

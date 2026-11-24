@@ -42,12 +42,12 @@ m5::unit::CapCC1101NFC unit{};  // CapCC1101 (SPI)
 #endif
 m5::nfc::NFCLayerF nfc_f{unit};
 
-void subtract_register()
+bool subtract_register()
 {
     REG reg{};
     if (!nfc_f.read16(reg.reg, lite::REG /* Same as lite_s::REG */)) {
         M5_LOGE("Failed to read");
-        return;
+        return false;
     }
     M5.Log.printf("Before:A:%u B:%u C:%llu\n", reg.regA(), reg.regB(), reg.regC());
     nfc_f.dump(lite::REG);
@@ -58,11 +58,11 @@ void subtract_register()
     reg.regC(reg.regC() - 3);
     if (!nfc_f.write16(lite::REG, reg.reg, sizeof(reg.reg))) {
         M5_LOGE("Failed to write");
-        return;
+        return false;
     }
     if (!nfc_f.read16(reg.reg, lite::REG /* Same as lite_s::REG */)) {
         M5_LOGE("Failed to read");
-        return;
+        return false;
     }
     M5.Log.printf("After:A:%u B:%u C:%llu\n", reg.regA(), reg.regB(), reg.regC());
     nfc_f.dump(lite::REG);
@@ -70,7 +70,7 @@ void subtract_register()
     // Increases are prohibited (A,B)
     if (!nfc_f.read16(reg.reg, lite::REG /* Same as lite_s::REG */)) {
         M5_LOGE("Failed to read");
-        return;
+        return false;
     }
 
     auto tmp = reg;
@@ -99,12 +99,53 @@ void subtract_register()
     }
     if (!nfc_f.read16(reg.reg, lite::REG /* Same as lite_s::REG */)) {
         M5_LOGE("Failed to read");
-        return;
+        return false;
     }
     M5.Log.printf("After:A:%u B:%u C:%llu\n", reg.regA(), reg.regB(), reg.regC());
     nfc_f.dump(lite::REG);
+    return true;
 }
 
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. Black means the round finished, red means it failed.
+// TFT_* are RGB565, so the constants are uint16_t: a uint32_t picks the RGB888 overload of
+// fillScreen() and paints a different color
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_READ     = TFT_BLUE;
+constexpr uint16_t COLOR_WRITTEN  = TFT_ORANGE;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+constexpr uint32_t TONE_NOTICE    = 1000;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, 0);
+    lcd.printf("%s", stage);
+}
+
+void show_failure(const char* reason)
+{
+    show_stage(COLOR_FAILED, reason);
+    M5.Speaker.tone(TONE_FAILED, 200);
+}
+
+void show_result(const bool ok, const char* reason)
+{
+    show_stage(ok ? COLOR_DONE : COLOR_FAILED, ok ? "OK" : reason);
+    M5.Speaker.tone(ok ? TONE_DONE : TONE_FAILED, ok ? 30 : 200);
+}
+
+// A card this example cannot work with is not a failure of anything: it gets the idle color and says
+// so, with a single mid tone that is neither the success nor the failure one
+void show_notice(const char* text)
+{
+    show_stage(COLOR_DONE, text);
+    M5.Speaker.tone(TONE_NOTICE, 50);
+}
 }  // namespace
 
 void setup()
@@ -135,9 +176,7 @@ void setup()
         lcd.setRotation(1);
     }
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(0);
-    lcd.setCursor(0, 0);
-    lcd.printf("Please put the PICC and click BtnA");
+    show_stage(COLOR_DONE, "Please put the PICC and click BtnA");
     M5.Log.printf("Please put the PICC and click BtnA\n");
 }
 
@@ -147,23 +186,29 @@ void loop()
     Units.update();
 
     if (M5.BtnA.wasClicked()) {
-        lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
         PICC picc{};
         if (nfc_f.detect(picc)) {
             M5.Log.printf("%s:%s %s F:%02X DF:%04X\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
                           picc.typeAsString().c_str(), picc.format, picc.dfc_format);
             if (picc.type == Type::FeliCaLite || picc.type == Type::FeliCaLiteS) {
                 if (nfc_f.activate(picc)) {
-                    M5.Speaker.tone(2500, 20);
-                    subtract_register();
+                    show_stage(COLOR_DETECTED, "PICC");
+                    M5.Speaker.tone(TONE_DETECTED, 30);
+                    show_result(subtract_register(), "FAILED: subtract");
                     nfc_f.deactivate();
+                } else {
+                    show_failure("FAILED: activate");
                 }
             } else {
+                show_notice("Not a FeliCa Lite(S)");
                 M5.Log.printf("Not support\n");
             }
         } else {
+            show_failure("PICC NOT exists");
             M5.Log.printf("PICC NOT exists\n");
         }
+        // Printed over the color the round ended on, so the result stays readable while waiting
+        lcd.printf("\nPlease put the PICC and click BtnA");
     }
 }
 

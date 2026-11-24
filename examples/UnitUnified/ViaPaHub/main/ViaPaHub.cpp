@@ -93,11 +93,21 @@ uint8_t family_index{};
 // up to Tab5 (1280 px) without assuming any particular resolution
 uint8_t text_size{1};
 
-void draw(const char* unit_name, const char* family, const char* state, const char* detail)
+// TFT_* are RGB565, so these are uint16_t: a uint32_t picks the RGB888 overload of fillScreen() and
+// paints a different color. Black means the round finished, red means it failed, green means a PICC
+// answered. The four lines stay as they are, the background is what carries the outcome
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_FAILED    = 300;
+
+void draw(const char* unit_name, const char* family, const char* state, const char* detail,
+          const uint16_t color = COLOR_DONE)
 {
     const int32_t h = lcd.fontHeight();
     lcd.startWrite();
-    lcd.fillScreen(TFT_BLACK);
+    lcd.fillScreen(color);
     lcd.setCursor(0, 0);
     lcd.printf("%s via PaHub ch%u\n", unit_name, HUB_CHANNEL);
     lcd.setCursor(0, h);
@@ -322,19 +332,21 @@ void loop()
     const int found = detect_family(mode, detail, sizeof(detail));
     if (found < 0) {
         M5.Log.printf("%s: failed\n", name);
-        draw(UNIT_NAME, name, "failed", "click: retry");
+        draw(UNIT_NAME, name, "failed", "click: retry", COLOR_FAILED);
+        M5.Speaker.tone(TONE_FAILED, 200);
         return;
     }
     if (found == 0) {
         M5.Log.printf("%s: no PICC\n", name);
-        draw(UNIT_NAME, name, "no PICC", "");
+        draw(UNIT_NAME, name, "no PICC", "", COLOR_FAILED);
+        M5.Speaker.tone(TONE_FAILED, 200);
         return;
     }
-    M5.Speaker.tone(3000, 20);
+    M5.Speaker.tone(TONE_DETECTED, 30);
     M5.Log.printf("%s: %d PICC\n", name, found);
     char state[24]{};
     snprintf(state, sizeof(state), "%d PICC", found);
-    draw(UNIT_NAME, name, state, detail);
+    draw(UNIT_NAME, name, state, detail, COLOR_DETECTED);
 }
 
 #if !defined(ARDUINO)

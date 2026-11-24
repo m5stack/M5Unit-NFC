@@ -63,6 +63,46 @@ m5::unit::UnitRFID2 unit{};  // M5Dial builtin WS1850S (internal I2C; NOT suppor
 #error Choose ONE: USING_UNIT_NFC / USING_CAP_CC1101 / USING_UNIT_RFID2 / USING_M5DIAL_BUILTIN_WS1850S
 #endif
 m5::nfc::NFCLayerB nfc_b{unit};
+
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. Black means the round finished, red means it failed.
+// TFT_* are RGB565, so the constants are uint16_t: a uint32_t picks the RGB888 overload of
+// fillScreen() and paints a different color
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_READ     = TFT_BLUE;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+constexpr uint32_t TONE_NOTICE    = 1000;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, 0);
+    lcd.printf("%s", stage);
+}
+
+void show_failure(const char* reason)
+{
+    show_stage(COLOR_FAILED, reason);
+    M5.Speaker.tone(TONE_FAILED, 200);
+}
+
+// A card this example cannot work with is not a failure of anything: it gets the idle color and says
+// so, with a single mid tone that is neither the success nor the failure one
+void show_notice(const char* text)
+{
+    show_stage(COLOR_DONE, text);
+    M5.Speaker.tone(TONE_NOTICE, 50);
+}
+
+void show_prompt()
+{
+    show_stage(COLOR_DONE, "Please put the PICC");
+    M5.Log.printf("Please put the PICC\n");
+}
 }  // namespace
 
 void setup()
@@ -102,8 +142,7 @@ void setup()
         lcd.setRotation(1);
     }
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(0);
-    lcd.setCursor(0, 0);
+    show_prompt();
 }
 
 void loop()
@@ -113,9 +152,8 @@ void loop()
 
     std::vector<PICC> piccs;
     if (nfc_b.detect(piccs)) {
-        M5.Speaker.tone(3000, 10);
-        lcd.fillScreen(0);
-        lcd.setCursor(0, 0);
+        M5.Speaker.tone(TONE_DETECTED, 30);
+        show_stage(COLOR_DETECTED, "");
         lcd.printf("%zu PICC\n", piccs.size());
         M5.Log.printf("%zu PICC\n", piccs.size());
         uint32_t idx{};

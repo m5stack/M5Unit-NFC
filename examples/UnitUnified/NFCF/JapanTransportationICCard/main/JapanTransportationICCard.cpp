@@ -83,14 +83,56 @@ struct tm buf_to_tm(const uint8_t date[2], const uint8_t time[2] = nullptr)
     return dt;
 }
 
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. Black means the round finished, red means it failed.
+// TFT_* are RGB565, so the constants are uint16_t: a uint32_t picks the RGB888 overload of
+// fillScreen() and paints a different color
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_READ     = TFT_BLUE;
+constexpr uint16_t COLOR_WRITTEN  = TFT_ORANGE;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+constexpr uint32_t TONE_NOTICE    = 1000;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, 0);
+    lcd.printf("%s", stage);
+}
+
+void show_failure(const char* reason)
+{
+    show_stage(COLOR_FAILED, reason);
+    M5.Speaker.tone(TONE_FAILED, 200);
+}
+
+void show_result(const bool ok, const char* reason)
+{
+    show_stage(ok ? COLOR_DONE : COLOR_FAILED, ok ? "OK" : reason);
+    M5.Speaker.tone(ok ? TONE_DONE : TONE_FAILED, ok ? 30 : 200);
+}
+
+// A card this example cannot work with is not a failure of anything: it gets the idle color and says
+// so, with a single mid tone that is neither the success nor the failure one
+void show_notice(const char* text)
+{
+    show_stage(COLOR_DONE, text);
+    M5.Speaker.tone(TONE_NOTICE, 50);
+}
+
 // Name the step that failed on both the LCD and the serial log. The dump itself stays on serial,
 // where there is room for it, but a silent failure leaves nothing to go on at all
 void report_failure(const char* step)
 {
-    lcd.fillScreen(0);
+    lcd.fillScreen(COLOR_FAILED);
     lcd.setCursor(0, 0);
     lcd.printf("NG: %s", step);
     M5.Log.printf("NG: %s\n", step);
+    M5.Speaker.tone(TONE_FAILED, 200);
 }
 
 // Print what each system code answers, to the screen and the serial log both.
@@ -362,9 +404,7 @@ void setup()
         lcd.setRotation(1);
     }
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(0);
-    lcd.setCursor(0, 0);
-    lcd.printf("Please put the PICC and click BtnA");
+    show_stage(COLOR_DONE, "Please put the PICC and click BtnA");
     M5.Log.printf("Please put the PICC and click BtnA\n");
 }
 
@@ -378,13 +418,17 @@ void loop()
         if (nfc_f.detect(piccs, jtic_system_code, m5::stl::size(jtic_system_code), TimeSlot::Slot1, 50)) {
             PICC picc = piccs.front();
             if (nfc_f.activate(picc)) {
-                M5.Speaker.tone(2500, 20);
+                show_stage(COLOR_DETECTED, "PICC");
+                M5.Speaker.tone(TONE_DETECTED, 30);
                 M5.Log.printf("%s:%s %s F:%02X DF:%04X\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
                               picc.typeAsString().c_str(), picc.format, picc.dfc_format);
+                show_stage(COLOR_READ, "READ");
                 if (dump_jtic()) {
-                    lcd.fillScreen(0);
-                    lcd.setCursor(0, 0);
-                    lcd.printf("OK\n%s\n%s", picc.idmAsString().c_str(), picc.typeAsString().c_str());
+                    show_stage(COLOR_DONE, "OK\n");
+                    lcd.printf("%s\n%s", picc.idmAsString().c_str(), picc.typeAsString().c_str());
+                    M5.Speaker.tone(TONE_DONE, 30);
+                } else {
+                    report_failure("read");
                 }
                 nfc_f.deactivate();
             } else {

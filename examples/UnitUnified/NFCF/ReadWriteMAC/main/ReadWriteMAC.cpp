@@ -179,7 +179,7 @@ bool external_auth()
     return nfc_f.externalAuthenticate(ck, example_ckv);
 }
 
-void access_example()
+bool access_example()
 {
     uint8_t rx[16]{};
     constexpr char data0[] = "0-ABCDEF";
@@ -229,8 +229,8 @@ void access_example()
         // If the first_issuance_procedure_lite_s() has not been executed, an error will occur here.
         // ******************************************************************************
         M5_LOGE("Failed to internal authenticate");
-        lcd.fillScreen(TFT_RED);
-        return;
+
+        return false;
     }
     M5.Log.printf("======== Internal auth OK\n");
 
@@ -285,8 +285,8 @@ void access_example()
     // External auth
     if (!external_auth()) {
         M5_LOGE("Failed to external authenticate");
-        lcd.fillScreen(TFT_RED);
-        return;
+
+        return false;
     }
     M5.Log.printf("======== External auth OK\n");
 
@@ -341,7 +341,7 @@ void access_example()
         M5_LOGE("  NG");
     }
 
-    lcd.fillScreen(0);
+    return true;
 }
 
 bool first_issuance_procedure_lite_s(const PICC& picc, const uint8_t master_key[24], const uint16_t ckv)
@@ -480,6 +480,46 @@ bool first_issuance_procedure_lite_s(const PICC& picc, const uint8_t master_key[
     return false;
 }
 
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. Black means the round finished, red means it failed.
+// TFT_* are RGB565, so the constants are uint16_t: a uint32_t picks the RGB888 overload of
+// fillScreen() and paints a different color
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_READ     = TFT_BLUE;
+constexpr uint16_t COLOR_WRITTEN  = TFT_ORANGE;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+constexpr uint32_t TONE_NOTICE    = 1000;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, 0);
+    lcd.printf("%s", stage);
+}
+
+void show_failure(const char* reason)
+{
+    show_stage(COLOR_FAILED, reason);
+    M5.Speaker.tone(TONE_FAILED, 200);
+}
+
+void show_result(const bool ok, const char* reason)
+{
+    show_stage(ok ? COLOR_DONE : COLOR_FAILED, ok ? "OK" : reason);
+    M5.Speaker.tone(ok ? TONE_DONE : TONE_FAILED, ok ? 30 : 200);
+}
+
+// A card this example cannot work with is not a failure of anything: it gets the idle color and says
+// so, with a single mid tone that is neither the success nor the failure one
+void show_notice(const char* text)
+{
+    show_stage(COLOR_DONE, text);
+    M5.Speaker.tone(TONE_NOTICE, 50);
+}
 }  // namespace
 
 void setup()
@@ -510,9 +550,7 @@ void setup()
         lcd.setRotation(1);
     }
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(0);
-    lcd.setCursor(0, 0);
-    lcd.printf("Please put the PICC and click/hold G0");
+    show_stage(COLOR_DONE, "Please put the PICC and click/hold G0");
     M5.Log.printf("Please put the PICC and click/hold G0\n");
 }
 
@@ -525,31 +563,40 @@ void loop()
     bool held    = M5.BtnA.wasHold();     // For first issuance
 
     if (clicked || held) {
-        lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
         PICC picc{};
         if (nfc_f.detect(picc)) {
             M5.Log.printf("%s:%s %s F:%02X DF:%04X\n", picc.idmAsString().c_str(), picc.pmmAsString().c_str(),
                           picc.typeAsString().c_str(), picc.format, picc.dfc_format);
             if (picc.type == Type::FeliCaLiteS) {
                 if (nfc_f.activate(picc)) {
+                    show_stage(COLOR_DETECTED, "PICC");
+                    M5.Speaker.tone(TONE_DETECTED, 30);
                     if (clicked) {
-                        access_example();
+                        show_stage(COLOR_READ, "ACCESS");
+                        show_result(access_example(), "FAILED: access");
                     } else {
-                        if (!first_issuance_procedure_lite_s(picc, example_master_key, example_ckv)) {
+                        show_stage(COLOR_WRITTEN, "ISSUE");
+                        const bool issued = first_issuance_procedure_lite_s(picc, example_master_key, example_ckv);
+                        show_result(issued, "FAILED: first issuance");
+                        if (!issued) {
                             M5_LOGE("Failed to first_issuance_procedure_lite_s");
                         }
                     }
                     nfc_f.deactivate();
+                } else {
+                    show_failure("FAILED: activate");
                 }
             } else {
+                show_notice("Not a FeliCa Lite-S");
                 M5.Log.printf("Not support\n");
             }
-            lcd.setCursor(0, 0);
-            lcd.printf("Please put the PICC and click/hold G0");
-            M5.Log.printf("Please put the PICC and click/hold G0\n");
         } else {
+            show_failure("PICC NOT exists");
             M5.Log.printf("PICC NOT exists\n");
         }
+        // Printed over the color the round ended on, so the result stays readable while waiting
+        lcd.printf("\nPlease put the PICC and click/hold G0");
+        M5.Log.printf("Please put the PICC and click/hold G0\n");
     }
 }
 

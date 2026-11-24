@@ -80,22 +80,58 @@ m5::unit::UnitRFID2 unit{};  // M5Dial builtin WS1850S (internal I2C; NOT suppor
 #endif
 m5::nfc::NFCLayerB nfc_b{unit};
 
-void dump()
+// The screen is the only feedback when no serial monitor is attached, so every stage paints it and
+// names itself with the same word the log uses. Black means the round finished, red means it failed.
+// TFT_* are RGB565, so the constants are uint16_t: a uint32_t picks the RGB888 overload of
+// fillScreen() and paints a different color
+constexpr uint16_t COLOR_DETECTED = TFT_DARKGREEN;
+constexpr uint16_t COLOR_READ     = TFT_BLUE;
+constexpr uint16_t COLOR_DONE     = TFT_BLACK;
+constexpr uint16_t COLOR_FAILED   = TFT_RED;
+constexpr uint32_t TONE_DETECTED  = 2000;
+constexpr uint32_t TONE_DONE      = 4000;
+constexpr uint32_t TONE_FAILED    = 300;
+constexpr uint32_t TONE_NOTICE    = 1000;
+
+void show_stage(const uint16_t color, const char* stage)
+{
+    lcd.fillScreen(color);
+    lcd.setCursor(0, 0);
+    lcd.printf("%s", stage);
+}
+
+void show_failure(const char* reason)
+{
+    show_stage(COLOR_FAILED, reason);
+    M5.Speaker.tone(TONE_FAILED, 200);
+}
+
+// A card this example cannot work with is not a failure of anything: it gets the idle color and says
+// so, with a single mid tone that is neither the success nor the failure one
+void show_notice(const char* text)
+{
+    show_stage(COLOR_DONE, text);
+    M5.Speaker.tone(TONE_NOTICE, 50);
+}
+
+bool dump()
 {
     NFCBFileSystem fs(nfc_b);
 
     // Mynumber Ticket Information Input Assistant AP
     constexpr uint8_t DF1[] = {0xD3, 0x92, 0x10, 0x00, 0x31, 0x00, 0x01, 0x01, 0x04, 0x08};
     if (!fs.selectByDfName(DF1, sizeof(DF1), m5::nfc::apdu::SelectResponse::FCI)) {
+        show_notice("Not a JapanIDCard");
         M5_LOGE("Not JapanIDCard");
-        return;
+        return false;
     }
 
     constexpr uint8_t EF[] = {0x00, 0x11};
     if (!fs.selectFile(m5::nfc::apdu::SelectBy::EfUnderCurrentDf, m5::nfc::apdu::SelectOccurrence::FirstOrOnly,
                        m5::nfc::apdu::SelectResponse::None, EF, sizeof(EF))) {
+        show_failure("FAILED: select EF");
         M5_LOGE("Failed to select EF");
-        return;
+        return false;
     }
 
     // The PIN comes from menuconfig or build_flags; see the top of this file.
@@ -106,36 +142,47 @@ void dump()
         M5_LOGE(
             "PIN is not set, so VERIFY is skipped. Inject it with menuconfig (ESP-IDF) or "
             "-DEXAMPLE_JAPANID_PIN (Arduino). (Repeated wrong verifies will LOCK the card!)");
-        return;
+        show_notice("PIN is not set, so VERIFY is skipped");
+        return false;
     }
     if (!fs.verifyGlobal(reinterpret_cast<const uint8_t*>(pass), pass_len)) {
+        show_failure("FAILED: verify");
         M5_LOGE("Failed to verify");
-        return;
+        return false;
     }
 
     constexpr uint8_t EF2[] = {0x00, 0x02};  // Name etc...
     if (!fs.selectFile(m5::nfc::apdu::SelectBy::EfUnderCurrentDf, m5::nfc::apdu::SelectOccurrence::FirstOrOnly,
                        m5::nfc::apdu::SelectResponse::None, EF2, sizeof(EF2))) {
+        show_failure("FAILED: select EF2");
         M5_LOGE("Failed to select EF2");
-        return;
+        return false;
     }
 
     std::vector<uint8_t> buf;
+    show_stage(COLOR_READ, "READ");
     if (!fs.readBinary(buf, 2, 1)) {
+        show_failure("FAILED: read the length");
         M5_LOGE("Failed to readBinary");
-        return;
+        return false;
     }
     if (buf.empty()) {
+        show_failure("FAILED: empty length");
         M5_LOGE("Empty length response");
-        return;
+        return false;
     }
     const uint8_t file_size = buf[0];
     M5_LOGI("readBinary size = %u", file_size);
     if (!fs.readBinary(buf, 0, file_size)) {
+        show_failure("FAILED: read the file");
         M5_LOGE("Failed to readBinary");
-        return;
+        return false;
     }
     m5::utility::log::dump(buf.data(), buf.size(), false);
+    show_stage(COLOR_DONE, "OK\n");
+    lcd.printf("%u bytes read", file_size);
+    M5.Speaker.tone(TONE_DONE, 30);
+    return true;
 }
 
 }  // namespace
@@ -177,9 +224,7 @@ void setup()
         lcd.setRotation(1);
     }
     lcd.setFont(&fonts::Font0);
-    lcd.fillScreen(0);
-    lcd.setCursor(0, 0);
-    lcd.printf("Please put the PICC and click BtnA");
+    show_stage(COLOR_DONE, "Please put the PICC and click BtnA");
     M5.Log.printf("Please put the PICC and click BtnA\n");
 }
 
@@ -189,16 +234,20 @@ void loop()
     Units.update();
 
     if (M5.BtnA.wasClicked()) {
-        lcd.fillRect(0, lcd.fontHeight(), lcd.width(), lcd.height() - lcd.fontHeight());
         PICC picc{};
         if (nfc_b.select(picc)) {
-            M5.Speaker.tone(3000, 20);
+            show_stage(COLOR_DETECTED, "PICC");
+            M5.Speaker.tone(TONE_DETECTED, 30);
             M5.Log.printf("==== PICC %s %s ====\n", picc.pupiAsString().c_str(), picc.typeAsString().c_str());
-            dump();
+            dump();  // Paints the outcome itself: every way out of it says what happened
             nfc_b.deactivate();
         } else {
+            show_failure("PICC NOT exists");
             M5.Log.printf("PICC NOT exists\n");
         }
+        // Printed over the color the round ended on, so the result stays readable while waiting
+        lcd.printf("\nPlease put the PICC and click BtnA");
+        M5.Log.printf("Please put the PICC and click BtnA\n");
     }
 }
 

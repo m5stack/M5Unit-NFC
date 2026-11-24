@@ -125,6 +125,14 @@ constexpr uint16_t color_table[] = {
     TFT_BLACK, TFT_RED, TFT_BLUE, TFT_YELLOW};
 constexpr const char* state_table[] = {"-", "O", "C", "S"};
 
+// The badge above shows which state the card emulation sits in, and keeps its own colors. The screen
+// behind it says whether the emulation is up at all: green with the emulated PICC under it, or red
+// with the reason it never started. TFT_* are RGB565, so these are uint16_t
+constexpr uint16_t COLOR_EMULATING = TFT_DARKGREEN;
+constexpr uint16_t COLOR_FAILED    = TFT_RED;
+constexpr uint32_t TONE_DONE       = 4000;
+constexpr uint32_t TONE_FAILED     = 300;
+
 }  // namespace
 
 void setup()
@@ -160,23 +168,31 @@ void setup()
 
     //
     lcd.startWrite();
-    lcd.fillScreen(TFT_RED);
+    bool emulating{};
     if (picc.emulate(type, IDm, PMm)) {
         embed_idm_pmm(picc_memory, picc);
         memcpy(picc_memory_seen, picc_memory, sizeof(picc_memory));
-        if (emu_f.begin(picc, picc_memory, sizeof(picc_memory))) {
-            lcd.fillScreen(TFT_DARKGREEN);
-            lcd.setCursor(0, 16);
-            const auto& e_picc = emu_f.emulatePICC();
-            M5.Log.printf("Emulation:%s %s:%s SC:%02X\n", e_picc.typeAsString().c_str(), e_picc.idmAsString().c_str(),
-                          e_picc.pmmAsString().c_str(), e_picc.emulation_sc);
-            lcd.printf("Emulation:%s\nIDm:%s\nPMm:%s\nSC:%02X\n", e_picc.typeAsString().c_str(),
-                       e_picc.idmAsString().c_str(), e_picc.pmmAsString().c_str(), e_picc.emulation_sc);
-        } else {
+        emulating = emu_f.begin(picc, picc_memory, sizeof(picc_memory));
+        if (!emulating) {
             M5_LOGE("Start");
         }
     } else {
         M5_LOGE("PICC");
+    }
+    if (emulating) {
+        lcd.fillScreen(COLOR_EMULATING);
+        lcd.setCursor(0, 16);
+        const auto& e_picc = emu_f.emulatePICC();
+        M5.Log.printf("Emulation:%s %s:%s SC:%02X\n", e_picc.typeAsString().c_str(), e_picc.idmAsString().c_str(),
+                      e_picc.pmmAsString().c_str(), e_picc.emulation_sc);
+        lcd.printf("Emulation:%s\nIDm:%s\nPMm:%s\nSC:%02X\n", e_picc.typeAsString().c_str(),
+                   e_picc.idmAsString().c_str(), e_picc.pmmAsString().c_str(), e_picc.emulation_sc);
+        M5.Speaker.tone(TONE_DONE, 30);
+    } else {
+        lcd.fillScreen(COLOR_FAILED);
+        lcd.setCursor(0, 16);
+        lcd.printf("FAILED: emulate");
+        M5.Speaker.tone(TONE_FAILED, 200);
     }
     lcd.fillRect(0, 0, 32, 16, color_table[0]);
     lcd.drawString(state_table[0], 0, 0);
