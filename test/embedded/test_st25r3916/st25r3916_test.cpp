@@ -493,6 +493,34 @@ TEST_F(TestST25R3916, WaitForFIFO_WaitsForTheEndOfReception)
     EXPECT_TRUE(unit->clearInterrupts());
 }
 
+TEST_F(TestST25R3916, WaitForFIFO_KeepsAFrameWhoseErrorBitCameWithTheEndOfReception)
+{
+    auto* probe = static_cast<TestUnitProbe*>(unit.get());
+
+    EXPECT_TRUE(unit->writeDirectCommand(CMD_STOP_ALL_ACTIVITIES));
+    EXPECT_TRUE(unit->writeOperationControl(regval::en));
+    EXPECT_TRUE(unit->writeDirectCommand(CMD_CLEAR_FIFO));
+    const uint8_t pattern[] = {0xDE, 0xAD, 0xBE, 0xEF};
+    EXPECT_TRUE(unit->writeFIFO(pattern, sizeof(pattern)));
+    EXPECT_TRUE(unit->clearInterrupts());
+
+    // The MIFARE Classic authentication turns the receive CRC off (no_crc_rx). The chip cannot check
+    // a CRC it was told to ignore, so it raises I_crc together with I_rxe while the frame itself is
+    // intact (measured on an ESP32 + ST25R3916: irq 10008000 on every authentication, and the block
+    // that follows reads and writes back correctly). Ending the wait on that pair is what broke the
+    // Classic read and write, so an error bit that comes with the end of reception has to be kept.
+    probe->plantStoredInterrupts(regval::I_crc32 | regval::I_rxe32);
+    EXPECT_TRUE(probe->wait_for_FIFO(50, 1)) << "the reception ended, so the frame is there to be read";
+
+    // An error on its own is still an error: nothing says a frame arrived.
+    probe->plantStoredInterrupts(regval::I_crc32);
+    EXPECT_FALSE(probe->wait_for_FIFO(50, 1)) << "an error without the end of a reception is not a frame";
+
+    probe->plantStoredInterrupts(0);
+    EXPECT_TRUE(unit->writeDirectCommand(CMD_CLEAR_FIFO));
+    EXPECT_TRUE(unit->clearInterrupts());
+}
+
 TEST_F(TestST25R3916, WaitForFIFO_FailsWhenNothingWasReceived)
 {
     auto* probe = static_cast<TestUnitProbe*>(unit.get());

@@ -676,10 +676,9 @@ uint32_t UnitST25R3916::wait_for_interrupt(const uint32_t bits, const uint32_t t
 
 bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t required_size)
 {
-    // Only these three mean the frame itself is unusable. I_par is left out because the anticollision
-    // and MIFARE Classic paths turn parity off on purpose (no_tx_par), and the MIFARE Classic
-    // authentication also turns the receive CRC off (no_crc_rx), so the chip raises neither there.
-    // The wake-up bits that share the same register (I_wt / I_wam / I_wph / I_wcap) are not errors.
+    // These three are the errors that can make a frame unusable. I_par is left out because the
+    // anticollision and MIFARE Classic paths turn parity off on purpose (no_tx_par). The wake-up bits
+    // that share the same register (I_wt / I_wam / I_wph / I_wcap) are not errors.
     constexpr uint32_t frame_error32 = I_crc32 | I_err132 | I_err232;
 
     // I_rxs only says the reception started, and it always arrives before I_rxe. Asking for it here
@@ -689,7 +688,12 @@ bool UnitST25R3916::wait_for_FIFO(const uint32_t timeout_ms, const uint16_t requ
     auto irq               = wait_for_interrupt(I_rxe32 | frame_error32, timeout_ms);
     const uint16_t reqSize = required_size ? required_size : 1;
 
-    if (irq & frame_error32) {
+    // An error bit that arrives together with the end of reception does not mean the frame is lost:
+    // the MIFARE Classic authentication turns the receive CRC off (no_crc_rx), the chip cannot check
+    // a CRC it was told to ignore, and it raises I_crc with I_rxe while the frame itself is intact
+    // (measured on an ESP32 + ST25R3916: irq 10008000 on every authentication, and the block that
+    // follows reads and writes back correctly). Only an error without I_rxe ends the wait.
+    if ((irq & frame_error32) && !is_irq32_rxe(irq)) {
         M5_LIB_LOGD("Frame error: %08X", irq);
         return false;
     }
