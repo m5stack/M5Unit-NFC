@@ -131,14 +131,20 @@ bool NFCLayerV::detect(std::vector<PICC>& piccs, const uint32_t timeout_ms)
 
         // Get system information. ISO/IEC 15693-3 only makes inventory and stay quiet mandatory, so a
         // PICC that turns this down is still a PICC; work its memory layout out from a read instead.
-        if (!get_system_information(picc)) {
-            M5_LIB_LOGW("get_system_information is not supported");
+        //
+        // The answer carries the memory size, and losing it costs more than one frame: the size then
+        // comes from the guess below, and a PICC that does answer has been seen to report two
+        // different sizes across rounds because one of the answers went missing in a collision. The
+        // single retry is for that; a PICC that does not support the command stays silent twice and
+        // falls through to the guess as before
+        if (!get_system_information(picc) && !get_system_information(picc)) {
+            M5_LIB_LOGW("get_system_information got no usable answer; the memory size is a guess");
         }
 
         // For ST25DV
         if (picc.uid[1] == m5::stl::to_underlying(m5::nfc::ManufacturerId::STMicroelectronics)) {
-            if (!get_system_information_ext(picc)) {
-                M5_LIB_LOGW("get_system_information_ext is not supported");
+            if (!get_system_information_ext(picc) && !get_system_information_ext(picc)) {
+                M5_LIB_LOGW("get_system_information_ext got no usable answer; the memory size is a guess");
             }
             if (!picc.blocks || !picc.block_size) {
                 // The product code in the fifth byte of the UID names the variant, not the size:
