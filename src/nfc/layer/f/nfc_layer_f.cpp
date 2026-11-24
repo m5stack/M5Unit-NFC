@@ -1043,7 +1043,7 @@ bool NFCLayerF::dump_felica_lite_s()
     for (uint8_t block = 0x90; block < 0x93; ++block) {
         // MAC_A(0x91) cannot be read unless written to RC.
         if (block == lite_s::MAC_A) {
-            printf("[%04X]:MAC_A needs wrtite to RC\n", block);
+            printf("[%04X]:MAC_A needs write to RC\n", block);
             continue;
         }
         ret &= dump_block(block);
