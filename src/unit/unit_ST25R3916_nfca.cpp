@@ -803,8 +803,11 @@ bool UnitST25R3916::mifareClassicValueBlock(const m5::nfc::a::Command cmd, const
 
     M5_LIB_LOGV("ValuBlock:%02X %u %u", cmd, block, arg);
 
-    if (!mifare_classic_transceive_encrypt(                                                 //
-            rx, rx_len, cmd_frame, sizeof(cmd_frame), TIMEOUT_VALUE_BLOCK, false, true) ||  //
+    // Transfer answers after it has written the value back, the other three answer right away
+    const uint32_t timeout_ms = (cmd == Command::TRANSFER) ? TIMEOUT_TRANSFER : TIMEOUT_VALUE_BLOCK;
+
+    if (!mifare_classic_transceive_encrypt(                                        //
+            rx, rx_len, cmd_frame, sizeof(cmd_frame), timeout_ms, false, true) ||  //
         rx[0] != ACK_NIBBLE) {
         M5_LIB_LOGD("Failed to command %02X %u %u %02X", cmd, block, arg, rx[0]);
         return false;
@@ -824,7 +827,16 @@ bool UnitST25R3916::mifareClassicValueBlock(const m5::nfc::a::Command cmd, const
         M5_LIB_LOGD("Failed to send");
         return false;
     }
-    return !wait_for_FIFO(TIMEOUT_VALUE_BLOCK);  // Consider the timeout a success
+    // The PICC says nothing when it accepted the operand, and answers with a NAK when it did not, so
+    // silence is the success here. Asking the interrupt directly keeps that reading honest: a frame or
+    // an error bit both mean the PICC spoke up, while wait_for_FIFO() reports either of those and a
+    // timeout alike as false, which would turn an answered NAK into a success
+    const uint32_t irq = wait_for_interrupt(I_rxe32 | I_crc32 | I_err132 | I_err232, TIMEOUT_VALUE_BLOCK);
+    if (irq != I_nre32) {
+        M5_LIB_LOGD("Refused %02X %u %u, irq:%08X", cmd, block, arg, irq);
+        return false;
+    }
+    return true;
 }
 
 }  // namespace unit
